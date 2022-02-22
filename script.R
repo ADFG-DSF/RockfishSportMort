@@ -60,24 +60,29 @@ Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
-C<- 11
+C<- 16
 Z <- bspline(1:24, K = C)
 
 jags_dat <- 
   list(
     A = A, Y = Y, C = C,
     Hhat_ay = matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
-    seHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE),
+    cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
+      matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
     H_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
                      matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
-    seHhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
-                       matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
+    cvHhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
+                       matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
+      cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
+            matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
     Hhat_ayp = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
                      matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
-    seHhat_ayp = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
-                       matrix(Hhat_ayp$seH, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
+    cvHhat_ayp = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
+                       matrix(Hhat_ayp$seH, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)) /
+      cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
+            matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
     Z = Z,
     Q = makeQ(2, C),
     zero = rep(0, C)
@@ -86,7 +91,7 @@ jags_dat <-
 
 # Run Jags --------------------------------------------------------
 ni <- 1E4; nb <- ni*.25; nc <- 3; nt <- 1;
-params <- parameters_alpha <- c("bc", "mu_bc", "sd_bc",
+params <- parameters_alpha <- c("logbc", "mu_bc", "sd_bc",
                                 "pU", "b1", "b2",
                                 "Htrend_ay", "muHhat_ay", "beta", "H_ay", "sigma", "lambda") 
 
@@ -115,7 +120,7 @@ postH$mean$H_ay
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
 as.data.frame(
   rbind(t(jags_dat$Hhat_ay),
-        t(postH$mean$Htrend_ay),
+        t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)),
         t(postH$mean$H_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(1996:2019, times = 3),
@@ -125,6 +130,16 @@ as.data.frame(
   ggplot(aes(x = year, y = H, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
+
+# ** sigma by area --------------------------------------------------------
+postH$sims.list$sigma %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = bc)) +
+  geom_histogram(binwidth = 0.1) +
+  facet_wrap(.~area)
 
 # ** logbook harvest vrs. model total harvest -------------------------------------------------------- 
 as.data.frame(
@@ -176,13 +191,11 @@ rbind(pU_mod, pU_obs) %>%
   geom_point() +
   geom_line() +
   coord_cartesian(ylim = c(0, 1)) +
-  geom_hline(aes(yintercept = bc, color = source), data = mu_bc) +
   facet_wrap(. ~ area)
 
 # * SWHS bias --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-#Distribution of area bias estimates
-postH$sims.list$mu_bc %>%
+exp(postH$sims.list$mu_bc) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
@@ -192,16 +205,25 @@ postH$sims.list$mu_bc %>%
     coord_cartesian(xlim = c(0, 4)) +
     geom_vline(aes(xintercept = 1)) +
     facet_wrap(.~area)
+# ** sd by area --------------------------------------------------------
+postH$sims.list$sd_bc %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = bc)) +
+  geom_histogram(binwidth = 0.1) +
+  facet_wrap(.~area)
 
 # ** annual estimates --------------------------------------------------------
 mu_bc <- 
-  data.frame(model = postH$mean$mu_bc,
+  data.frame(model = apply(exp(postH$sims.list$mu_bc), 2, mean),
              observed = apply(jags_dat$H_ayg/jags_dat$Hhat_ayg, 1, mean, na.rm = TRUE),
              stat = "mean",
              area = unique(H_ayg$area)) %>%
   pivot_longer(model:observed, names_to = "source", values_to = "bc")
 bc_mod <- 
-  postH$mean$bc %>%
+  apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
