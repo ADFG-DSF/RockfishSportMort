@@ -23,6 +23,16 @@ Hhat_ay <-
   mutate(Hhat = ifelse(Hhat == 0, 1, Hhat), 
          seH = ifelse(seH == 0, 1, seH))
 
+Chat_ay <- 
+  readRDS(".//data//Chat_ay.rds") %>% 
+  rename(Chat = C) %>%
+  bind_rows(readRDS(".//data//Chat_ayu.rds") %>% 
+              group_by(region, area, year) %>% 
+              summarise(Chat = sum(C), seC = sqrt(sum(seC^2)))) %>%
+  arrange(region, area, year) %>%
+  mutate(Chat = ifelse(Chat == 0, 1, Chat), 
+         seC = ifelse(seC == 0, 1, seC))
+
 # Plot data --------------------------------------------------------
 # * SWHS estimates by user --------------------------------------------------------
 Hhat_ayu %>%
@@ -54,6 +64,13 @@ left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
   stat_smooth(method = "lm", formula = y ~ x) +
   facet_grid(region ~ ., scales = "free")
 
+# * SWHS catch Vrs SWHS harvest --------------------------------------------------------
+left_join(Chat_ay, Hhat_ay, by = c("area", "year", "region")) %>%
+  select(year, area, Chat, Hhat) %>%
+  pivot_longer(ends_with("hat"), names_to = "source", values_to = "N") %>%
+  ggplot(aes(year, N, color = source)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
 # Prep data for jags --------------------------------------------------------
 Hhat_ayg <- Hhat_ayu %>% filter(user == "guided")
 Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
@@ -69,6 +86,9 @@ jags_dat <-
     Hhat_ay = matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
     cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
+    Chat_ay = matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
+    cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
+      matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
     H_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -93,6 +113,7 @@ jags_dat <-
 ni <- 1E4; nb <- ni*.25; nc <- 3; nt <- 1;
 params <- parameters_alpha <- c("logbc", "mu_bc", "sd_bc",
                                 "pU", "b1", "b2",
+                                "pH", "pH_int", "pH_slo",
                                 "Htrend_ay", "muHhat_ay", "beta", "H_ay", "sigma", "lambda") 
 
 postH <- 
@@ -115,6 +136,10 @@ postH$mean$lambda
 postH$mean$sigma
 postH$mean$beta
 postH$mean$H_ay
+postH$q2.5$pH_slo
+postH$mean$pH_slo
+postH$q97.5$pH_slo
+postH$mean$pH_int
 
 # * Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
@@ -158,14 +183,14 @@ as.data.frame(
 
 # * Sex comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-temp <- postH$sims.list$b1 / (postH$sims.list$b1 + postH$sims.list$b2) %>%
+pU <- postH$sims.list$b1 / (postH$sims.list$b1 + postH$sims.list$b2) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) 
-temp %>%
+pU %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pU") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = pU)) +
-  geom_histogram(binwidth = 0.1) +
+  geom_histogram(binwidth = 0.02) +
   facet_wrap(.~area)
 
 # ** annual estimates  --------------------------------------------------------
@@ -250,3 +275,45 @@ postH$mean$bc
 #observed
 apply(jags_dat$H_ayg/jags_dat$Hhat_ayg, 1, mean, na.rm = TRUE)
 postH$mean$mu_bc
+
+# * P(Harvested) --------------------------------------------------------
+# ** mean by area --------------------------------------------------------
+pH <- postH$sims.list$pH1 / (postH$sims.list$pH1 + postH$sims.list$pH2) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) 
+pH %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = pH)) +
+  geom_histogram(binwidth = 0.02) +
+  facet_wrap(.~area)
+
+# ** annual estimates  --------------------------------------------------------
+pH_mod <- 
+  postH$mean$pH %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
+pH_obs <- 
+  (jags_dat$Hhat_ay/jags_dat$Chat_ay) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
+rbind(pH_mod, pH_obs) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = pH, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+# ** slope of logit  --------------------------------------------------------
+data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$q2.5$pH_slo, ub = postH$q2.5$pH_slo) %>%
+  ggplot(aes(x = area, y = mean)) +
+    geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))

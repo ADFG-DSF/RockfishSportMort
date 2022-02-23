@@ -2,6 +2,15 @@ library(readxl)
 library(tidyverse)
 library(ggplot2)
 
+#look up table for region
+lut <- 
+  data.frame(region = c(rep("Kodiak", 6), rep("Central", 4), rep("Southeast", 6)),
+             area = c("afognak", "WKMA", "SOKO2SAP", "northeast", "eastside", "BSAI", 
+                      "CI", "NG", "PWSI", "PWSO", 
+                      "EWYKT", "NSEO", "NSEI", "CSEO", "SSEO", "SSEI"),
+             stringsAsFactors = FALSE) %>%
+  arrange(region, area)
+
 # Logbook data ----
 H_ayg0 <- #logbook harvest by area, user = guided, year
   read_xlsx(".\\rawdata\\logbook_harvest.xlsx", 
@@ -28,15 +37,6 @@ H_ayg0 %>%
 11603+140+372+915
 #Note WKMA = westside + mainland
 39414+290
-
-#look up table for region
-lut <- 
-  data.frame(region = c(rep("Kodiak", 6), rep("Central", 4), rep("Southeast", 6)),
-             area = c("afognak", "WKMA", "SOKO2SAP", "northeast", "eastside", "BSAI", 
-                      "CI", "NG", "PWSI", "PWSO", 
-                      "EWYKT", "NSEO", "NSEI", "CSEO", "SSEO", "SSEI"),
-             stringsAsFactors = FALSE) %>%
-  arrange(region, area)
 
 H_ayg <-
   H_ayg0 %>%
@@ -185,7 +185,7 @@ Chat_ayg0 <- #p for private
             sheet = "gui_cat",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
-  pivot_longer(!year, names_to = "area", values_to = "H") %>%
+  pivot_longer(!year, names_to = "area", values_to = "C") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "guided") %>%
   right_join(lut, by = "area") %>%
@@ -197,7 +197,7 @@ seChat_ayg <-
   read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
             sheet = "guicat_se",
             range = "A4:Q13") %>%
-  pivot_longer(!year, names_to = "area", values_to = "seH") %>%
+  pivot_longer(!year, names_to = "area", values_to = "seC") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "guided") %>%
   right_join(lut, by = "area") %>%
@@ -212,7 +212,7 @@ Chat_ayp0 <-
             sheet = "pri_cat",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
-  pivot_longer(!year, names_to = "area", values_to = "H") %>%
+  pivot_longer(!year, names_to = "area", values_to = "C") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "private") %>%
   right_join(lut, by = "area") %>%
@@ -224,7 +224,7 @@ seChat_ayp <-
   read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
             sheet = "pricat_se",
             range = "A4:Q13") %>%
-  pivot_longer(!year, names_to = "area", values_to = "seH") %>%
+  pivot_longer(!year, names_to = "area", values_to = "seC") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "private") %>%
   right_join(lut, by = "area") %>%

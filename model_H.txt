@@ -7,6 +7,8 @@ model{
 	sd_bc[a] ~ dunif(0, 1)
 	b1[a] ~ dunif(1, 100)
 	b2[a] ~ dunif(1, 100)
+	pH_int[a] ~ dnorm(0, 0.001)
+	pH_slo[a] ~ dnorm(0, 0.001)
 	
 	for(y in 16:Y){
 		tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
@@ -28,9 +30,13 @@ model{
 		pU[a, y] ~ dbeta(b1[a], b2[a])
 		
 		tauHhat_ay[a, y] <- 1 / log(cvHhat_ay[a, y] * cvHhat_ay[a, y] + 1)
-		Hhat_ay[a, y] ~ dlnorm(muHhat_ay[a, y]  - logbc[a, y], tauHhat_ay[a, y])
+		Hhat_ay[a, y] ~ dlnorm(muHhat_ay[a, y] - logbc[a, y], tauHhat_ay[a, y])
 		muHhat_ay[a, y] ~ dnorm(Htrend_ay[a, y], prec[a])
 		Htrend_ay[a, y] <- Z[y, ] %*% beta[a, 1:C]
+		
+		logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y
+		tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
+		Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
 	}
 
   prec[a] <- pow(sigma[a], -2) 
@@ -38,6 +44,6 @@ model{
   gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
   lambda[a] ~ dgamma(0.001, 0.001)
   beta0[a] ~ dnorm(0, 1e-6)
-  sigma[a] ~ dunif(0.05, 10) #dgamma(10, 1E8)
+  sigma[a] ~ dunif(0.5, 10) #dgamma(10, 1E8)
   }
 }
