@@ -33,6 +33,18 @@ Chat_ay <-
   mutate(Chat = ifelse(Chat == 0, 1, Chat), 
          seC = ifelse(seC == 0, 1, seC))
 
+S_ayu0 <- 
+  readRDS(".//data//S_ayu.rds") 
+S_ayu <- 
+  S_ayu0 %>%
+  bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
+                       year = rep(rep(1996:1997, each = 2), times = 6),
+                       user = rep(c("charter", "private"), times = 12),
+                       totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
+  arrange(user, area, year) %>%
+  filter(year >= 1996)
+
+
 # Plot data --------------------------------------------------------
 # * SWHS estimates by user --------------------------------------------------------
 Hhat_ayu %>%
@@ -41,7 +53,7 @@ Hhat_ayu %>%
   ggplot(aes(year, Hhat, color = user)) +
   geom_line() +
   facet_wrap(area ~ ., scales = "free")
-# * SWHS varibility by user --------------------------------------------------------
+# * SWHS variability by user --------------------------------------------------------
 Hhat_ayu %>%
   select(year, user, area, region, Hhat, seH) %>%
   rbind(Hhat_ay %>% mutate(user = "all")) %>%
@@ -71,6 +83,20 @@ left_join(Chat_ay, Hhat_ay, by = c("area", "year", "region")) %>%
   ggplot(aes(year, N, color = source)) +
   geom_line() +
   facet_wrap(area ~ ., scales = "free")
+
+# * logbook vrs sample % pelagic --------------------------------------------------------
+rbind(S_ayu %>% mutate(pct_pel = pelagic_n / totalrf_n, source = "survey") %>% select(area, year, user, source, pct_pel),
+      H_ayg %>% mutate(pct_pel = Hp / H, user = "charter", source = "logbook") %>% select(area, year, user, source, pct_pel)) %>%
+  ggplot(aes(year, pct_pel, color = source)) +
+  geom_line(aes(linetype = user)) +
+  facet_wrap(area ~ ., scales = "free")
+
+S_ayu %>% 
+  mutate(pct_pel = black_n / totalrf_n, source = "survey") %>% select(area, year, user, source, pct_pel) %>%
+  ggplot(aes(year, pct_pel)) +
+  geom_line(aes(linetype = user)) +
+  facet_wrap(area ~ ., scales = "free")
+
 # Prep data for jags --------------------------------------------------------
 Hhat_ayg <- Hhat_ayu %>% filter(user == "guided")
 Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
@@ -105,7 +131,10 @@ jags_dat <-
             matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
     Z = Z,
     Q = makeQ(2, C),
-    zero = rep(0, C)
+    zero = rep(0, C),
+    S_N = apply(array(S_ayu$totalrf_n, dim = c(Y, A, 2)), c(1, 3), FUN = t), 
+    S_b = apply(array(S_ayu$black_n, dim = c(Y, A, 2)), c(1, 3), FUN = t),
+    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
 
@@ -114,6 +143,7 @@ ni <- 1E4; nb <- ni*.25; nc <- 3; nt <- 1;
 params <- parameters_alpha <- c("logbc", "mu_bc", "sd_bc",
                                 "pU", "b1", "b2",
                                 "pH", "pH_int", "pH_slo",
+                                "pB", "beta0_b", "beta1_b", "beta2_b", "sd_b", "mu_beta0_b", "mu_beta1_b", "mu_beta2_b", "tau_beta0_b", "tau_beta1_b", "tau_beta2_b",
                                 "Htrend_ay", "muHhat_ay", "beta", "H_ay", "sigma", "lambda") 
 
 postH <- 
@@ -121,9 +151,6 @@ postH <-
     parameters.to.save = params,
     model.file = ".\\model_H.txt",
     data = jags_dat, 
-    inits = list(list(bc = matrix(1, A, Y)), 
-                 list(bc = matrix(1, A, Y)), 
-                 list(bc = matrix(1, A, Y))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
 postH
@@ -277,17 +304,6 @@ apply(jags_dat$H_ayg/jags_dat$Hhat_ayg, 1, mean, na.rm = TRUE)
 postH$mean$mu_bc
 
 # * P(Harvested) --------------------------------------------------------
-# ** mean by area --------------------------------------------------------
-pH <- postH$sims.list$pH1 / (postH$sims.list$pH1 + postH$sims.list$pH2) %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) 
-pH %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pH") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = pH)) +
-  geom_histogram(binwidth = 0.02) +
-  facet_wrap(.~area)
-
 # ** annual estimates  --------------------------------------------------------
 pH_mod <- 
   postH$mean$pH %>%
@@ -317,3 +333,35 @@ rbind(pH_mod, pH_obs) %>%
 data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$q2.5$pH_slo, ub = postH$q2.5$pH_slo) %>%
   ggplot(aes(x = area, y = mean)) +
     geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
+
+
+# * P(black) --------------------------------------------------------
+# ** annual estimates  --------------------------------------------------------
+pB_mod <- 
+  rbind(postH$mean$pB[,,1] %>% t(),
+        postH$mean$pB[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "pB")
+pB_obs <- 
+  rbind(
+    (jags_dat$S_b[,,1]/jags_dat$S_N[,,1]) %>% t(),
+    (jags_dat$S_b[,,2]/jags_dat$S_N[,,2]) %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "observed") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "pB")
+rbind(pB_mod, pB_obs) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = pB, color = user)) +
+  geom_point(aes(alpha = source)) +
+  geom_line(aes(alpha = source)) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+

@@ -236,3 +236,48 @@ Chat_ayp <- left_join(Chat_ayp0, seChat_ayp, by = c("year", "area", "region", "u
 Chat_ayu <- rbind(Chat_ayg, Chat_ayp)
 saveRDS(Chat_ayu, ".\\data\\Chat_ayu.rds")
 
+
+
+# Species comp ----
+sppcompR1_0 <- 
+  read_xlsx(".\\rawdata\\species_comp_Region1_forR.xlsx", 
+            range = "A1:I353") %>%
+  rename_all(.funs = tolower) %>%
+  rename(area = rpt_area)
+table(sppcompR1_0$area)
+#Note EKYKT = IBS + EKYT
+sppcompR1$totalrf_n[sppcompR1$area == "EWYKT"] == sppcompR1$totalrf_n[sppcompR1$area == "EYKT"] + sppcompR1$totalrf_n[sppcompR1$area == "IBS"]
+sppcompR1 <- 
+  sppcompR1_0 %>% 
+  right_join(lut[lut$region == "Southeast",], by = "area") %>% #drops IBS and EYKT
+  mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
+  arrange(region, area, year)
+table(sppcompR1$area)
+
+sppcompR2_0 <- 
+  read_xlsx(".\\rawdata\\species_comp_Region2_forR.xlsx", 
+            range = "A1:I433") %>%
+  rename_all(.funs = tolower) %>%
+  rename(area = rpt_area)
+table(sppcompR2_0$area)
+#Note no samples from SOKO2SAP (= southeast + southwest + sakpen + chignik)
+#Note no samples from BSAI (= aleutian + bering)
+#Note only westside from WKMA (= westside + mainland)
+sppcompR2 <- 
+  sppcompR2_0%>%
+  rbind(data.frame(area = rep(c("SOKO2SAP", "BSAI", "WKMA"), each = 2 * length(unique(sppcompR2_0$year))),
+                   year = rep(unique(sppcompR2_0$year), times = 2 * 3),
+                   user = rep(rep(c("charter", "private"), each = length(unique(sppcompR2_0$year))), times = 3),
+                   totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area)) %>%
+  right_join(lut[lut$region != "Southeast",], by = "area") %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
+  arrange(region, area, year)
+table(sppcompR2$region, sppcompR2$area)
+
+S_ayu <- 
+  rbind(sppcompR1, sppcompR2) %>%
+  mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
+  arrange(user, area, year)
+table(S_ayu$region, S_ayu$area)
+saveRDS(S_ayu, ".\\data\\S_ayu.rds")
