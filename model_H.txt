@@ -1,20 +1,22 @@
 
 model{
- tau_comp ~ dgamma(0.001, 0.001)
- sd_comp <- 1 / tau_comp / tau_comp
+ tau_comp <- 1 / sd_comp / sd_comp
+ sd_comp <- .3
  
  for(n in 1:N){
-    comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n] , comp_user[n]], comp_N[n])
-    comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n]], comp_pelagic[n])
+  comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
+  comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n] + 1], comp_pelagic[n])
     }
  
  for(r in 1:3){
   mu_beta0_pelagic[r] ~ dnorm(0, 0.001)
-  mu_beta1_pelagic[r] ~ dnorm(0, 0.001)
-  mu_beta2_pelagic[r] ~ dnorm(0, 0.001)
+  tau_beta0_pelagic[r] ~ dgamma(0.001, 0.001)
+#  mu_beta1_pelagic[r] ~ dnorm(0, 0.001)
+#  mu_beta2_pelagic[r] ~ dnorm(0, 0.001)
   mu_beta0_black[r] ~ dnorm(0, 0.001)
-  mu_beta1_black[r] ~ dnorm(0, 0.001)
-  mu_beta2_black[r] ~ dnorm(0, 0.001)
+  tau_beta0_black[r] ~ dgamma(0.001, 0.001)
+#  mu_beta1_black[r] ~ dnorm(0, 0.001)
+#  mu_beta2_black[r] ~ dnorm(0, 0.001)
   }
   
  for (a in 1:A){
@@ -25,12 +27,15 @@ model{
   b2[a] ~ dunif(1, 100)
   pH_int[a] ~ dnorm(0, 0.001)
   pH_slo[a] ~ dnorm(0, 0.001)
-  beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], 100)
-  beta1_pelagic[a] ~ dnorm(mu_beta1_pelagic[regions[a]], 0.001)
-  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], 0.001)
-  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], 100)
-  beta1_black[a] ~ dnorm(mu_beta1_black[regions[a]], 0.001)
-  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], 0.001)
+  beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
+  beta1_pelagic[a] ~ dnorm(0, 0.001)
+  beta2_pelagic[a] ~ dnorm(0, 0.001)
+  beta3_pelagic[a] ~ dnorm(0, 0.001)
+  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
+  beta1_black[a] ~ dnorm(0, 0.001)
+  beta2_black[a] ~ dnorm(0, 0.001)
+#  tau_comp[a] ~ dgamma(0.001, 0.001)
+#  sd_comp[a] <- 1 / tau_comp[a] / tau_comp[a]
 	
   for(y in 16:Y){
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
@@ -61,13 +66,15 @@ model{
    logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y
    tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
    Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
-		
+   
+   logit(p_pelagic[a, y, 1, 1]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] + beta3_pelagic[a] + re_pelagic[a, y, 1]
+   logit(p_pelagic[a, y, 1, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] + re_pelagic[a, y, 1]
+   logit(p_pelagic[a, y, 2, 1]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
+   logit(p_pelagic[a, y, 2, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
    for(u in 1:2){
-    logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u-1) + re_pelagic[a, y, u]
-    re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
-	
-	logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u-1) + re_black[a, y, u]
+    logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)
+    re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
    }
   }
 
