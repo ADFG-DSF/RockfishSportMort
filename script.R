@@ -106,6 +106,21 @@ Y = length(unique(Hhat_ay$year))
 C<- 16
 Z <- bspline(1:24, K = C)
 
+comp <-
+  rbind(H_ayg %>% 
+          mutate(area_n = as.numeric(area), 
+                 user_n = 0, 
+                 year_n = year - 1995, 
+                 source = 0, #Logbook = 0
+                 black = NA) %>% 
+          select(year_n, area_n, user_n, source, N = H, pelagic = Hp, black),
+        S_ayu %>% 
+          mutate(area_n = as.numeric(area), 
+                 user_n = ifelse(user == "charter", 0, 1), 
+                 year_n = year - 1995, 
+                 source = 1) %>% 
+          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n))
+
 jags_dat <- 
   list(
     A = A, Y = Y, C = C,
@@ -115,7 +130,7 @@ jags_dat <-
     Chat_ay = matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
     cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
-    H_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+    H_ayg = cbind(matrix(1, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
                      matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
@@ -132,25 +147,35 @@ jags_dat <-
     Z = Z,
     Q = makeQ(2, C),
     zero = rep(0, C),
-    S_N = apply(array(S_ayu$totalrf_n, dim = c(Y, A, 2)), c(1, 3), FUN = t), 
-    S_b = apply(array(S_ayu$black_n, dim = c(Y, A, 2)), c(1, 3), FUN = t),
+    comp_area = comp$area_n,
+    comp_year = comp$year_n,
+    comp_user = comp$user_n,
+    comp_source = comp$source,
+    comp_N = comp$N,
+    comp_pelagic = comp$pelagic,
+    comp_black = comp$black,
+    N = dim(comp)[1],
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
 
 # Run Jags --------------------------------------------------------
-ni <- 1E4; nb <- ni*.25; nc <- 3; nt <- 1;
+ni <- 5E3; nb <- ni*.25; nc <- 3; nt <- 1;
 params <- parameters_alpha <- c("logbc", "mu_bc", "sd_bc",
                                 "pU", "b1", "b2",
                                 "pH", "pH_int", "pH_slo",
-                                "pB", "beta0_b", "beta1_b", "beta2_b", "sd_b", "mu_beta0_b", "mu_beta1_b", "mu_beta2_b", "tau_beta0_b", "tau_beta1_b", "tau_beta2_b",
-                                "Htrend_ay", "muHhat_ay", "beta", "H_ay", "sigma", "lambda") 
+                                "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
+                                "p_black", "beta0_black", "beta1_black", "beta2_black", "mu_beta0_black", "tau_beta0_black",
+                                "re_pelagic", "sd_comp", 
+                                "Htrend_ay", "muHhat_ay", "beta", "H_ay", "sigma", "lambda", "H2_ayg", "H_ayu", "H2_ayu", 
+                                "Hb_ayg", "Hb_ayu", "Hb_ay") 
 
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
     model.file = ".\\model_H.txt",
     data = jags_dat, 
+    #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
 postH
@@ -166,7 +191,11 @@ postH$mean$H_ay
 postH$q2.5$pH_slo
 postH$mean$pH_slo
 postH$q97.5$pH_slo
-postH$mean$pH_int
+postH$mean$sd_comp
+paste0(round(postH$mean$beta1_pelagic, 3), "(", round(postH$q2.5$beta1_pelagic, 3), ", ", round(postH$q97.5$beta1_pelagic, 3), ")")
+paste0(round(postH$mean$beta2_pelagic, 3), "(", round(postH$q2.5$beta2_pelagic, 3), ", ", round(postH$q97.5$beta2_pelagic, 3), ")")
+paste0(round(postH$mean$beta3_pelagic, 3), "(", round(postH$q2.5$beta3_pelagic, 3), ", ", round(postH$q97.5$beta3_pelagic, 3), ")")
+
 
 # * Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
@@ -197,7 +226,7 @@ postH$sims.list$sigma %>%
 as.data.frame(
   rbind(t(jags_dat$H_ayg),
         t(postH$mean$H_ay),
-        t(postH$mean$Htrend_ay))) %>%
+        t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(1996:2019, times = 3),
          source = rep(c("logbook", "Harvest", "trend"), each = Y)) %>%
@@ -208,7 +237,23 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
-# * Sex comp --------------------------------------------------------
+# ** logbook harvest vrs. model charter harvest --------------------------------------------------------
+as.data.frame(
+  rbind(t(postH$mean$H2_ayg),
+        t(jags_dat$H_ayg),
+        t(postH$mean$H_ayu),
+        t(postH$mean$H2_ayu))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(1996:2019, times = 4),
+         source = rep(c("mod-SWHS", "logbook", "mod-lb", "mod-SWHS"), each = Y),
+         user = rep(c("charter", "private"), each = 2*Y)) %>%
+  pivot_longer(!c(year, source, user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = H, color = user, linetype = source)) +
+    geom_line() + 
+    facet_wrap(. ~ area, scales = "free")
+
+# * User comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
 pU <- postH$sims.list$b1 / (postH$sims.list$b1 + postH$sims.list$b2) %>%
   as.data.frame() %>%
@@ -330,38 +375,108 @@ rbind(pH_mod, pH_obs) %>%
   facet_wrap(. ~ area)
 
 # ** slope of logit  --------------------------------------------------------
-data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$q2.5$pH_slo, ub = postH$q2.5$pH_slo) %>%
+data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$pH_slo, ub = postH$q97.5$pH_slo) %>%
   ggplot(aes(x = area, y = mean)) +
     geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
 
 
-# * P(black) --------------------------------------------------------
-# ** annual estimates  --------------------------------------------------------
-pB_mod <- 
-  rbind(postH$mean$pB[,,1] %>% t(),
-        postH$mean$pB[,,2] %>% t()) %>%
+# * Composition --------------------------------------------------------
+# ** Pelagic annual  --------------------------------------------------------
+p_pelagic_mod <- 
+  rbind(postH$mean$p_pelagic[,,1,1] %>% t(),
+        postH$mean$p_pelagic[,,1,2] %>% t(),
+        postH$mean$p_pelagic[,,2,1] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = rep(c("logbook", "SWHS", "SWHS"), each = length(unique(Hhat_ay$year)))) %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_pelagic")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_pelagic_obs <-
+  comp %>%
+    mutate(year = year_n + 1995,
+           area = unique(H_ayg$area)[area_n],
+           user = ifelse(user_n == 0, "charter", "private"),
+           source = ifelse(source == 1, "SWHS", "logbook"),
+           p_pelagic = pelagic / N,
+           area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_pelagic_trend <-
+  data.frame(
+    p_pelagic = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_pelagic, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+p_pelagic_obs %>%
+  ggplot(aes(x = year, y = p_pelagic, color = user)) +
+  geom_point(aes(shape = source)) +
+  geom_line(data = p_pelagic_mod, aes(linetype = source)) +
+  geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+# ** black/pelagic annual  --------------------------------------------------------
+p_black_mod <- 
+  rbind(postH$mean$p_black[,,1] %>% t(),
+        postH$mean$p_black[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
-  pivot_longer(-c(year, user, source), names_to = "area", values_to = "pB")
-pB_obs <- 
-  rbind(
-    (jags_dat$S_b[,,1]/jags_dat$S_N[,,1]) %>% t(),
-    (jags_dat$S_b[,,2]/jags_dat$S_N[,,2]) %>% t()) %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_black")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_black_obs <-
+  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
   as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
-         source = "observed") %>%
-  pivot_longer(-c(year, user, source), names_to = "area", values_to = "pB")
-rbind(pB_mod, pB_obs) %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = pB, color = user)) +
-  geom_point(aes(alpha = source)) +
-  geom_line(aes(alpha = source)) +
+  mutate(year = comp_year + 1995,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_black = comp_black / comp_pelagic,
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_black_trend <-
+  data.frame(
+    p_black = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_black, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+rbind(p_black_obs) %>%
+  ggplot(aes(x = year, y = p_black, color = user)) +
+  geom_point() +
+  geom_line(data = p_black_mod) +
+  geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)
+
+#center year for logistic regression of p_black 
+#Prior on random random effect se or heir model. SD_comp fixed atm.
+
+rbind(postH$mean$re_pelagic[,,1] %>% t(),
+      postH$mean$re_pelagic[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+  pivot_longer(-c(year, user
+  ), names_to = "area", values_to = "p_pelagic")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = p_pelagic, color = user)) +
+    geom_line() +
+    facet_wrap(. ~ area)
+
+# * Black Rockfish Harvest --------------------------------------------------------
+# ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
+as.data.frame(
+  rbind(t(postH$mean$Hb_ayg),
+        t(postH$mean$Hb_ayu),
+        t(postH$mean$Hb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(1996:2019, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+    geom_line() + 
+    facet_wrap(. ~ area, scales = "free")
+
+
 
