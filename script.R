@@ -121,13 +121,18 @@ comp <-
                  source = 1) %>% 
           select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n))
 
+matrix_H_ayg <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_H_ayg[4, 1:5] <- NA
+matrix_C_ayg <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_C_ayg[4, 1:5] <- NA
+
 jags_dat <- 
   list(
     A = A, Y = Y, C = C,
-    Hhat_ay = matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
+    Hhat_ay = matrix_H_ayg,
     cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
-    Chat_ay = matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
+    Chat_ay = matrix_C_ayg,
     cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
     Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
@@ -139,7 +144,7 @@ jags_dat <-
       cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
             matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
     Z = Z,
-    Q = diag(16), #makeQ(2, C),
+    Q = makeQ(2, C),
     zero = rep(0, C),
     comp_area = comp$area_n,
     comp_year = comp$year_n,
@@ -155,7 +160,7 @@ jags_dat <-
 
 # Run Jags --------------------------------------------------------
 ni <- 5E3; nb <- ni*.25; nc <- 3; nt <- 1;
-params <- c("logbc", "mu_bc",
+params <- c("logbc", "q", "u", #"mu_bc", "sd_bc",
             "pG", "b1_pG", "b2_pG",
             "pH", "pH_int", "pH_slo",
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
@@ -173,7 +178,7 @@ postH <-
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
- postH
+postH
 saveRDS(postH, ".\\postH.rds")
 postH <- readRDS(".\\postH.rds")
 
@@ -234,10 +239,11 @@ as.data.frame(
 as.data.frame(
   rbind(t(jags_dat$Hlb_ayg),
         t(postH$mean$H_ay),
-        t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)))) %>%
+        t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)),
+        t(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(1996:2019, times = 3),
-         source = rep(c("logbook", "Harvest", "trend"), each = Y)) %>%
+  mutate(year = rep(1996:2019, times = 4),
+         source = rep(c("logbook", "Harvest", "trend", "SWHS"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(yr_group = ifelse(year <= 1997, "no logbook", ifelse(year <= 2010, "No user", "full data")),
          area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -322,14 +328,7 @@ postH$sims.list$sd_bc %>%
 
 # ** annual estimates --------------------------------------------------------
 mu_bc <- 
-  apply(exp(postH$sims.list$mu_bc), c(2, 3), mean) %>%
-  t() %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
-         source = "model") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
   t() %>%
@@ -352,8 +351,10 @@ rbind(bc_mod, bc_obs) %>%
   geom_point() +
   geom_line() +
   coord_cartesian(ylim = c(0, 2)) +
-  geom_line(aes(y = bc, color = source), data = mu_bc) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
   facet_wrap(. ~ area)
+postH$mean$u
+postH$mean$q
 
 # * P(Harvested) --------------------------------------------------------
 # ** annual estimates  --------------------------------------------------------

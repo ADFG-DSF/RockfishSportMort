@@ -16,10 +16,9 @@ model{
   }
   
  for (a in 1:A){
-  bc_int[a] ~ dnorm(0, 0.001)
-  bc_slo[a] ~ dnorm(0, 0.001)
-  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
-  sd_bc[a] ~ dunif(0, 10)
+#  mu_bc[a] ~ dnorm(0, 0.001)
+#  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
+#  sd_bc[a] ~ dunif(0, 10)
   b1_pG[a] ~ dunif(1, 50)
   b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
@@ -52,8 +51,7 @@ model{
    Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(mu_bc[a,y], tau_bc[a])
-   mu_bc[a, y] <- bc_int[a] + bc_slo[a] * y
+   #logbc[a, y] ~ dnorm(mu_bc[a,y], tau_bc[a])
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	
@@ -79,9 +77,20 @@ model{
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
    }
   }
+
+ logbc[a, 1] ~ dnorm(logbc0[a] + u[a], inv.q[a]);
+ for(y in 2:Y) {
+  logbc[a, y] ~ dnorm(logbc[a, y-1] + u[a], inv.q[a]);
+ }
+ 
+ u[a] ~ dnorm(0, 0.01); 
+ inv.q[a] ~ dgamma(0.001,0.001); 
+ q[a] <- 1/inv.q[a]/inv.q[a];
+ logbc0[a] ~ dnorm(0, 0.001);
+ 
  #Spline parameters
  prec[a] <- pow(sigma[a], -2)
- sigma[a] ~ dunif(0, 10) 
+ sigma[a] <- 0.5 #~ dunif(0, 10) 
  beta[a, 1:C] ~ dmnorm(zero[1:C] + beta0[a], lambda[a] * Q[1:C, 1:C])
  gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
  lambda[a] ~ dgamma(0.001, 0.001)
