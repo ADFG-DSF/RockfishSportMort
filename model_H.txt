@@ -16,11 +16,12 @@ model{
   }
   
  for (a in 1:A){
-  mu_bc[a] ~ dnorm(0, 0.001)
+  bc_int[a] ~ dnorm(0, 0.001)
+  bc_slo[a] ~ dnorm(0, 0.001)
   tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
-  sd_bc[a] <- .5 #~ dunif(0, 10)
-  b1_pG[a] ~ dunif(1, 100)
-  b2_pG[a] ~ dunif(1, 100)
+  sd_bc[a] ~ dunif(0, 10)
+  b1_pG[a] ~ dunif(1, 50)
+  b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
   pH_slo[a] ~ dnorm(0, 0.001)
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
@@ -51,7 +52,8 @@ model{
    Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a])
+   logbc[a, y] ~ dnorm(mu_bc[a,y], tau_bc[a])
+   mu_bc[a, y] <- bc_int[a] + bc_slo[a] * y
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	

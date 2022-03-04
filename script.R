@@ -139,7 +139,7 @@ jags_dat <-
       cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
             matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
     Z = Z,
-    Q = makeQ(2, C),
+    Q = diag(16), #makeQ(2, C),
     zero = rep(0, C),
     comp_area = comp$area_n,
     comp_year = comp$year_n,
@@ -155,7 +155,7 @@ jags_dat <-
 
 # Run Jags --------------------------------------------------------
 ni <- 5E3; nb <- ni*.25; nc <- 3; nt <- 1;
-params <- c("logbc", "mu_bc", "sd_bc",
+params <- c("logbc", "mu_bc",
             "pG", "b1_pG", "b2_pG",
             "pH", "pH_int", "pH_slo",
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
@@ -173,7 +173,7 @@ postH <-
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
-postH
+ postH
 saveRDS(postH, ".\\postH.rds")
 postH <- readRDS(".\\postH.rds")
 
@@ -300,7 +300,7 @@ rbind(pG_mod, pG_obs) %>%
 
 # * SWHS bias --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-exp(postH$sims.list$mu_bc) %>%
+exp(postH$sims.list$bc_int) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
@@ -322,11 +322,14 @@ postH$sims.list$sd_bc %>%
 
 # ** annual estimates --------------------------------------------------------
 mu_bc <- 
-  data.frame(model = apply(exp(postH$sims.list$mu_bc), 2, mean),
-             observed = apply(jags_dat$Hhat_ayg/jags_dat$Hlb_ayg, 1, mean, na.rm = TRUE),
-             stat = "mean",
-             area = unique(H_ayg$area)) %>%
-  pivot_longer(model:observed, names_to = "source", values_to = "bc")
+  apply(exp(postH$sims.list$mu_bc), c(2, 3), mean) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
   t() %>%
@@ -349,7 +352,7 @@ rbind(bc_mod, bc_obs) %>%
   geom_point() +
   geom_line() +
   coord_cartesian(ylim = c(0, 2)) +
-  geom_hline(aes(yintercept = bc, color = source), data = mu_bc) +
+  geom_line(aes(y = bc, color = source), data = mu_bc) +
   facet_wrap(. ~ area)
 
 # * P(Harvested) --------------------------------------------------------
