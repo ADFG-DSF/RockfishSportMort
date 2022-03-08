@@ -154,13 +154,14 @@ jags_dat <-
     comp_pelagic = comp$pelagic,
     comp_black = comp$black,
     N = dim(comp)[1],
-    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
+    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
+    block = c(rep(1, Y - 6), 2, 2, 2, 3, 3, 3)
     )
 
 
 # Run Jags --------------------------------------------------------
-ni <- 5E3; nb <- ni*.25; nc <- 3; nt <- 1;
-params <- c("logbc", "q", "u", #"mu_bc", "sd_bc",
+ni <- 5E3; nb <- ni*.5; nc <- 3; nt <- 1;
+params <- c("logbc", "mu_bc", "sd_bc",
             "pG", "b1_pG", "b2_pG",
             "pH", "pH_int", "pH_slo",
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
@@ -306,7 +307,7 @@ rbind(pG_mod, pG_obs) %>%
 
 # * SWHS bias --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-exp(postH$sims.list$bc_int) %>%
+exp(postH$sims.list$mu_bc) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
@@ -353,8 +354,6 @@ rbind(bc_mod, bc_obs) %>%
   coord_cartesian(ylim = c(0, 2)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
   facet_wrap(. ~ area)
-postH$mean$u
-postH$mean$q
 
 # * P(Harvested) --------------------------------------------------------
 # ** annual estimates  --------------------------------------------------------
