@@ -262,6 +262,18 @@ as.data.frame(
     geom_line() + 
     facet_wrap(. ~ area, scales = "free")
 
+# ** logbook residuals --------------------------------------------------------
+as.data.frame(
+  t(log(postH$mean$H_ayg)) - t(log(jags_dat$Hlb_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = 1996:2019) %>%
+  pivot_longer(!year, names_to = "area", values_to = "res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = res)) +
+  geom_point() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area)
+
 # * User comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
 pG <- postH$sims.list$b1_pG / (postH$sims.list$b1_pG + postH$sims.list$b2_pG) %>%
@@ -313,19 +325,13 @@ exp(postH$sims.list$mu_bc) %>%
    geom_vline(aes(xintercept = 1)) +
    facet_wrap(.~area)
 # ** sd by area --------------------------------------------------------
-postH$sims.list$sd_bc[,,1] %>%
+postH$sims.list$sd_bc %>%
   as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE), block = "early") %>%
-  rbind(postH$sims.list$sd_bc[,,2] %>%
-          as.data.frame() %>%
-          setNames(nm = unique(H_ayg$area)) %>%
-          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
-          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE), block = "late")) %>%
-  ggplot(aes(x = se_bc, fill = block)) +
-  geom_histogram(binwidth = 0.1) +
-  facet_wrap(.~area) + coord_cartesian(xlim = c(0, 1))
+  setNames(nm = unique(Hhat_ay$year)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "year", values_to = "se_bc") %>%
+  ggplot(aes(x = se_bc)) +
+   geom_histogram(binwidth = 0.1) +
+   facet_wrap(.~year) + coord_cartesian(xlim = c(0, 1))
 
 # ** annual estimates --------------------------------------------------------
 mu_bc <- 

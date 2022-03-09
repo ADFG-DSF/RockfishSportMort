@@ -17,12 +17,11 @@ model{
   mu_beta0_black[r] ~ dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.001, 0.001)
   }
-
+ for(y in 1:Y){
+  tau_bc[y] <- 1 / sd_bc[y] / sd_bc[y]
+  sd_bc[y] ~ dunif(0, 10)
+ }
  for (a in 1:A){
-  for(b in 1:2){
-   tau_bc[a, b] <- 1 / sd_bc[a, b] / sd_bc[a, b]
-   sd_bc[a, b] ~ dunif(0, 10)
-  }
   mu_bc[a] ~ dnorm(0, 0.001)
 #  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
 #  sd_bc[a] <- .75 #~ dunif(0, 10) Need to find a better number or method
@@ -67,7 +66,7 @@ model{
    Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a, block[y]])
+   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[y])
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	
