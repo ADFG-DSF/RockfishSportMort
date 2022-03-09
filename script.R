@@ -113,23 +113,24 @@ comp <-
                  year_n = year - 1995, 
                  source = 0, #Logbook = 0
                  black = NA) %>% 
-          select(year_n, area_n, user_n, source, N = H, pelagic = Hp, black),
+          select(year_n, area_n, user_n, source, N = H, pelagic = Hp, black, yellow = Hye),
         S_ayu %>% 
           mutate(area_n = as.numeric(area), 
                  user_n = ifelse(user == "charter", 0, 1), 
                  year_n = year - 1995, 
                  source = 1) %>% 
-          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n))
+          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, 
+                 black = black_n, yellow = ye_n))
 
-matrix_H_ayg <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
-matrix_H_ayg[4, 1:5] <- NA
-matrix_C_ayg <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
-matrix_C_ayg[4, 1:5] <- NA
+matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_Hhat_ay[4, 1:5] <- NA
+matrix_Chat_ay <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_Chat_ay[4, 1:5] <- NA
 
 jags_dat <- 
   list(
     A = A, Y = Y, C = C,
-    Hhat_ay = matrix_H_ayg,
+    Hhat_ay = matrix_Hhat_ay,
     cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
     Chat_ay = matrix_C_ayg,
@@ -153,9 +154,10 @@ jags_dat <-
     comp_N = comp$N,
     comp_pelagic = comp$pelagic,
     comp_black = comp$black,
+    comp_yellow = comp$yellow,
     N = dim(comp)[1],
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
-    block = c(rep(1, Y - 6), 2, 2, 2, 3, 3, 3)
+    block = c(rep(1, 19), rep(2, 5))
     )
 
 
@@ -165,10 +167,12 @@ params <- c("logbc", "mu_bc", "sd_bc",
             "pG", "b1_pG", "b2_pG",
             "pH", "pH_int", "pH_slo",
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
+            "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "mu_beta0_yellow", "tau_beta0_yellow",
             "p_black", "beta0_black", "beta1_black", "beta2_black", "mu_beta0_black", "tau_beta0_black",
             "re_pelagic", "sd_comp", 
              "Htrend_ay", "H_ay", "sigma", "lambda", "H_ayg", "H_ayu", 
              "Hb_ayg", "Hb_ayu", "Hb_ay",
+             "Hy_ayg", "Hy_ayu", "Hy_ay",
              "logHhat_ay") 
 
 postH <- 
@@ -212,16 +216,6 @@ as.data.frame(
   ggplot(aes(x = year, y = H, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
-
-# ** sigma by area --------------------------------------------------------
-postH$sims.list$sigma %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = bc)) +
-  geom_histogram(binwidth = 0.1) +
-  facet_wrap(.~area)
 
 # ** observation error --------------------------------------------------------
 as.data.frame(
@@ -307,25 +301,31 @@ rbind(pG_mod, pG_obs) %>%
 
 # * SWHS bias --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
+#note: artificially wide thanks to fixed sd_bc
 exp(postH$sims.list$mu_bc) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = bc)) +
-    geom_histogram(binwidth = 0.1) +
-    coord_cartesian(xlim = c(0, 2)) +
-    geom_vline(aes(xintercept = 1)) +
-    facet_wrap(.~area)
+   geom_histogram(binwidth = .1) +
+   coord_cartesian(xlim = c(0, 2)) +
+   geom_vline(aes(xintercept = 1)) +
+   facet_wrap(.~area)
 # ** sd by area --------------------------------------------------------
-postH$sims.list$sd_bc %>%
+postH$sims.list$sd_bc[,,1] %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = bc)) +
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE), block = "early") %>%
+  rbind(postH$sims.list$sd_bc[,,2] %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE), block = "late")) %>%
+  ggplot(aes(x = se_bc, fill = block)) +
   geom_histogram(binwidth = 0.1) +
-  facet_wrap(.~area)
+  facet_wrap(.~area) + coord_cartesian(xlim = c(0, 1))
 
 # ** annual estimates --------------------------------------------------------
 mu_bc <- 

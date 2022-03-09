@@ -1,26 +1,31 @@
 
 model{
  tau_comp <- 1 / sd_comp / sd_comp
- sd_comp <- .3
+ sd_comp ~ dunif(0, 10)
  
  for(n in 1:N){ #composition likelihoods
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
   comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n] + 1], comp_pelagic[n])
+  comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
     }
  
  for(r in 1:3){ #priors for mean composition
   mu_beta0_pelagic[r] ~ dnorm(0, 0.001)
   tau_beta0_pelagic[r] ~ dgamma(0.001, 0.001)
+  mu_beta0_yellow[r] ~ dnorm(0, 0.001)
+  tau_beta0_yellow[r] ~ dgamma(0.001, 0.001)
   mu_beta0_black[r] ~ dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.001, 0.001)
   }
 
  for (a in 1:A){
-  for(b in 1:3){
-   mu_bc[a, b] ~ dnorm(0, 0.001)
+  for(b in 1:2){
    tau_bc[a, b] <- 1 / sd_bc[a, b] / sd_bc[a, b]
    sd_bc[a, b] ~ dunif(0, 10)
   }
+  mu_bc[a] ~ dnorm(0, 0.001)
+#  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
+#  sd_bc[a] <- .75 #~ dunif(0, 10) Need to find a better number or method
   b1_pG[a] ~ dunif(1, 50)
   b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
@@ -29,6 +34,10 @@ model{
   beta1_pelagic[a] ~ dnorm(0, 0.001)
   beta2_pelagic[a] ~ dnorm(0, 0.001)
   beta3_pelagic[a] ~ dnorm(0, 0.001)
+  beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
+  beta1_yellow[a] ~ dnorm(0, 0.001)
+  beta2_yellow[a] ~ dnorm(0, 0.001)
+  beta3_yellow[a] ~ dnorm(0, 0.001)
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
@@ -38,7 +47,7 @@ model{
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
   for(y in 3:Y){ #logbook likelihood
-   Hlb_ayg[a, y] ~ dlnorm(logH_ay[a, y] - logbc[a, y] + log(pG[a, y]), 10)
+   Hlb_ayg[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - logbc[a, y] + log(pG[a, y]), 10)
   }
 	
   for(y in 1:Y){
@@ -51,9 +60,14 @@ model{
    Hb_ayg[a, y] <- H_ayg[a, y] * p_pelagic[a, y, 1, 1] * p_black[a, y, 1]
    Hb_ayu[a, y] <- H_ayu[a, y] * p_pelagic[a, y, 2, 1] * p_black[a, y, 2]
    Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
+
+   #Yelloweye rockfish
+   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1, 1]) * p_yellow[a, y, 1, 1]
+   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2, 1]) * p_yellow[a, y, 2, 1]
+   Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(mu_bc[a, block[y]], tau_bc[a, block[y]])
+   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a, block[y]])
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	
@@ -73,16 +87,21 @@ model{
    logit(p_pelagic[a, y, 1, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] + re_pelagic[a, y, 1]
    logit(p_pelagic[a, y, 2, 1]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
    logit(p_pelagic[a, y, 2, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
+   logit(p_yellow[a, y, 1, 1]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] + beta3_yellow[a] + re_yellow[a, y, 1]
+   logit(p_yellow[a, y, 1, 2]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] + re_yellow[a, y, 1]
+   logit(p_yellow[a, y, 2, 1]) <- beta0_yellow[a] + beta1_yellow[a] * y + re_yellow[a, y, 2]
+   logit(p_yellow[a, y, 2, 2]) <- beta0_yellow[a] + beta1_yellow[a] * y + re_yellow[a, y, 2]
    for(u in 1:2){
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
+    re_yellow[a, y, u] ~ dnorm(0, tau_comp)
    }
   }
  
  #Spline parameters
  prec[a] <- pow(sigma[a], -2)
- sigma[a] <- 0.5 #~ dunif(0, 10) 
+ sigma[a] <- 0.5 #should find a better value but otherwise does not fit logbook. ~ dunif(0, 10) 
  beta[a, 1:C] ~ dmnorm(zero[1:C] + beta0[a], lambda[a] * Q[1:C, 1:C])
  gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
  lambda[a] ~ dgamma(0.001, 0.001)
