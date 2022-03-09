@@ -2,6 +2,7 @@
 model{
  tau_comp <- 1 / sd_comp / sd_comp
  sd_comp ~ dunif(0, 10)
+ lambda_bc ~ dgamma(0.001, 0.001)
  
  for(n in 1:N){ #composition likelihoods
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
@@ -17,14 +18,8 @@ model{
   mu_beta0_black[r] ~ dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.001, 0.001)
   }
- for(y in 1:Y){
-  tau_bc[y] <- 1 / sd_bc[y] / sd_bc[y]
-  sd_bc[y] ~ dunif(0, 10)
- }
+
  for (a in 1:A){
-  mu_bc[a] ~ dnorm(0, 0.001)
-#  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
-#  sd_bc[a] <- .75 #~ dunif(0, 10) Need to find a better number or method
   b1_pG[a] ~ dunif(1, 50)
   b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
@@ -46,7 +41,7 @@ model{
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
   for(y in 3:Y){ #logbook likelihood
-   Hlb_ayg[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - logbc[a, y] + log(pG[a, y]), 10)
+   Hlb_ayg[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - logbc[a, y] + log(pG[a, y]), 100)
   }
 	
   for(y in 1:Y){
@@ -66,7 +61,8 @@ model{
    Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[y])
+   logbc[a, y] ~ dnorm(bctrend[a, y], prec_bc[a])
+   bctrend[a, y] <- Z[y, ] %*% beta_bc[a, 1:C]
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	
@@ -105,5 +101,11 @@ model{
  gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
  lambda[a] ~ dgamma(0.001, 0.001)
  beta0[a] ~ dnorm(0, 1e-6)
+
+ prec_bc[a] <- pow(sigma_bc[a], -2)
+ sigma_bc[a] ~ dunif(0, 10)
+ beta_bc[a, 1:C] ~ dmnorm(zero[1:C] + beta0_bc[a], lambda_bc * Q[1:C, 1:C])
+ gamma_bc[a, 1:C] <- beta_bc[a, 1:C] - beta0_bc[a]
+ beta0_bc[a] ~ dnorm(0, 1e-6)
  }
 }

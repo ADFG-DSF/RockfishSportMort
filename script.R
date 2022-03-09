@@ -156,8 +156,7 @@ jags_dat <-
     comp_black = comp$black,
     comp_yellow = comp$yellow,
     N = dim(comp)[1],
-    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
-    block = c(rep(1, 19), rep(2, 5))
+    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
 
@@ -173,7 +172,7 @@ params <- c("logbc", "mu_bc", "sd_bc",
              "Htrend_ay", "H_ay", "sigma", "lambda", "H_ayg", "H_ayu", 
              "Hb_ayg", "Hb_ayu", "Hb_ay",
              "Hy_ayg", "Hy_ayu", "Hy_ay",
-             "logHhat_ay") 
+             "logHhat_ay", "sd_bcre", "bctrend", "prec_bc") 
 
 postH <- 
   jagsUI::jags(
@@ -272,6 +271,7 @@ as.data.frame(
   ggplot(aes(x = year, y = res)) +
   geom_point() +
   geom_hline(aes(yintercept = 0)) +
+  coord_cartesian(ylim = c(-.5, 0.5)) +
   facet_wrap(. ~ area)
 
 # * User comp --------------------------------------------------------
@@ -312,30 +312,7 @@ rbind(pG_mod, pG_obs) %>%
   facet_wrap(. ~ area)
 
 # * SWHS bias --------------------------------------------------------
-# ** mean by area --------------------------------------------------------
-#note: artificially wide thanks to fixed sd_bc
-exp(postH$sims.list$mu_bc) %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = bc)) +
-   geom_histogram(binwidth = .1) +
-   coord_cartesian(xlim = c(0, 2)) +
-   geom_vline(aes(xintercept = 1)) +
-   facet_wrap(.~area)
-# ** sd by area --------------------------------------------------------
-postH$sims.list$sd_bc %>%
-  as.data.frame() %>%
-  setNames(nm = unique(Hhat_ay$year)) %>%
-  pivot_longer(cols = where(is.numeric), names_to = "year", values_to = "se_bc") %>%
-  ggplot(aes(x = se_bc)) +
-   geom_histogram(binwidth = 0.1) +
-   facet_wrap(.~year) + coord_cartesian(xlim = c(0, 1))
-
 # ** annual estimates --------------------------------------------------------
-mu_bc <- 
-  data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
   t() %>%
@@ -352,11 +329,21 @@ bc_obs <-
   mutate(year = unique(Hhat_ayg$year),
          source = "observed") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc")
+bc_trend <- 
+  exp(postH$mean$bctrend) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 rbind(bc_mod, bc_obs) %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point() +
   geom_line() +
+  geom_line(data = bc_trend) +
   coord_cartesian(ylim = c(0, 2)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
   facet_wrap(. ~ area)
