@@ -20,6 +20,9 @@ model{
   }
 
  for (a in 1:A){
+  mu_bc[a] ~ dnorm(0, 0.001)
+  tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
+  sd_bc[a] ~ dunif(0, 10)
   b1_pG[a] ~ dunif(1, 50)
   b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
@@ -41,7 +44,7 @@ model{
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
   for(y in 3:Y){ #logbook likelihood
-   Hlb_ayg[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - logbc[a, y] + log(pG[a, y]), 100)
+   Hlb_ayg[a, y] ~ dpois(exp(logH_ay[a, y]) * pG[a, y])
   }
 	
   for(y in 1:Y){
@@ -61,8 +64,7 @@ model{
    Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
    
    #SWHS Bias and user comp
-   logbc[a, y] ~ dnorm(bctrend[a, y], prec_bc[a])
-   bctrend[a, y] <- Z[y, ] %*% beta_bc[a, 1:C]
+   logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a])
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
    
    #SWHS total likelihood	
@@ -96,16 +98,10 @@ model{
  
  #Spline parameters
  prec[a] <- pow(sigma[a], -2)
- sigma[a] <- 0.5 #should find a better value but otherwise does not fit logbook. ~ dunif(0, 10) 
+ sigma[a] <- 0.25 #~ dunif(0, 10) 
  beta[a, 1:C] ~ dmnorm(zero[1:C] + beta0[a], lambda[a] * Q[1:C, 1:C])
  gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
  lambda[a] ~ dgamma(0.001, 0.001)
  beta0[a] ~ dnorm(0, 1e-6)
-
- prec_bc[a] <- pow(sigma_bc[a], -2)
- sigma_bc[a] ~ dunif(0, 10)
- beta_bc[a, 1:C] ~ dmnorm(zero[1:C] + beta0_bc[a], lambda_bc * Q[1:C, 1:C])
- gamma_bc[a, 1:C] <- beta_bc[a, 1:C] - beta0_bc[a]
- beta0_bc[a] ~ dnorm(0, 1e-6)
  }
 }

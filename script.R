@@ -103,7 +103,7 @@ Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
-C<- 16
+C<- 7
 Z <- bspline(1:24, K = C)
 
 comp <-
@@ -133,7 +133,7 @@ jags_dat <-
     Hhat_ay = matrix_Hhat_ay,
     cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
-    Chat_ay = matrix_C_ayg,
+    Chat_ay = matrix_Chat_ay,
     cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
     Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
@@ -161,7 +161,7 @@ jags_dat <-
 
 
 # Run Jags --------------------------------------------------------
-ni <- 5E3; nb <- ni*.5; nc <- 3; nt <- 1;
+ni <- 5E3; nb <- ni*.5; nc <- 3; nt <- 10;
 params <- c("logbc", "mu_bc", "sd_bc",
             "pG", "b1_pG", "b2_pG",
             "pH", "pH_int", "pH_slo",
@@ -172,7 +172,7 @@ params <- c("logbc", "mu_bc", "sd_bc",
              "Htrend_ay", "H_ay", "sigma", "lambda", "H_ayg", "H_ayu", 
              "Hb_ayg", "Hb_ayu", "Hb_ay",
              "Hy_ayg", "Hy_ayu", "Hy_ay",
-             "logHhat_ay", "sd_bcre", "bctrend", "prec_bc") 
+             "logHhat_ay") 
 
 postH <- 
   jagsUI::jags(
@@ -263,7 +263,7 @@ as.data.frame(
 
 # ** logbook residuals --------------------------------------------------------
 as.data.frame(
-  t(log(postH$mean$H_ayg)) - t(log(jags_dat$Hlb_ayg))) %>%
+  t(postH$mean$H_ayg) - t(jags_dat$Hlb_ayg)) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = 1996:2019) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
@@ -271,7 +271,6 @@ as.data.frame(
   ggplot(aes(x = year, y = res)) +
   geom_point() +
   geom_hline(aes(yintercept = 0)) +
-  coord_cartesian(ylim = c(-.5, 0.5)) +
   facet_wrap(. ~ area)
 
 # * User comp --------------------------------------------------------
@@ -312,7 +311,28 @@ rbind(pG_mod, pG_obs) %>%
   facet_wrap(. ~ area)
 
 # * SWHS bias --------------------------------------------------------
+# ** mean by area --------------------------------------------------------
+exp(postH$sims.list$mu_bc) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = bc)) +
+  geom_histogram(binwidth = .1) +
+  coord_cartesian(xlim = c(0, 2)) +
+  geom_vline(aes(xintercept = 1)) +
+  facet_wrap(.~area)
+# ** sd by area --------------------------------------------------------
+postH$sims.list$sd_bc %>%
+  as.data.frame() %>%
+  setNames(nm = unique(Hhat_ay$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = se_bc)) +
+  geom_histogram(binwidth = 0.1) +
+  facet_wrap(.~area) + coord_cartesian(xlim = c(0, 1))
 # ** annual estimates --------------------------------------------------------
+mu_bc <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
   t() %>%
@@ -329,21 +349,11 @@ bc_obs <-
   mutate(year = unique(Hhat_ayg$year),
          source = "observed") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc")
-bc_trend <- 
-  exp(postH$mean$bctrend) %>%
-  t() %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
-         source = "model") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 rbind(bc_mod, bc_obs) %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point() +
   geom_line() +
-  geom_line(data = bc_trend) +
   coord_cartesian(ylim = c(0, 2)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
   facet_wrap(. ~ area)
