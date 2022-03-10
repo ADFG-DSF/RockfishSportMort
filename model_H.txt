@@ -1,87 +1,107 @@
 
 model{
  tau_comp <- 1 / sd_comp / sd_comp
- sd_comp <- .3
+ sd_comp ~ dunif(0, 10)
+ lambda_bc ~ dgamma(0.001, 0.001)
  
- for(n in 1:N){
+ for(n in 1:N){ #composition likelihoods
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
   comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n] + 1], comp_pelagic[n])
+  comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1, comp_source[n] + 1], comp_N[n])
     }
  
- for(r in 1:3){
+ for(r in 1:3){ #priors for mean composition
   mu_beta0_pelagic[r] ~ dnorm(0, 0.001)
   tau_beta0_pelagic[r] ~ dgamma(0.001, 0.001)
+  mu_beta0_yellow[r] ~ dnorm(0, 0.001)
+  tau_beta0_yellow[r] ~ dgamma(0.001, 0.001)
   mu_beta0_black[r] ~ dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.001, 0.001)
   }
-  
+
  for (a in 1:A){
   mu_bc[a] ~ dnorm(0, 0.001)
   tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]
-  sd_bc[a] ~ dunif(0, 1)
-  b1[a] ~ dunif(1, 100)
-  b2[a] ~ dunif(1, 100)
+  sd_bc[a] ~ dunif(0, 10)
+  b1_pG[a] ~ dunif(1, 50)
+  b2_pG[a] ~ dunif(1, 50)
   pH_int[a] ~ dnorm(0, 0.001)
   pH_slo[a] ~ dnorm(0, 0.001)
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_pelagic[a] ~ dnorm(0, 0.001)
   beta2_pelagic[a] ~ dnorm(0, 0.001)
   beta3_pelagic[a] ~ dnorm(0, 0.001)
+  beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
+  beta1_yellow[a] ~ dnorm(0, 0.001)
+  beta2_yellow[a] ~ dnorm(0, 0.001)
+  beta3_yellow[a] ~ dnorm(0, 0.001)
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
 	
-  for(y in 16:Y){
+  for(y in 16:Y){ #guided SWHS likelihood
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
-   Hhat_ayg[a, y] ~ dlnorm(log(H_ayg[a, y]) - logbc[a, y], tauHhat_ayg[a, y])
-   tauHhat_ayp[a, y] <- 1 / log(cvHhat_ayp[a, y] * cvHhat_ayp[a, y] + 1)
-   Hhat_ayp[a, y] ~ dlnorm(log(Hhat_ay[a, y]) + log(pU[a, y]), tauHhat_ayg[a, y])
+   Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
-  for(y in 3:Y){
-   H_ayu[a, y] <- H_ay[a, y] - H_ayg[a, y]
-  }
- 
-  for(y in 1:2){
-   H_ayu[a, y] <- H_ay[a, y] * pU[a, y]
+  for(y in 3:Y){ #logbook likelihood
+   Hlb_ayg[a, y] ~ dpois(exp(logH_ay[a, y]) * pG[a, y])
   }
 	
   for(y in 1:Y){
-   H2_ayg[a, y] <- H_ay[a, y] * (1 - pU[a, y])
-   H2_ayu[a, y] <- H_ay[a, y] * pU[a, y]
-   H_ay[a, y] <- exp(muHhat_ay[a, y])
+   #Harvest
+   H_ayg[a, y] <- H_ay[a, y] * pG[a, y]
+   H_ayu[a, y] <- H_ay[a, y] * (1 - pG[a, y])
+   H_ay[a, y] <- exp(logH_ay[a, y])
   
-   Hb_ayg[a, y] <- H2_ayg[a, y] * p_pelagic[a, y, 1, 1] * p_black[a, y, 1]
-   Hb_ayu[a, y] <- H2_ayu[a, y] * p_pelagic[a, y, 2, 1] * p_black[a, y, 2]
+   #Black rockfish
+   Hb_ayg[a, y] <- H_ayg[a, y] * p_pelagic[a, y, 1, 1] * p_black[a, y, 1]
+   Hb_ayu[a, y] <- H_ayu[a, y] * p_pelagic[a, y, 2, 1] * p_black[a, y, 2]
    Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
+
+   #Yelloweye rockfish
+   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1, 1]) * p_yellow[a, y, 1, 1]
+   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2, 1]) * p_yellow[a, y, 2, 1]
+   Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
    
+   #SWHS Bias and user comp
    logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a])
-   pU[a, y] ~ dbeta(b1[a], b2[a])
-		
+   pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])
+   
+   #SWHS total likelihood	
    tauHhat_ay[a, y] <- 1 / log(cvHhat_ay[a, y] * cvHhat_ay[a, y] + 1)
-   Hhat_ay[a, y] ~ dlnorm(muHhat_ay[a, y] - logbc[a, y], tauHhat_ay[a, y])
-   muHhat_ay[a, y] ~ dnorm(Htrend_ay[a, y], prec[a]) #T(log(H_ayg[a, y]), )
+   Hhat_ay[a, y] ~ dlnorm(logHhat_ay[a, y], tauHhat_ay[a, y])
+   logHhat_ay[a, y] <- logH_ay[a, y] + logbc[a, y]
+   logH_ay[a, y] ~ dnorm(Htrend_ay[a, y], prec[a])
    Htrend_ay[a, y] <- Z[y, ] %*% beta[a, 1:C]
-		
+
+   #Proportion harvested   
    logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y
    tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
    Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
    
+   #Composition logistic regression
    logit(p_pelagic[a, y, 1, 1]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] + beta3_pelagic[a] + re_pelagic[a, y, 1]
    logit(p_pelagic[a, y, 1, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] + re_pelagic[a, y, 1]
    logit(p_pelagic[a, y, 2, 1]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
    logit(p_pelagic[a, y, 2, 2]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + re_pelagic[a, y, 2]
+   logit(p_yellow[a, y, 1, 1]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] + beta3_yellow[a] + re_yellow[a, y, 1]
+   logit(p_yellow[a, y, 1, 2]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] + re_yellow[a, y, 1]
+   logit(p_yellow[a, y, 2, 1]) <- beta0_yellow[a] + beta1_yellow[a] * y + re_yellow[a, y, 2]
+   logit(p_yellow[a, y, 2, 2]) <- beta0_yellow[a] + beta1_yellow[a] * y + re_yellow[a, y, 2]
    for(u in 1:2){
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
+    re_yellow[a, y, u] ~ dnorm(0, tau_comp)
    }
   }
-
- prec[a] <- pow(sigma[a], -2) 
+ 
+ #Spline parameters
+ prec[a] <- pow(sigma[a], -2)
+ sigma[a] <- 0.25 #~ dunif(0, 10) 
  beta[a, 1:C] ~ dmnorm(zero[1:C] + beta0[a], lambda[a] * Q[1:C, 1:C])
  gamma[a, 1:C] <- beta[a, 1:C] - beta0[a]
  lambda[a] ~ dgamma(0.001, 0.001)
  beta0[a] ~ dnorm(0, 1e-6)
- sigma[a] <- 0.5 #dunif(0.5, 10)
  }
 }
