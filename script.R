@@ -147,7 +147,6 @@ jags_dat <-
     comp_area = comp$area_n,
     comp_year = comp$year_n,
     comp_user = comp$user_n,
-    comp_source = comp$source,
     comp_N = comp$N,
     comp_pelagic = comp$pelagic,
     comp_black = comp$black,
@@ -390,15 +389,13 @@ data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$
 # * Composition --------------------------------------------------------
 # ** Pelagic annual  --------------------------------------------------------
 p_pelagic_mod <- 
-  rbind(postH$mean$p_pelagic[,,1,1] %>% t(),
-        postH$mean$p_pelagic[,,1,2] %>% t(),
-        postH$mean$p_pelagic[,,2,1] %>% t()) %>%
+  rbind(postH$mean$p_pelagic[,,1] %>% t(),
+        postH$mean$p_pelagic[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 3),
-         user = rep(c("charter", "charter", "private"), each = length(unique(Hhat_ay$year))),
-         source = rep(c("logbook", "SWHS", "SWHS"), each = length(unique(Hhat_ay$year)))) %>%
-  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_pelagic")  %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+  pivot_longer(-c(year, user), names_to = "area", values_to = "p_pelagic")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 p_pelagic_obs <-
   comp %>%
@@ -422,7 +419,7 @@ p_pelagic_trend <-
 p_pelagic_obs %>%
   ggplot(aes(x = year, y = p_pelagic, color = user)) +
   geom_point(aes(shape = source)) +
-  geom_line(data = p_pelagic_mod, aes(linetype = source)) +
+  geom_line(data = p_pelagic_mod) +
   geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)
