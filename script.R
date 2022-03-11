@@ -103,24 +103,17 @@ Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
-C<- 7
+C<- 5
 Z <- bspline(1:24, K = C)
 
-comp <-
-  rbind(H_ayg %>% 
-          mutate(area_n = as.numeric(area), 
-                 user_n = 0, 
-                 year_n = year - 1995, 
-                 source = 0, #Logbook = 0
-                 black = NA) %>% 
-          select(year_n, area_n, user_n, source, N = H, pelagic = Hp, black, yellow = Hye),
-        S_ayu %>% 
-          mutate(area_n = as.numeric(area), 
-                 user_n = ifelse(user == "charter", 0, 1), 
-                 year_n = year - 1995, 
-                 source = 1) %>% 
-          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, 
-                 black = black_n, yellow = ye_n))
+comp <- S_ayu %>% 
+         mutate(area_n = as.numeric(area), 
+          user_n = ifelse(user == "charter", 0, 1), 
+          year_n = year - 1995, 
+          source = 1) %>% 
+         select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n) %>%
+         filter(N != 0)
+  
 
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 matrix_Hhat_ay[4, 1:5] <- NA
@@ -138,6 +131,10 @@ jags_dat <-
       matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
     Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    Hlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                    matrix(H_ayg$Hp, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                    matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year))), byrow = TRUE),
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
                      matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
     cvHhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -271,7 +268,7 @@ as.data.frame(
   ggplot(aes(x = year, y = res)) +
   geom_point() +
   geom_hline(aes(yintercept = 0)) +
-  facet_wrap(. ~ area)
+  facet_wrap(. ~ area, scales = "free")
 
 # * User comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
@@ -408,9 +405,15 @@ p_pelagic_obs <-
     mutate(year = year_n + 1995,
            area = unique(H_ayg$area)[area_n],
            user = ifelse(user_n == 0, "charter", "private"),
-           source = ifelse(source == 1, "SWHS", "logbook"),
+           source = ifelse(source == 1, "sample", "logbook"),
            p_pelagic = pelagic / N,
-           area = factor(area, unique(H_ayg$area), ordered = TRUE))
+           area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  select(year, area, user, source, p_pelagic) %>%
+  rbind(H_ayg %>% 
+         mutate(p_pelagic = Hp / H, 
+         user = "charter", 
+         source = "logbook") %>% 
+         select(year, area, user, source, p_pelagic))
 p_pelagic_trend <-
   data.frame(
     p_pelagic = boot::inv.logit(
