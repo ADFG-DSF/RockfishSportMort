@@ -39,3 +39,29 @@ makeQ = function(degree, K, epsilon=1e-3){
   return( t(E) %*% E + x*epsilon)
 } 
 
+long <- function(df){
+  t(df) %>%
+    as.data.frame() %>%
+    setNames(unique(H_ayg$area)) %>%
+    mutate(year = unique(Hhat_ay$year)) %>%
+    pivot_longer(-year, names_to = "area", values_to = "val") %>%
+    mutate(val = round(val, 2)) %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+}
+
+tableH <- function(mean, sd, lb, ub){
+  mean %>%
+    left_join(sd, c("year", "area")) %>%
+    left_join(lb, c("year", "area")) %>% 
+    left_join(ub, c("year", "area")) %>%
+    rename(mean = val.x,
+           sd = val.y,
+           q2.5 = val.x.x,
+           q97.5 = val.y.y)
+}
+
+get_Rhat <- function(post, cutoff = 1.1){
+  list(
+    data.frame("Rhat" = post$summary[, "Rhat"][post$summary[, "Rhat"] > cutoff & !is.na(post$summary[, "Rhat"])]),
+    "R^ quantiles" = quantile(post$summary[, "Rhat"], probs = seq(0.9, 1, by = .01), na.rm = TRUE))
+}

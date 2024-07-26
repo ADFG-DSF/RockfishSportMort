@@ -44,6 +44,9 @@ model{
   for(y in 3:Y){ #logbook likelihood
    Hlb_ayg[a, y] ~ dpois(H_ayg[a, y])
    Hlbp_ayg[a, y] ~ dpois(H_ayg[a, y] * p_pelagic[a, y, 1])
+  }
+  
+  for(y in 11:Y){ #logbook likelihood
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
   }
 	
@@ -82,11 +85,11 @@ model{
    #Composition logistic regression
    for(u in 1:2){
     logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
-    logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1)# + re_yellow[a, y, u]
+    logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u]
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
-    re_yellow[a, y, u] ~ dnorm(0, 0.001)
+    re_yellow[a, y, u] ~ dnorm(0, tau_comp)
    }
   }
  

@@ -1,0 +1,18 @@
+#cannot use mvnorm on partially observed data.
+#not very useful since SWHS by user missing in early years. 
+model{
+ for (a in 1:A){
+  MVinvsigma[a, 1:2, 1:2] ~ dwish(R[1:2,1:2], 2)
+  MVsigma[a, 1:2, 1:2] <- inverse(MVinvsigma[a, ,])
+  for(j in 1:2){
+   beta[a, j, 1:C] ~ dmnorm(zero[1:C] + beta0[a, j], lambda[a, j] * Q[1:C, 1:C])
+   gamma[a, j, 1:C] <- beta[a, j, 1:C] - beta0[a, j]
+   lambda[a, j] ~ dgamma(0.001, 0.001)
+   beta0[a, j] ~ dnorm(0, 1e-6)
+  }
+  for(y in 1:Y){
+   SWHS[a, y, 3:4] ~ dmnorm(mu[a, y, ], MVinvsigma[a, , ])
+   for(j in 1:2){mu[a, y, j] <- Z[y, ] %*% beta[a, j, 1:C]}
+  } 
+ }
+}

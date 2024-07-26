@@ -1,7 +1,7 @@
 # Pelagic Harvest Composition -----------------------------------------------------
 library(ggplot2)
 library(tidyverse)
-source(".\\functions.R")
+source(".\\functions//functions.R")
 
 # Read data --------------------------------------------------------
 H_ayg <- readRDS(".//data//H_ayg.rds") %>% 
@@ -68,7 +68,7 @@ left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
   pivot_longer(starts_with("H"), names_to = "source", values_to = "H") %>%
   ggplot(aes(year, H, color = source)) +
   geom_line() +
-  facet_wrap(area ~ ., scales = "free")
+  facet_wrap(area ~ ., scales = "free_y")
 left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
   ggplot(aes(H_lb, Hhat, color = area)) +
   geom_abline() +
@@ -112,7 +112,8 @@ comp <- S_ayu %>%
           year_n = year - 1995, 
           source = 1) %>% 
          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n) %>%
-         filter(N != 0)
+         filter(N != 0) %>%
+         mutate(yellow = ifelse(N - pelagic ==0, NA, yellow))
   
 
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
@@ -134,7 +135,7 @@ jags_dat <-
     Hlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                     matrix(H_ayg$Hp, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
-                    matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year))), byrow = TRUE),
+                    matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
                      matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
     cvHhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -173,20 +174,22 @@ params <- c("logbc", "mu_bc", "sd_bc",
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\model_H.txt",
+    model.file = ".\\models\\model_H.txt",
     data = jags_dat, 
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
 postH
-saveRDS(postH, ".\\postH.rds")
-postH <- readRDS(".\\postH.rds")
+
+rhat <- get_Rhat(postH, cutoff = 1.15)
+rhat
+jagsUI::traceplot(postH, Rhat_min = 1.1)
+#saveRDS(postH, ".\\posts\\postH.rds")
+postH <- readRDS(".\\posts\\postH.rds")
 
 # Inspect posterior --------------------------------------------------------
-postH$mean$muHhat_ay
 postH$mean$lambda
 postH$mean$sigma
-postH$mean$beta
 postH$mean$H_ay
 postH$q2.5$pH_slo
 postH$mean$pH_slo
@@ -194,7 +197,6 @@ postH$q97.5$pH_slo
 postH$mean$sd_comp
 paste0(round(postH$mean$beta1_pelagic, 3), "(", round(postH$q2.5$beta1_pelagic, 3), ", ", round(postH$q97.5$beta1_pelagic, 3), ")")
 paste0(round(postH$mean$beta2_pelagic, 3), "(", round(postH$q2.5$beta2_pelagic, 3), ", ", round(postH$q97.5$beta2_pelagic, 3), ")")
-paste0(round(postH$mean$beta3_pelagic, 3), "(", round(postH$q2.5$beta3_pelagic, 3), ", ", round(postH$q97.5$beta3_pelagic, 3), ")")
 
 
 # * Harvest --------------------------------------------------------
@@ -267,6 +269,31 @@ as.data.frame(
   ggplot(aes(x = year, y = res)) +
   geom_point() +
   geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y")
+
+# ** SWHS residuals --------------------------------------------------------
+as.data.frame(
+  t(log(postH$mean$H_ay) + postH$mean$logbc) - t(log(jags_dat$Hhat_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = 1996:2019) %>%
+  pivot_longer(!year, names_to = "area", values_to = "res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = res)) +
+  geom_point() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y")
+
+# ** yelloweye logbook harvest vrs. model charter harvest --------------------------------------------------------
+as.data.frame(
+  rbind(t(postH$mean$Hy_ayg),
+        t(jags_dat$Hlby_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(1996:2019, times = 2),
+         source = rep(c("model", "logbook"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = H, linetype = source)) +
+  geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
 # * User comp --------------------------------------------------------
@@ -453,6 +480,39 @@ rbind(p_black_obs) %>%
   geom_point() +
   geom_line(data = p_black_mod) +
   geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+# ** yellow/non-pelagic annual  --------------------------------------------------------
+p_yellow_mod <- 
+  rbind(postH$mean$p_yellow[,,1] %>% t(),
+        postH$mean$p_yellow[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_yellow_obs <-
+  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1995,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_yellow = comp_yellow / (comp_N - comp_pelagic),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_yellow_trend <-
+  data.frame(
+    p_yellow = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_yellow, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+rbind(p_yellow_obs) %>%
+  ggplot(aes(x = year, y = p_yellow, color = user)) +
+  geom_point() +
+  geom_line(data = p_yellow_mod) +
+  geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)

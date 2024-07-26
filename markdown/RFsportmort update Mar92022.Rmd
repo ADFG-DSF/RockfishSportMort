@@ -1,0 +1,504 @@
+---
+title: "Rockfish Historical Harvest Estimates"
+author: "Adam Reimer"
+date: "3/13/2022"
+output: 
+  html_document:
+    self_contained: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(ggplot2)
+library(tidyverse)
+source("..\\functions\\functions.R")
+postH <- readRDS("..\\posts\\postH.rds")
+
+H_ayg <- readRDS("..\\data\\H_ayg.rds") %>% 
+  mutate(H_lb = ifelse(H == 0, 1, H))
+
+Hhat_ayu <- 
+  readRDS("..\\data\\Hhat_ayu.rds")  %>% 
+  mutate(Hhat = ifelse(H == 0, 1, H), 
+         seH = ifelse(seH == 0, 1, seH)) %>%
+  arrange(area, user, year)
+
+Hhat_ay <- 
+  readRDS("..\\data\\Hhat_ay.rds") %>% 
+  rename(Hhat = H) %>%
+  bind_rows(Hhat_ayu %>% 
+              group_by(region, area, year) %>% 
+              summarise(Hhat = sum(H), seH = sqrt(sum(seH^2)))) %>%
+  arrange(region, area, year) %>%
+  mutate(Hhat = ifelse(Hhat == 0, 1, Hhat), 
+         seH = ifelse(seH == 0, 1, seH))
+
+Chat_ay <- 
+  readRDS("..\\data\\Chat_ay.rds") %>% 
+  rename(Chat = C) %>%
+  bind_rows(readRDS("..\\data\\Chat_ayu.rds") %>% 
+              group_by(region, area, year) %>% 
+              summarise(Chat = sum(C), seC = sqrt(sum(seC^2)))) %>%
+  arrange(region, area, year) %>%
+  mutate(Chat = ifelse(Chat == 0, 1, Chat), 
+         seC = ifelse(seC == 0, 1, seC))
+
+S_ayu0 <- 
+  readRDS("..\\data\\S_ayu.rds") 
+S_ayu <- 
+  S_ayu0 %>%
+  bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
+                       year = rep(rep(1996:1997, each = 2), times = 6),
+                       user = rep(c("charter", "private"), times = 12),
+                       totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
+  arrange(user, area, year) %>%
+  filter(year >= 1996)
+
+Hhat_ayg <- Hhat_ayu %>% filter(user == "guided")
+Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
+A = length(unique(Hhat_ay$area))
+Y = length(unique(Hhat_ay$year))
+
+C<- 5
+Z <- bspline(1:24, K = C)
+
+comp <- S_ayu %>% 
+         mutate(area_n = as.numeric(area), 
+          user_n = ifelse(user == "charter", 0, 1), 
+          year_n = year - 1995, 
+          source = 1) %>% 
+         select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n) %>%
+         filter(N != 0) %>%
+         mutate(yellow = ifelse(N - pelagic ==0, NA, yellow))
+  
+
+matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_Hhat_ay[4, 1:5] <- NA
+matrix_Chat_ay <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
+matrix_Chat_ay[4, 1:5] <- NA
+
+jags_dat <- 
+  list(
+    A = A, Y = Y, C = C,
+    Hhat_ay = matrix_Hhat_ay,
+    cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
+      matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE),
+    Chat_ay = matrix_Chat_ay,
+    cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
+      matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
+    Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                  matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    Hlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                    matrix(H_ayg$Hp, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                    matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
+                     matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
+    cvHhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
+                       matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
+      cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
+            matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
+    Z = Z,
+    Q = makeQ(2, C),
+    zero = rep(0, C),
+    comp_area = comp$area_n,
+    comp_year = comp$year_n,
+    comp_user = comp$user_n,
+    comp_N = comp$N,
+    comp_pelagic = comp$pelagic,
+    comp_black = comp$black,
+    comp_yellow = comp$yellow,
+    N = dim(comp)[1],
+    regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
+    )
+```
+
+## Data
+Harvest data was available for 22 commercial fishing management areas in Southcentral and Southeast Alaska. Areas with negligible rockfish harvest were pooled with adjacent areas for analysis. Specifically the Aleutian and Bering areas were pooled into an area labeled BSAI; the IBS and EKYT were pooled into an area labeled EKYKT; the Southeast, Southwest, SAKPEN and Chignik areas were pooled into an area labeled SOKO2PEN and the Westside and Mainland areas were pooled into an area labeled WKMA.
+
+### Stateside Harvest Survey (SWHS)
+Statewide harvest survey estimates of rockfish catch and harvest are available for 24 years (1996-2019) for all users and for 9 years (2011-2019) for guided anglers. SWHS estimates are believed to be biased. Note that the first 5 years in the SWHS data set for PWSO seemed unreasonable (close to zero and not corroborated with logbook estimates) and were set to missing.
+
+### Creel Surveys
+Consult with Tania.
+
+### Guide Logbooks
+Sport fishing guides were required to report their harvest of rockfish for 22 years (1998-2019). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye rockfish were reported separately beginning in 2006.
+
+### Composition data
+Harvest sampling data exists from Gulf of Alaska areas since 1993 and from Southeast Alaska areas since 2006.
+
+## Process equations
+The true harvest of rockfish $H_{ay}$ for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
+
+\begin{equation}
+\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), 0.25)
+\end{equation} 
+
+where $f(a,y)$ in a p-spline basis with 5 components and a second degree penalty. A variance of 0.25 was assumed to allow substantial variability around the spline. 
+
+Charter and private harvest $H_{ayu}$ (where u = 1 for charter anglers and u=2 for private anglers) are a fraction of total annual harvest in each area:
+
+\begin{equation}
+H_{ay1}~=~H_{ay}P_{(user)ay1}\\H_{ay2}~=~H_{ay}(1-P_{(user)ay1})
+\end{equation}
+
+where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
+
+\begin{equation}
+P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a)
+\end{equation}
+
+with non-informative priors on both parameters. Annual black rockfish harvest for each area and user group $H_{(black)ayu}$ is:
+
+\begin{equation}
+H_{(black)ayu}~=~H_{ayu}P_{(pelagic)ayu}P_{(black|pelagic)ayu}
+\end{equation}
+
+where $P_{(pelagic)ayu}$ is the fraction of the annual harvest for each area and user group that was pelagic rockfish and $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.  Annual yelloweye rockfish harvest for each area and user group  $H_{(yelloweye)ayu}$:
+
+\begin{equation}
+H_{(yelloweye)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(yelloweye|non-pelagic)ayu}
+\end{equation}
+
+where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish. Composition parameters ($P_{(pelagic)ayu}$, $P_{(black|pelagic)ayu}$, $P_{(yelloweye|non-pelagic)ayu}$) were modeled logistic regression:
+
+\begin{equation}
+\textrm{logit}(P_{(comp)ayu})~=~\beta1_{(comp)ayu}+\beta2_{(comp)ayu}*y+\beta3_{(comp)ayu}*I(u=private)+re_{(comp)ayu}
+\end{equation}
+
+where the $\beta$ parameters are define the mean, temporal slope and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and ) otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior.
+
+## Observation equations
+SWHS estimates of annual rockfish harvest $\widehat{SWHS}_{ay}$ were assumed to index true harvest:
+
+\begin{equation}
+\widehat{SWHS}_{ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_{ay}), \sigma_{SWHSay}^2\right)
+\end{equation}
+
+where bias in the SWHS estimates $b_{ay}$ is modeled hierarchically across years as:
+
+\begin{equation}
+b_{ay}~\sim~\textrm{Normal}(\mu_{(b)a}, \sigma_{(b)a})
+\end{equation}
+
+with non-informative priors on both parameters. Reported guide logbook harvest $\widehat{LB}_{ay}$ is related to true harvest as:
+
+\begin{equation}
+\widehat{LB}_{ay}~\sim~\textrm{Poisson}(H_{ay1})\\
+\widehat{LB}_{(pelagic)ay}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})\\
+\widehat{LB}_{(yelloweye)ay}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})\\
+\end{equation}
+
+SWHS estimates of guided angler harvest $\widehat{SWHS}_{ay1}$ are related to total harvest by:
+
+\begin{equation}
+\widehat{SWHS}_{ay1}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)
+\end{equation}
+
+The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
+
+\begin{equation}
+x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})
+\end{equation}
+
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs and the number of yellow rockfish sampled modeled analogously with an appropriately substituted $N$.
+ 
+# Results
+## Estimate comparison
+Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. Note in the Figure 1 the y-axis uses the same scale for all 16 areas so we can get an idea of the major harvest areas. In the next two figures the y-axis scales separately for each plot so differences can be more easily noted.
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "Figure 1.- Total Rockfish Harvest 1996--2019."}
+H_mod <- tableH(long(postH$mean$H_ay), long(postH$sd$H_ay), long(postH$q2.5$H_ay), long(postH$q97.5$H_ay))
+H_point <- 
+  readxl::read_excel("..\\harvest estimates excel version_sw.xlsx",
+                     range = "rockfish harvests!B2:K331",
+                     col_types = c("numeric", "text", rep("skip", 7), "numeric"),
+                     col_names = c("year", "area", "H")) %>%
+  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND"))) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAS"), tolower(area), area),
+         area = ifelse(area == "northeas", "northeast", area)) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+ggplot(H_mod, aes(x = year, y = mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = q2.5, ymax = q97.5), alpha = .2) +
+  geom_point(data = H_point, aes(y = H)) +
+  facet_wrap(area~.) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Total Rockfish", x = "Year")
+```
+*Note*: Points represent the excel version.
+ 
+When looking at only black rockfish the most significant differences are for the Prince William Sound Inside area. I did not spend a great deal of time tracking this down although it looks like the previous version used bad values for $P_{(black)ayu}$ for at least unguided anglers. For the moment I would ignore the results for BSIA and SOKO2SAP. I think it is possible to give approximate values for these areas but it will require a little more coding which i have yet to do. 
+ 
+```{r, fig.width = 12, fig.height = 8, fig.cap = "Figure 2.- Black Rockfish Harvest 1996--2019."}
+Hb_mod <- tableH(long(postH$mean$Hb_ay), long(postH$sd$Hb_ay), long(postH$q2.5$Hb_ay), long(postH$q97.5$Hb_ay))
+Hb_point <- 
+  readxl::read_excel("..\\harvest estimates excel version_sw.xlsx",
+                     range = "BRF harvest!B3:V332",
+                     col_types = c("numeric", "text", rep("skip", 18), "numeric"),
+                     col_names = c("year", "area", "H")) %>%
+  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND"))) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAS"), tolower(area), area),
+         area = ifelse(area == "northeas", "northeast", area)) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+ggplot(Hb_mod, aes(x = year, y = mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = q2.5, ymax = q97.5), alpha = .2) +
+  geom_point(data = Hb_point, aes(y = H)) +
+  facet_wrap(area~., scales = "free_y") + 
+  theme_bw(base_size = 16) +
+  labs(y = "Black Rockfish", x = "Year")
+```
+*Note*: Points represent the excel version.
+
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "Figure 3.- Yellow Rockfish Harvest 1996--2019."}
+Hy_mod <- tableH(long(postH$mean$Hy_ay), long(postH$sd$Hy_ay), long(postH$q2.5$Hy_ay), long(postH$q97.5$Hy_ay))
+Hy_point <- 
+  readxl::read_excel("..\\harvest estimates excel version_sw.xlsx",
+                     range = "YE harvest!B3:Y332",
+                     col_types = c("numeric", "text", rep("skip", 21), "numeric"),
+                     col_names = c("year", "area", "H")) %>%
+  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND"))) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAS"), tolower(area), area),
+         area = ifelse(area == "northeas", "northeast", area)) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+ggplot(Hy_mod, aes(x = year, y = mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = q2.5, ymax = q97.5), alpha = .2) +
+  geom_point(data = Hy_point, aes(y = H)) +
+  facet_wrap(area~., scales = "free_y") + 
+  theme_bw(base_size = 16) +
+  labs(y = "Yelloweye Rockfish", x = "Year")
+```
+*Note*: Points represent the excel version.
+ 
+## Parameter estimates
+### P(Charter)
+ 
+These histograms show the posterior distribution of the mean percent of rockfish harvested by the charter fleet.
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "Figure 4.- Mean percent of harvest by charter anglers."}
+pG <- postH$sims.list$b1_pG / (postH$sims.list$b1_pG + postH$sims.list$b2_pG) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area))
+pG %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pG") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = pG)) +
+  geom_histogram(binwidth = 0.02) +
+  facet_wrap(.~area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Count", x = "Proportion")
+```
+ 
+When considered annually we see the percent of rockfish harvested by the charter fleet follows our data fairly well although we just do not have much information about this ratio. Prior to 2011 the percent charter is confounded with SWHS bias and should be mostly discounted. 
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "Figure 5.- Annual estimates of the percent of harvest by charter anglers for 16 commerical fishing manamgent areas, 1996-2019."}
+pG_mod <- 
+  postH$mean$pG %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG")
+pG_obs <- 
+  (jags_dat$Hhat_ayg/jags_dat$Hhat_ay)[,16:24] %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ayg$year),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG")
+rbind(pG_mod, pG_obs) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = pG, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Proportion", x = "Year")
+```
+ 
+### SWHS bias
+ 
+FIgure 6 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "Figure 6.- Mean SWHS bias."}
+exp(postH$sims.list$mu_bc) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = bc)) +
+  geom_histogram(binwidth = .1) +
+  coord_cartesian(xlim = c(0, 2)) +
+  geom_vline(aes(xintercept = 1)) +
+  facet_wrap(.~area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Count", x = "Bias")
+```
+ 
+Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "Figure 7.- Annual estimates of SWHS bias for 16 commerical fishing manamgent areas, 1996-2019."}
+mu_bc <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
+bc_mod <- 
+  apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc")
+bc_obs <- 
+  (jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,16:24] %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ayg$year),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc")
+rbind(bc_mod, bc_obs) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 2)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
+  facet_wrap(. ~ area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Bias", x = "Year")
+```
+ 
+### P(pelagic)
+ 
+We model the percentage of pelagic rockfish in the harvest because we have the information for charter anglers (via logbooks) starting in 1998. Other than looking at the model estimates you can use Figure 8 to compare the two data streams for pelagic rockfish harvest. In general they are in agreement with major exceptions in Price William Sound inside, Prince William Sound outside (early in the time series) and South Southeast inside.
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "Figure 8.- Annual estimates of the percent of the sport harvest that was pelagic rockfish for 16 commerical fishing manamgent areas, 1996-2019."}
+p_pelagic_mod <- 
+  rbind(postH$mean$p_pelagic[,,1] %>% t(),
+        postH$mean$p_pelagic[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+  pivot_longer(-c(year, user), names_to = "area", values_to = "p_pelagic")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_pelagic_obs <-
+  comp %>%
+    mutate(year = year_n + 1995,
+           area = unique(H_ayg$area)[area_n],
+           user = ifelse(user_n == 0, "charter", "private"),
+           source = ifelse(source == 1, "sample", "logbook"),
+           p_pelagic = pelagic / N,
+           area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  select(year, area, user, source, p_pelagic) %>%
+  rbind(H_ayg %>% 
+         mutate(p_pelagic = Hp / H, 
+         user = "charter", 
+         source = "logbook") %>% 
+         select(year, area, user, source, p_pelagic))
+p_pelagic_trend <-
+  data.frame(
+    p_pelagic = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_pelagic, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+p_pelagic_obs %>%
+  ggplot(aes(x = year, y = p_pelagic, color = user)) +
+  geom_point(aes(shape = source)) +
+  geom_line(data = p_pelagic_mod) +
+  geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Proportion", x = "Year")
+```
+ 
+### P(black|pelagic)
+ 
+Note that in Southeast Alaska we only have composition data starting in 2006. If this exists earlier we defiantly want it. This is also an area where the early creel data Tania dug up may be of some use, particularly in areas with trends (North Southeast inside and South Southeast inside).
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "Figure 9.- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for 16 commerical fishing manamgent areas, 1996-2019."}
+p_black_mod <- 
+  rbind(postH$mean$p_black[,,1] %>% t(),
+        postH$mean$p_black[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_black")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_black_obs <-
+  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1995,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_black = comp_black / comp_pelagic,
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_black_trend <-
+  data.frame(
+    p_black = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_black, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+rbind(p_black_obs) %>%
+  ggplot(aes(x = year, y = p_black, color = user)) +
+  geom_point() +
+  geom_line(data = p_black_mod) +
+  geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Proportion", x = "Year")
+```
+ 
+### P(yelloweye|non-pelagic)
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "Figure 9.- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were yelloweye rockfish for 16 commerical fishing manamgent areas, 1996-2019."}
+p_yellow_mod <- 
+  rbind(postH$mean$p_yellow[,,1] %>% t(),
+        postH$mean$p_yellow[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_yellow_obs <-
+  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1995,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_yellow = comp_yellow / (comp_N - comp_pelagic),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+p_yellow_trend <-
+  data.frame(
+    p_yellow = boot::inv.logit(
+      unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_yellow, c(4, 6, 6)))),
+    area = unique(H_ayg$area))
+rbind(p_yellow_obs) %>%
+  ggplot(aes(x = year, y = p_yellow, color = user)) +
+  geom_point() +
+  geom_line(data = p_yellow_mod) +
+  geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + 
+  theme_bw(base_size = 16) +
+  labs(y = "Proportion", x = "Year")
+```
+ 
+# Outstanding issues
+* We desperately need the SWHS data. I will not be able to do anything else until we have it.
+* Error Check: data, model, results
+* How do we use Tania's data
+  + We can use early creel survey estimates. Potential to bias things if the Creel does not account for the full area. We could also think about this strategically as many areas already have very small harvest by 1996.
+  + Can we get more composition data from Southeast?
+  + Can we get any early estimates of the guided/unguided ratio?
