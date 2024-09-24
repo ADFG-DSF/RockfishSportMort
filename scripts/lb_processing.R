@@ -67,10 +67,6 @@ log <- raw_log %>%
 write.csv(log %>% data.frame(),"data/raw_dat/statewide_2022_100923_log.csv")
 
 # Assign NMFS areas based on sfstat values
-sort(trunc(unique(log$sfstat)/1000))
-sort(floor(unique(log$sfstat)/1000))
-
-
 
 log <- log %>%
   mutate(
@@ -256,6 +252,8 @@ log <- log %>%
                     "SE","SC")
   )
   
+with(log, table(sfstat,RptArea)) -> RA_sfstat
+write.csv(RA_sfstat,"data/RptArea_x_sfstat.csv")
 
 head(log)
 unique(log$RptArea)
@@ -364,53 +362,54 @@ print(res_log)
 #cat('Southeast Region charter KNOWN rf harvest by port_SWHS and CF Management Unit caught (logbook).')
 
 # RELEASES #-----------------------------------------------------------------------
+with(log, table(port_site,RptArea)) %>% data.frame() ->sites
+write.csv(sites,"data/port_sites_andRptArea.csv")
 
 # Diagnostic - Check CF Mgmt Area assignments (RELEASE)
-freq_table <- log %>% filter(region == "SC") %>%
+freq_table <- log %>% #filter(region == "SC") %>%
   group_by(RptArea) %>%
   dplyr::summarise(Total = sum(rfrel, na.rm = TRUE)) %>%
   ungroup() %>% complete(RptArea, fill = list(Total = 0))# Show missing values too
 
 # Display the frequency table
-print(freq_table)
+print(freq_table, n=24)
 
-#FLAG!! Something is fucked up with release data. Code for harvests mirrors SAS output
-# but release data does not. Did some digging but no luck. Maybe? something is off
+# FLAG!! Something is fucked up with release data. Code for harvests mirrors SAS output
+# but release data does not. SE matches, but not SC. Did some digging but no luck. Maybe? something is off
 # from BBs having to convert to SAS when LB program stopped producing SAS code?
 # Will try reconstructing from raw data and see if we can find out where the problem
 # is on Monday 9/23. Go into raw data file and filter out the stuff below. Will have
 # to relabel stuff
 
-
-log %>% filter(RptArea == "SOUTHEAST") -> dbug
-sum(dbug$rfrel)
-nrow(dbug)
-colnames(dbug)
-nrow(dbug %>% filter(rfrel > 0))
-
-unique(dbug$port_site)
-with(dbug, table(port_site,rfrel))
-
-dbug %>% group_by(port_site) %>%
+log %>% #
+  filter(port_site == "OLD HARBOR") %>% group_by(RptArea, sfstat) %>%
   summarize(n = n(),
             Total = sum(rfrel, na.rm = TRUE),
             total_prockrel = sum(p_rock_rel, na.rm = TRUE),
             total_yrockrel = sum(y_rock_rel, na.rm = TRUE),
             total_orockrel = sum(o_rock_rel, na.rm = TRUE))
 
-dbug2 <- dbug %>% filter(port_site == "OLD HARBOR")
-nrow(dbug2)
-sum(dbug2$rfrel, na.rm=T)
+## Figured it out!!! SAS code is ignoring releases when there were no rf kept.
+## Not sure why that is, but I've verified through direct examination of data
+## and hand calculations that R estimates are correct. I have no idea how far
+## back this issue goes, perhaps when Brianna started pulling data directly from 
+## the data base? But data is there... just a misapplied filter. 2022 samples will be updated. 
 
-dbug3 <- log %>% filter(RptArea == "EASTSIDE" & port_site == "OLD HARBOR")
-dbug3 %>% group_by(port_site) %>%
+# BINGO.... this is it. AFOGNAK example. Releases only counted when rockfish are caught. 
+
+log %>% 
+  filter(sfstat %in% c(25110,25111,25112,25130,25181,25182,25183,25184,25185,25234,
+                       515801,515833,525802,525803,525804,525805,525806,525807,525832,
+                       525833,525834,535802,535803)) %>%
+  filter(is.na(p_rock_kept), # This right here. 
+         is.na(y_rock_kept),
+         is.na(o_rock_kept)) %>%
+  group_by(RptArea) %>%
   summarize(n = n(),
             Total = sum(rfrel, na.rm = TRUE),
             total_prockrel = sum(p_rock_rel, na.rm = TRUE),
             total_yrockrel = sum(y_rock_rel, na.rm = TRUE),
             total_orockrel = sum(o_rock_rel, na.rm = TRUE))
-
-
 
 # 2. Create the 'MissingNMFS' dataset
 MissingNMFS <- log %>%
@@ -511,7 +510,7 @@ R_sum_2 <- log_sorted_2 %>%
   mutate(across(c(total_rfrel, total_prockrel, total_yrockrel, total_orockrel), ~round(., 0)))
 
 # Print the summary for the second block
-print(R_sum_2)
+print(R_sum_2, n = 25)
 
 db <- log %>% filter(RptArea == "CI") %>%
   arrange(year, port_site, RptArea) 
@@ -674,5 +673,149 @@ summary_Bwest <- Bwest %>%
 print(summary_Bwest)
 
 #------------------------------------------------------------------------------
-# update historical file: 
+# Apportion SC unknown harvests (unassignd to reporting area)
+# This code will need to be modified year to year depending on which areas and ports
+# have unassigned fish... 
+
+MissingNMFS %>%
+  select(date, port_site, sfstat, rfharv) %>%
+  print()
+
+# Identify port sites of missing harvest data (rfharv) with a weighted frequency table
+port_site_summary_H <- MissingNMFS %>%
+  group_by(port_site) %>%
+  summarise(weighted_rfharv = sum(rfharv, na.rm = TRUE)) %>%
+  mutate(weighted_rfharv = replace_na(weighted_rfharv, 0))  # To handle missing values
+
+print(port_site_summary_H)
+
+# 2006 onward identify port sites of missing harvest data - prockkept
+prockkept_summary <- MissingNMFS %>%
+  group_by(port_site) %>%
+  summarise(weighted_prockkept = sum(p_rock_kept, na.rm = TRUE)) %>%
+  mutate(weighted_prockkept = replace_na(weighted_prockkept, 0))  # Handle missing values
+
+print(prockkept_summary)
+
+# 2006 onward identify port sites of missing harvest data - yrockkept
+yrockkept_summary <- MissingNMFS %>%
+  group_by(port_site) %>%
+  summarise(weighted_yrockkept = sum(y_rock_kept, na.rm = TRUE)) %>%
+  mutate(weighted_yrockkept = replace_na(weighted_yrockkept, 0))  # Handle missing values
+
+print(yrockkept_summary)
+
+# 2006 onward identify port sites of missing harvest data - orockkept
+orockkept_summary <- MissingNMFS %>%
+  group_by(port_site) %>%
+  summarise(weighted_orockkept = sum(o_rock_kept, na.rm = TRUE)) %>%
+  mutate(weighted_orockkept = replace_na(weighted_orockkept, 0))  # Handle missing values
+
+print(orockkept_summary)
+
+unique(H_sum_1$port_site)
+
+SC_appor <- H_sum_1 %>% 
+  mutate(port_site = toupper(port_site)) %>%
+  mutate(port_site = ifelse(port_site == "Kodiak","KODIAK",port_site),) %>%
+  filter(port_site %in% c("ADAK","HOMER","Kodiak","VALDEZ","KODIAK"))
+
+SC_appor %>%  group_by(port_site) %>% filter(!is.na(RptArea)) %>%
+  mutate(pt_tot_rf = sum(total_rfharv, na.rm=T),
+         pt_tot_prf = sum(total_prockkept, na.rm=T),
+         pt_tot_yrf = sum(total_yrockkept, na.rm=T),
+         pt_tot_orf = sum(total_orockkept, na.rm=T),
+         prop_p = total_prockkept / pt_tot_prf,
+         prop_y = total_yrockkept / pt_tot_yrf,
+         prop_o = total_orockkept / pt_tot_orf) %>%
+  ungroup() -> SC_appor
+
+ZZs <- SC_appor %>% filter(RptArea == "ZZZZ")
+
+miss_sa <- H_sum_1 %>% 
+  mutate(port_site = toupper(port_site)) %>%
+  mutate(port_site = ifelse(port_site == "Kodiak","KODIAK",port_site),) %>%
+  filter(port_site %in% c("ADAK","HOMER","Kodiak","VALDEZ","KODIAK")) %>%
+  filter(is.na(RptArea))
+
+UnknownH <- rbind(ZZs[,1:8],miss_sa) %>%
+  group_by(port_site) %>%
+  summarize(unk_rfharv = sum(total_rfharv),
+            unk_p_harv = sum(total_prockkept),
+            unk_y_harv = sum(total_yrockkept),
+            unk_o_harv = sum(total_orockkept)) 
+
+SC_appor <- left_join(SC_appor,UnknownH,by = c("port_site")) %>%
+  #mutate(tot_pel_h = total_prockkept + unk_p_harv * prop_p,
+  #       tot_ye_h = total_yrockkept + unk_y_harv * prop_y,
+  #       tot_oth_h = total_orockkept + unk_o_harv * prop_o,
+  #       tot_rf_h = tot_pel_h + tot_ye_h + tot_oth_h) %>% 
+  group_by(RptArea) %>%
+  summarize(unk_p_harv = sum(unk_p_harv * prop_p, na.rm = T),
+            unk_y_harv = sum(unk_y_harv * prop_y, na.rm = T),
+            unk_o_harv = sum(unk_o_harv * prop_o, na.rm = T),
+            tot_unk_h = unk_p_harv + unk_y_harv + unk_o_harv) %>%
+  replace(is.na(.), 0)
+
+# now add this back into final harvest estimate for the year: 
+H_sum_F <- left_join(H_sum_2,SC_appor,by = "RptArea") %>% data.frame() %>%
+  replace(is.na(.), 0) %>% 
+  mutate(unk_p_harv,
+         tot_rf_harv = round(total_rfharv + tot_unk_h, 0),
+         tot_pel_harv = round(total_prockkept + unk_p_harv, 0),
+         tot_ye_harv = round(total_yrockkept + unk_y_harv, 0),
+         tot_o_harv = round(total_orockkept + unk_o_harv, 0))
+
+#Get EWYKT
+H_sum_F <- rbind(H_sum_F,
+                 H_sum_F %>% filter(RptArea %in% c("EYKT","IBS")) %>%
+        summarise(.,across(where(is.numeric),sum)) %>%
+        mutate(year = YEAR,
+               RptArea = "EWYKT"))
+
+#-------------------------------------------------------------------------------
+# Update logbook harvest and release data sheets.
+lb_harv <- read.csv("data/raw_dat/logbook_harvest_byYear.csv")
+lb_rel <- read.csv("data/raw_dat/logbook_release_byYear.csv")
+
+lb_harv2 <- rbind(lb_harv %>% filter(year < 2022), #get rid of fucked up 2022 estimates
+                 H_sum_F %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
+                                                                   "NSEO","SSEI","SSEO"),"SE","SC")) %>%
+                   mutate(nonpel_harv = tot_ye_harv + tot_o_harv) %>% 
+                   select(Region, year, RptArea, rfharv = tot_rf_harv, pelagic_harv = tot_pel_harv,
+                          nonpel_harv, ye_harv = tot_ye_harv, not_ye_nonpel_harv = tot_o_harv) %>%
+                   filter(RptArea != "ZZZZ" & RptArea != 0) ) %>% 
+  arrange(year,RptArea)
+
+lb_harv2 %>% filter(year == 2022)
+
+write.csv(lb_harv2, "data/raw_dat/logbook_harvest_byYear.csv")
+
+#*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
+
+R_sum_2 <- rbind(R_sum_2,
+                 R_sum_2 %>% filter(RptArea %in% c("EYKT","IBS")) %>%
+                   summarise(.,across(where(is.numeric),sum)) %>%
+                   mutate(year = YEAR,
+                          RptArea = "EWYKT"))
+
+lb_rel2 <- rbind(lb_rel,
+                 R_sum_2 %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
+                                                                   "NSEO","SSEI","SSEO"),"SE","SC"),
+                                    nonpel_rel = total_yrockrel + total_orockrel) %>%
+                   select(Region, year, RptArea, rfrel = total_rfrel, pelagic_rel = total_prockrel,
+                          nonpel_rel, ye_rel = total_yrockrel, not_ye_nonpel_rel = total_orockrel) %>%
+                   filter(RptArea != "ZZZZ" & RptArea != 0)) %>% 
+  arrange(year,RptArea)
+
+lb_rel2 %>% filter(year == 2022)
+
+# Notes for tomorrow: clean up the truncated up RptArea names
+
+write.csv(lb_rel2, "data/raw_dat/logbook_release_byYear.csv")
+
+
+
+
+
 
