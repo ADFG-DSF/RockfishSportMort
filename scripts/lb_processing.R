@@ -1,10 +1,14 @@
 ################################################################################
 ## Code to import raw sport fish catch and harvest data
-## Original author: Adam Reimer
-## Current author: Phil Joy philip.joy@alaska.gov
+##
+## Author: Phil Joy philip.joy@alaska.gov
 ## Last updated: October 2024
 #
-# This code will import and prep data for analysis
+# This code will import and process raw logbook data to get rockfish harvest and
+# release data from the charter fleet
+##
+## This replaces the SAS code: Region1_LogbookRockfishHarvestByCFarea.sas and
+## Region2_LogbookRockfishHarvestByCFarea.sas 
 ##
 ## Data sources:
 ## Statewide Harvest Survey SWHS (Nick Smith at nick.smith@alaska.gov)
@@ -32,10 +36,10 @@ raw_log23 <- read.csv(paste0("data/raw_dat/",2023,"LogbookData.8.2.2024.csv")) %
   clean_names()
 str(raw_log)
 
-raw_log22 <- read_sas("data/raw_dat/statewide_2022_100923.sas7bdat") %>% clean_names() %>%
+raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bdat")) %>% clean_names() %>%
   mutate(logsdate = logdate_new)
 
-write.csv(raw_log22 %>% data.frame(),"data/raw_dat/statewide_2022_100923.csv")
+write.csv(raw_log22 %>% data.frame(),paste0("data/raw_dat/",YEAR,"/lb_statewide_2022.csv"))
 
 colnames(raw_log23)
 colnames(raw_log22)
@@ -63,8 +67,6 @@ log <- raw_log %>%
     ),
     sfstat = ifelse(sfstat == 113456, 113450, sfstat)  # Correct logbook error
   )
-
-write.csv(log %>% data.frame(),"data/raw_dat/statewide_2022_100923_log.csv")
 
 # Assign NMFS areas based on sfstat values
 
@@ -329,10 +331,16 @@ H_sum_1 <- log_sorted_1 %>%
 # Print the summary for the first block
 print(H_sum_1)
 
+# Need to save and export some stuff for weighting sampling data for NG, PWSI and PWSI...
+H_sum_1 %>% filter(RptArea %in% c("NG","PWSO","PWSI"),
+                   port_site %in% c("HOMER","SEWARD","VALDEZ","CORDOVA","WHITTIER")) -> for_NGPWS_wts
+write.csv(for_NGPWS_wts,paste0("data/raw_dat/",YEAR,"/for_NGPWS_wts.csv"), row.names = F)
+
 # Second block: Summarizing harvest data by port_SWHS and CF Management Unit
 # Sort by year, port_site, port_SWHS, and RptArea
 log_sorted_2 <- log %>%
-  arrange(year, port_site, port_swhs, RptArea)
+  arrange(year, port_site, port_swhs, RptArea) 
+
 
 # Summarize the data (equivalent to proc means with sum)
 H_sum_2 <- log_sorted_2 %>%
@@ -347,6 +355,8 @@ H_sum_2 <- log_sorted_2 %>%
 
 # Print the summary for the second block
 print(H_sum_2)  
+
+
 
 # Breakdown by resident and non-resident
 res_log <- log %>% filter(rfharv > 0) %>%
@@ -489,8 +499,6 @@ R_sum_1 <- log_sorted_1 %>%
 
 # Print the summary for the first block
 print(R_sum_1)
-
-log_sorted_1 %>% filter(RptArea == "AFOGNAK" & port_site == "AFOGNAK") -> dbug
 
 # Second block: RF release by SWHS and CF Management Unit
 # Sort by year, port_site, port_SWHS, and RptArea
@@ -778,6 +786,24 @@ H_sum_F <- rbind(H_sum_F,
 lb_harv <- read.csv("data/raw_dat/logbook_harvest_byYear.csv")
 lb_rel <- read.csv("data/raw_dat/logbook_release_byYear.csv")
 
+unique(lb_rel$Region)
+
+lb_harv %>% filter(Region == "Ssc")
+
+lb_harv <- lb_harv %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
+                                    ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
+                                           ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
+                              Region = ifelse(Region == "Ssc","SC",
+                                              ifelse(Region == "2c","SC",
+                                                     ifelse(Region == "sc","SC",Region))))
+
+lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
+                                               ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
+                                                      ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
+                            Region = ifelse(Region == "Ssc","SC",
+                                            ifelse(Region == "2c","SC",
+                                                   ifelse(Region == "sc","SC",Region))))
+
 lb_harv2 <- rbind(lb_harv %>% filter(year < 2022), #get rid of fucked up 2022 estimates
                  H_sum_F %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
                                                                    "NSEO","SSEI","SSEO"),"SE","SC")) %>%
@@ -789,11 +815,11 @@ lb_harv2 <- rbind(lb_harv %>% filter(year < 2022), #get rid of fucked up 2022 es
 
 lb_harv2 %>% filter(year == 2022)
 
-write.csv(lb_harv2, "data/raw_dat/logbook_harvest_byYear.csv")
+write.csv(lb_harv2, paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
 
 #*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
 
-R_sum_2 <- rbind(R_sum_2,
+R_sum_2 <- rbind(R_sum_2 %>% filter(year < 2022),
                  R_sum_2 %>% filter(RptArea %in% c("EYKT","IBS")) %>%
                    summarise(.,across(where(is.numeric),sum)) %>%
                    mutate(year = YEAR,
@@ -812,7 +838,91 @@ lb_rel2 %>% filter(year == 2022)
 
 # Notes for tomorrow: clean up the truncated up RptArea names
 
-write.csv(lb_rel2, "data/raw_dat/logbook_release_byYear.csv")
+write.csv(lb_rel2, paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
+
+
+#-------------------------------------------------------------------------------
+# Add the LB data to the working data sheet that puts all of this together
+
+#SWHS formatted data for new year
+new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"))
+new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"))
+
+#if you are in a new session, here is where you were
+lb_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
+lb_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
+# otherwise
+lb_H <- lb_harv2
+lb_R <- lb_rel2
+
+#-----------
+new_lb_H <- lb_H %>% filter(year == YEAR)
+new_lb_R <- lb_R %>% filter(year == YEAR)
+
+#temp: get rid of this when code rerun and saved proper
+new_lb_H <- new_lb_H[,-1]
+new_lb_R <- new_lb_R[,-1]
+
+left_join(new_H,new_lb_H %>% select(Region, year, RptArea,rfharv),
+          by = c("Region","year","RptArea")) %>% 
+  mutate(Log_rfharv = rfharv,
+         TOTAL_rfharv = Log_rfharv / SWHS_gprop, #H-hati
+         var_TOTAL_rfharv = (Log_rfharv^2)*var_SWHS_gprop*(1/(SWHS_gprop^4)),
+         sd_Rfharv = sqrt(var_TOTAL_rfharv),
+         RFharv_UPRLWR95 = 1.96 * sd_Rfharv,
+         PRIV_rfharv = TOTAL_rfharv - Log_rfharv,
+         var_PRIV_rfharv = var_TOTAL_rfharv,
+         sd_PRIV_rfharv = sqrt(var_PRIV_rfharv),
+         privrfharv_UPERLWR95 = sd_PRIV_rfharv * 1.96) %>% 
+  select(-rfharv) -> new_H
+
+write.csv(new_H,paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"), row.names = F)
+
+left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
+          by = c("Region","year","RptArea")) %>% 
+  mutate(Log_rfrel = rfrel,
+         TOTAL_rfrel = Log_rfrel / SWHS_gprop, #H-hati
+         var_TOTAL_rfrel = (Log_rfrel^2)*var_SWHS_gprop*(1/(SWHS_gprop^4)),
+         sd_Rfrel = sqrt(var_TOTAL_rfrel),
+         RFrel_UPRLWR95 = 1.96 * sd_Rfrel,
+         PRIV_rfrel = TOTAL_rfrel - Log_rfrel,
+         var_PRIV_rfrel = var_TOTAL_rfrel,
+         sd_PRIV_rfrel = sqrt(var_PRIV_rfrel),
+         privrfrel_UPERLWR95 = sd_PRIV_rfrel * 1.96) %>% 
+  select(-rfrel) -> new_R
+
+write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"), row.names = F)
+
+#### ---------------------------------------------------------------------------
+# Code verification with 2022 overlap data:
+rock_harv <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+                       sheet = "rockfish harvests",
+                       range = paste0("A1:R1000"), 
+                       na = "NA")
+rock_harv <- rock_harv[rowSums(is.na(rock_harv)) != ncol(rock_harv), ]
+
+rock_harv %>% filter(year == 2022) %>% select(1:18) -> excel
+names(excel) <- names(new_H)
+
+rbind(new_H,excel) %>% arrange(RptArea)
+
+
+rock_rel <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+                       sheet = "rockfish release",
+                       range = paste0("A1:R1000"), 
+                       na = "NA")
+rock_rel <- rock_rel[rowSums(is.na(rock_rel)) != ncol(rock_rel), ]
+
+rock_rel %>% filter(year == 2022) %>% select(1:18) -> excel2
+names(excel2) <- names(new_R)
+
+rbind(new_R,excel2) %>% arrange(RptArea)
+
+# Looks good!!
+
+
+
+
 
 
 
