@@ -123,7 +123,7 @@ new_H = new_H[-1, ]
 new_H %>% slice(-1) %>% 
   rownames_to_column(var = "RptArea") %>%
   mutate_at(vars(2:5),as.numeric)  %>%
-  mutate(Region = ifelse(RptArea %in% c("CSEO","EWKYT","NSEI","NSEO","SSEI","SSEO"),
+  mutate(Region = ifelse(RptArea %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"),
                          "SE","SC"),
          Log_rfharv = NA, #(Gi)
          year = YEAR,
@@ -169,7 +169,7 @@ new_R = new_R[-1, ]
 new_R %>% slice(-1) %>% 
   rownames_to_column(var = "RptArea") %>%
   mutate_at(vars(2:5),as.numeric)  %>%
-  mutate(Region = ifelse(RptArea %in% c("CSEO","EWKYT","NSEI","NSEO","SSEI","SSEO"),
+  mutate(Region = ifelse(RptArea %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"),
                          "SE","SC"),
          Log_rfrel = NA, #(Gi)
          year = YEAR,

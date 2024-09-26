@@ -876,7 +876,7 @@ left_join(new_H,new_lb_H %>% select(Region, year, RptArea,rfharv),
          privrfharv_UPERLWR95 = sd_PRIV_rfharv * 1.96) %>% 
   select(-rfharv) -> new_H
 
-write.csv(new_H,paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"), row.names = F)
+write.csv(new_H,paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"), row.names = F)
 
 left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
           by = c("Region","year","RptArea")) %>% 
@@ -891,7 +891,7 @@ left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
          privrfrel_UPERLWR95 = sd_PRIV_rfrel * 1.96) %>% 
   select(-rfrel) -> new_R
 
-write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"), row.names = F)
+write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_"SC_,YEAR,".csv"), row.names = F)
 
 #### ---------------------------------------------------------------------------
 # Code verification with 2022 overlap data:
