@@ -511,9 +511,9 @@ SC_port_priv %>%
  
 View(SC_step1)
 ## FLAG!!! Clay's number are not matching up with historical stuff for CI. Looks like
-## Clay's code is undercounting things!! 
-## Code for other areas in the weighting apportionemtn above matched up though, so 
-## maybe Clay is accidently excluding something?
+## Clay's code is under counting things!! 
+## Code for other areas in the weighting apportionment above matched up though, so 
+## maybe Clay is accidentally excluding something?
 # Other things I'm noting: 
 # Afognak priv and gui only has one year? 
 # Eastside priv & gui is good
@@ -523,7 +523,7 @@ View(SC_step1)
 # Northeast priv and gui is missing almost entirely!
 # Both PWS priv and gui are good
 
-# Clay isout until the 30th so will code this to move it along, but looking at his 
+# Clay is out until the 30th so will code this to move it along, but looking at his 
 # code I'm guessing that there are missing assignments that are not in there.
 # Coding this for now but will need to rerun and check once we get the port sampling fixed
 

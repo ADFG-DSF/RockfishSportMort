@@ -1,14 +1,11 @@
 ################################################################################
-# BLACK ROCKFISH HARVEST AND RELEASE CALCULATIONS
+# PELAGIC ROCKFISH HARVEST AND RELEASE CALCULATIONS
 #
 # Author: Phil Joy
 # Last updated: October 2024
 #
-# This code replaces the BRF harvest and BRF release tabs in the excel files
-# harvest estimates excel version_thruYEAR.xlsx and release estimates excel version_thruYEAR.xlsx
-# files that used to get the cut and paste routine. 
-# The code will pull those old files to update them but future updating will
-# occur through the R files written here.
+# This code calculates Pelagic numbers that were not done prior to this
+# 
 #
 # Before running this it is necessary to incorporate the SWHS and logbook data and 
 # get the port sampling species apportionment data from Chris Hinds (SE) and 
@@ -19,12 +16,6 @@
 # lb_processing.R
 # SC_apportionment_calcs.R
 #
-# FLAG FLAG FLAG FLAG!!! Variance for var_PrivSPECIES in spreadsheets is WRONG!!!!
-# Spreadsheets fixed 9-26-24. Minimal difference in results, but all previous
-# estimates of harvest and releases underestimated the variance
-# 
-# Note2: In the end all of the variance is incorrect and these calculations should
-# have been done in log space.
 #-------------------------------------------------------------------------------
 library(xlsx)
 library(writexl)
@@ -43,6 +34,25 @@ new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"))
 #temp patch
 new_H <- new_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 new_R <- new_R %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
+
+# First time with PELAGICS so need all harvest data:
+all_H <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+                   sheet = "rockfish harvests",
+                   range = paste0("A1:R1000"), 
+                   na = "NA")
+all_H <- all_H[rowSums(is.na(all_H)) != ncol(all_H), ]
+
+all_R <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+                   sheet = "rockfish release",
+                   range = paste0("A1:Y1000"), 
+                   na = "NA")
+all_R <- all_R[rowSums(is.na(all_R)) != ncol(all_R), ]
+
+names(all_H) <- names(new_H)
+names(all_R) <- names(new_R)
+
+head(all_H %>% data.frame(), n = 5); head(new_H %>% data.frame(), n = 5)
+head(all_R %>% data.frame(), n = 5); head(new_R %>% data.frame(), n = 5)
 
 #read in logbook harvest and release estimate
 LB_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
@@ -88,208 +98,234 @@ spec_apor <- rbind(SE_port,SC_port) %>%
 str(spec_apor)
 
 #-------------------------------------------------------------------------------
-#get the last BRF run down: 
+# No previous Pelagic calculations, so will need to call up '23 ests when doing '24 ests in Oct '25
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-BRF_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
-                     sheet = "BRF harvest",
-                     range = paste0("A2:Z1000"), 
-                     na = "NA")
-BRF_lastH <- BRF_lastH[rowSums(is.na(BRF_lastH)) != ncol(BRF_lastH), ]
 
-BRF_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
-                       sheet = "BRF release",
-                       range = paste0("A2:Z1000"), 
-                       na = "NA")
-BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
-
-# With 2023 and beyond you will pull and update the csv files created in this workflow:
 
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
-# To stay consistent we'll populate the spreadsheet with all the redundancies:
-colnames(spec_apor)
+# Need rpt area averages to use because of sample size issues and changes in regulation
+# in 2019 making it impossible to assess the proportion of fish being released.
+#look:
+spec_apor %>% filter(Year > 2017) %>% #,
+                     #RptArea %in% c("CSEO","EWYKT",#"EYKT","IBS",
+                     #                "NSEI","NSEO","SSEI","SSEO")) %>% 
+  select(Year,RptArea,TotalRF_n,YE_n,Black_n,Pelagic_n,Nonpel_n,NotYE_Nonpel_n,
+         pPel,pPel_avgRptArea) %>%data.frame()
 
-BRF_guiH <- new_H %>%
+#save values:
+left_join(spec_apor,
+          spec_apor %>% filter(Year == 2019) %>% 
+            select(RptArea,User,
+                   use_pPel_aRA = pPel_avgRptArea,
+                   use_var_pPel_aRA = var_pPel_avgRptArea),
+                   #use_pSlopeinNP_aRA = pSlopeinNonP_avgRptArea,
+                   #use_var_pSlopeinNP_aRA = var_pSlopeinNonP_avgRptArea),
+          by = c("RptArea","User"))  -> spec_apor
+
+Pel_guiH <- all_H %>%
   select(Region, year, RptArea,Log_rfharv) %>%
-  left_join(LB_H %>% filter(year == YEAR) %>%
-              select(Region,year,RptArea,Gui_pelharv = pelagic_harv),
+  left_join(LB_H %>% #filter(year == YEAR) %>%
+              select(Region,year,RptArea,
+                     Gui_pelharv = pelagic_harv),
+                     #Gui_Pelh = ye_harv),
             by = c("year","RptArea","Region")) %>%
   left_join(spec_apor %>% filter(User == "charter") %>%
               rename(year = Year) %>%
-              mutate(year = as.integer(year)) %>%
+              mutate(year = as.integer(year),
+                     gui_pPel = ifelse(year < 2006,use_pPel_aRA,NA),
+                     gui_var_pPel = ifelse(year < 2006,use_var_pPel_aRA,NA)) %>%
               select(year,RptArea,
-                     gui_pBRFinPel = pBRFinPel,
-                     gui_var_pBRFinPel = var_pBRFinPel),
+                     gui_pPel,
+                     gui_var_pPel),
             by = c("year", "RptArea")) %>%
-  mutate(gui_pBRFinPel = as.numeric(gui_pBRFinPel),
-         gui_var_pBRFinPel = as.numeric(gui_var_pBRFinPel),
-         GuiBRF = Gui_pelharv * gui_pBRFinPel,
-         var_GuiBRF = (Gui_pelharv^2) * gui_var_pBRFinPel,
-         sqrt_GuiBRF = sqrt(var_GuiBRF),
-         GuiBRF_UPRLWR95 = 1.96 * sqrt_GuiBRF)
+  mutate(#gui_pPel = NA, #as.numeric(gui_pBRFinPel), #calculation not used; left in here to track pre24 spreadsheets
+         #gui_var_pPel = NA, #as.numeric(gui_var_pBRFinPel),
+         GuiPel = Gui_pelharv,
+         var_GuiPel = ifelse(year < 2006,
+                             (Gui_pelharv^2) * gui_var_pPel,0), #(Gui_pelharv^2) * gui_var_pBRFinPel,
+         sqrt_GuiPel = sqrt(var_GuiPel),
+         GuiPel_UPRLWR95 = 1.96 * sqrt_GuiPel)
 
-BRF_priH <- new_H %>% #colnames(new_H)
+Pel_priH <- all_H %>% #colnames(new_H)
   select(Region, year, RptArea,PRIV_rfharv,var_PRIV_rfharv) %>%
   left_join(spec_apor %>% filter(User == "private") %>%
               rename(year = Year) %>%
               mutate(year = as.integer(year),
-                     priv_pBRF = ifelse(TotalRF_n > 50,pBRF,pBRF_avgRptArea),
-                     priv_var_pBRF = ifelse(TotalRF_n > 50,var_pBRF,var_pBRF_avgRptArea)) %>%
+                     priv_pPel = ifelse(TotalRF_n > 50,pPel,use_pPel_aRA),
+                     priv_var_pPel = ifelse(TotalRF_n > 50,var_pPel,use_var_pPel_aRA)) %>% #,
+                     #gui_pPel = NA,
+                     #var_gui_pPel = NA) %>%
               select(year,RptArea,
-                     priv_pBRF,
-                     priv_var_pBRF),
+                     priv_pPel,
+                     priv_var_pPel),
             by = c("year", "RptArea")) %>%
-  mutate(PRIV_BRF = PRIV_rfharv * priv_pBRF,
-         var_PrivBRF =(PRIV_rfharv^2) * priv_var_pBRF + (priv_pBRF^2) * var_PRIV_rfharv + (priv_var_pBRF*var_PRIV_rfharv),
-         sqrt_PrivBRF = sqrt(var_PrivBRF),
-         PrivBRF_UPRLWR95 = 1.96 * sqrt_PrivBRF)
+  mutate(Priv_Pel = PRIV_rfharv * priv_pPel,
+         var_PrivPel = (PRIV_rfharv^2) * priv_var_pPel + (priv_pPel^2) * var_PRIV_rfharv + (priv_var_pPel*var_PRIV_rfharv),
+         sqrt_PrivPel = sqrt(var_PrivPel),
+         PrivPel_UPRLWR95 = 1.96 * sqrt_PrivPel)
 
-break_col <- as.data.frame(matrix(nrow=nrow(BRF_guiH),ncol = 1)) # to keep spreadsheet consistent
-break_col2 <- as.data.frame(matrix(nrow=nrow(BRF_guiH),ncol = 1)) # to keep spreadsheet consistent
+break_col <- as.data.frame(matrix(nrow=nrow(Pel_guiH),ncol = 1)) # to keep spreadsheet consistent
+break_col2 <- as.data.frame(matrix(nrow=nrow(Pel_guiH),ncol = 1)) # to keep spreadsheet consistent
 colnames(break_col) <- "blank"
 colnames(break_col2) <- "blank2"
 
-BRF_harvest <- cbind(BRF_guiH,break_col,BRF_priH %>% select(-c(Region,year,RptArea)),break_col2) %>%
-  mutate(TotalBRFharv = GuiBRF + PRIV_BRF,
-         var_totalBRFharv = var_GuiBRF + var_PrivBRF,
-         sqrt_totalBRF = sqrt(var_totalBRFharv),
-         TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
-
+Pel_harvest <- cbind(Pel_guiH,break_col,Pel_priH %>% select(-c(Region,year,RptArea)),break_col2) %>%
+  mutate(TotalPelharv = GuiPel + Priv_Pel,
+         var_totalPelharv = var_GuiPel + var_PrivPel,
+         sqrt_totalPel = sqrt(var_totalPelharv),
+         TotalPel_UPRLWR95 = 1.96 * sqrt_totalPel)
+ 
+Pel_harvest %>% filter(Region == "SE")
 # Add it onto the running sheet:
-colnames(BRF_lastH) <- colnames(BRF_harvest)
-BRF_lastH <- BRF_lastH %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
-BRF_lastH <- BRF_lastH[,-26]
+#colnames(YE_lastH) <- colnames(YE_harvest)
+#YE_lastH <- YE_lastH %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
+#ncol(YE_lastH); ncol(YE_harvest)
+#YE_lastH <- YE_lastH[,-29]
 
-updated_BRF_H <- rbind(BRF_lastH,BRF_harvest) %>% arrange(Region,RptArea,year)
+#updated_YE_H <- rbind(YE_lastH,YE_harvest) %>% arrange(Region,RptArea,year)
 
-updated_BRF_H %>% filter(year == 2022 & Region == "SE") 
+#updated_YE_H %>% filter(year == 2022 & Region == "SE") 
 #checks out! just save one 2022 row
-updated_BRF_H <- rbind(BRF_lastH %>% filter(year < YEAR),
-                       BRF_harvest) %>% arrange(Region,RptArea,year)
+updated_Pel_H <- Pel_harvest #rbind(YE_lastH %>% filter(year < YEAR),
+                      #YE_harvest) %>% arrange(Region,RptArea,year)
 
-write.csv(updated_BRF_H, paste0("output/BRF_harv_Howard_thru",YEAR,".csv"))
+write.csv(updated_Pel_H, paste0("output/PEL_harv_Howard_thru",YEAR,".csv"))
 
-# START EXCEL WORKBOOK OF RESULTS FOR MORTALITY AND BIOMASS ESTIMATION:
-harv_est_xlsx <- createWorkbook()
-addWorksheet(harv_est_xlsx, "BRF harvest")
-writeData(harv_est_xlsx, "BRF harvest", updated_BRF_H)
+# For EXCEL recording, the BRF analysis is where you create the workbook: 
+harv_est_xlsx <- loadWorkbook(paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"))
+addWorksheet(harv_est_xlsx, "PEL harvest")
+writeData(harv_est_xlsx, "PEL harvest", updated_Pel_H)
 saveWorkbook(harv_est_xlsx, paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"),overwrite=T)
 #---RELEASES--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
 colnames(spec_apor)
 
-BRF_guiR <- new_R %>%
+Pel_guiR <- all_R %>%
   select(Region, year, RptArea,Log_rfrel) %>%
-  left_join(LB_R %>% filter(year == YEAR) %>%
-              select(Region,year,RptArea,Gui_pelrel = pelagic_rel),
+  left_join(LB_R %>% #filter(year == YEAR) %>%
+              select(Region,year,RptArea,
+                     Gui_pelrel = pelagic_rel),
             by = c("year","RptArea","Region")) %>%
   left_join(spec_apor %>% filter(User == "charter") %>%
               rename(year = Year) %>%
-              mutate(year = as.integer(year)) %>%
+              mutate(year = as.integer(year),
+                     gui_pPel = ifelse(year < 2006,use_pPel_aRA,NA),
+                     gui_var_pPel = ifelse(year < 2006,use_var_pPel_aRA,NA)) %>%
               select(year,RptArea,
-                     gui_pBRFinPel = pBRFinPel,
-                     gui_var_pBRFinPel = var_pBRFinPel),
+                     gui_pPel,
+                     gui_var_pPel),
             by = c("year", "RptArea")) %>%
-  mutate(gui_pBRFinPel = as.numeric(gui_pBRFinPel),
-         gui_var_pBRFinPel = as.numeric(gui_var_pBRFinPel),
-         GuiBRF = Gui_pelrel * gui_pBRFinPel,
-         var_GuiBRF = (Gui_pelrel^2) * gui_var_pBRFinPel,
-         sqrt_GuiBRF = sqrt(var_GuiBRF),
-         GuiBRF_UPRLWR95 = 1.96 * sqrt_GuiBRF)
+  mutate(GuiPel = Gui_pelrel,
+         var_GuiPel = ifelse(year < 2006,
+                             (Gui_pelrel^2) * gui_var_pPel,0), #(Gui_pelharv^2) * gui_var_pBRFinPel,
+         sqrt_GuiPel = sqrt(var_GuiPel),
+         GuiPel_UPRLWR95 = 1.96 * sqrt_GuiPel)
 
-BRF_priR <- new_R %>% #colnames(new_H)
+Pel_priR <- all_R %>% #colnames(new_H)
   select(Region, year, RptArea,PRIV_rfrel,var_PRIV_rfrel) %>%
   left_join(spec_apor %>% filter(User == "private") %>%
               rename(year = Year) %>%
               mutate(year = as.integer(year),
-                     priv_pBRF = ifelse(TotalRF_n > 50,pBRF,pBRF_avgRptArea),
-                     priv_var_pBRF = ifelse(TotalRF_n > 50,var_pBRF,var_pBRF_avgRptArea)) %>%
+                     priv_pPel = ifelse(TotalRF_n > 50,pPel,use_pPel_aRA),
+                     priv_var_pPel = ifelse(TotalRF_n > 50,var_pPel,use_var_pPel_aRA)) %>%
               select(year,RptArea,
-                     priv_pBRF,
-                     priv_var_pBRF),
+                     priv_pPel,
+                     priv_var_pPel),
             by = c("year", "RptArea")) %>%
-  mutate(PRIV_BRF = PRIV_rfrel * priv_pBRF,
-         var_PrivBRF =(PRIV_rfrel^2) * priv_var_pBRF + (priv_pBRF^2) * var_PRIV_rfrel + (priv_var_pBRF*var_PRIV_rfrel),
-         sqrt_PrivBRF = sqrt(var_PrivBRF),
-         PrivBRF_UPRLWR95 = 1.96 * sqrt_PrivBRF)
+  mutate(Priv_Pel = PRIV_rfrel * priv_pPel,
+         var_PrivPel =(PRIV_rfrel^2) * priv_var_pPel + (priv_pPel^2) * var_PRIV_rfrel + (priv_var_pPel*var_PRIV_rfrel),
+         sqrt_PrivPel = ifelse(is.na(var_PrivPel) | var_PrivPel < 0,0,sqrt(var_PrivPel)) ,
+         PrivPel_UPRLWR95 = 1.96 * sqrt_PrivPel
+         )
 
-BRF_release <- cbind(BRF_guiR,break_col,BRF_priR %>% select(-c(Region,year,RptArea)),break_col2) %>%
-  mutate(TotalBRFrel = GuiBRF + PRIV_BRF,
-         var_totalBRFrel = var_GuiBRF + var_PrivBRF,
-         sqrt_totalBRF = sqrt(var_totalBRFrel),
-         TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
+print(Pel_priR %>% filter(Region == "SE"), n = 30)
+
+break_col <- as.data.frame(matrix(nrow=nrow(Pel_guiR),ncol = 1)) # to keep spreadsheet consistent
+break_col2 <- as.data.frame(matrix(nrow=nrow(Pel_guiR),ncol = 1)) # to keep spreadsheet consistent
+colnames(break_col) <- "blank"
+colnames(break_col2) <- "blank2"
+
+Pel_release <- cbind(Pel_guiR,break_col,Pel_priR %>% select(-c(Region,year,RptArea)),break_col2) %>%
+  mutate(TotalPelrel = GuiPel + Priv_Pel,
+         var_totalPelrel = var_GuiPel + var_PrivPel,
+         sqrt_totalPel = sqrt(var_totalPelrel),
+         TotalPel_UPRLWR95 = 1.96 * sqrt_totalPel)
+
+Pel_release %>% filter(Region == "SE")
 
 # Add it onto the running sheet:
-colnames(BRF_lastR) <- colnames(BRF_release)
-BRF_lastR <- BRF_lastR %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
-BRF_lastR <- BRF_lastR[,-26]
+#head(YE_lastR %>% data.frame())
+#head(YE_release %>% data.frame())
 
-updated_BRF_R <- rbind(BRF_lastR,BRF_release) %>% arrange(Region,RptArea,year)
+#colnames(YE_lastR) <- colnames(YE_release)
+#YE_lastR <- YE_lastR %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
+#ncol(YE_lastR); ncol(YE_release)
+#YE_lastR <- YE_lastR[,-29]
 
-updated_BRF_R %>% filter(year == 2022 & Region == "SE")
+#updated_YE_R <- rbind(YE_lastR,YE_release) %>% arrange(Region,RptArea,year)
+
+#updated_YE_R %>% filter(year == 2022 & Region == "SE")
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
-updated_BRF_R <- rbind(BRF_lastR %>% filter(year < YEAR),
-                       BRF_release) %>% arrange(Region,RptArea,year)
-write.csv(updated_BRF_R,paste0("output/BRF_rel_Howard_thru",YEAR,".csv"))
+updated_Pel_R <- Pel_release #rbind(YE_lastR %>% filter(year < YEAR),
+                       #YE_release) %>% arrange(Region,RptArea,year)
+write.csv(updated_Pel_R,paste0("output/Pel_rel_Howard_thru",YEAR,".csv"))
 
-rel_est_xlsx <- createWorkbook()
-sheet = addWorksheet(rel_est_xlsx, "BRF release")
-writeData(rel_est_xlsx, "BRF release", updated_BRF_R)
+# For EXCEL recording, the BRF analysis is where you create the workbook: 
+rel_est_xlsx <- loadWorkbook(paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"))
+addWorksheet(rel_est_xlsx, "PEL release")
+writeData(rel_est_xlsx, "PEL release", updated_Pel_R)
 saveWorkbook(rel_est_xlsx, paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"),overwrite=T)
+
 #-------------------------------------------------------------------------------
 # Summary and plots
 # Harvest and release by year and user and CFMU / RptArea
-str(updated_BRF_H)
+str(updated_YE_H)
 
-updated_BRF_H %>% select(Region,RptArea,year,
-                         Guided = GuiBRF, SE_Gui = sqrt_GuiBRF ,
-                         Private = PRIV_BRF, SE_Priv = sqrt_PrivBRF,
-                         Total = TotalBRFharv,SE_Tot = sqrt_totalBRF)->BRF_harv_table
+updated_Pel_H %>% select(Region,RptArea,year,
+                         Guided = GuiPel,SE_Gui = sqrt_GuiPel ,
+                         Private = Priv_Pel,SE_Priv = sqrt_PrivPel,
+                         Total = TotalPelharv,SE_Tot = sqrt_totalPel)->Pel_harv_table
 
-Kodiak_H <- BRF_harv_table %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
+Kodiak_H <- Pel_harv_table %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
                                                      "WKMA","SKMA")) 
-SC_H <- BRF_harv_table %>% filter(Region == "SC",
+SC_H <- Pel_harv_table %>% filter(Region == "SC",
                                   RptArea %in% c("CI","NG","PWSI",
                                                  "PWSO")) 
 
-SE_H <- BRF_harv_table %>% filter(Region == "SE")
+SE_H <- Pel_harv_table %>% filter(Region == "SE")
 
-updated_BRF_R %>% select(Region,RptArea,year,
-                         Guided = GuiBRF,SE_Gui = sqrt_GuiBRF ,
-                         Private = PRIV_BRF,SE_Priv = sqrt_PrivBRF,
-                         Total =TotalBRFrel,SE_Tot = sqrt_totalBRF)->BRF_rel_table
 
-Kodiak_R <- BRF_rel_table %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
+updated_Pel_R %>% select(Region,RptArea,year,
+                         Guided = GuiPel,SE_Gui = sqrt_GuiPel ,
+                         Private = Priv_Pel,SE_Priv = sqrt_PrivPel,
+                         Total =TotalPelrel,SE_Tot = sqrt_totalPel)->Pel_rel_table
+
+Kodiak_R <- Pel_rel_table %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
                                                      "WKMA","SKMA")) 
-SC_R <- BRF_rel_table %>% filter(Region == "SC",
+SC_R <- Pel_rel_table %>% filter(Region == "SC",
                                   RptArea %in% c("CI","NG","PWSI",
                                                  "PWSO")) 
 
-SE_R <- BRF_rel_table %>% filter(Region == "SE")
+SE_R <- Pel_rel_table %>% filter(Region == "SE")
 
-#write.csv(Kodiak_H,paste0("output/reports/Kodiak_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(Kodiak_R,paste0("output/reports/Kodiak_BRF_releases_thru",YEAR,".csv"))
-#write.csv(SC_H,paste0("output/reports/Southcentral_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(SC_R,paste0("output/reports/Southcentral_BRF_release_thru",YEAR,".csv"))
-#write.csv(SE_H,paste0("output/reports/Southeast_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(SE_H,paste0("output/reports/Southeast_BRF_release_thru",YEAR,".csv"))
 
-colnames(BRF_harv_table)
-BRF_harv_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
+colnames(Pel_harv_table)
+Pel_harv_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
   pivot_longer(
     cols = c(Guided, Private, Total),
     names_to = "User",
     values_to = "Harvest"
   ) %>%
-  left_join(BRF_harv_table %>% select(year,Region,RptArea,SE_Gui,SE_Priv,SE_Tot) %>%
+  left_join(Pel_harv_table %>% select(year,Region,RptArea,SE_Gui,SE_Priv,SE_Tot) %>%
               pivot_longer(
                 cols = c(SE_Gui,SE_Priv,SE_Tot),
                 names_to = "User",
@@ -299,13 +335,13 @@ BRF_harv_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
                                    ifelse(User == "SE_Priv","Private","Total"))),
             by=c("year","Region","RptArea","User")) -> Hplot_dat
 
-BRF_rel_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
+Pel_rel_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
   pivot_longer(
     cols = c(Guided, Private, Total),
     names_to = "User",
     values_to = "Releases"
   ) %>%
-  left_join(BRF_rel_table %>% select(year,Region,RptArea,SE_Gui,SE_Priv,SE_Tot) %>%
+  left_join(Pel_rel_table %>% select(year,Region,RptArea,SE_Gui,SE_Priv,SE_Tot) %>%
               pivot_longer(
                 cols = c(SE_Gui,SE_Priv,SE_Tot),
                 names_to = "User",
@@ -334,7 +370,7 @@ ggplot(Hplot_dat %>% filter(Region == "SE")) +
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/SE_BRF_harv.png", width = 6, height = 4)
+ggsave("figures/SE_PEL_harv.png", width = 6, height = 4)
 
 ggplot(Hplot_dat %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
                                            "WKMA","SKMA"))) +
@@ -349,7 +385,7 @@ ggplot(Hplot_dat %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/KOD_BRF_harv.png", width = 6, height = 4)
+ggsave("figures/KOD_PEL_harv.png", width = 6, height = 4)
 
 ggplot(Hplot_dat %>% filter(RptArea %in% c("CI","NG","PWSI",
                                            "PWSO"))) +
@@ -364,7 +400,7 @@ ggplot(Hplot_dat %>% filter(RptArea %in% c("CI","NG","PWSI",
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/SC_BRF_harv.png", width = 6, height = 4)
+ggsave("figures/SC_PEL_harv.png", width = 6, height = 4)
 
 ggplot(Rplot_dat %>% filter(Region == "SE")) +
   scale_fill_manual(values = cols) +
@@ -380,7 +416,7 @@ ggplot(Rplot_dat %>% filter(Region == "SE")) +
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/SE_BRF_rel.png", width = 6, height = 4)
+ggsave("figures/SE_PEL_rel.png", width = 6, height = 4)
 
 ggplot(Rplot_dat %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
                                            "WKMA","SKMA"))) +
@@ -395,7 +431,7 @@ ggplot(Rplot_dat %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/KOD_BRF_rel.png", width = 6, height = 4)
+ggsave("figures/SC_PEL_rel.png", width = 6, height = 4)
 
 ggplot(Rplot_dat %>% filter(RptArea %in% c("CI","NG","PWSI",
                                            "PWSO"))) +
@@ -410,34 +446,37 @@ ggplot(Rplot_dat %>% filter(RptArea %in% c("CI","NG","PWSI",
   scale_y_continuous(labels = function(x) format(x, big.mark = ",",
                                                  scientific = FALSE))
 
-ggsave("figures/SC_BRF_rel.png", width = 6, height = 4)
+ggsave("figures/SC_PEL_rel.png", width = 6, height = 4)
 
-Kodiak_rep <- createWorkbook()
-addWorksheet(Kodiak_rep, "BRF harvest")
-addWorksheet(Kodiak_rep, "BRF release")
-writeData(Kodiak_rep, "BRF harvest", Kodiak_H)
-writeData(Kodiak_rep, "BRF release", Kodiak_R)
-insertImage(Kodiak_rep, "BRF harvest", "figures/KOD_BRF_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
-insertImage(Kodiak_rep, "BRF release", "figures/KOD_BRF_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
-saveWorkbook(Kodiak_rep, paste0("output/reports/Kodiak_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
+#Kodiak_rep <- loadWorkbook(paste0("output/reports/Kodiak_RF_HowMth_thru",YEAR,".xlsx"))
+#addWorksheet(Kodiak_rep, "PEL harvest")
+#addWorksheet(Kodiak_rep, "PEL release")
+#writeData(Kodiak_rep, "PEL harvest", Kodiak_H)
+#writeData(Kodiak_rep, "PEL release", Kodiak_R)
+#insertImage(Kodiak_rep, "PEL harvest", "figures/KOD_PEL_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
+#insertImage(Kodiak_rep, "PEL release", "figures/KOD_PEL_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
+#saveWorkbook(Kodiak_rep, paste0("output/reports/Kodiak_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
 
-SC_rep <- createWorkbook()
-addWorksheet(SC_rep, "BRF harvest")
-addWorksheet(SC_rep, "BRF release")
-writeData(SC_rep, "BRF harvest", SC_H)
-writeData(SC_rep, "BRF release", SC_R)
-insertImage(SC_rep, "BRF harvest", "figures/SC_BRF_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
-insertImage(SC_rep, "BRF release", "figures/SC_BRF_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
+SC_rep <- loadWorkbook(paste0("output/reports/SC_RF_HowMth_thru",YEAR,".xlsx"))
+addWorksheet(SC_rep, "PEL harvest")
+addWorksheet(SC_rep, "PEL release")
+writeData(SC_rep, "PEL harvest", SC_H)
+writeData(SC_rep, "PEL release", SC_R)
+insertImage(SC_rep, "PEL harvest", "figures/SC_PEL_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
+insertImage(SC_rep, "PEL release", "figures/SC_PEL_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
 saveWorkbook(SC_rep, paste0("output/reports/SC_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
 
-SE_rep <- createWorkbook()
-addWorksheet(SE_rep, "BRF harvest")
-addWorksheet(SE_rep, "BRF release")
-writeData(SE_rep, "BRF harvest", SE_H)
-writeData(SE_rep, "BRF release", SE_R)
-insertImage(SE_rep, "BRF harvest", "figures/SE_BRF_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
-insertImage(SE_rep, "BRF release", "figures/SE_BRF_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
+SE_rep <- loadWorkbook(paste0("output/reports/SE_RF_HowMth_thru",YEAR,".xlsx"))
+addWorksheet(SE_rep, "PEL harvest")
+addWorksheet(SE_rep, "PEL release")
+writeData(SE_rep, "PEL harvest", SE_H)
+writeData(SE_rep, "PEL release", SE_R)
+insertImage(SE_rep, "PEL harvest", "figures/SE_PEL_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
+insertImage(SE_rep, "PEL release", "figures/SE_PEL_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
 saveWorkbook(SE_rep, paste0("output/reports/SE_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
+#NOTE FLAG GODDAMN:
+# Harvest and catches should really be in log space. Fucking hell... 
+
 #-------------------------------------------------------------------------------
 # SCRAP
 unique(BRF_harvest$RptArea)
