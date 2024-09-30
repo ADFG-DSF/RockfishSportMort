@@ -25,26 +25,22 @@ library(janitor)
 library(haven)
 
 # year of new data
-YEAR <- 2022
+YEAR <- 2023
+
+LB_file_name <- "2023LogbookData08022024.csv" #date is the date the data was pulled by logbook folks
 
 # Logbook data -----------------------------------------------------------------
 
-# PJ todo #1: need to code from raw logbook data that used to be SAS based and create
-## a file that matches "logbook_harvest.xlsx"
+# Read in new logbook data:
 
-raw_log23 <- read.csv(paste0("data/raw_dat/",2023,"LogbookData.8.2.2024.csv")) %>% #date is the date the data was pulled by logbook folks
+#raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bdat")) %>% clean_names() %>%
+#  mutate(logsdate = logdate_new)
+# write.csv(raw_log22 %>% data.frame(),paste0("data/raw_dat/",YEAR,"/lb_statewide_2022.csv"))
+
+raw_log23 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
   clean_names()
-str(raw_log)
 
-raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bdat")) %>% clean_names() %>%
-  mutate(logsdate = logdate_new)
-
-write.csv(raw_log22 %>% data.frame(),paste0("data/raw_dat/",YEAR,"/lb_statewide_2022.csv"))
-
-colnames(raw_log23)
-colnames(raw_log22)
-
-raw_log <- raw_log22
+raw_log <- raw_log23
 
 log <- raw_log %>% 
   mutate(
@@ -68,7 +64,7 @@ log <- raw_log %>%
     sfstat = ifelse(sfstat == 113456, 113450, sfstat)  # Correct logbook error
   )
 
-# Assign NMFS areas based on sfstat values
+# Assign CFMU areas based on sfstat values
 
 log <- log %>%
   mutate(
@@ -255,7 +251,7 @@ log <- log %>%
   )
   
 with(log, table(sfstat,RptArea)) -> RA_sfstat
-write.csv(RA_sfstat,"data/RptArea_x_sfstat.csv")
+#write.csv(RA_sfstat,"data/RptArea_x_sfstat.csv")
 
 head(log)
 unique(log$RptArea)
@@ -270,16 +266,27 @@ harvest_summary <- log %>%
 print(harvest_summary)
 
 # Find missing NMFS assignments where rfharv > 0 and RptArea is empty
-MissingNMFS <- log %>%
+MissingNMFS_H <- log %>%
   filter(rfharv > 0 & (is.na(RptArea) | RptArea == ""))
 
 # Print relevant columns of MissingNMFS
-MissingNMFS %>%
+MissingNMFS_H %>%
   select(date, port_site, sfstat, rfharv) %>%
   print()
 
+# which sfstat areas aren't covered in the current script?
+# ADFG sfstat areas: https://www.adfg.alaska.gov/index.cfm?adfg=SFGuidesLicense.Maps#:~:text=Southwestern%20(Kodiak,%20Chignik%20and%20AK%20Peninsula)%20Maps.%20NOTE:
+# NMFS maps: https://www.adfg.alaska.gov/index.cfm?adfg=fishingCommercialByFishery.statmaps
+# CFMU maps: https://www.adfg.alaska.gov/index.cfm?adfg=CommercialByFisheryGroundfish.groundfishmaps
+unique(MissingNMFS_H$sfstat)
+# 515836 not present, likely misentere
+# 466064 doesn't exist, likely misentered 466004
+# 466006 doesn't exist, misentered
+# 495838 doesn't exist, most likely 495938
+# Not reassigning... apportion these out below.
+
 # Identify port sites of missing harvest data (rfharv) with a weighted frequency table
-port_site_summary_H <- MissingNMFS %>%
+port_site_summary_H <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_rfharv = sum(rfharv, na.rm = TRUE)) %>%
   mutate(weighted_rfharv = replace_na(weighted_rfharv, 0))  # To handle missing values
@@ -287,7 +294,7 @@ port_site_summary_H <- MissingNMFS %>%
 print(port_site_summary_H)
 
 # 2006 onward identify port sites of missing harvest data - prockkept
-prockkept_summary <- MissingNMFS %>%
+prockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_prockkept = sum(p_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_prockkept = replace_na(weighted_prockkept, 0))  # Handle missing values
@@ -295,7 +302,7 @@ prockkept_summary <- MissingNMFS %>%
 print(prockkept_summary)
 
 # 2006 onward identify port sites of missing harvest data - yrockkept
-yrockkept_summary <- MissingNMFS %>%
+yrockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_yrockkept = sum(y_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_yrockkept = replace_na(weighted_yrockkept, 0))  # Handle missing values
@@ -303,7 +310,7 @@ yrockkept_summary <- MissingNMFS %>%
 print(yrockkept_summary)
 
 # 2006 onward identify port sites of missing harvest data - orockkept
-orockkept_summary <- MissingNMFS %>%
+orockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_orockkept = sum(o_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_orockkept = replace_na(weighted_orockkept, 0))  # Handle missing values
@@ -368,6 +375,8 @@ res_log <- log %>% filter(rfharv > 0) %>%
 
 # View the summary
 print(res_log)
+write.csv(res_log,paste0("data/raw_dat/",YEAR,"/LB_harv_by_Reisdency.csv"), row.names = F)
+
 # Titles in R: you can add titles within output print statements if needed
 #cat('Southeast Region charter KNOWN rf harvest by port_SWHS and CF Management Unit caught (logbook).')
 
@@ -384,6 +393,14 @@ freq_table <- log %>% #filter(region == "SC") %>%
 # Display the frequency table
 print(freq_table, n=24)
 
+# From 2024 examination of 2022 data. Found error in SAS code. SAS code filters 
+# out trips where no rockfish were kept. Thus if a charter caught and released
+# rockfish their releases are not counted. This means that all release estimates
+# are UNDERESTIMATED! The largets difference I saw was ~10% so not a major issue
+# but worth considering until this is rerun through the entire time series (ugh).
+# R code is correct;
+# Here is the code that shows the undercounting in the SAS code
+{
 # FLAG!! Something is fucked up with release data. Code for harvests mirrors SAS output
 # but release data does not. SE matches, but not SC. Did some digging but no luck. Maybe? something is off
 # from BBs having to convert to SAS when LB program stopped producing SAS code?
@@ -420,14 +437,16 @@ log %>%
             total_prockrel = sum(p_rock_rel, na.rm = TRUE),
             total_yrockrel = sum(y_rock_rel, na.rm = TRUE),
             total_orockrel = sum(o_rock_rel, na.rm = TRUE))
+}
 
+# - back to analysis: 
 # 2. Create the 'MissingNMFS' dataset
-MissingNMFS <- log %>%
+MissingNMFS_R <- log %>%
   filter(rfrel > 0 & (is.na(RptArea) | RptArea == ""))
 
 # 3. Print the 'MissingNMFS' dataset with selected variables
-MissingNMFS %>%
-  select(logdate_new, port_site, sfstat, rfrel) %>%
+MissingNMFS_R %>%
+  select(logdate, port_site, sfstat, rfrel) %>%
   print(n = Inf)
 
 
@@ -440,16 +459,16 @@ release_summary <- log %>%
 print(release_summary)
 
 # Find missing NMFS assignments where rfrel > 0 and RptArea is empty
-MissingNMFS <- log %>%
+MissingNMFS_R <- log %>%
   filter(rfrel > 0 & (is.na(RptArea) | RptArea == ""))
 
 # Print relevant columns of MissingNMFS
-MissingNMFS %>%
+MissingNMFS_R %>%
   select(date, port_site, sfstat, rfrel) %>%
   print()
 
 # Identify port sites of missing release data (rfrel) with a weighted frequency table
-port_site_rfrel_summary <- MissingNMFS %>%
+port_site_rfrel_summary <- MissingNMFS_R %>%
   group_by(port_site) %>%
   summarise(weighted_rfrel = sum(rfrel, na.rm = TRUE)) %>%
   mutate(weighted_rfrel = replace_na(weighted_rfrel, 0))  # Handle missing values
@@ -457,7 +476,7 @@ port_site_rfrel_summary <- MissingNMFS %>%
 print(port_site_rfrel_summary)
 
 # 2006 onward identify port sites of missing release data - prockrel
-port_site_prockrel_summary <- MissingNMFS %>%
+port_site_prockrel_summary <- MissingNMFS_R %>%
   group_by(port_site) %>%
   summarise(weighted_prockrel = sum(p_rock_rel, na.rm = TRUE)) %>%
   mutate(weighted_prockrel = replace_na(weighted_prockrel, 0))  # Handle missing values
@@ -465,7 +484,7 @@ port_site_prockrel_summary <- MissingNMFS %>%
 print(port_site_prockrel_summary)
 
 # 2006 onward identify port sites of missing release data - yrockrel
-port_site_yrockrel_summary <- MissingNMFS %>%
+port_site_yrockrel_summary <- MissingNMFS_R %>%
   group_by(port_site) %>%
   summarise(weighted_yrockrel = sum(y_rock_rel, na.rm = TRUE)) %>%
   mutate(weighted_yrockrel = replace_na(weighted_yrockrel, 0))  # Handle missing values
@@ -473,7 +492,7 @@ port_site_yrockrel_summary <- MissingNMFS %>%
 print(port_site_yrockrel_summary)
 
 # 2006 onward identify port sites of missing release data - orockrel
-port_site_orockrel_summary <- MissingNMFS %>%
+port_site_orockrel_summary <- MissingNMFS_R %>%
   group_by(port_site) %>%
   summarise(weighted_orockrel = sum(o_rock_rel, na.rm = TRUE)) %>%
   mutate(weighted_orockrel = replace_na(weighted_orockrel, 0))  # Handle missing values
@@ -685,12 +704,12 @@ print(summary_Bwest)
 # This code will need to be modified year to year depending on which areas and ports
 # have unassigned fish... 
 
-MissingNMFS %>%
+MissingNMFS_H %>%
   select(date, port_site, sfstat, rfharv) %>%
   print()
 
 # Identify port sites of missing harvest data (rfharv) with a weighted frequency table
-port_site_summary_H <- MissingNMFS %>%
+port_site_summary_H <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_rfharv = sum(rfharv, na.rm = TRUE)) %>%
   mutate(weighted_rfharv = replace_na(weighted_rfharv, 0))  # To handle missing values
@@ -698,7 +717,7 @@ port_site_summary_H <- MissingNMFS %>%
 print(port_site_summary_H)
 
 # 2006 onward identify port sites of missing harvest data - prockkept
-prockkept_summary <- MissingNMFS %>%
+prockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_prockkept = sum(p_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_prockkept = replace_na(weighted_prockkept, 0))  # Handle missing values
@@ -706,7 +725,7 @@ prockkept_summary <- MissingNMFS %>%
 print(prockkept_summary)
 
 # 2006 onward identify port sites of missing harvest data - yrockkept
-yrockkept_summary <- MissingNMFS %>%
+yrockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_yrockkept = sum(y_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_yrockkept = replace_na(weighted_yrockkept, 0))  # Handle missing values
@@ -714,7 +733,7 @@ yrockkept_summary <- MissingNMFS %>%
 print(yrockkept_summary)
 
 # 2006 onward identify port sites of missing harvest data - orockkept
-orockkept_summary <- MissingNMFS %>%
+orockkept_summary <- MissingNMFS_H %>%
   group_by(port_site) %>%
   summarise(weighted_orockkept = sum(o_rock_kept, na.rm = TRUE)) %>%
   mutate(weighted_orockkept = replace_na(weighted_orockkept, 0))  # Handle missing values
@@ -725,7 +744,8 @@ unique(H_sum_1$port_site)
 
 SC_appor <- H_sum_1 %>% 
   mutate(port_site = toupper(port_site)) %>%
-  mutate(port_site = ifelse(port_site == "Kodiak","KODIAK",port_site),) %>%
+  mutate(port_site = ifelse(port_site == "Kodiak","KODIAK",
+                            ifelse(port_site == "Ninilchik","NINILCHIK",port_site)),) %>%
   filter(port_site %in% c("ADAK","HOMER","Kodiak","VALDEZ","KODIAK"))
 
 SC_appor %>%  group_by(port_site) %>% filter(!is.na(RptArea)) %>%
@@ -783,8 +803,13 @@ H_sum_F <- rbind(H_sum_F,
 
 #-------------------------------------------------------------------------------
 # Update logbook harvest and release data sheets.
-lb_harv <- read.csv("data/raw_dat/logbook_harvest_byYear.csv")
-lb_rel <- read.csv("data/raw_dat/logbook_release_byYear.csv")
+lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR-1,".csv"))
+lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR-1,".csv"))
+
+#get rid of column 1 which is rown names. CHECK! This can go away once we've
+# caught up with saving everything with row.names = F
+lb_harv <- lb_harv[,-1]
+lb_rel <- lb_rel[,-1]
 
 unique(lb_rel$Region)
 
@@ -797,6 +822,8 @@ lb_harv <- lb_harv %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST"
                                               ifelse(Region == "2c","SC",
                                                      ifelse(Region == "sc","SC",Region))))
 
+unique(lb_harv$year)
+
 lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
                                                ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
                                                       ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
@@ -804,22 +831,23 @@ lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
                                             ifelse(Region == "2c","SC",
                                                    ifelse(Region == "sc","SC",Region))))
 
-lb_harv2 <- rbind(lb_harv %>% filter(year < 2022), #get rid of fucked up 2022 estimates
+unique(lb_rel$year)
+
+lb_harv2 <- rbind(lb_harv, # %>% filter(year < 2022), #get rid of fucked up 2022 estimates
                  H_sum_F %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
                                                                    "NSEO","SSEI","SSEO"),"SE","SC")) %>%
-                   mutate(nonpel_harv = tot_ye_harv + tot_o_harv) %>% 
+                   mutate(nonpel_harv = tot_ye_harv + tot_o_harv,
+                          Region = ifelse(RptArea == "EWYKT","SE",Region)) %>% 
                    select(Region, year, RptArea, rfharv = tot_rf_harv, pelagic_harv = tot_pel_harv,
                           nonpel_harv, ye_harv = tot_ye_harv, not_ye_nonpel_harv = tot_o_harv) %>%
                    filter(RptArea != "ZZZZ" & RptArea != 0) ) %>% 
   arrange(year,RptArea)
 
-lb_harv2 %>% filter(year == 2022)
-
 write.csv(lb_harv2, paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
 
 #*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
 
-R_sum_2 <- rbind(R_sum_2 %>% filter(year < 2022),
+R_sum_2 <- rbind(R_sum_2, # %>% filter(year < 2022),
                  R_sum_2 %>% filter(RptArea %in% c("EYKT","IBS")) %>%
                    summarise(.,across(where(is.numeric),sum)) %>%
                    mutate(year = YEAR,
@@ -834,9 +862,7 @@ lb_rel2 <- rbind(lb_rel,
                    filter(RptArea != "ZZZZ" & RptArea != 0)) %>% 
   arrange(year,RptArea)
 
-lb_rel2 %>% filter(year == 2022)
-
-# Notes for tomorrow: clean up the truncated up RptArea names
+lb_rel2 %>% filter(year == YEAR)
 
 write.csv(lb_rel2, paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
 
@@ -858,10 +884,6 @@ lb_R <- lb_rel2
 #-----------
 new_lb_H <- lb_H %>% filter(year == YEAR)
 new_lb_R <- lb_R %>% filter(year == YEAR)
-
-#temp: get rid of this when code rerun and saved proper
-new_lb_H <- new_lb_H[,-1]
-new_lb_R <- new_lb_R[,-1]
 
 left_join(new_H,new_lb_H %>% select(Region, year, RptArea,rfharv),
           by = c("Region","year","RptArea")) %>% 
@@ -891,7 +913,7 @@ left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
          privrfrel_UPERLWR95 = sd_PRIV_rfrel * 1.96) %>% 
   select(-rfrel) -> new_R
 
-write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_"SC_,YEAR,".csv"), row.names = F)
+write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"), row.names = F)
 
 #### ---------------------------------------------------------------------------
 # Code verification with 2022 overlap data:

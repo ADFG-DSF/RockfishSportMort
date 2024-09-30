@@ -18,52 +18,54 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 
-YEAR <- 2022
+YEAR <- 2023
 
+SWHS_file_name <- "rf_byMgmtUnit_sent20240925.xlsx"
+  
 # Read in data file used for analysis and to be updated:
 # First year coding this and doing a redundant run on 2022. Typically you will
 # read this in from last year's folder and then save it into this year's folder:
 gui_cat <- #guided catch
-  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "gui_cat",
             range = paste0("A4:R",YEAR-2011+5), 
             na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
 
-gui_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+gui_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "guicat_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
                         na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
 gui_har <- #guided harvest
-  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "gui_har",
             range = paste0("A4:R",YEAR-2011+5), 
             na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
-gui_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+gui_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "guihar_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
                         na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
 pri_cat <- #prvate catch
-  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "pri_cat",
             range = paste0("A4:R",YEAR-2011+5), 
             na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
-pri_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+pri_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "pricat_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
                         na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
 pri_har <- #private catch
-  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "pri_har",
             range = paste0("A4:R",YEAR-2011+5), 
             na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
-pri_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\rf_byMgmtUnit_20240305.xlsx"), 
+pri_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "prihar_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
                         na = "NA") %>% rename_all(~ gsub("\"", "", .))
@@ -88,8 +90,8 @@ pri_rel_se <- pri_rel_se %>% mutate(year = pri_cat$YEAR)
 # and port sampling data. Once complete the csv files can be compiled back into
 # an excel worksheet since that is the format that has been used. 
 
-# SWHS HARVESTS
-rock_harv <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+# SWHS HARVESTS updated from last year: 
+rock_harv <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\harvest estimates excel version_thru",YEAR-1,".xlsx"), 
                        sheet = "rockfish harvests",
                        range = paste0("A1:R1000"), 
                        na = "NA")
@@ -135,7 +137,7 @@ new_H %>% slice(-1) %>%
   relocate(c(Region,year,RptArea,Log_rfharv), .before = everything()) -> new_H
 
 # SWHS RELEASES
-rock_rel <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+rock_rel <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\release estimates excel version_thru",YEAR-1,".xlsx"), 
                        sheet = "rockfish release",
                        range = paste0("A1:R1000"), 
                        na = "NA")
