@@ -25,7 +25,7 @@ library(ggplot2)
 library(janitor)
 library(haven)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -39,12 +39,12 @@ SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Reg
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #Read in SC port sampling data: 
-SC_port_gui <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_guided.csv")
-SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided.csv")
+SC_port_gui <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_guided_093024.csv")
+SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.csv")
 
 #For Southcentral we need to weight the samples for PWS and NG respective to the landings:
 # Port level data comes with the IPHC reports from Jake:
-SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), 
+SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
                        sheet = "Halibut Area Harvest",
                        range = paste0("A5:X41"), 
                        na = "NA") %>% clean_names()
@@ -63,9 +63,11 @@ new_priv <- c(YEAR,
                    as.numeric(SWHS_port %>% filter(bottom_area == "2 - Whittier + W PWS", type == "0-PUB") %>% select(rfpri)),
                    as.numeric(SWHS_port %>% filter(bottom_area == "2 - Valdez + E PWS", type == "0-PUB") %>% select(rfpri)),
                    as.numeric(SWHS_port %>% filter(bottom_area == "3 - LCI", type == "0-PUB") %>% select(rfpri))) 
-print(rbind(port_priv,new_priv), n = 30) #actually bind these when you do a new year
+print(rbind(port_priv,new_priv)) #actually bind these when you do a new year
+
+port_priv <- rbind(port_priv,new_priv)
 #getting rid of this spreadsheat:
-write.csv(port_priv,paste0("data/raw_dat/",YEAR,"/NGPWS_priv_harv_byport.csv"))
+write.csv(port_priv,paste0("data/raw_dat/",YEAR,"/NGPWS_priv_harv_byport.csv"),row.names = F)
 
 # species comp for new year for those pain in the ass ports:
 unique(SC_port_priv$PORT)
@@ -236,7 +238,8 @@ gui_wts %>%
   
 
 # track this guided harvest data ... 
-port_gui <- read.csv(paste0("data/raw_dat/",YEAR,"/NGPWS_gui_harv_byport.csv"))
+port_gui <- read.csv(paste0("data/raw_dat/",YEAR-1,"/NGPWS_gui_harv_byport.csv"))
+port_gui <- port_gui[,-1]
 
 rbind(port_gui %>% mutate(orig = "orig"),
       new_P %>% mutate(orig = "update")) %>% arrange(Year,CFMU)
@@ -630,11 +633,13 @@ View(SC_port_fin)
 # old values, although documentation is scant on why.
 
 # This is where we picked up from the spreadsheet copypaste extravaganza:
-lastyr <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\Spcomp_for_PWS_weighting.xlsx"), 
-                    sheet = "species_comp_Region2_forR",
-                    range = paste0("A1:AG1000"), 
-                    na = "NA")
-lastyr <- lastyr[rowSums(is.na(lastyr)) != ncol(lastyr),]
+#lastyr <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\Spcomp_for_PWS_weighting.xlsx"), 
+#                    sheet = "species_comp_Region2_forR",
+#                    range = paste0("A1:AG1000"), 
+#                    na = "NA")
+#lastyr <- lastyr[rowSums(is.na(lastyr)) != ncol(lastyr),]
+
+lastyr <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR-1,".csv"))
 
 tosave <- SC_port_fin[,-c(34:43)]
 names(tosave) <-names(lastyr)
@@ -648,7 +653,7 @@ final <- rbind(lastyr %>% filter(Year < YEAR),
                tosave %>% filter(Year == YEAR)) %>% arrange(User, Rpt_Area, Year) %>% data.frame()
 View(final)
 
-write.csv(final,paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,"_INCOMPLETE.csv"),row.names=F)
+write.csv(final,paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"),row.names=F)
 
 
 

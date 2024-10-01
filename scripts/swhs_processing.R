@@ -18,9 +18,17 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 
-YEAR <- 2023
+YEAR <- 2022
 
+#2022
+SWHS_file_name <- "rf_byMgmtUnit_20240305.xlsx"
+#2023
 SWHS_file_name <- "rf_byMgmtUnit_sent20240925.xlsx"
+
+# ARGH!!! FUCKING KODIAK: Need to walk thru this to deal with low sample sizes in 
+# SWHS responses and the ad-hoc approach taken by Katie and Sara to repopulate
+# data and walk through analysis. See "harvest estimates excel version thru2022"
+# from BB's last go to see comments in cells(!!!!) to figure it out. 
   
 # Read in data file used for analysis and to be updated:
 # First year coding this and doing a redundant run on 2022. Typically you will
