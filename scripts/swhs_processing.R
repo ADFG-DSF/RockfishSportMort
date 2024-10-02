@@ -79,6 +79,26 @@ pri_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name),
                         na = "NA") %>% rename_all(~ gsub("\"", "", .))
 
 #-------------------------------------------------------------------------------
+# Responses: Minimum sample size is 12:
+gui_resp <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
+                        sheet = "gui_resp",
+                        range = paste0("A4:C1000"), 
+                        na = "NA") %>% rename_all(~ gsub("\"", "", .)) %>%
+  mutate(year = YEAR) %>% select(-YEAR)
+gui_resp <- gui_resp[rowSums(is.na(gui_resp)) != ncol(gui_resp), ]
+
+pri_resp <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
+                      sheet = "pri_resp",
+                      range = paste0("A4:C1000"), 
+                      na = "NA") %>% rename_all(~ gsub("\"", "", .)) %>%
+  mutate(year = YEAR) %>% select(-YEAR)
+pri_resp <- pri_resp[rowSums(is.na(pri_resp)) != ncol(pri_resp), ]
+
+gui_resp %>% filter(respused < 12 & year > (YEAR-3))
+
+pri_resp %>% filter(respused < 12 & year > (YEAR-3))
+
+#-------------------------------------------------------------------------------
 # Calculate RELEASES = catch - harvest
 
 gui_rel <- gui_cat - gui_har
@@ -189,6 +209,59 @@ new_R %>% slice(-1) %>%
                              (guiSWHS_rfrel+privSWHS_rfrel)^4)
   ) %>%
   relocate(c(Region,year,RptArea,Log_rfrel), .before = everything()) -> new_R
+
+# KODIAK: Because of inadequate sample sizes we need to make substitutions for harvest
+# and release numbers:
+gui_resp %>% filter(respused < 12 & year == YEAR) #Only need values for SKMA:
+
+pri_resp %>% filter(respused < 12 & year == YEAR)
+
+# Noted: large inconsistency in what sample sizes were deemed appropriate!!! WTF
+# Howard et al says 12 is minimal, but SW was censoring samples sizes under 50!
+# They must have confused minimal sample sizes for port sampling data versus
+#
+# SWHS responses. We'll switch back to the 12 cutoff:
+#
+# Real inconsistency too in which areas were used for substitutions
+# i.e., SKMA is all over the place; order of preference seems to be WKMA, Eastside, Afognak
+
+new_H[new_H$RptArea == "WKMA", "guiSWHS_rfharv"][[1]]
+
+new_H %>% 
+  add_row(Region = "SC", year = YEAR, RptArea = "SKMA",
+          guiSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "guiSWHS_rfharv"],
+          var_guiSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "var_guiSWHS_rfharv"],
+          privSWHS_rfharv = new_H[new_H$RptArea == "AFOGNAK", "privSWHS_rfharv"],
+          var_privSWHS_rfharv = new_H[new_H$RptArea == "AFOGNAK", "var_privSWHS_rfharv"],
+          SWHS_gprop = guiSWHS_rfharv / (guiSWHS_rfharv + privSWHS_rfharv), #(p-hatgi)
+          var_SWHS_gprop = ((((guiSWHS_rfharv)^2*var_privSWHS_rfharv)+
+                               ((privSWHS_rfharv)^2*var_guiSWHS_rfharv))/
+                              (guiSWHS_rfharv+privSWHS_rfharv)^4)) %>%
+  mutate(privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
+                                  new_H[new_H$RptArea == "AFOGNAK", "privSWHS_rfharv"],
+                                  privSWHS_rfharv),
+         var_privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
+                                      new_H[new_H$RptArea == "AFOGNAK", "var_privSWHS_rfharv"],
+                                      var_privSWHS_rfharv)) -> new_H
+  
+new_R %>% 
+  add_row(Region = "SC", year = YEAR, RptArea = "SKMA",
+          guiSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "guiSWHS_rfrel"],
+          var_guiSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "var_guiSWHS_rfrel"],
+          privSWHS_rfrel = new_R[new_R$RptArea == "AFOGNAK", "privSWHS_rfrel"],
+          var_privSWHS_rfrel = new_R[new_R$RptArea == "AFOGNAK", "var_privSWHS_rfrel"],
+          SWHS_gprop = guiSWHS_rfrel / (guiSWHS_rfrel + privSWHS_rfrel), #(p-hatgi)
+          var_SWHS_gprop = ((((guiSWHS_rfrel)^2*var_privSWHS_rfrel)+
+                               ((privSWHS_rfrel)^2*var_guiSWHS_rfrel))/
+                              (guiSWHS_rfrel+privSWHS_rfrel)^4)) %>%
+  mutate(privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
+                                  new_R[new_R$RptArea == "AFOGNAK", "privSWHS_rfrel"],
+                                  privSWHS_rfrel),
+         var_privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
+                                      new_R[new_R$RptArea == "AFOGNAK", "var_privSWHS_rfrel"],
+                                      var_privSWHS_rfrel)) -> new_R
+
+#-------------------------------------------------------------------------------
 
 write.csv(new_H,paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"), row.names = F)
 write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"), row.names = F)

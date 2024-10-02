@@ -25,7 +25,7 @@ library(janitor)
 library(haven)
 
 # year of new data
-YEAR <- 2023
+YEAR <- 2022
 
 LB_file_name <- "2023LogbookData08022024.csv" #date is the date the data was pulled by logbook folks
 
@@ -33,14 +33,14 @@ LB_file_name <- "2023LogbookData08022024.csv" #date is the date the data was pul
 
 # Read in new logbook data:
 
-#raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bdat")) %>% clean_names() %>%
-#  mutate(logsdate = logdate_new)
+raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bdat")) %>% clean_names() %>%
+  mutate(logsdate = logdate_new)
 # write.csv(raw_log22 %>% data.frame(),paste0("data/raw_dat/",YEAR,"/lb_statewide_2022.csv"))
 
 raw_log23 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
   clean_names()
 
-raw_log <- raw_log23
+raw_log <- raw_log22
 
 log <- raw_log %>% 
   mutate(
@@ -396,10 +396,10 @@ print(freq_table, n=24)
 # From 2024 examination of 2022 data. Found error in SAS code. SAS code filters 
 # out trips where no rockfish were kept. Thus if a charter caught and released
 # rockfish their releases are not counted. This means that all release estimates
-# are UNDERESTIMATED! The largets difference I saw was ~10% so not a major issue
+# are UNDERESTIMATED! The largest difference I saw was ~10% so not a major issue
 # but worth considering until this is rerun through the entire time series (ugh).
 # R code is correct;
-# Here is the code that shows the undercounting in the SAS code
+# Here is the code that shows the under counting in the SAS code
 {
 # FLAG!! Something is fucked up with release data. Code for harvests mirrors SAS output
 # but release data does not. SE matches, but not SC. Did some digging but no luck. Maybe? something is off
@@ -801,15 +801,25 @@ H_sum_F <- rbind(H_sum_F,
         mutate(year = YEAR,
                RptArea = "EWYKT"))
 
+# Add in blank line for Southwest if needed
+unique(H_sum_F$RptArea) #none in 2022
+
+H_sum_F <- H_sum_F %>%
+  add_row(year = YEAR, RptArea = "SOUTHWEST",
+          tot_rf_harv = 0,
+          tot_pel_harv = 0,
+          tot_ye_harv = 0,
+          tot_o_harv = 0)
+
 #-------------------------------------------------------------------------------
 # Update logbook harvest and release data sheets.
-lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR-1,".csv"))
-lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR-1,".csv"))
+lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
+lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
 
 #get rid of column 1 which is rown names. CHECK! This can go away once we've
 # caught up with saving everything with row.names = F
-lb_harv <- lb_harv[,-1]
-lb_rel <- lb_rel[,-1]
+#lb_harv <- lb_harv[,-1]
+#lb_rel <- lb_rel[,-1]
 
 unique(lb_rel$Region)
 
@@ -822,7 +832,7 @@ lb_harv <- lb_harv %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST"
                                               ifelse(Region == "2c","SC",
                                                      ifelse(Region == "sc","SC",Region))))
 
-unique(lb_harv$year)
+unique(lb_harv$RptArea)
 
 lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
                                                ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
@@ -834,8 +844,28 @@ lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
 unique(lb_rel$year)
 
 lb_harv2 <- rbind(lb_harv, # %>% filter(year < 2022), #get rid of fucked up 2022 estimates
-                 H_sum_F %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
+                 H_sum_F %>% 
+                   add_row(year = YEAR, RptArea = "WKMA", 
+                           tot_rf_harv = H_sum_F[H_sum_F$RptArea == "WESTSIDE", "tot_rf_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "MAINLAND", "tot_rf_harv"],
+                           tot_pel_harv = H_sum_F[H_sum_F$RptArea == "WESTSIDE", "tot_pel_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "MAINLAND", "tot_pel_harv"],
+                           tot_ye_harv = H_sum_F[H_sum_F$RptArea == "WESTSIDE", "tot_ye_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "MAINLAND", "tot_ye_harv"],
+                           tot_o_harv = H_sum_F[H_sum_F$RptArea == "WESTSIDE", "tot_o_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "MAINLAND", "tot_o_harv"]) %>%
+                   add_row(year = YEAR, RptArea = "SKMA", 
+                           tot_rf_harv = H_sum_F[H_sum_F$RptArea == "SOUTHEAST", "tot_rf_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "SOUTHWEST", "tot_rf_harv"],
+                           tot_pel_harv = H_sum_F[H_sum_F$RptArea == "SOUTHEAST", "tot_pel_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "SOUTHWEST", "tot_pel_harv"],
+                           tot_ye_harv = H_sum_F[H_sum_F$RptArea == "SOUTHEAST", "tot_ye_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "SOUTHWEST", "tot_ye_harv"],
+                           tot_o_harv = H_sum_F[H_sum_F$RptArea == "SOUTHEAST", "tot_o_harv"] +
+                             H_sum_F[H_sum_F$RptArea == "SOUTHWEST", "tot_o_harv"]) %>%
+                   mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
                                                                    "NSEO","SSEI","SSEO"),"SE","SC")) %>%
+                   
                    mutate(nonpel_harv = tot_ye_harv + tot_o_harv,
                           Region = ifelse(RptArea == "EWYKT","SE",Region)) %>% 
                    select(Region, year, RptArea, rfharv = tot_rf_harv, pelagic_harv = tot_pel_harv,
@@ -843,7 +873,11 @@ lb_harv2 <- rbind(lb_harv, # %>% filter(year < 2022), #get rid of fucked up 2022
                    filter(RptArea != "ZZZZ" & RptArea != 0) ) %>% 
   arrange(year,RptArea)
 
-write.csv(lb_harv2, paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
+lb_harv2 %>% filter(!(RptArea == "EWYKT" & Region == "SC")) -> lb_harv2
+
+unique(lb_harv2 %>% filter(year == YEAR))
+
+write.csv(unique(lb_harv2), paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
 
 #*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
 
@@ -853,8 +887,29 @@ R_sum_2 <- rbind(R_sum_2, # %>% filter(year < 2022),
                    mutate(year = YEAR,
                           RptArea = "EWYKT"))
 
-lb_rel2 <- rbind(lb_rel,
-                 R_sum_2 %>% mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
+# Add in blank line for Southwest if needed
+unique(R_sum_2$RptArea) #none in 2022
+
+R_sum_2 <- R_sum_2 %>% data.frame() %>%
+  add_row(year = YEAR, RptArea = "SOUTHWEST",
+          total_rfrel = 0,
+          total_prockrel = 0,
+          total_yrockrel = 0,
+          total_orockrel = 0) #%>%
+
+R_sum_2 <- rbind(R_sum_2,
+                 R_sum_2 %>% filter(RptArea %in% c("WESTSIDE","MAINLAND")) %>%
+                   summarise(.,across(where(is.numeric),sum)) %>%
+                   mutate(year = YEAR,
+                          RptArea = "WKMA")) %>%
+  rbind(R_sum_2 %>% filter(RptArea %in% c("SOUTHEAST","SOUTHWEST")) %>%
+          summarise(.,across(where(is.numeric),sum)) %>%
+          mutate(year = YEAR,
+                 RptArea = "SKMA"))
+
+lb_rel2 <- rbind(lb_rel %>% filter(year < YEAR),
+                 R_sum_2 %>%  
+                   mutate(Region = ifelse(RptArea %in% c("CSEO","NSEO","EYKT","IBS","NSEI",
                                                                    "NSEO","SSEI","SSEO"),"SE","SC"),
                                     nonpel_rel = total_yrockrel + total_orockrel) %>%
                    select(Region, year, RptArea, rfrel = total_rfrel, pelagic_rel = total_prockrel,
@@ -864,7 +919,9 @@ lb_rel2 <- rbind(lb_rel,
 
 lb_rel2 %>% filter(year == YEAR)
 
-write.csv(lb_rel2, paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
+lb_rel2 %>% mutate(Region = ifelse(RptArea == "EWYKT", "SE", Region)) -> lb_rel2
+
+write.csv(unique(lb_rel2), paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
 
 
 #-------------------------------------------------------------------------------
@@ -878,8 +935,8 @@ new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"))
 lb_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
 lb_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
 # otherwise
-lb_H <- lb_harv2
-lb_R <- lb_rel2
+lb_H <- unique(lb_harv2)
+lb_R <- unique(lb_rel2)
 
 #-----------
 new_lb_H <- lb_H %>% filter(year == YEAR)
@@ -898,7 +955,7 @@ left_join(new_H,new_lb_H %>% select(Region, year, RptArea,rfharv),
          privrfharv_UPERLWR95 = sd_PRIV_rfharv * 1.96) %>% 
   select(-rfharv) -> new_H
 
-write.csv(new_H,paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"), row.names = F)
+write.csv(unique(new_H),paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"), row.names = F)
 
 left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
           by = c("Region","year","RptArea")) %>% 
@@ -913,7 +970,7 @@ left_join(new_R,new_lb_R %>% select(Region, year, RptArea,rfrel),
          privrfrel_UPERLWR95 = sd_PRIV_rfrel * 1.96) %>% 
   select(-rfrel) -> new_R
 
-write.csv(new_R,paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"), row.names = F)
+write.csv(unique(new_R),paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"), row.names = F)
 
 #### ---------------------------------------------------------------------------
 # Code verification with 2022 overlap data:

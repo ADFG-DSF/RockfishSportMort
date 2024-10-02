@@ -35,14 +35,14 @@ YEAR <- 2022
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
 new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"))
 #temp patch
-new_H <- new_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
-new_R <- new_R %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
+#new_H <- new_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
+#new_R <- new_R %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 #read in logbook harvest and release estimate
 LB_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
 LB_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
-LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
-LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
+#LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
+#LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
 
 #temp patch
 LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
@@ -56,8 +56,8 @@ SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Reg
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #get SC port sampling data:
-SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,"_INCOMPLETE.csv"))
-SC_port <- SC_port[,-1]
+SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
+#SC_port <- SC_port[,-1]
 #combine for species comp estimates
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
@@ -80,6 +80,16 @@ spec_apor <- rbind(SE_port,SC_port) %>%
   mutate_if(is.character, ~as.numeric(.))
 
 str(spec_apor)
+unique(spec_apor$RptArea)
+
+
+spec_apor <- spec_apor %>%
+  mutate(RptArea = case_when(
+    RptArea == "WESTSIDE" ~ "WKMA",
+    TRUE ~ as.character(RptArea)  # Keep other values as characters
+  )) %>%
+  mutate(RptArea = factor(RptArea))
+
 
 #-------------------------------------------------------------------------------
 #get the last BRF run down: 
@@ -96,13 +106,76 @@ YE_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates exce
                        na = "NA")
 YE_lastR <- YE_lastR[rowSums(is.na(YE_lastR)) != ncol(YE_lastR), ]
 
+colnames(YE_lastH) <- colnames(YE_harvest)
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
 
+#-------------------------------------------------------------------------------
+# Before we get going we need to deal with the Kodiak decision tree
+# Eastside gui_pBRFinPel = average or raw depending on sample size
+# Eastside Priv_pBRF = Northeast pBRF
+# Afognak gui_pBRFinPel = Northeast pBRFinPel
+# Afognak priv_pBRF = Northeast pBRF
+# WKMA gui_pBRFinPel = Afognak gui_pBRFinPel
+# WKMA Priv_pBRF = Afognak privBRF
+# SKMA gui_pBRFinPel = Easside pBRFinPel
+# SKMA priv_pBRF = Eastside priv_pBRF
+
+# Method for getting gui_pYE for Kodiak calculations: 
+# 1) get the YE_lastH 
+# 2) Only use data before 2020
+# 3) calculate yearly Gui_Yeh / Gui_rfharv
+# 4) use the average and variance for column R and S.
+# 5) Repeat and rinse with the release data
+
+colnames(YE_lastH)
+
+YE_lastH %>% filter(...3 %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                    ...2 > 2005 ) %>%
+  group_by(...3) %>%
+  summarize(gui_pYE = mean(`Gui_Yeharv (GYi)` / Gui_rfharv),
+            var_gui_pYE = var(`Gui_Yeharv (GYi)` / Gui_rfharv)) %>%
+  mutate(Year = YEAR)-> KOD_H_pYE
+colnames(KOD_H_pYE) <- c("RptArea","gui_pYE_harv","var_gui_pYE_harv","Year")
+
+YE_lastR %>% filter(...3 %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                    ...2 > 2005) %>%
+  group_by(...3) %>%
+  summarize(gui_pYE = mean(`Gui_Yerel (GYi)` / Gui_rfrel),
+            var_gui_pYE = var(`Gui_Yerel (GYi)` / Gui_rfrel)) %>%
+  mutate(Year = YEAR) -> KOD_R_pYE
+colnames(KOD_R_pYE) <- c("RptArea","gui_pYE_rel","var_gui_pYE_rel","Year")
+
+KOD_YE_crap <- left_join(KOD_H_pYE,KOD_R_pYE, by = c("Year","RptArea"))
+
+#Need to add in rows for missing Kodiak areas:
+with(spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                          Year == YEAR), 
+     table(User, RptArea))
+
+spec_apor <- spec_apor %>% add_row(Year = YEAR, RptArea = "AFOGNAK", User = "private",
+        TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0) %>%
+  add_row(Year = YEAR, RptArea = "EASTSIDE", User = "private",
+          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0) %>%
+  add_row(Year = YEAR, RptArea = "WKMA", User = "private",
+          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0) %>%
+  add_row(Year = YEAR, RptArea = "SKMA", User = "private",
+          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0) %>%
+  add_row(Year = YEAR, RptArea = "WKMA", User = "charter",
+          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0) %>%
+  add_row(Year = YEAR, RptArea = "SKMA", User = "charter",
+          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0)
+
+with(spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                          Year == YEAR), 
+     table(User, RptArea))
+
+spec_apor <- left_join(spec_apor,KOD_YE_crap, by = c("Year","RptArea"))
+unique(spec_apor$Year)
+spec_apor %>% filter (!is.na("gui_pYE_harv"))
+unique(spec_apor$gui_pYE_harv)
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
-colnames(spec_apor)
-
 YE_guiH <- new_H %>%
   select(Region, year, RptArea,Log_rfharv) %>%
   left_join(LB_H %>% filter(year == YEAR) %>%
@@ -131,24 +204,32 @@ YE_priH <- new_H %>% #colnames(new_H)
               mutate(year = as.integer(year),
                      priv_pYE = ifelse(TotalRF_n > 50,pYE,pYE_avgRptArea),
                      priv_var_pYE = ifelse(TotalRF_n > 50,var_pYE,var_pYE_avgRptArea),
-                     gui_pYE = NA,
-                     var_gui_pYE = NA) %>%
+                     gui_pYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                                       gui_pYE_harv,NA),
+                     var_gui_pYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                                           var_gui_pYE_harv,NA)) %>%
               select(year,RptArea,
                      priv_pYE,
                      priv_var_pYE,
                      gui_pYE, var_gui_pYE),
             by = c("year", "RptArea")) %>%
-  mutate(Priv_YE = PRIV_rfharv * priv_pYE,
-         var_PrivYE =(PRIV_rfharv^2) * priv_var_pYE + (priv_pYE^2) * var_PRIV_rfharv + (priv_var_pYE*var_PRIV_rfharv),
+  mutate(Priv_YE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                           PRIV_rfharv * gui_pYE,
+                           PRIV_rfharv * priv_pYE),
+         var_PrivYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                              (PRIV_rfharv^2) * var_gui_pYE + (gui_pYE^2) * var_PRIV_rfharv + (var_gui_pYE*var_PRIV_rfharv),
+                              (PRIV_rfharv^2) * priv_var_pYE + (priv_pYE^2) * var_PRIV_rfharv + (priv_var_pYE*var_PRIV_rfharv)),
          sqrt_PrivYE = sqrt(var_PrivYE),
          PrivYE_UPRLWR95 = 1.96 * sqrt_PrivYE)
 
-break_col <- as.data.frame(matrix(nrow=nrow(YE_guiH),ncol = 1)) # to keep spreadsheet consistent
-break_col2 <- as.data.frame(matrix(nrow=nrow(YE_guiH),ncol = 1)) # to keep spreadsheet consistent
+break_col <- as.data.frame(matrix(nrow=nrow(YE_priH),ncol = 1)) # to keep spreadsheet consistent
+break_col2 <- as.data.frame(matrix(nrow=nrow(YE_priH),ncol = 1)) # to keep spreadsheet consistent
 colnames(break_col) <- "blank"
 colnames(break_col2) <- "blank2"
 
-YE_harvest <- cbind(YE_guiH,break_col,YE_priH %>% select(-c(Region,year,RptArea)),break_col2) %>%
+nrow(unique(YE_guiH)); nrow(YE_priH)
+
+YE_harvest <- cbind(unique(YE_guiH),break_col,YE_priH %>% select(-c(Region,year,RptArea)),break_col2) %>%
   mutate(TotalYEharv = GuiYE + Priv_YE,
          var_totalYEharv = var_GuiYE + var_PrivYE,
          sqrt_totalYE = sqrt(var_totalYEharv),
@@ -165,10 +246,13 @@ YE_lastH <- YE_lastH[,-29]
 
 updated_YE_H <- rbind(YE_lastH,YE_harvest) %>% arrange(Region,RptArea,year)
 
-updated_YE_H %>% filter(year == 2022 & Region == "SE") 
+updated_YE_H %>% filter(year == 2022 & Region == "SC") 
 #checks out! just save one 2022 row
 updated_YE_H <- rbind(YE_lastH %>% filter(year < YEAR),
-                      YE_harvest) %>% arrange(Region,RptArea,year)
+                      YE_harvest) %>% 
+  mutate(RptArea = case_when(
+    RptArea == "NORTHEAS" ~ "NORTHEAST",
+    TRUE ~ as.character(RptArea))) %>% arrange(Region,RptArea,year)
 
 write.csv(updated_YE_H, paste0("output/YE_harv_Howard_thru",YEAR,".csv"))
 
@@ -204,6 +288,8 @@ YE_guiR <- new_R %>%
          sqrt_GuiYE = sqrt(var_GuiYE),
          GuiYE_UPRLWR95 = 1.96 * sqrt_GuiYE)
 
+YE_guiR <- unique(YE_guiR)
+
 # For releases we want to apply to avg reporting area average from pre-2020 when
 # retention regulations went into place and port sampling is no longer indicative
 # of what has been released
@@ -214,25 +300,42 @@ left_join(spec_apor,
                    use_var_pYE_aRA = var_pYE_avgRptArea),
           by = c("RptArea","User"))  -> spec_apor
 
+colnames(spec_apor)
 
 YE_priR <- new_R %>% #colnames(new_H)
   select(Region, year, RptArea,PRIV_rfrel,var_PRIV_rfrel) %>%
   left_join(spec_apor %>% filter(User == "private") %>%
               rename(year = Year) %>%
               mutate(year = as.integer(year),
-                     priv_pYE = use_pYE_aRA, #ifelse(year < 2020, pYE_avgRptArea,
+                     priv_pYE = ifelse(TotalRF_n < 50,
+                                       use_pYE_aRA, 
+                                       ifelse(RptArea %in% c("CI","PWSI","PWSO","NG"),
+                                              pYE,use_pYE_aRA)),
+                     priv_var_pYE = ifelse(TotalRF_n < 50,
+                                       use_var_pYE_aRA, 
+                                       ifelse(RptArea %in% c("CI","PWSI","PWSO","NG"),
+                                              var_pYE,use_var_pYE_aRA)),
+                     #priv_pYE = use_pYE_aRA, #ifelse(year < 2020, pYE_avgRptArea,
                                        #ifelse(TotalRF_n > 50,pYE,pYE_avgRptArea)),
-                     priv_var_pYE = use_var_pYE_aRA, #ifelse(year < 2020, pYE_avgRptArea,
+                     #priv_var_pYE = use_var_pYE_aRA, #ifelse(year < 2020, pYE_avgRptArea,
                                            #ifelse(TotalRF_n > 50,var_pYE,var_pYE_avgRptArea)),
-                     gui_pYE = NA,
-                     var_gui_pYE = NA) %>%
+                     gui_pYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                                       gui_pYE_rel,NA),
+                     var_gui_pYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                                           var_gui_pYE_rel,NA)) %>%
               select(year,RptArea,
                      priv_pYE,
                      priv_var_pYE,
                      gui_pYE,var_gui_pYE),
             by = c("year", "RptArea")) %>%
-  mutate(Priv_YE = PRIV_rfrel * priv_pYE,
-         var_PrivYE =(PRIV_rfrel^2) * priv_var_pYE + (priv_pYE^2) * var_PRIV_rfrel + (priv_var_pYE*var_PRIV_rfrel),
+  mutate(#Priv_YE = PRIV_rfrel * priv_pYE,
+         #var_PrivYE =(PRIV_rfrel^2) * priv_var_pYE + (priv_pYE^2) * var_PRIV_rfrel + (priv_var_pYE*var_PRIV_rfrel),
+         Priv_YE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                           PRIV_rfrel * gui_pYE,
+                           PRIV_rfrel * priv_pYE),
+         var_PrivYE = ifelse (RptArea %in% c("AFOGNAK","WKMA","SKMA","EASTSIDE"),
+                              (PRIV_rfrel^2) * var_gui_pYE + (gui_pYE^2) * var_PRIV_rfrel + (var_gui_pYE*var_PRIV_rfrel),
+                              (PRIV_rfrel^2) * priv_var_pYE + (priv_pYE^2) * var_PRIV_rfrel + (priv_var_pYE*var_PRIV_rfrel)),
          sqrt_PrivYE = ifelse(is.na(var_PrivYE) | var_PrivYE < 0,0,sqrt(var_PrivYE)) ,
          PrivYE_UPRLWR95 = 1.96 * sqrt_PrivYE
          )
@@ -257,11 +360,14 @@ YE_lastR <- YE_lastR[,-29]
 
 updated_YE_R <- rbind(YE_lastR,YE_release) %>% arrange(Region,RptArea,year)
 
-updated_YE_R %>% filter(year == 2022 & Region == "SE")
+updated_YE_R %>% filter(year == 2022 & Region == "SC")
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
 updated_YE_R <- rbind(YE_lastR %>% filter(year < YEAR),
-                       YE_release) %>% arrange(Region,RptArea,year)
+                       YE_release) %>% 
+  mutate(RptArea = case_when(
+    RptArea == "NORTHEAS" ~ "NORTHEAST",
+    TRUE ~ as.character(RptArea)))%>% arrange(Region,RptArea,year)
 write.csv(updated_YE_R,paste0("output/YE_rel_Howard_thru",YEAR,".csv"))
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
@@ -289,7 +395,7 @@ SE_H <- YE_harv_table %>% filter(Region == "SE")
 
 updated_YE_R %>% select(Region,RptArea,year,
                          Guided = GuiYE,SE_Gui = sqrt_GuiYE ,
-                         Private = PRIV_rfrel,SE_Priv = sqrt_PrivYE,
+                         Private = Priv_YE,SE_Priv = sqrt_PrivYE,
                          Total =TotalYErel,SE_Tot = sqrt_totalYE)->YE_rel_table
 
 Kodiak_R <- YE_rel_table %>% filter(RptArea %in% c("AFOGNAK","EASTSIDE","NORTHEAST",

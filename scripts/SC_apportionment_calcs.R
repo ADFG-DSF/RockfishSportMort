@@ -25,7 +25,7 @@ library(ggplot2)
 library(janitor)
 library(haven)
 
-YEAR <- 2023
+YEAR <- 2022
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -44,7 +44,8 @@ SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.cs
 
 #For Southcentral we need to weight the samples for PWS and NG respective to the landings:
 # Port level data comes with the IPHC reports from Jake:
-SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
+SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), 
+#SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
                        sheet = "Halibut Area Harvest",
                        range = paste0("A5:X41"), 
                        na = "NA") %>% clean_names()
@@ -64,6 +65,9 @@ new_priv <- c(YEAR,
                    as.numeric(SWHS_port %>% filter(bottom_area == "2 - Valdez + E PWS", type == "0-PUB") %>% select(rfpri)),
                    as.numeric(SWHS_port %>% filter(bottom_area == "3 - LCI", type == "0-PUB") %>% select(rfpri))) 
 print(rbind(port_priv,new_priv)) #actually bind these when you do a new year
+
+#2022 only: port_priv <- unique(port_priv)
+
 
 port_priv <- rbind(port_priv,new_priv)
 #getting rid of this spreadsheat:
@@ -224,7 +228,7 @@ View(PWSO_priv_wts)
 # we want: NG by Seward & Homer
 #          PWSI and PWSO by Seward, Whittier and Valdez/Cordova
 
-gui_wts <- read.csv(paste0("data/raw_dat/",YEAR,"/for_NGPWS_wts.csv")) 
+gui_wts <- read.csv(paste0("data/raw_dat/",YEAR-1,"/for_NGPWS_wts.csv")) 
 
 gui_wts %>%
   mutate(Year = YEAR) %>% select(port_site, RptArea, total_rfharv) %>%
@@ -271,7 +275,8 @@ left_join(SC_port_gui %>% filter(PORT == "Seward" & CFMU == "NG" & YEAR > 1997) 
           by = "YEAR") %>%
   left_join(port_gui %>% mutate(YEAR = Year) %>% 
               select(-c(Year,orig)) %>% filter(CFMU=="NG"), by = "YEAR") %>%
-  replace(is.na(.),0) %>%
+  mutate_if(is.numeric, ~ replace(., is.na(.), 0)) %>%
+  #replace(is.na(.),0) %>%
   mutate(pharv_sew = Seward / (Seward + Homer),
          pharv_hom = Homer / (Seward + Homer),
          psamp_sew = (S_Pel + S_NP) / (S_Pel + S_NP + H_Pel + H_NP),
@@ -291,7 +296,7 @@ left_join(SC_port_gui %>% filter(PORT == "Seward" & CFMU == "NG" & YEAR > 1997) 
          p_YE = (w_YE_sew + w_YE_hom) / (w_Pel_sew + w_NP_sew + w_Pel_hom + w_NP_hom),
          p_BRF = (w_BRF_sew + w_BRF_hom) / (w_Pel_sew + w_NP_sew + w_Pel_hom + w_NP_hom),
          p_YEinNonpel = (w_YE_sew + w_YE_hom) / (w_NP_sew + w_NP_hom),
-         p_BRFinNonpel = (w_BRF_sew + w_BRF_hom) / (w_Pel_sew + w_Pel_hom)) -> NG_gui_wts
+         p_BRFinNonpel = (w_BRF_sew + w_BRF_hom) / (w_Pel_sew + w_Pel_hom))  -> NG_gui_wts
 View(NG_gui_wts)
 
 #PWSI calcs .... 
@@ -317,7 +322,8 @@ left_join(SC_port_gui %>% filter(PORT == "Seward" & CFMU == "PWSI" & YEAR > 1997
             by = "YEAR") %>% 
   left_join(port_gui %>% mutate(YEAR = Year) %>% 
               select(-c(Year,orig)) %>% filter(CFMU=="PWSI"), by = "YEAR") %>%
-  replace(is.na(.),0) %>%
+  #replace(is.na(.),0) %>%
+  mutate_if(is.numeric, ~ replace(., is.na(.), 0)) %>%
   #left_join(port_priv, by = "YEAR") %>%
   #mutate(Valdez = VALDEZ.CORD) %>% select(-VALDEZ.CORD) %>%
   mutate(pharv_sew = Seward / (Seward + Whittier + Valdez.Cordova),
@@ -372,7 +378,8 @@ left_join(SC_port_gui %>% filter(PORT == "Seward" & CFMU == "PWSO" & YEAR > 1997
             by = "YEAR") %>% 
   left_join(port_gui %>% mutate(YEAR = Year) %>% 
               select(-c(Year,orig)) %>% filter(CFMU=="PWSO"), by = "YEAR") %>%
-  replace(is.na(.),0) %>%
+  #replace(is.na(.),0) %>%
+  mutate_if(is.numeric, ~ replace(., is.na(.), 0)) %>%
   #left_join(port_priv, by = "YEAR") %>%
   #mutate(VALDEZ = VALDEZ.CORD) %>% select(-VALDEZ.CORD) %>%
   mutate(pharv_sew = Seward / (Seward + Whittier + Valdez.Cordova),
@@ -385,7 +392,8 @@ left_join(SC_port_gui %>% filter(PORT == "Seward" & CFMU == "PWSO" & YEAR > 1997
          w_whi = pharv_whi / psamp_whi,
          w_vc = pharv_vc / psamp_vc,
          across(everything(), ~ ifelse(is.infinite(.), 0, .))) %>%
-  replace(is.na(.),0) %>%
+  mutate_if(is.numeric, ~ replace(., is.na(.), 0)) %>%
+  #replace(is.na(.),0) %>%
   mutate(w_Pel_sew = S_Pel * w_sew,
          w_NP_sew = S_NP * w_sew,
          w_BRF_sew = S_BRF * w_sew,
@@ -463,6 +471,16 @@ wted_ests <- rbind(NG_priv_wts %>% mutate(User = "private",
                             wt_Pel, wt_NP, wt_BRF, wt_YE)
 )
 
+#-------------------------------------------------------------------------------
+# Now deal with the Kodiak areas: 
+#unique(SC_port_priv$CFMU)
+
+#SC_port_priv %>% filter(CFMU %in% c("WESTSIDE","AFOGNAK")) %>%
+#  group_by(YEAR,CFMU,USER) %>%
+#  summarize(Pel = sum(Pel),
+#            NP = sum(NP),
+#            BRF = sum(BRF),
+#            YE = sum(YE))
 #-------------------------------------------------------------------------------
 # Put together species and assemblage data: 
 SE_port
