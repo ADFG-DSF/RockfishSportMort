@@ -231,8 +231,8 @@ DSR_guiR <- new_R %>% filter(Region == "SE") %>%
                                                   "NSEI","NSEO","SSEI","SSEO")) %>%
               rename(year = Year) %>%
               mutate(year = as.integer(year),
-                     gui_pDSRinNonpel = ifelse(Nonpel_n < 50,use_pDSRinNP_aRA, pDSRinNonP),#pDSRinNonP,
-                     gui_var_pDSRinNonpel = ifelse(Nonpel_n < 50,use_var_pDSRinNP_aRA, var_pDSRinNonP)) %>%
+                     gui_pDSRinNonpel = ifelse(year > 2019,use_pDSRinNP_aRA, pDSRinNonP), #ifelse(Nonpel_n < 50,use_pDSRinNP_aRA, pDSRinNonP),#pDSRinNonP,
+                     gui_var_pDSRinNonpel = ifelse(year > 2019,use_var_pDSRinNP_aRA, var_pDSRinNonP)) %>% #ifelse(Nonpel_n < 50,use_var_pDSRinNP_aRA, var_pDSRinNonP)) %>%
               select(year,RptArea,
                      gui_pDSRinNonpel,#pDSRinNonP,
                      gui_var_pDSRinNonpel), # var_pDSRinNonP),
