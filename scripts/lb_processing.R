@@ -25,7 +25,7 @@ library(janitor)
 library(haven)
 
 # year of new data
-YEAR <- 2022
+YEAR <- 2023
 
 LB_file_name <- "2023LogbookData08022024.csv" #date is the date the data was pulled by logbook folks
 
@@ -40,7 +40,7 @@ raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bd
 raw_log23 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
   clean_names()
 
-raw_log <- raw_log22
+raw_log <- raw_log23
 
 log <- raw_log %>% 
   mutate(
@@ -375,7 +375,7 @@ res_log <- log %>% filter(rfharv > 0) %>%
 
 # View the summary
 print(res_log)
-write.csv(res_log,paste0("data/raw_dat/",YEAR,"/LB_harv_by_Reisdency.csv"), row.names = F)
+write.csv(res_log,paste0("data/raw_dat/",YEAR,"/LB_harv_by_Residency.csv"), row.names = F)
 
 # Titles in R: you can add titles within output print statements if needed
 #cat('Southeast Region charter KNOWN rf harvest by port_SWHS and CF Management Unit caught (logbook).')
@@ -803,6 +803,8 @@ H_sum_F <- rbind(H_sum_F,
 
 # Add in blank line for Southwest if needed
 unique(H_sum_F$RptArea) #none in 2022
+# SOUTHWEST present in 2023: ignoring next command:
+H_sum_F %>% filter(RptArea == "SOUTHWEST")
 
 H_sum_F <- H_sum_F %>%
   add_row(year = YEAR, RptArea = "SOUTHWEST",
@@ -813,35 +815,38 @@ H_sum_F <- H_sum_F %>%
 
 #-------------------------------------------------------------------------------
 # Update logbook harvest and release data sheets.
-lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
-lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
+lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR-1,".csv"))
+lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR-1,".csv"))
 
 #get rid of column 1 which is rown names. CHECK! This can go away once we've
 # caught up with saving everything with row.names = F
 #lb_harv <- lb_harv[,-1]
 #lb_rel <- lb_rel[,-1]
 
-unique(lb_rel$Region)
-
-lb_harv %>% filter(Region == "Ssc")
-
-lb_harv <- lb_harv %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
-                                    ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
-                                           ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
-                              Region = ifelse(Region == "Ssc","SC",
-                                              ifelse(Region == "2c","SC",
-                                                     ifelse(Region == "sc","SC",Region))))
-
+#Check for mislabeled stuff. There were a lot of errors coming out of original spreadsheets
+unique(lb_harv$Region)
 unique(lb_harv$RptArea)
 
-lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
-                                               ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
-                                                      ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
-                            Region = ifelse(Region == "Ssc","SC",
-                                            ifelse(Region == "2c","SC",
-                                                   ifelse(Region == "sc","SC",Region))))
+#Names look good in 2023 so code might have cleaned things up. No need for next block
 
-unique(lb_rel$year)
+#lb_harv <- lb_harv %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
+#                                    ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
+#                                           ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
+#                              Region = ifelse(Region == "Ssc","SC",
+#                                              ifelse(Region == "2c","SC",
+#                                                     ifelse(Region == "sc","SC",Region))))
+
+
+unique(lb_rel$Region)
+unique(lb_rel$RptArea)
+
+#lb_rel <- lb_rel %>% mutate(RptArea = ifelse(RptArea == "NORTHEAS","NORTHEAST",
+#                                               ifelse(RptArea == "SOUTHEAS","SOUTHEAST",
+#                                                      ifelse(RptArea == "SOUTHWES","SOUTHWEST",RptArea))),
+#                            Region = ifelse(Region == "Ssc","SC",
+#                                            ifelse(Region == "2c","SC",
+#                                                   ifelse(Region == "sc","SC",Region))))
+
 
 lb_harv2 <- rbind(lb_harv, # %>% filter(year < 2022), #get rid of fucked up 2022 estimates
                  H_sum_F %>% 
@@ -889,6 +894,7 @@ R_sum_2 <- rbind(R_sum_2, # %>% filter(year < 2022),
 
 # Add in blank line for Southwest if needed
 unique(R_sum_2$RptArea) #none in 2022
+# none in 2023
 
 R_sum_2 <- R_sum_2 %>% data.frame() %>%
   add_row(year = YEAR, RptArea = "SOUTHWEST",

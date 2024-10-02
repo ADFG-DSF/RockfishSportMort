@@ -38,22 +38,23 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
 new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"))
 #temp patch
-new_H <- new_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
-new_R <- new_R %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
+#new_H <- new_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
+#new_R <- new_R %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 #read in logbook harvest and release estimate
 LB_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
 LB_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
-LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
-LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
+#LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
+#LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
 
 #temp patch
+LB_H %>% filter(RptArea == "EWYKT" & Region == "SC")
 LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 
@@ -65,8 +66,8 @@ SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Reg
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #get SC port sampling data:
-SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,"_INCOMPLETE.csv"))
-SC_port <- SC_port[,-1]
+SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
+#SC_port <- SC_port[,-1]
 #combine for species comp estimates
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
@@ -93,19 +94,29 @@ str(spec_apor)
 #-------------------------------------------------------------------------------
 #get the last BRF run down: 
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-DSR_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
-                     sheet = "DSR harvest",
-                     range = paste0("A2:Y1000"), 
-                     na = "NA")
-DSR_lastH <- DSR_lastH[rowSums(is.na(DSR_lastH)) != ncol(DSR_lastH), ]
+#DSR_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+#                     sheet = "DSR harvest",
+#                     range = paste0("A2:Y1000"), 
+#                     na = "NA")
+#DSR_lastH <- DSR_lastH[rowSums(is.na(DSR_lastH)) != ncol(DSR_lastH), ]
 
-DSR_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
-                       sheet = "DSR release",
-                       range = paste0("A2:Y1000"), 
-                       na = "NA")
-DSR_lastR <- DSR_lastR[rowSums(is.na(DSR_lastR)) != ncol(DSR_lastR), ]
+#DSR_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+#                       sheet = "DSR release",
+#                       range = paste0("A2:Y1000"), 
+#                       na = "NA")
+#DSR_lastR <- DSR_lastR[rowSums(is.na(DSR_lastR)) != ncol(DSR_lastR), ]
 
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
+DSR_lastH <- read.csv(paste0("output/DSR_harv_Howard_thru",YEAR-1,".csv"))
+DSR_lastR <- read.csv(paste0("output/DSR_rel_Howard_thru",YEAR-1,".csv"))
+DSR_lastH<-DSR_lastH[,-1] #get rid of this when the code is rerun clean
+DSR_lastR<-DSR_lastR[,-1] #get rid of this when the code is rerun clean
+
+#DSR_lastH %>% mutate(Region = "SE") %>%
+#  relocate(Region, .before = year) -> DSR_lastH
+
+#DSR_lastR %>% mutate(Region = "SE") %>%
+#  relocate(Region, .before = year) -> DSR_lastR
 
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
@@ -163,11 +174,11 @@ DSR_harvest <- cbind(DSR_guiH,break_col,DSR_priH %>% select(-c(Region,year,RptAr
          TotalDSR_UPRLWR95 = 1.96 * sqrt_totalDSR)
 
 # Add it onto the running sheet:
-colnames(DSR_lastH) <- colnames(DSR_harvest)
-DSR_lastH <- DSR_lastH %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+colnames(DSR_lastH) ; colnames(DSR_harvest)
+#DSR_lastH <- DSR_lastH %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
 ncol(DSR_lastH); ncol(DSR_harvest)
 #DSR_lastH <- DSR_lastH[,-26]
 
@@ -175,10 +186,10 @@ updated_DSR_H <- rbind(DSR_lastH,DSR_harvest) %>% arrange(Region,RptArea,year)
 
 updated_DSR_H %>% filter(year == 2022 & Region == "SE") 
 #checks out! just save one 2022 row
-updated_DSR_H <- rbind(DSR_lastH %>% filter(year < YEAR),
-                       DSR_harvest) %>% arrange(Region,RptArea,year)
+#updated_DSR_H <- rbind(DSR_lastH %>% filter(year < YEAR),
+#                       DSR_harvest) %>% arrange(Region,RptArea,year)
 
-write.csv(updated_DSR_H, paste0("output/DSR_harv_Howard_thru",YEAR,".csv"))
+write.csv(updated_DSR_H, paste0("output/DSR_harv_Howard_thru",YEAR,".csv"), row.names = F)
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 harv_est_xlsx <- loadWorkbook(paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"))
@@ -260,11 +271,11 @@ DSR_release <- cbind(DSR_guiR,break_col,DSR_priR %>% select(-c(Region,year,RptAr
 DSR_release %>% mutate(Tot_check = GuiDSR + Priv_DSR)
 
 # Add it onto the running sheet:
-colnames(DSR_lastR) <- colnames(DSR_release)
-DSR_lastR <- DSR_lastR %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+colnames(DSR_lastR) ; colnames(DSR_release)
+#DSR_lastR <- DSR_lastR %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
 ncol(DSR_lastR); ncol(DSR_release)
 #DSR_lastR <- DSR_lastR[,-26]
 
@@ -274,9 +285,9 @@ updated_DSR_R %>% filter(year == 2022 & Region == "SE")
 updated_DSR_R %>% filter(RptArea == "EWYKT" & year == 2022)
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
-updated_DSR_R <- rbind(DSR_lastR %>% filter(year < YEAR),
-                       DSR_release) %>% arrange(Region,RptArea,year)
-write.csv(updated_DSR_R,paste0("output/DSR_rel_Howard_thru",YEAR,".csv"))
+#updated_DSR_R <- rbind(DSR_lastR %>% filter(year < YEAR),
+#                       DSR_release) %>% arrange(Region,RptArea,year)
+write.csv(updated_DSR_R,paste0("output/DSR_rel_Howard_thru",YEAR,".csv"), row.names = F)
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 rel_est_xlsx <- loadWorkbook(paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"))

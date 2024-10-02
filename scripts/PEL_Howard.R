@@ -26,7 +26,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -78,7 +78,7 @@ SC_port <- SC_port[,-1]
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
 
-# need to add extra columns to SC to facilitate cobining the two regions for analysis
+# need to add extra columns to SC to facilitate combining the two regions for analysis
 dif <- ncol(SE_port)-ncol(SC_port)
 new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
 
@@ -98,9 +98,12 @@ spec_apor <- rbind(SE_port,SC_port) %>%
 str(spec_apor)
 
 #-------------------------------------------------------------------------------
-# No previous Pelagic calculations, so will need to call up '23 ests when doing '24 ests in Oct '25
+# No previous Pelagic calculations, so will need to call up '22 ests when doing '23 ests in Oct '24
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-
+PEL_lastH <- read.csv(paste0("output/PEL_harv_Howard_thru",YEAR-1,".csv"))
+PEL_lastR <- read.csv(paste0("output/PEL_rel_Howard_thru",YEAR-1,".csv"))
+PEL_lastH<-PEL_lastH[,-1] #get rid of this when the code is rerun clean
+PEL_lastR<-PEL_lastR[,-1] #get rid of this when the code is rerun clean
 
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
@@ -123,9 +126,10 @@ left_join(spec_apor,
                    #use_var_pSlopeinNP_aRA = var_pSlopeinNonP_avgRptArea),
           by = c("RptArea","User"))  -> spec_apor
 
-Pel_guiH <- all_H %>%
+#Pel_guiH <- all_H %>%
+Pel_guiH <- new_H %>%
   select(Region, year, RptArea,Log_rfharv) %>%
-  left_join(LB_H %>% #filter(year == YEAR) %>%
+  left_join(LB_H %>% filter(year == YEAR) %>%
               select(Region,year,RptArea,
                      Gui_pelharv = pelagic_harv),
                      #Gui_Pelh = ye_harv),
@@ -147,7 +151,8 @@ Pel_guiH <- all_H %>%
          sqrt_GuiPel = sqrt(var_GuiPel),
          GuiPel_UPRLWR95 = 1.96 * sqrt_GuiPel)
 
-Pel_priH <- all_H %>% #colnames(new_H)
+Pel_priH <- new_H %>%
+#Pel_priH <- all_H %>% #colnames(new_H)
   select(Region, year, RptArea,PRIV_rfharv,var_PRIV_rfharv) %>%
   left_join(spec_apor %>% filter(User == "private") %>%
               rename(year = Year) %>%
@@ -183,14 +188,14 @@ Pel_harvest %>% filter(Region == "SE")
 #  mutate(RptArea = as.factor(RptArea),
 #         Region = as.factor(Region)) %>% 
 #  mutate_if(is.character, ~as.numeric(.))
-#ncol(YE_lastH); ncol(YE_harvest)
+ncol(PEL_lastH); ncol(Pel_harvest)
 #YE_lastH <- YE_lastH[,-29]
 
-#updated_YE_H <- rbind(YE_lastH,YE_harvest) %>% arrange(Region,RptArea,year)
+updated_Pel_H <- rbind(PEL_lastH,Pel_harvest) %>% arrange(Region,RptArea,year)
 
 #updated_YE_H %>% filter(year == 2022 & Region == "SE") 
 #checks out! just save one 2022 row
-updated_Pel_H <- Pel_harvest #rbind(YE_lastH %>% filter(year < YEAR),
+#updated_Pel_H <- Pel_harvest #rbind(YE_lastH %>% filter(year < YEAR),
                       #YE_harvest) %>% arrange(Region,RptArea,year)
 
 write.csv(updated_Pel_H, paste0("output/PEL_harv_Howard_thru",YEAR,".csv"))
@@ -205,9 +210,9 @@ saveWorkbook(harv_est_xlsx, paste0("output/harvest_estimates_Howard_thru",YEAR,"
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
 colnames(spec_apor)
 
-Pel_guiR <- all_R %>%
+Pel_guiR <- new_R %>%
   select(Region, year, RptArea,Log_rfrel) %>%
-  left_join(LB_R %>% #filter(year == YEAR) %>%
+  left_join(LB_R %>% filter(year == YEAR) %>%
               select(Region,year,RptArea,
                      Gui_pelrel = pelagic_rel),
             by = c("year","RptArea","Region")) %>%
@@ -226,7 +231,7 @@ Pel_guiR <- all_R %>%
          sqrt_GuiPel = sqrt(var_GuiPel),
          GuiPel_UPRLWR95 = 1.96 * sqrt_GuiPel)
 
-Pel_priR <- all_R %>% #colnames(new_H)
+Pel_priR <- new_R %>% #colnames(new_H)
   select(Region, year, RptArea,PRIV_rfrel,var_PRIV_rfrel) %>%
   left_join(spec_apor %>% filter(User == "private") %>%
               rename(year = Year) %>%
@@ -267,15 +272,15 @@ Pel_release %>% filter(Region == "SE")
 #  mutate(RptArea = as.factor(RptArea),
 #         Region = as.factor(Region)) %>% 
 #  mutate_if(is.character, ~as.numeric(.))
-#ncol(YE_lastR); ncol(YE_release)
+ncol(PEL_lastR); ncol(Pel_release)
 #YE_lastR <- YE_lastR[,-29]
 
-#updated_YE_R <- rbind(YE_lastR,YE_release) %>% arrange(Region,RptArea,year)
+updated_Pel_R <- rbind(PEL_lastR,Pel_release) %>% arrange(Region,RptArea,year)
 
 #updated_YE_R %>% filter(year == 2022 & Region == "SE")
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
-updated_Pel_R <- Pel_release #rbind(YE_lastR %>% filter(year < YEAR),
+#updated_Pel_R <- Pel_release #rbind(YE_lastR %>% filter(year < YEAR),
                        #YE_release) %>% arrange(Region,RptArea,year)
 write.csv(updated_Pel_R,paste0("output/Pel_rel_Howard_thru",YEAR,".csv"))
 

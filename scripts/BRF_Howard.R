@@ -35,7 +35,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -47,10 +47,9 @@ new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"))
 #read in logbook harvest and release estimate
 LB_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
 LB_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
-#LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
-#LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
 
 #temp patch
+LB_H %>% filter(RptArea == "EWYKT" & Region == "SC")
 LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 LB_H %>% filter(year == YEAR)
@@ -113,6 +112,13 @@ left_join(spec_apor,
                    use_var_pBRFinPel_aRA = var_pBRFinPel_avgRptArea),
           by = c("RptArea","User")) -> spec_apor
 
+# look at port sample sizes for Kodiak in new year:
+Kod <- spec_apor %>% filter(Year == YEAR,
+                            RptArea %in% c("EASTSIDE","AFOGNAK","WKMA","NORTHEAST","SKMA")) %>% 
+  droplevels() %>%
+  select(User,RptArea,TotalRF_n,Pelagic_n)
+
+Kod #Do substitutions for sample sizes < 50
 
 spec_apor <- spec_apor %>% filter(Year == YEAR) %>%
   mutate(use_pBRF_aRA = ifelse(RptArea %in% c("EASTSIDE","AFOGNAK","WKMA"),
@@ -131,7 +137,7 @@ spec_apor <- spec_apor %>% filter(Year == YEAR) %>%
                                       pull(spec_apor[spec_apor$RptArea == "EASTSIDE" & 
                                                        spec_apor$Year == YEAR &
                                                        spec_apor$User == "private", "var_pBRF"]),use_var_pBRF_aRA)),
-         use_pBRFinPel_aRA = ifelse(RptArea %in% c("AFOGNAK","WKMA"),
+         use_pBRFinPel_aRA = ifelse(RptArea %in% c("EASTSIDE","AFOGNAK","WKMA"),
                                pull(spec_apor[spec_apor$RptArea == "NORTHEAST" & 
                                                 spec_apor$Year == YEAR &
                                                 spec_apor$User == "charter", "pBRFinPel"]),
@@ -139,7 +145,7 @@ spec_apor <- spec_apor %>% filter(Year == YEAR) %>%
                                       pull(spec_apor[spec_apor$RptArea == "EASTSIDE" & 
                                                        spec_apor$Year == YEAR &
                                                        spec_apor$User == "charter", "pBRFinPel"]),use_pBRFinPel_aRA)),
-         use_var_pBRFinPel_aRA = ifelse(RptArea %in% c("AFOGNAK","WKMA"),
+         use_var_pBRFinPel_aRA = ifelse(RptArea %in% c("EASTSIDE","AFOGNAK","WKMA"),
                                     pull(spec_apor[spec_apor$RptArea == "NORTHEAST" & 
                                                      spec_apor$Year == YEAR &
                                                      spec_apor$User == "charter", "var_pBRFinPel"]),
@@ -149,6 +155,10 @@ spec_apor <- spec_apor %>% filter(Year == YEAR) %>%
 #Add in missing Kodiak areas:
 with(spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE")), 
      table(User, RptArea))
+
+spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),Year == YEAR) %>%
+  select(User,RptArea,TotalRF_n,Pelagic_n,pBRF,var_pBRF,pBRFinPel,var_pBRFinPel,
+         use_pBRF_aRA,use_var_pBRF_aRA,use_pBRFinPel_aRA,use_var_pBRFinPel_aRA)
 
 spec_apor <- spec_apor %>% 
   add_row(Year = YEAR, RptArea = "SKMA", User = "charter",
@@ -171,61 +181,97 @@ spec_apor <- spec_apor %>%
 #                                               spec_apor$User == "private", "use_pBRFinPel_aRA"]),
 #          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" &
 #                                                   spec_apor$User == "private", "use_var_pBRFinPel_aRA"])) %>%
-  add_row(Year = YEAR, RptArea = "WKMA", User = "private",
-          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
-          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                          spec_apor$User == "private", "pBRF"]),
-          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                              spec_apor$User == "private", "var_pBRF"]),
-          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                               spec_apor$User == "private", "pBRFinPel"]),
-          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
-  add_row(Year = YEAR, RptArea = "EASTSIDE", User = "private",
-          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
-          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                          spec_apor$User == "private", "pBRF"]),
-          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                              spec_apor$User == "private", "var_pBRF"]),
-          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                               spec_apor$User == "private", "pBRFinPel"]),
-          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
-  add_row(Year = YEAR, RptArea = "AFOGNAK", User = "private",
-          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
-          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                          spec_apor$User == "private", "pBRF"]),
-          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                              spec_apor$User == "private", "var_pBRF"]),
-          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                               spec_apor$User == "private", "pBRFinPel"]),
-          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
-                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
+#  add_row(Year = YEAR, RptArea = "WKMA", User = "private",
+#          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
+#          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                          spec_apor$User == "private", "pBRF"]),
+#          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                              spec_apor$User == "private", "var_pBRF"]),
+#          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                               spec_apor$User == "private", "pBRFinPel"]),
+#          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
+#  add_row(Year = YEAR, RptArea = "EASTSIDE", User = "private",
+#          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
+#          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                          spec_apor$User == "private", "pBRF"]),
+#          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                              spec_apor$User == "private", "var_pBRF"]),
+#          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                               spec_apor$User == "private", "pBRFinPel"]),
+#          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
+#  add_row(Year = YEAR, RptArea = "AFOGNAK", User = "private",
+#          TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
+#          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                          spec_apor$User == "private", "pBRF"]),
+#          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                              spec_apor$User == "private", "var_pBRF"]),
+#          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                               spec_apor$User == "private", "pBRFinPel"]),
+#          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "NORTHEAST" &
+#                                                   spec_apor$User == "private", "var_pBRFinPel"])) %>%
   add_row(Year = YEAR, RptArea = "SKMA", User = "private",
           TotalRF_n = 0, YE_n = 0, Black_n = 0, Pelagic_n = 0, Nonpel_n = 0, NotYE_Nonpel_n = 0,
-          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" , "use_pBRF_aRA"]),
-          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" , "use_var_pBRF_aRA"]),
-          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" , "use_pBRFinPel_aRA"]),
-          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" , "use_var_pBRFinPel_aRA"]))
+          use_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" &
+                                          spec_apor$User == "charter", "use_pBRF_aRA"]),
+          use_var_pBRF_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" &
+                                              spec_apor$User == "charter", "use_var_pBRF_aRA"]),
+          use_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" &
+                                               spec_apor$User == "charter", "use_pBRFinPel_aRA"]),
+          use_var_pBRFinPel_aRA = pull(spec_apor[spec_apor$RptArea == "EASTSIDE" &
+                                                   spec_apor$User == "charter", "use_var_pBRFinPel_aRA"]))
 
+#Check:
+with(spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE")), 
+     table(User, RptArea))
 
+spec_apor %>% filter(RptArea %in% c("NORTHEAST","AFOGNAK","WKMA","SKMA","EASTSIDE"),Year == YEAR) %>%
+  select(User,RptArea,TotalRF_n,Pelagic_n,pBRF,var_pBRF,pBRFinPel,var_pBRFinPel,
+         use_pBRF_aRA,use_var_pBRF_aRA,use_pBRFinPel_aRA,use_var_pBRFinPel_aRA)
 #-------------------------------------------------------------------------------
 #get the last BRF run down: 
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-BRF_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
-                     sheet = "BRF harvest",
-                     range = paste0("A2:Z1000"), 
-                     na = "NA")
-BRF_lastH <- BRF_lastH[rowSums(is.na(BRF_lastH)) != ncol(BRF_lastH), ]
+#BRF_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+#                     sheet = "BRF harvest",
+#                     range = paste0("A2:Z1000"), 
+#                     na = "NA")
+#BRF_lastH <- BRF_lastH[rowSums(is.na(BRF_lastH)) != ncol(BRF_lastH), ]
 
-BRF_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
-                       sheet = "BRF release",
-                       range = paste0("A2:Z1000"), 
-                       na = "NA")
-BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
+#BRF_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+#                       sheet = "BRF release",
+#                       range = paste0("A2:Z1000"), 
+#                       na = "NA")
+#BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
 
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
+BRF_lastH <- read.csv(paste0("output/BRF_harv_Howard_thru",YEAR-1,".csv"))
+BRF_lastR <- read.csv(paste0("output/BRF_rel_Howard_thru",YEAR-1,".csv"))
 
+#*** Bug in code with releases; RptArea got changed to numbers instead of names
+#Temp fix here:
+BRF_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
+                       sheet = "BRF release",
+                       range = paste0("A1:Y1000"), 
+                       na = "NA")
+BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
+#YE sheet good so will use it to relabel RptArea
+YE_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
+                       sheet = "YE release",
+                       range = paste0("A1:AB1000"), 
+                       na = "NA")
+YE_lastR <- YE_lastR[rowSums(is.na(YE_lastR)) != ncol(YE_lastR), ]
+
+match <- YE_lastR %>% select(Region,year,RptArea,Log_rfrel)
+
+BRF_lastR %>% mutate(RptArea_num = RptArea) %>% select(-RptArea) %>%
+  left_join(match, by = c("Region","year","Log_rfrel")) %>%
+  relocate(RptArea, .after = year) %>%
+  relocate(RptArea_num, .after = RptArea) -> try
+with(try,table(RptArea,RptArea_num))
+View(try)
+
+BRF_lastR <- try %>% select(-RptArea_num)
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
@@ -280,28 +326,29 @@ BRF_harvest <- cbind(BRF_guiH,break_col,BRF_priH %>% select(-c(Region,year,RptAr
          TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
 
 # Add it onto the running sheet:
-colnames(BRF_lastH) <- colnames(BRF_harvest)
-BRF_lastH <- BRF_lastH %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+BRF_lastH <- BRF_lastH[,-1] #get rid of this when doing 2024; should be saved without rownames now
+# colnames(BRF_lastH) <- colnames(BRF_harvest) #these should already be the same for 2023 and beyond
+#BRF_lastH <- BRF_lastH %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
 ncol(BRF_lastH); ncol(BRF_harvest)
-BRF_lastH <- BRF_lastH[,-26]
+#BRF_lastH <- BRF_lastH[,-26]
 
 updated_BRF_H <- rbind(BRF_lastH,BRF_harvest) %>% arrange(Region,RptArea,year)
 
-updated_BRF_H %>% filter(year == 2022 & Region == "SC") 
+updated_BRF_H %>% filter(year == 2023 ) 
 #checks out! just save one 2022 row
-updated_BRF_H <- rbind(BRF_lastH %>% filter(year < YEAR),
-                       BRF_harvest) %>% 
-  mutate(RptArea = case_when(
-    RptArea == "NORTHEAS" ~ "NORTHEAST",
-    TRUE ~ as.character(RptArea))) %>% 
-  arrange(Region,RptArea,year)
+#updated_BRF_H <- rbind(BRF_lastH %>% filter(year < YEAR),
+#                       BRF_harvest) %>% 
+#  mutate(RptArea = case_when(
+#    RptArea == "NORTHEAS" ~ "NORTHEAST",
+#    TRUE ~ as.character(RptArea))) %>% 
+#  arrange(Region,RptArea,year)
 
 unique(updated_BRF_H$RptArea)
 
-write.csv(updated_BRF_H, paste0("output/BRF_harv_Howard_thru",YEAR,".csv"))
+write.csv(updated_BRF_H, paste0("output/BRF_harv_Howard_thru",YEAR,".csv"),row.names = F)
 
 unique(updated_BRF_H$RptArea)
 
@@ -359,28 +406,30 @@ BRF_release <- cbind(BRF_guiR,break_col,BRF_priR %>% select(-c(Region,year,RptAr
          TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
 
 # Add it onto the running sheet:
-colnames(BRF_lastR) <- colnames(BRF_release)
-BRF_lastR <- BRF_lastR %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
-BRF_lastR <- BRF_lastR[,-26]
+#BRF_lastR <- BRF_lastR[,-1]
+#colnames(BRF_lastR) <- colnames(BRF_release)
+#BRF_lastR <- BRF_lastR %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
+ncol(BRF_lastR); ncol(BRF_release)
+#BRF_lastR <- BRF_lastR[,-26]
 
 updated_BRF_R <- rbind(BRF_lastR,BRF_release) %>% arrange(Region,RptArea,year)
 
-updated_BRF_R %>% filter(year == 2022 & Region == "SC")
+updated_BRF_R %>% filter(year == 2023)
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
-updated_BRF_R <- rbind(BRF_lastR %>% filter(year < YEAR),
-                       BRF_release) %>% 
-  mutate(RptArea = case_when(
-    RptArea == "NORTHEAS" ~ "NORTHEAST",
-    TRUE ~ as.character(RptArea))) %>%
-  arrange(Region,RptArea,year)
+#updated_BRF_R <- rbind(BRF_lastR %>% filter(year < YEAR),
+#                       BRF_release) %>% 
+#  mutate(RptArea = case_when(
+#    RptArea == "NORTHEAS" ~ "NORTHEAST",
+#    TRUE ~ as.character(RptArea))) %>%
+#  arrange(Region,RptArea,year)
 
-unique(updated_BRF_R$RptArea)
+#unique(updated_BRF_R$RptArea)
 
-write.csv(updated_BRF_R,paste0("output/BRF_rel_Howard_thru",YEAR,".csv"))
+write.csv(updated_BRF_R,paste0("output/BRF_rel_Howard_thru",YEAR,".csv"), row.names = F)
 
 rel_est_xlsx <- createWorkbook()
 sheet = addWorksheet(rel_est_xlsx, "BRF release")
@@ -419,14 +468,7 @@ SC_R <- BRF_rel_table %>% filter(Region == "SC",
 
 SE_R <- BRF_rel_table %>% filter(Region == "SE")
 
-#write.csv(Kodiak_H,paste0("output/reports/Kodiak_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(Kodiak_R,paste0("output/reports/Kodiak_BRF_releases_thru",YEAR,".csv"))
-#write.csv(SC_H,paste0("output/reports/Southcentral_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(SC_R,paste0("output/reports/Southcentral_BRF_release_thru",YEAR,".csv"))
-#write.csv(SE_H,paste0("output/reports/Southeast_BRF_harvest_thru",YEAR,".csv"))
-#write.csv(SE_H,paste0("output/reports/Southeast_BRF_release_thru",YEAR,".csv"))
 
-colnames(BRF_harv_table)
 BRF_harv_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
   pivot_longer(
     cols = c(Guided, Private, Total),

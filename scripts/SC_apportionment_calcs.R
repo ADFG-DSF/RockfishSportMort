@@ -25,7 +25,7 @@ library(ggplot2)
 library(janitor)
 library(haven)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -44,8 +44,8 @@ SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.cs
 
 #For Southcentral we need to weight the samples for PWS and NG respective to the landings:
 # Port level data comes with the IPHC reports from Jake:
-SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), 
-#SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
+#SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), #2022
+SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
                        sheet = "Halibut Area Harvest",
                        range = paste0("A5:X41"), 
                        na = "NA") %>% clean_names()
@@ -67,7 +67,6 @@ new_priv <- c(YEAR,
 print(rbind(port_priv,new_priv)) #actually bind these when you do a new year
 
 #2022 only: port_priv <- unique(port_priv)
-
 
 port_priv <- rbind(port_priv,new_priv)
 #getting rid of this spreadsheat:
@@ -228,7 +227,7 @@ View(PWSO_priv_wts)
 # we want: NG by Seward & Homer
 #          PWSI and PWSO by Seward, Whittier and Valdez/Cordova
 
-gui_wts <- read.csv(paste0("data/raw_dat/",YEAR-1,"/for_NGPWS_wts.csv")) 
+gui_wts <- read.csv(paste0("data/raw_dat/",YEAR,"/for_NGPWS_wts.csv")) 
 
 gui_wts %>%
   mutate(Year = YEAR) %>% select(port_site, RptArea, total_rfharv) %>%
@@ -471,16 +470,7 @@ wted_ests <- rbind(NG_priv_wts %>% mutate(User = "private",
                             wt_Pel, wt_NP, wt_BRF, wt_YE)
 )
 
-#-------------------------------------------------------------------------------
-# Now deal with the Kodiak areas: 
-#unique(SC_port_priv$CFMU)
 
-#SC_port_priv %>% filter(CFMU %in% c("WESTSIDE","AFOGNAK")) %>%
-#  group_by(YEAR,CFMU,USER) %>%
-#  summarize(Pel = sum(Pel),
-#            NP = sum(NP),
-#            BRF = sum(BRF),
-#            YE = sum(YE))
 #-------------------------------------------------------------------------------
 # Put together species and assemblage data: 
 SE_port

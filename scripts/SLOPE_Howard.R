@@ -38,7 +38,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2022
+YEAR <- 2023
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -65,7 +65,7 @@ SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Reg
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #get SC port sampling data:
-SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,"_INCOMPLETE.csv"))
+SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
 SC_port <- SC_port[,-1]
 #combine for species comp estimates
 colnames(SE_port); ncol(SE_port)
@@ -93,20 +93,23 @@ str(spec_apor)
 #-------------------------------------------------------------------------------
 #get the last BRF run down: 
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-SLO_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
-                     sheet = "Slope harvest",
-                     range = paste0("A2:Y1000"), 
-                     na = "NA")
-SLO_lastH <- SLO_lastH[rowSums(is.na(SLO_lastH)) != ncol(SLO_lastH), ]
+#SLO_lastH <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\harvest estimates excel version_thru",YEAR,".xlsx"), 
+#                     sheet = "Slope harvest",
+#                     range = paste0("A2:Y1000"), 
+#                     na = "NA")
+#SLO_lastH <- SLO_lastH[rowSums(is.na(SLO_lastH)) != ncol(SLO_lastH), ]
 
-SLO_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
-                       sheet = "Slope release",
-                       range = paste0("A2:Y1000"), 
-                       na = "NA")
-SLO_lastR <- SLO_lastR[rowSums(is.na(SLO_lastR)) != ncol(SLO_lastR), ]
+#SLO_lastR <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\release estimates excel version_thru",YEAR,".xlsx"), 
+#                       sheet = "Slope release",
+#                       range = paste0("A2:Y1000"), 
+#                       na = "NA")
+#SLO_lastR <- SLO_lastR[rowSums(is.na(SLO_lastR)) != ncol(SLO_lastR), ]
 
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
-
+SLO_lastH <- read.csv(paste0("output/SLO_harv_Howard_thru",YEAR-1,".csv"))
+SLO_lastR <- read.csv(paste0("output/SLO_rel_Howard_thru",YEAR-1,".csv"))
+SLO_lastH<-SLO_lastH[,-1] #get rid of this when the code is rerun clean
+SLO_lastR<-SLO_lastR[,-1] #get rid of this when the code is rerun clean
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
@@ -183,11 +186,11 @@ SLO_harvest <- cbind(SLO_guiH,break_col,SLO_priH %>% select(-c(Region,year,RptAr
          TotalSlope_UPRLWR95 = 1.96 * sqrt_totalSlope)
 
 # Add it onto the running sheet:
-colnames(SLO_lastH) <- colnames(SLO_harvest)
-SLO_lastH <- SLO_lastH %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+colnames(SLO_lastH) ; colnames(SLO_harvest)
+#SLO_lastH <- SLO_lastH %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
 ncol(SLO_lastH); ncol(SLO_harvest)
 #SLO_lastH <- SLO_lastH[,-26]
 
@@ -195,10 +198,10 @@ updated_SLO_H <- rbind(SLO_lastH,SLO_harvest) %>% arrange(Region,RptArea,year)
 
 updated_SLO_H %>% filter(year == 2022 & Region == "SE") 
 #checks out! just save one 2022 row
-updated_SLO_H <- rbind(SLO_lastH %>% filter(year < YEAR),
-                       SLO_harvest) %>% arrange(Region,RptArea,year)
+#updated_SLO_H <- rbind(SLO_lastH %>% filter(year < YEAR),
+#                       SLO_harvest) %>% arrange(Region,RptArea,year)
 
-write.csv(updated_SLO_H, paste0("output/SLO_harv_Howard_thru",YEAR,".csv"))
+write.csv(updated_SLO_H, paste0("output/SLO_harv_Howard_thru",YEAR,".csv"),row.names = F)
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 harv_est_xlsx <- loadWorkbook(paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"))
@@ -260,11 +263,11 @@ SLO_release <- cbind(SLO_guiR,break_col,SLO_priR %>% select(-c(Region,year,RptAr
          TotalSlope_UPRLWR95 = 1.96 * sqrt_totalSlope)
 
 # Add it onto the running sheet:
-colnames(SLO_lastR) <- colnames(SLO_release)
-SLO_lastR <- SLO_lastR %>% data.frame() %>% 
-  mutate(RptArea = as.factor(RptArea),
-         Region = as.factor(Region)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+colnames(SLO_lastR) ; colnames(SLO_release)
+#SLO_lastR <- SLO_lastR %>% data.frame() %>% 
+#  mutate(RptArea = as.factor(RptArea),
+#         Region = as.factor(Region)) %>% 
+#  mutate_if(is.character, ~as.numeric(.))
 ncol(SLO_lastR); ncol(SLO_release)
 #SLO_lastR <- SLO_lastR[,-26]
 
@@ -276,9 +279,9 @@ updated_SLO_R %>% filter(year == 2022 & Region == "SE") %>%
 updated_SLO_R %>% filter(RptArea == "EWYKT" & year == 2022)
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
-updated_SLO_R <- rbind(SLO_lastR %>% filter(year < YEAR),
-                       SLO_release) %>% arrange(Region,RptArea,year)
-write.csv(updated_SLO_R,paste0("output/SLO_rel_Howard_thru",YEAR,".csv"))
+#updated_SLO_R <- rbind(SLO_lastR %>% filter(year < YEAR),
+#                       SLO_release) %>% arrange(Region,RptArea,year)
+write.csv(updated_SLO_R,paste0("output/SLO_rel_Howard_thru",YEAR,".csv"), row.names = F)
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 rel_est_xlsx <- loadWorkbook(paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"))

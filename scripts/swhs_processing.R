@@ -18,17 +18,19 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 
-YEAR <- 2022
+YEAR <- 2023
 
 #2022
 SWHS_file_name <- "rf_byMgmtUnit_20240305.xlsx"
 #2023
 SWHS_file_name <- "rf_byMgmtUnit_sent20240925.xlsx"
 
-# ARGH!!! FUCKING KODIAK: Need to walk thru this to deal with low sample sizes in 
-# SWHS responses and the ad-hoc approach taken by Katie and Sara to repopulate
-# data and walk through analysis. See "harvest estimates excel version thru2022"
-# from BB's last go to see comments in cells(!!!!) to figure it out. 
+# KODIAK: Between 2017 and 2021 Kodiak harvests were not handled properly. The last
+# FS I confused the sample size requirements for SWHS responses (12+) and those 
+# required for port sampling (50+). As such, they were improperly borrowing Kodiak
+# harvest estimates from adjacent areas when the number of respondents was between
+# 12 and 50 when they should have used actual estimates. This has been corrected
+# for 2022 and forward but remains an issue for past estimates. 
   
 # Read in data file used for analysis and to be updated:
 # First year coding this and doing a redundant run on 2022. Typically you will
@@ -213,8 +215,10 @@ new_R %>% slice(-1) %>%
 # KODIAK: Because of inadequate sample sizes we need to make substitutions for harvest
 # and release numbers:
 gui_resp %>% filter(respused < 12 & year == YEAR) #Only need values for SKMA:
+gui_resp %>% filter(year == YEAR)
 
-pri_resp %>% filter(respused < 12 & year == YEAR)
+pri_resp %>% filter(respused < 12 & year == YEAR) #2023: SKMA and EASTSIDE
+pri_resp %>% filter(year == YEAR) 
 
 # Noted: large inconsistency in what sample sizes were deemed appropriate!!! WTF
 # Howard et al says 12 is minimal, but SW was censoring samples sizes under 50!
@@ -225,40 +229,47 @@ pri_resp %>% filter(respused < 12 & year == YEAR)
 # Real inconsistency too in which areas were used for substitutions
 # i.e., SKMA is all over the place; order of preference seems to be WKMA, Eastside, Afognak
 
+# KODIAK substitutions:
+# Eastside  = Northeast pBRF
+# Afognak  = Northeast 
+# WKMA = Afognak 
+# SKMA = Eastside in Saras stuff, but WKMA in Howard et al. Eastside makes more sense on the mnap in Figure 4 
+
 new_H[new_H$RptArea == "WKMA", "guiSWHS_rfharv"][[1]]
+new_H[new_H$RptArea == "WKMA", "priSWHS_rfharv"][[1]]
 
 new_H %>% 
   add_row(Region = "SC", year = YEAR, RptArea = "SKMA",
           guiSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "guiSWHS_rfharv"],
           var_guiSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "var_guiSWHS_rfharv"],
-          privSWHS_rfharv = new_H[new_H$RptArea == "AFOGNAK", "privSWHS_rfharv"],
-          var_privSWHS_rfharv = new_H[new_H$RptArea == "AFOGNAK", "var_privSWHS_rfharv"],
+          privSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "privSWHS_rfharv"],
+          var_privSWHS_rfharv = new_H[new_H$RptArea == "WKMA", "var_privSWHS_rfharv"],
           SWHS_gprop = guiSWHS_rfharv / (guiSWHS_rfharv + privSWHS_rfharv), #(p-hatgi)
           var_SWHS_gprop = ((((guiSWHS_rfharv)^2*var_privSWHS_rfharv)+
                                ((privSWHS_rfharv)^2*var_guiSWHS_rfharv))/
                               (guiSWHS_rfharv+privSWHS_rfharv)^4)) %>%
-  mutate(privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
-                                  new_H[new_H$RptArea == "AFOGNAK", "privSWHS_rfharv"],
+  mutate(privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE"), #2022c("EASTSIDE","WKMA"),
+                                  new_H[new_H$RptArea == "NORTHEAST", "privSWHS_rfharv"],
                                   privSWHS_rfharv),
-         var_privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
-                                      new_H[new_H$RptArea == "AFOGNAK", "var_privSWHS_rfharv"],
+         var_privSWHS_rfharv = ifelse(RptArea %in% c("EASTSIDE"), #2022c("EASTSIDE","WKMA"),
+                                      new_H[new_H$RptArea == "NORTHEAST", "var_privSWHS_rfharv"],
                                       var_privSWHS_rfharv)) -> new_H
   
 new_R %>% 
   add_row(Region = "SC", year = YEAR, RptArea = "SKMA",
           guiSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "guiSWHS_rfrel"],
           var_guiSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "var_guiSWHS_rfrel"],
-          privSWHS_rfrel = new_R[new_R$RptArea == "AFOGNAK", "privSWHS_rfrel"],
-          var_privSWHS_rfrel = new_R[new_R$RptArea == "AFOGNAK", "var_privSWHS_rfrel"],
+          privSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "privSWHS_rfrel"],
+          var_privSWHS_rfrel = new_R[new_R$RptArea == "WKMA", "var_privSWHS_rfrel"],
           SWHS_gprop = guiSWHS_rfrel / (guiSWHS_rfrel + privSWHS_rfrel), #(p-hatgi)
           var_SWHS_gprop = ((((guiSWHS_rfrel)^2*var_privSWHS_rfrel)+
                                ((privSWHS_rfrel)^2*var_guiSWHS_rfrel))/
                               (guiSWHS_rfrel+privSWHS_rfrel)^4)) %>%
-  mutate(privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
-                                  new_R[new_R$RptArea == "AFOGNAK", "privSWHS_rfrel"],
+  mutate(privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE"), #2022c("EASTSIDE","WKMA"),
+                                  new_R[new_R$RptArea == "NORTHEAST", "privSWHS_rfrel"],
                                   privSWHS_rfrel),
-         var_privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE","WKMA"),
-                                      new_R[new_R$RptArea == "AFOGNAK", "var_privSWHS_rfrel"],
+         var_privSWHS_rfrel = ifelse(RptArea %in% c("EASTSIDE"), #2022c("EASTSIDE","WKMA"),
+                                      new_R[new_R$RptArea == "NORTHEAST", "var_privSWHS_rfrel"],
                                       var_privSWHS_rfrel)) -> new_R
 
 #-------------------------------------------------------------------------------
