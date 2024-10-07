@@ -110,7 +110,7 @@ str(spec_apor)
 DSR_lastH <- read.csv(paste0("output/DSR_harv_Howard_thru",YEAR-1,".csv"))
 DSR_lastR <- read.csv(paste0("output/DSR_rel_Howard_thru",YEAR-1,".csv"))
 DSR_lastH<-DSR_lastH[,-1] #get rid of this when the code is rerun clean
-DSR_lastR<-DSR_lastR[,-1] #get rid of this when the code is rerun clean
+#DSR_lastR<-DSR_lastR[,-1] #get rid of this when the code is rerun clean
 
 #DSR_lastH %>% mutate(Region = "SE") %>%
 #  relocate(Region, .before = year) -> DSR_lastH
@@ -123,6 +123,23 @@ DSR_lastR<-DSR_lastR[,-1] #get rid of this when the code is rerun clean
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
 colnames(spec_apor)
 
+spec_apor %>% filter(Year > 2017,
+                     RptArea %in% c("CSEO","EWYKT",#"EYKT","IBS",
+                                    "NSEI","NSEO","SSEI","SSEO")) %>% 
+  select(Year,RptArea,TotalRF_n,YE_n,Black_n,Pelagic_n,Nonpel_n,NotYE_Nonpel_n,
+         pDSRinNonP,pDSRinNonP_avgRptArea,pDSR,pDSR_avgRptArea) %>%data.frame()
+
+#save values:
+left_join(spec_apor,
+          spec_apor %>% filter(Year == 2019) %>% 
+            select(RptArea,User,
+                   use_pDSR_aRA = pDSR_avgRptArea,
+                   use_var_pDSR_aRA = var_pDSR_avgRptArea,
+                   use_pDSRinNP_aRA = pDSRinNonP_avgRptArea,
+                   use_var_pDSRinNP_aRA = var_pDSRinNonP_avgRptArea),
+          by = c("RptArea","User"))  -> spec_apor
+
+
 DSR_guiH <- new_H %>% filter(Region == "SE") %>%
   select(Region, year, RptArea,Log_rfharv) %>%
   left_join(LB_H %>% filter(year == YEAR & Region == "SE") %>%
@@ -132,10 +149,12 @@ DSR_guiH <- new_H %>% filter(Region == "SE") %>%
                                    RptArea %in% c("CSEO","EWYKT","EYKT","IBS",
                                                   "NSEI","NSEO","SSEI","SSEO")) %>%
               rename(year = Year) %>%
-              mutate(year = as.integer(year)) %>%
+              mutate(year = as.integer(year),
+                     gui_pDSRinNonpel = ifelse(Nonpel_n < 50,use_pDSRinNP_aRA, pDSRinNonP),
+                     gui_var_pDSRinNonpel = ifelse(Nonpel_n < 50,use_var_pDSRinNP_aRA, var_pDSRinNonP)) %>%
               select(year,RptArea,
-                     gui_pDSRinNonpel = pDSRinNonP,
-                     gui_var_pDSRinNonpel = var_pDSRinNonP),
+                     gui_pDSRinNonpel ,#pDSRinNonP,
+                     gui_var_pDSRinNonpel),
             by = c("year", "RptArea")) %>%
   mutate(gui_pDSRinNonpel = as.numeric(gui_pDSRinNonpel),
          gui_var_pDSRinNonpel = as.numeric(gui_var_pDSRinNonpel),
@@ -184,7 +203,7 @@ ncol(DSR_lastH); ncol(DSR_harvest)
 
 updated_DSR_H <- rbind(DSR_lastH,DSR_harvest) %>% arrange(Region,RptArea,year)
 
-updated_DSR_H %>% filter(year == 2022 & Region == "SE") 
+updated_DSR_H %>% filter(year >= 2022 & Region == "SE") 
 #checks out! just save one 2022 row
 #updated_DSR_H <- rbind(DSR_lastH %>% filter(year < YEAR),
 #                       DSR_harvest) %>% arrange(Region,RptArea,year)
@@ -204,22 +223,6 @@ saveWorkbook(harv_est_xlsx, paste0("output/harvest_estimates_Howard_thru",YEAR,"
 # Need rpt area averages to use because of sample size issues and changes in regulation
 # in 2019 making it impossible to assess the proportion of fish being released.
 #look:
-spec_apor %>% filter(Year > 2017,
-                       RptArea %in% c("CSEO","EWYKT",#"EYKT","IBS",
-                                      "NSEI","NSEO","SSEI","SSEO")) %>% 
-  select(Year,RptArea,TotalRF_n,YE_n,Black_n,Pelagic_n,Nonpel_n,NotYE_Nonpel_n,
-         pDSRinNonP,pDSRinNonP_avgRptArea,pDSR,pDSR_avgRptArea) %>%data.frame()
-
-#save values:
-left_join(spec_apor,
-          spec_apor %>% filter(Year == 2019) %>% 
-            select(RptArea,User,
-                   use_pDSR_aRA = pDSR_avgRptArea,
-                   use_var_pDSR_aRA = var_pDSR_avgRptArea,
-                   use_pDSRinNP_aRA = pDSRinNonP_avgRptArea,
-                   use_var_pDSRinNP_aRA = var_pDSRinNonP_avgRptArea),
-          by = c("RptArea","User"))  -> spec_apor
-
 
 DSR_guiR <- new_R %>% filter(Region == "SE") %>%
   select(Region, year, RptArea,Log_rfrel) %>%
@@ -281,8 +284,8 @@ ncol(DSR_lastR); ncol(DSR_release)
 
 updated_DSR_R <- rbind(DSR_lastR,DSR_release) %>% arrange(Region,RptArea,year)
 
-updated_DSR_R %>% filter(year == 2022 & Region == "SE")
-updated_DSR_R %>% filter(RptArea == "EWYKT" & year == 2022)
+updated_DSR_R %>% filter(year >= 2022 & Region == "SE")
+updated_DSR_R %>% filter(RptArea == "CSEO" & year == 2022)
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
 #updated_DSR_R <- rbind(DSR_lastR %>% filter(year < YEAR),
