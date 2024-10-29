@@ -815,8 +815,8 @@ H_sum_F <- H_sum_F %>%
 
 #-------------------------------------------------------------------------------
 # Update logbook harvest and release data sheets.
-lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR-1,".csv"))
-lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR-1,".csv"))
+lb_harv <- read.csv(paste0("data/processed_dat/logbook_harvest_thru",YEAR-1,".csv"))
+lb_rel <- read.csv(paste0("data/processed_dat/logbook_release_thru",YEAR-1,".csv"))
 
 #get rid of column 1 which is rown names. CHECK! This can go away once we've
 # caught up with saving everything with row.names = F
@@ -882,7 +882,7 @@ lb_harv2 %>% filter(!(RptArea == "EWYKT" & Region == "SC")) -> lb_harv2
 
 unique(lb_harv2 %>% filter(year == YEAR))
 
-write.csv(unique(lb_harv2), paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
+write.csv(unique(lb_harv2), paste0("data/processed_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
 
 #*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
 
@@ -927,7 +927,7 @@ lb_rel2 %>% filter(year == YEAR)
 
 lb_rel2 %>% mutate(Region = ifelse(RptArea == "EWYKT", "SE", Region)) -> lb_rel2
 
-write.csv(unique(lb_rel2), paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
+write.csv(unique(lb_rel2), paste0("data/processed_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
 
 
 #-------------------------------------------------------------------------------
@@ -938,8 +938,8 @@ new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"))
 new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"))
 
 #if you are in a new session, here is where you were
-lb_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
-lb_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
+lb_H <- read.csv(paste0("data/processed_dat/logbook_harvest_thru",YEAR,".csv"))
+lb_R <- read.csv(paste0("data/processed_dat/logbook_release_thru",YEAR,".csv"))
 # otherwise
 lb_H <- unique(lb_harv2)
 lb_R <- unique(lb_rel2)
