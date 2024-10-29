@@ -8,12 +8,17 @@ This repository houses the estimation procedure for harvest, release, and total 
 
 The second method is under development and comprises a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propogates uncertainty throughout the estimation proceedure and thus does not rely on the decision tree approach in the original Howard methods. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implements. The original Bayesian methods were developed by Adam Reimer and has been further developed by the curret author. For communciation purposes we will refer to Howard methods and Reimer methods to distinguish the two approaches. 
 
-Data Sources:
+## Data Sources:
 
-1. SWHS
-2. eLogbook 
-3. Southcentral port sampling data
-4. Southeast port sampling data
+1. **SWHS data**: from Jake Bozzini (jake.bozzini@alaska.gov): Available in late September when SWHS estimates are finalized. Save to [`data/raw_dat/YEAR/`] folder.
+   1. *rf_byMgmtUnit_sentDATE.xlsx*
+   2. *IPHC_YEAR_guipri_all_sentYEAR.xlsx* (NOTE: This is currently in Southcentral port sample data folder and needs to be moved) 
+3. **eLogbookdata**: *YEARLogbookDataDATE.csv* or *statewide_YEAR_DATA.csv* depending on what they are calling from Kyla Buster (kayla.buster@alaska.gov) and saved to [`data/raw_dat/YEAR/`] folder. 
+4. **Southcentral port sampling data** from Clay Mckean (clay.mckean@alaska.gov) saved to [`data/raw_dat/Species_comp_SC/`]:
+   1. *Spcomp_guided_SENTDATE*
+   2. *Spcomp_unguided_SENTDATE*
+6. **Southeast port sampling data** from Diana Tersteeg (diana.tersteeg@alaska.gov) and Chris Hinds (chris.hinds@alaska.gov) and saved to [`data/raw_dat/Species_comp_SE/`]:
+   1. *Species_comp_Region1_forR_YEAR.Final*
 
 Steps for right now:
 
