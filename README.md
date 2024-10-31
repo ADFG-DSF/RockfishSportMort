@@ -2,7 +2,7 @@
 
 # GOA Rockfish Sport Fish Harvest Reconstruction
 
-### Author: Phil Joy (philip.joy@alaska.gov)
+#### Author: Phil Joy (philip.joy@alaska.gov)
 
 #### Last updated: Novemeber 2024
 
