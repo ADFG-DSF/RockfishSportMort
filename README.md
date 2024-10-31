@@ -73,7 +73,8 @@ In development...
      4. [`scripts/SLOPE_Howard.R`]: Slope rockfish assemblage estimates (Southeast region only).
      5. [`scripts/PEL_Howard.R`]: Pelagic rockfish assemblage estimates (Southeast region only).
    * *Reimer estimates*: Produces rockfish harvest and release estimates using the Reimer methods. *Under development*
-     1. [`scripts/bayes_est.R`] and other variations of that notation: This is the script for running the model
+     1. [`scripts/bayes_est.R`]: This is the script for running the model
+     2. [`scripts/functions.R`]: Functions for use in the bayes_est.R script. 
 4. [`models/`]: This contains jags models for the Bayesian Reimer model.
 5. [`figures/`]: This folder contains figures produced in the analysis.
 6. [`output/`]: This folder contains files and results for dissemination.
