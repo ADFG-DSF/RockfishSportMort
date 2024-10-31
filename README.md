@@ -33,11 +33,18 @@ In development...
 6. **Southeast port sampling data** from Diana Tersteeg (diana.tersteeg@alaska.gov) and Chris Hinds (chris.hinds@alaska.gov) and saved to [`data/raw_dat/Species_comp_SE/`]:
    1. *Species_comp_Region1_forR_YEAR.Final*
 
-## General Approach
+## Estimation instructions
 
-1. Process data
-2. Howard estimates
-3. Reimer estimates
+### Work flow
+
+1. Process the statewide harvest survey data in [`swhs_processing.R`].
+2. Process the logbook data in [`lb_processing.R`].
+3. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
+   * Note that the southeast group has developed code for apportionments in Region 1.
+5. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
+   * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2. 
+6. Propare the data for the Reimer model using [`scripts/readdata.R`] or [`scripts/readdata_dt.R`] (*in development*)
+7. Generate Reimer estimates in [`scripts/script_dt.R`].
 
 ## Repository Directory
 
@@ -68,16 +75,7 @@ In development...
    1. [`output/reports/`]: This folder contains area specific reports for dissemination.
 7. [`markdown`]: This contains text files and rmarkdown files.
 
-## Work flow
 
-1. Process the statewide harvest survey data in [`swhs_processing.R`].
-2. Process the logbook data in [`lb_processing.R`].
-3. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
-   * Note that the southeast group has developed code for apportionments in Region 1.
-5. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
-   * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2. 
-6. Propare the data for the Reimer model using [`scripts/readdata.R`] or [`scripts/readdata_dt.R`] (*in development*)
-7. Generate Reimer estimates in [`scripts/script_dt.R`].
 
 ##### Old readme notes below while develoiping this repo:
 
