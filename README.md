@@ -35,16 +35,21 @@ In development...
 
 ## Estimation instructions
 
+#### Due date: early October
+
 ### Work flow
 
-1. Process the statewide harvest survey data in [`swhs_processing.R`].
-2. Process the logbook data in [`lb_processing.R`].
-3. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
+1. Collect data from various sources.
+   1. Species compostional data and logbook data are available anytime after the new year.
+   2. Last year's SWHS data are available in late September of the following year. You should have all of the other data sources in place when the SWHS data is released so that estimates can be generated in the fall for Board of Fish meetings. 
+3. Process the statewide harvest survey data in [`swhs_processing.R`].
+4. Process the logbook data in [`lb_processing.R`].
+5. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
    * Note that the southeast group has developed code for apportionments in Region 1.
-5. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
+6. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
    * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2. 
-6. Propare the data for the Reimer model using [`scripts/readdata.R`] or [`scripts/readdata_dt.R`] (*in development*)
-7. Generate Reimer estimates in [`scripts/script_dt.R`].
+7. Propare the data for the Reimer model using [`scripts/readdata.R`] or [`scripts/readdata_dt.R`] (*in development*)
+8. Generate Reimer estimates in [`scripts/script_dt.R`].
 
 ## Repository Directory
 
