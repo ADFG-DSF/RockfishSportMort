@@ -1,6 +1,20 @@
+################################################################################
+# Data preparation for the Bayesian sport fish harvest estimation model
+#
+# Author: Phil Joy & Adam Reimer
+# 
+# Last updated: Nov 2024
+#
+# This script will take the raw and semi-processed rockfish data and prepare
+# it for use in the model
+#
+################################################################################
+
 library(readxl)
 library(tidyverse)
 library(ggplot2)
+
+REP_YR <- 2023
 
 #look up table for region
 lut <- 
@@ -11,13 +25,17 @@ lut <-
              stringsAsFactors = FALSE) %>%
   arrange(region, area)
 
+#-------------------------------------------------------------------------------
 # Logbook data ----
+#-------------------------------------------------------------------------------
 H_ayg0 <- #logbook harvest by area, user = guided, year
-  read_xlsx(".\\rawdata\\logbook_harvest.xlsx", 
-            sheet = "logbook_harvest",
-            range = "B1:G595", 
-            na = "NA")
-
+#  read_xlsx(paste0(".\\rawdata\\logbook_harvest.xlsx"), 
+#            sheet = "logbook_harvest",
+#            range = "B1:G595", 
+#            na = "NA")
+read.csv(paste0("data/raw_dat/logbook_harvest_thru",REP_YR,".csv")) %>% 
+  select(-c(Region,not_ye_nonpel_harv))
+  
 colnames(H_ayg0)
 colnames(H_ayg0) <- c("year", "area", "H", "Hp", "Hnp", "Hye")
 
@@ -53,14 +71,19 @@ H_ayg %>%
   ggplot(aes(x = year, y = H, color = area)) +
     geom_line() +
     facet_grid(region ~ .)
-saveRDS(H_ayg, ".\\data\\H_ayg.rds")
 
+saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
 
+#-------------------------------------------------------------------------------
+# SWHS Data
+#-------------------------------------------------------------------------------
 
+# what is the name of this year's data file?
+swhs_dat <- "rf_byMgmtUnit_sent20240925.xlsx"
 
 # Hhat_ay data ----
 Hhat_ay0 <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "RF_har",
             range = "A4:Q19") %>%
   rename(year = YEAR) %>%
@@ -72,7 +95,7 @@ Hhat_ay0 <-
 table(Hhat_ay0$region, Hhat_ay0$area)
 
 seHhat_ay <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "Har_se",
             range = "A4:Q19") %>%
   pivot_longer(!year, names_to = "area", values_to = "seH") %>%
@@ -83,14 +106,14 @@ seHhat_ay <-
 table(seHhat_ay$region, seHhat_ay$area)
 
 Hhat_ay <- left_join(Hhat_ay0, seHhat_ay, by = c("year", "area", "region"))
-saveRDS(Hhat_ay, ".\\data\\Hhat_ay.rds")
+saveRDS(Hhat_ay, ".\\data\\bayes_dat\\Hhat_ay.rds")
 
 
 
 
 # Chat_ay data ----
 Chat_ay0 <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "RF_cat",
             range = "A4:Q19") %>%
   rename(year = YEAR) %>%
@@ -102,7 +125,7 @@ Chat_ay0 <-
 table(Chat_ay0$region, Chat_ay0$area)
 
 seChat_ay <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "Cat_se",
             range = "A4:Q19") %>%
   pivot_longer(!year, names_to = "area", values_to = "seC") %>%
@@ -113,14 +136,14 @@ seChat_ay <-
 table(seChat_ay$region, seChat_ay$area)
 
 Chat_ay <- left_join(Chat_ay0, seChat_ay, by = c("year", "area", "region"))
-saveRDS(Chat_ay, ".\\data\\Chat_ay.rds")
+saveRDS(Chat_ay, ".\\data\\bayes_dat\\Chat_ay.rds")
 
 
 
 
 # Hhat_ayu data ----
 Hhat_ayg0 <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "gui_har",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
@@ -133,7 +156,7 @@ Hhat_ayg0 <-
 table(Hhat_ayg0$region, Hhat_ayg0$area)
 
 seHhat_ayg <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "guihar_se",
             range = "A4:Q13") %>%
   pivot_longer(!year, names_to = "area", values_to = "seH") %>%
@@ -147,7 +170,7 @@ table(seHhat_ayg$region, seHhat_ayg$area)
 Hhat_ayg <- left_join(Hhat_ayg0, seHhat_ayg, by = c("year", "area", "region", "user"))
 
 Hhat_ayp0 <- #p for private
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pri_har",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
@@ -160,7 +183,7 @@ Hhat_ayp0 <- #p for private
 table(Hhat_ayp0$region, Hhat_ayp0$area)
 
 seHhat_ayp <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "prihar_se",
             range = "A4:Q13") %>%
   pivot_longer(!year, names_to = "area", values_to = "seH") %>%
@@ -173,15 +196,12 @@ table(seHhat_ayp$region, seHhat_ayp$area)
 
 Hhat_ayp <- left_join(Hhat_ayp0, seHhat_ayp, by = c("year", "area", "region", "user"))
 Hhat_ayu <- rbind(Hhat_ayg, Hhat_ayp)
-saveRDS(Hhat_ayu, ".\\data\\Hhat_ayu.rds")
-
-
-
+saveRDS(Hhat_ayu, ".\\data\\bayes_dat\\Hhat_ayu.rds")
 
 
 # Chat_ayu data ----
 Chat_ayg0 <- #p for private
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "gui_cat",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
@@ -194,7 +214,7 @@ Chat_ayg0 <- #p for private
 table(Chat_ayg0$region, Chat_ayg0$area)
 
 seChat_ayg <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "guicat_se",
             range = "A4:Q13") %>%
   pivot_longer(!year, names_to = "area", values_to = "seC") %>%
@@ -208,7 +228,7 @@ table(seChat_ayg$region, seChat_ayg$area)
 Chat_ayg <- left_join(Chat_ayg0, seChat_ayg, by = c("year", "area", "region", "user"))
 
 Chat_ayp0 <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pri_cat",
             range = "A4:Q13") %>%
   rename(year = YEAR) %>%
@@ -221,7 +241,7 @@ Chat_ayp0 <-
 table(Chat_ayp0$region, Chat_ayp0$area)
 
 seChat_ayp <- 
-  read_xlsx(".\\rawdata\\SWHS_rf_byMgmtUnit_20210108.xlsx", 
+  read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pricat_se",
             range = "A4:Q13") %>%
   pivot_longer(!year, names_to = "area", values_to = "seC") %>%
@@ -234,19 +254,27 @@ table(seChat_ayp$region, seChat_ayp$area)
 
 Chat_ayp <- left_join(Chat_ayp0, seChat_ayp, by = c("year", "area", "region", "user"))
 Chat_ayu <- rbind(Chat_ayg, Chat_ayp)
-saveRDS(Chat_ayu, ".\\data\\Chat_ayu.rds")
+saveRDS(Chat_ayu, ".\\data\\bayes_dat\\Chat_ayu.rds")
 
 
+#-------------------------------------------------------------------------------
+# Species comp / port sampling data ----
+#-------------------------------------------------------------------------------
 
-# Species comp ----
 sppcompR1_0 <- 
-  read_xlsx(".\\rawdata\\species_comp_Region1_forR.xlsx", 
-            range = "A1:I353") %>%
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
+            range = "A1:I1000") %>%
   rename_all(.funs = tolower) %>%
-  rename(area = rpt_area)
+  rename(area = rpt_area) %>% 
+  filter_all(any_vars(!is.na(.))) %>%
+  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n","notye_nonpel_n"),as.numeric)
+
 table(sppcompR1_0$area)
-#Note EKYKT = IBS + EKYT
-sppcompR1$totalrf_n[sppcompR1$area == "EWYKT"] == sppcompR1$totalrf_n[sppcompR1$area == "EYKT"] + sppcompR1$totalrf_n[sppcompR1$area == "IBS"]
+
+str(sppcompR1_0)
+#Note EKYKT = IBS + EKYT ; checking , should be all TRUE
+sppcompR1_0$totalrf_n[sppcompR1_0$area == "EWYKT"] == sppcompR1_0$totalrf_n[sppcompR1_0$area == "EYKT"] + sppcompR1_0$totalrf_n[sppcompR1_0$area == "IBS"]
+
 sppcompR1 <- 
   sppcompR1_0 %>% 
   right_join(lut[lut$region == "Southeast",], by = "area") %>% #drops IBS and EYKT
@@ -254,11 +282,12 @@ sppcompR1 <-
   arrange(region, area, year)
 table(sppcompR1$area)
 
-sppcompR2_0 <- 
-  read_xlsx(".\\rawdata\\species_comp_Region2_forR.xlsx", 
-            range = "A1:I433") %>%
+sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv")) %>%
+#  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv"), 
+#            range = "A1:I433") %>%
   rename_all(.funs = tolower) %>%
-  rename(area = rpt_area)
+  rename(area = rpt_area) %>%
+  select(area,year,user,totalrf_n,ye_n,black_n,pelagic_n,nonpel_n,notye_nonpel_n)
 table(sppcompR2_0$area)
 #Note no samples from SOKO2SAP (= southeast + southwest + sakpen + chignik)
 #Note no samples from BSAI (= aleutian + bering)
@@ -280,4 +309,4 @@ S_ayu <-
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
   arrange(user, area, year)
 table(S_ayu$region, S_ayu$area)
-saveRDS(S_ayu, ".\\data\\S_ayu.rds")
+saveRDS(S_ayu, ".\\data\\bayes_dat\\S_ayu.rds")

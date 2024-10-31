@@ -1,7 +1,22 @@
-# Pelagic Harvest Composition -----------------------------------------------------
+################################################################################
+# ROCKFISH HARVEST AND RELEASE ESTIMATION WITH REIMER / BAYESIAN METHODS
+#
+# This code provides a Bayesian version of the Howard et al. (2020) methods
+# (see BRF_Howard.R, YE_Howard.R, etc.). The code also provides diagnostics
+# and posterior examination of the data and saves it to a format for dissemination
+# to ADF&G biologists and managers
+#
+# Developed by Adam Reimer in 2022
+# 
+# Current Author: Phil Joy (philip.joy@alaska.gov)
+#
+# Lats updated: November 2024
+#
+################################################################################
+
 library(ggplot2)
 library(tidyverse)
-source(".\\functions//functions.R")
+source(".\\scripts//functions.R")
 
 # Read data --------------------------------------------------------
 # Logbook harvests by area, year for guided trips
