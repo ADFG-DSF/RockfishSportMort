@@ -71,7 +71,7 @@ In development...
      2. [`scripts/YE_Howard.R`]: Yelloweye rockfish estimates.
      3. [`scripts/DSR_Howard.R`]: Demersal shelf rockfish assemblage estimates (Southeast region only).
      4. [`scripts/SLOPE_Howard.R`]: Slope rockfish assemblage estimates (Southeast region only).
-     5. [scripts/`PEL_Howard.R`]: Pelagic rockfish assemblage estimates (Southeast region only).
+     5. [`scripts/PEL_Howard.R`]: Pelagic rockfish assemblage estimates (Southeast region only).
    * *Reimer estimates*: Produces rockfish harvest and release estimates using the Reimer methods. *Under development*
      1. [`scripts/script_dt.R`] and other variations of that notation: This is the script for running the model
 4. [`models/`]: This contains jags models for the Bayesian Reimer model.
