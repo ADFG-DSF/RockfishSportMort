@@ -1,6 +1,6 @@
 <img align="left" src="https://github.com/commfish/cr_brf/blob/main/figures/SRIlogo.jfif" width="140">
 
-# GOA Rockfish Sport Fish Harvest Reconstruction
+# Gulf of Alaska Rockfish Sport Fish Harvest Reconstruction
 
 #### Author: Phil Joy (philip.joy@alaska.gov)
 
