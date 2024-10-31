@@ -48,8 +48,8 @@ In development...
    * Note that the southeast group has developed code for apportionments in Region 1.
 6. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
    * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2. 
-7. Propare the data for the Reimer model using [`scripts/readdata.R`] or [`scripts/readdata_dt.R`] (*in development*)
-8. Generate Reimer estimates in [`scripts/script_dt.R`].
+7. Prepare the data for the Bayesian model using [`scripts/bayes_data_prep.R`]. 
+8. Generate Bayesian Reimer estimates in [`scripts/bayes_est.R`].
 
 ## Repository Directory
 
@@ -65,7 +65,7 @@ In development...
      1. [`scripts/swhs_processing.R`]: Processes and archives the swhs data.
      2. [`scripts/lb_processing.R`]: Processes and archives the logbook data and adds it to the swhs data.
      3. [`scripts/SC_apportionment_calcs.R`]: Apportions the raw Region 2 port sampling data to generate species apportionment estimates. Note that Region 1 began doing this task in house in 2024.
-     4. [`scripts/readdata.R`] and [`scripts/readdata_dt.R`]: Prepares raw data for the Reimer model. 
+     4. [`scripts/bayes_data_prep.R`]: Prepares raw data for the Reimer model. 
    * *Howard estimates*: Produces rockfish harvest and release estimates using the Howard methods. 
      1. [`scripts/BRF_Howard.R`]: Black rockfish estimates.
      2. [`scripts/YE_Howard.R`]: Yelloweye rockfish estimates.
@@ -73,7 +73,7 @@ In development...
      4. [`scripts/SLOPE_Howard.R`]: Slope rockfish assemblage estimates (Southeast region only).
      5. [`scripts/PEL_Howard.R`]: Pelagic rockfish assemblage estimates (Southeast region only).
    * *Reimer estimates*: Produces rockfish harvest and release estimates using the Reimer methods. *Under development*
-     1. [`scripts/script_dt.R`] and other variations of that notation: This is the script for running the model
+     1. [`scripts/bayes_est.R`] and other variations of that notation: This is the script for running the model
 4. [`models/`]: This contains jags models for the Bayesian Reimer model.
 5. [`figures/`]: This folder contains figures produced in the analysis.
 6. [`output/`]: This folder contains files and results for dissemination.
