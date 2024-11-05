@@ -20,53 +20,74 @@ source(".\\scripts//functions.R")
 
 # Read data --------------------------------------------------------
 # Logbook harvests by area, year for guided trips
-H_ayg <- readRDS(".//data//H_ayg.rds") %>% 
+H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
   mutate(H_lb = ifelse(H == 0, 1, H))
 
 # SWHS harvests by area, year and user 
 Hhat_ayu <- 
-  readRDS(".//data//Hhat_ayu.rds")  %>% 
+  readRDS(".//data//bayes_dat//Hhat_ayu.rds")  %>% 
   mutate(Hhat = ifelse(H == 0, 1, H), 
          seH = ifelse(seH == 0, 1, seH)) %>%
   arrange(area, user, year)
 
 # SWHS harvests by area, year
 Hhat_ay <- 
-  readRDS(".//data//Hhat_ay.rds") %>% 
+  readRDS(".//data//bayes_dat//Hhat_ay.rds") %>% 
   rename(Hhat = H) %>%
+  mutate(area = as.character(area)) %>%
   bind_rows(Hhat_ayu %>% 
               group_by(region, area, year) %>% 
-              summarise(Hhat = sum(H), seH = sqrt(sum(seH^2)))) %>%
+              summarise(Hhat = sum(H), seH = sqrt(sum(seH^2))) %>%
+              mutate(area = as.character(area))) %>%
   arrange(region, area, year) %>%
   mutate(Hhat = ifelse(Hhat == 0, 1, Hhat), 
-         seH = ifelse(seH == 0, 1, seH))
+         seH = ifelse(seH == 0, 1, seH)) %>%
+  select(-cv)
+
+Hhat_ay %>% filter(is.na(Hhat))
+#DEV Code; delete once we figure out how to deal with the blanks
+Hhat_ay %>% mutate(Hhat = ifelse(is.na(Hhat),1,Hhat),
+                   seH = ifelse(is.na(seH),1,seH)) -> Hhat_ay
+
 
 # SWHS Catch by area, year
 Chat_ay <- 
-  readRDS(".//data//Chat_ay.rds") %>% 
+  readRDS(".//data//bayes_dat//Chat_ay.rds") %>% 
   rename(Chat = C) %>%
-  bind_rows(readRDS(".//data//Chat_ayu.rds") %>% 
+  mutate(area = as.character(area)) %>%
+  bind_rows(readRDS(".//data//bayes_dat//Chat_ayu.rds") %>% 
               group_by(region, area, year) %>% 
-              summarise(Chat = sum(C), seC = sqrt(sum(seC^2)))) %>%
+              summarise(Chat = sum(C), seC = sqrt(sum(seC^2))) %>%
+              mutate(area = as.character(area))) %>%
   arrange(region, area, year) %>%
   mutate(Chat = ifelse(Chat == 0, 1, Chat), 
-         seC = ifelse(seC == 0, 1, seC))
+         seC = ifelse(seC == 0, 1, seC)) %>%
+  select(-cv)
+
+Chat_ay %>% filter(is.na(Chat))
+#DEV Code; delete once we figure out how to deal with the blanks
+Chat_ay %>% mutate(Chat = ifelse(is.na(Chat),1,Chat),
+                   seC = ifelse(is.na(seC),1,seC)) -> Chat_ay
 
 # Survey data on catch composition
 S_ayu0 <- 
-  readRDS(".//data//S_ayu.rds") 
+  readRDS(".//data//bayes_dat//S_ayu.rds") 
 S_ayu <- 
-  S_ayu0 %>%
+  S_ayu0 %>% mutate(year = as.integer(year)) %>%
   bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
                        year = rep(rep(1996:1997, each = 2), times = 6),
                        user = rep(c("charter", "private"), times = 12),
                        totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
-  arrange(user, area, year) %>%
-  filter(year >= 1996)
+  filter(year >= 1996) %>%
+  arrange(user, area, year) 
 
+unique(S_ayu$year)
 
+S_ayu %>% filter(year < 1998) %>% print(n=60)
 # Plot data --------------------------------------------------------
 # * SWHS estimates by user --------------------------------------------------------
+unique(Hhat_ayu$year)
+
 Hhat_ayu %>%
   select(year, user, area, region, Hhat, seH) %>%
   rbind(Hhat_ay %>% mutate(user = "all")) %>%
@@ -122,8 +143,18 @@ S_ayu %>%
   facet_wrap(area ~ ., scales = "free")
 
 # Prep data for jags --------------------------------------------------------
+start_year <- 1977 # 1996 or 1977
+
 Hhat_ayg <- Hhat_ayu %>% filter(user == "guided")
 Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
+
+# Separate out the unknowns in the pre-1996 data
+Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN")
+Chat_Uy <- Chat_ay %>% filter(area == "UNKNOWN")
+
+Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_year)
+Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_year)
+
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
@@ -133,17 +164,29 @@ Z <- bspline(1:24, K = C)
 comp <- S_ayu %>% 
          mutate(area_n = as.numeric(area), 
           user_n = ifelse(user == "charter", 0, 1), 
-          year_n = year - 1995, 
+          year_n = year - (start_year - 1),  #year - 1995, changed with the addition of the old data... 
           source = 1) %>% 
          select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n) %>%
          filter(N != 0) %>%
          mutate(yellow = ifelse(N - pelagic ==0, NA, yellow))
   
+range(comp$year_n)
 
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
-matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
+#matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
+
+#Assume that catch = harvest prior to 1990. modify catch data frame to relect that
+Chat_ay %>% bind_rows(Hhat_ay %>% filter(year < 1990) %>%
+                        mutate(Chat = Hhat,
+                               seC = seH) %>%
+                        select(-c(Hhat,seH))) %>%
+  arrange(region, area, year) -> Chat_ay
+
 matrix_Chat_ay <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
-matrix_Chat_ay[4, 1:5] <- NA
+#matrix_Chat_ay[4, 1:5] <- NA
+
+dim(matrix_Hhat_ay)
+dim(matrix_Chat_ay)
 
 jags_dat <- 
   list(
@@ -154,10 +197,14 @@ jags_dat <-
     Chat_ay = matrix_Chat_ay,
     cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
       matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE),
-    # logbook rf lbs harvested by guides
+    # logbook rf harvested by guides
+    #trouble shooting:
+    #H_ayg %>% select(area,H_lb) %>%
+    #  pivot_wider(names_from = area, values_from = H_lb)
+      
     Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
-    # logbook pelagic rf lbs harvested by guides
+    # logbook pelagic rf harvested by guides
     Hlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                     matrix(H_ayg$Hp, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
     # logbook ye rf harvested by guides

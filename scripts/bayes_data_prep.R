@@ -47,37 +47,137 @@ H_ayg0 %>%
   group_by(area) %>%
   summarise(H = sum(H)) %>%
   print(n = 100)
+
+H_ayg0 %>% filter(is.na(area))
+
+H_ayg0 %>% filter(year > 2019 & area %in% c("BSAI","ALEUTIAN","BERING",
+                                            "EWYKT","IBS","EKYT",
+                                            "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
+                                            "WKMA","WESTSIDE","MAINLAND"))
 #Note BSAI = aleutian + bering
 1144+20
-#Note EKYKT = IBS + EKYT
+#Note EWYKT = IBS + EYKT
 14019+59280
-#Note SOKO2PEN = southeast + southwest + sakpen + chignik
+#Note SOKO2PEN / SOKO2SAP= southeast + southwest + sakpen + chignik
 11603+140+372+915
 #Note WKMA = westside + mainland
 39414+290
 
+# Identify where logbook data amalgamations need to be done. They were not done
+# for 2 of the 4 amalgamated areas in 2022 and 2023 so keep an eye on this: 
+H_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
+                                 ifelse(area %in% c("IBS","EYKT"),"EWYKT",
+                                        ifelse(area %in% c("SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK"),"SOKO2SAP",
+                                               ifelse(area %in% c("WESTSIDE","MAINLAND"),"WKMA",NA))))) %>%
+  filter(!is.na(AMALG)) %>%
+  group_by(year,AMALG) %>%
+  summarise(H = sum(H, na.rm = T),
+         Hp = sum(Hp, na.rm = T),
+         Hnp = sum(Hnp, na.rm = T),
+         Hye = sum(Hye, na.rm = T)) -> a_check
+
+H_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
+                                            "EWYKT","IBS","EYKT",
+                                            "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
+                                            "WKMA","WESTSIDE","MAINLAND")) %>%
+  bind_rows(check %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
+  arrange(year,area) -> amalg
+ 
+with(amalg %>%
+       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
+     table(area,year))                
+#!!! BSAI and SOKO2SAP missing in 2022 and 2023 so need to add them back in
+H_ayg0 %>% bind_rows(amalg %>% filter(year %in% c(2022,2023) & area %in% c("BSAI","SOKO2SAP"))) %>%
+  arrange(area, year) -> H_ayg0
+
+#double check... 
+with(H_ayg0 %>%
+       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
+     table(area,year))    
+
 H_ayg <-
   H_ayg0 %>%
-  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND"))) %>%
-  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAS"), tolower(area), area),
+  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", #get rid of areas contained in amalgamated areas
+                       "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND",
+                       "SOUTHEAST","SOUTHWEST"))) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          area = ifelse(area == "northeas", "northeast", area)) %>%
   left_join(lut, by = "area") %>%
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>%
   arrange(region, area, year)
+
 table(H_ayg$region, H_ayg$area)
 
+H_ayg %>% filter(is.na(area))
 
 H_ayg %>%
   ggplot(aes(x = year, y = H, color = area)) +
     geom_line() +
     facet_grid(region ~ .)
 
+H_ayg %>% filter(region == "Kodiak")
+
+
 saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
 
 #-------------------------------------------------------------------------------
 # SWHS Data
 #-------------------------------------------------------------------------------
+# PRE-1996 DATA:
+#------------------------
+#need to retain unknowns to apportion out in model...
+lut_pre96 <- lut %>%
+  add_row(region = "Unknown", area = "UNKNOWN")
 
+Hhat_ay77to95 <- 
+  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20240813.xlsx"), 
+                           sheet = "harvest",
+                           range = "A4:Q23") %>%
+  mutate_at(c("NORTHEAST","IBS","AFOGNAK","SSEO","BERING_AND_ALEUTIAN","NSEO",
+              "WESTSIDE","EASTSIDE"),as.numeric) %>%
+  rename("BSAI" = "BERING_AND_ALEUTIAN") %>%
+  rowwise() %>%
+  mutate(EWYKT = IBS, #No EKYT in pre-96
+         WKMA = WESTSIDE,  #no mainland 
+         PWSO = NA, # no PWSO in pre-96
+         SOKO2SAP = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
+  pivot_longer(!year, names_to = "area", values_to = "H")  %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area),area)) %>%
+#need to retain unknowns to apportion out in model...
+  right_join(lut_pre96, by = "area") %>%
+  mutate(area = factor(area, lut_pre96$area, ordered = TRUE)) %>% 
+  arrange(region, area, year)
+
+table(Hhat_ay77to95$region, Hhat_ay77to95$area)
+
+with(Hhat_ay77to95, table(area, year))
+
+Chat_ay77to95 <- 
+  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20240813.xlsx"), 
+            sheet = "catch",
+            range = "A4:Q10") %>%
+  mutate_at(c("NORTHEAST","IBS","AFOGNAK","SSEO","BERING_AND_ALEUTIAN","NSEO",
+              "WESTSIDE","EASTSIDE"),as.numeric) %>%
+  rename("BSAI" = "BERING_AND_ALEUTIAN") %>%
+  rowwise() %>%
+  mutate(EWYKT = IBS, #No EKYT in pre-96
+         WKMA = WESTSIDE,  #no mainland 
+         PWSO = NA, # no PWSO in pre-96
+         SOKO2SAP = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
+  pivot_longer(!year, names_to = "area", values_to = "C")  %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area),area)) %>%
+  #need to retain unknowns to apportion out in model...
+  right_join(lut_pre96, by = "area") %>%
+  mutate(area = factor(area, lut_pre96$area, ordered = TRUE)) %>% 
+  arrange(region, area, year)
+
+table(Chat_ay77to95$region, Chat_ay77to95$area)
+
+with(Chat_ay77to95, table(area, year))
+
+#------------------------
+# CONTEMPORARY SWHS DATA but NO USER GROUPS:
+#------------------------
 # what is the name of this year's data file?
 swhs_dat <- "rf_byMgmtUnit_sent20240925.xlsx"
 
@@ -92,7 +192,9 @@ Hhat_ay0 <-
   right_join(lut, by = "area") %>%
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
   arrange(region, area, year)
+
 table(Hhat_ay0$region, Hhat_ay0$area)
+with(Hhat_ay0, table(area, year))
 
 seHhat_ay <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
@@ -106,11 +208,35 @@ seHhat_ay <-
 table(seHhat_ay$region, seHhat_ay$area)
 
 Hhat_ay <- left_join(Hhat_ay0, seHhat_ay, by = c("year", "area", "region"))
+
+#bind with older data. Apply maximum observed cv per region to past
+Hhat_ay <- rbind(Hhat_ay77to95 %>% mutate(seH = NA),
+                 Hhat_ay) %>%
+  mutate(cv = seH / H) %>%
+  group_by(area) %>% 
+  mutate(seH = ifelse(is.na(seH),max(cv,na.rm=T) * H,seH),
+         seH = ifelse(is.infinite(seH),0.75 * H, seH)) %>% 
+  ungroup() %>% 
+  mutate(cv = seH / H) %>% arrange(region,area,year) #%>% select(-cv)
+
+Hhat_ay %>%
+  select(year, area, region, H, seH) %>%
+  ggplot(aes(year, H)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
+Hhat_ay %>%
+  select(year, area, region, H, seH, cv) %>%
+  ggplot(aes(year, cv)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
+Hhat_ay %>% filter(area == 'SSEO') %>% print(n = 50)
+
+#save it
 saveRDS(Hhat_ay, ".\\data\\bayes_dat\\Hhat_ay.rds")
 
-
-
-
+Hhat_ay %>% filter (area == "UNKNOWN")
 # Chat_ay data ----
 Chat_ay0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
@@ -136,16 +262,29 @@ seChat_ay <-
 table(seChat_ay$region, seChat_ay$area)
 
 Chat_ay <- left_join(Chat_ay0, seChat_ay, by = c("year", "area", "region"))
+
+#bind with older data. Assume that CV on older data is 0.2
+Chat_ay <- rbind(Chat_ay77to95 %>% mutate(seC = NA),
+                 Chat_ay) %>% 
+  mutate(cv = seC / C) %>%
+  group_by(area) %>% 
+  mutate(seC = ifelse(is.na(seC),max(cv,na.rm=T) * C, seC),
+         seC = ifelse(is.infinite(seC),0.75 * C, seC)) %>% 
+  ungroup() %>% 
+  mutate(cv = seC / C) %>%
+  arrange(region,area,year)
+#save it
+Chat_ay %>% filter (area == "UNKNOWN")
 saveRDS(Chat_ay, ".\\data\\bayes_dat\\Chat_ay.rds")
 
-
-
-
+#------------------------
+# CONTEMPORARY SWHS DATA WITH USER GROUPS:
+#------------------------
 # Hhat_ayu data ----
 Hhat_ayg0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "gui_har",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>% 
   rename(year = YEAR) %>%
   pivot_longer(!year, names_to = "area", values_to = "H") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
@@ -153,12 +292,14 @@ Hhat_ayg0 <-
   right_join(lut, by = "area") %>%
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
   arrange(region, area, year)
+
 table(Hhat_ayg0$region, Hhat_ayg0$area)
+with(Hhat_ayg0, table(area, year))
 
 seHhat_ayg <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "guihar_se",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>% #CHANGE THIS TO GET ALL DATA IN NEW YEAR!!!! 
   pivot_longer(!year, names_to = "area", values_to = "seH") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "guided") %>%
@@ -172,7 +313,7 @@ Hhat_ayg <- left_join(Hhat_ayg0, seHhat_ayg, by = c("year", "area", "region", "u
 Hhat_ayp0 <- #p for private
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pri_har",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   rename(year = YEAR) %>%
   pivot_longer(!year, names_to = "area", values_to = "H") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
@@ -185,7 +326,7 @@ table(Hhat_ayp0$region, Hhat_ayp0$area)
 seHhat_ayp <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "prihar_se",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   pivot_longer(!year, names_to = "area", values_to = "seH") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "private") %>%
@@ -203,7 +344,7 @@ saveRDS(Hhat_ayu, ".\\data\\bayes_dat\\Hhat_ayu.rds")
 Chat_ayg0 <- #p for private
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "gui_cat",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   rename(year = YEAR) %>%
   pivot_longer(!year, names_to = "area", values_to = "C") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
@@ -216,7 +357,7 @@ table(Chat_ayg0$region, Chat_ayg0$area)
 seChat_ayg <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "guicat_se",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   pivot_longer(!year, names_to = "area", values_to = "seC") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "guided") %>%
@@ -230,7 +371,7 @@ Chat_ayg <- left_join(Chat_ayg0, seChat_ayg, by = c("year", "area", "region", "u
 Chat_ayp0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pri_cat",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   rename(year = YEAR) %>%
   pivot_longer(!year, names_to = "area", values_to = "C") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
@@ -243,7 +384,7 @@ table(Chat_ayp0$region, Chat_ayp0$area)
 seChat_ayp <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
             sheet = "pricat_se",
-            range = "A4:Q13") %>%
+            range = paste0("A4:Q",REP_YR - 2006)) %>%
   pivot_longer(!year, names_to = "area", values_to = "seC") %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          user = "private") %>%
