@@ -38,16 +38,17 @@ model{
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
 	
-  for(y in 16:Y){ #guided SWHS harvest likelihood
+  for(y in 35:Y){ #guided SWHS harvest likelihood
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
-  for(y in 3:Y){ #logbook likelihood; guided lbs harvested by area and year
+
+  for(y in 22:Y){ #logbook likelihood; guided brf harvest by area and year
    Hlb_ayg[a, y] ~ dpois(H_ayg[a, y])   # all rockfish
    Hlbp_ayg[a, y] ~ dpois(H_ayg[a, y] * p_pelagic[a, y, 1]) #pelagic rockfish
-  }
+  } 
   
-  for(y in 11:Y){ #logbook likelihood; guided yelloweye lbs harvested by area and year
+  for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
   }
 	

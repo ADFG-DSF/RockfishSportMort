@@ -27,11 +27,25 @@ REP_YR <- 2023
 H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
   mutate(H_lb = ifelse(H == 0, 1, H))
 
+# Logbook releases by area, year for guided trips
+R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+  mutate(R_lb = ifelse(R == 0, 1, R),
+         Rye = ifelse(year < 2006, NA,Rye))
+
+unique(H_ayg$year)
+unique(R_ayg$year)
+
 # SWHS harvests by area, year and user 
 Hhat_ayu <- 
   readRDS(".//data//bayes_dat//Hhat_ayu.rds")  %>% 
   mutate(Hhat = ifelse(H == 0, 1, H), 
          seH = ifelse(seH == 0, 1, seH)) %>%
+  arrange(area, user, year)
+
+Chat_ayu <- 
+  readRDS(".//data//bayes_dat//Chat_ayu.rds")  %>% 
+  mutate(Chat = ifelse(C == 0, 1, C), 
+         seC = ifelse(seC == 0, 1, seC)) %>%
   arrange(area, user, year)
 
 # SWHS harvests by area, year
@@ -149,8 +163,11 @@ S_ayu %>%
 # Prep data for jags --------------------------------------------------------
 start_year <- 1977 # 1996 or 1977
 
-Hhat_ayg <- Hhat_ayu %>% filter(user == "guided")
+Hhat_ayg <- Hhat_ayu %>% filter(user == "guided"); unique(Hhat_ayg$area)
 Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
+
+Chat_ayg <- Chat_ayu %>% filter(user == "guided")
+Chat_ayp <- Chat_ayu %>% filter(user == "private")
 
 # Separate out the unknowns in the pre-1996 data
 Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN")
@@ -182,7 +199,7 @@ cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
   matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 cvHhat_ay[is.na(cvHhat_ay)] <- 1
 
-#Assume that catch = harvest prior to 1990. modify catch data frame to relect that
+#Assume that catch = harvest prior to 1990. modify catch data frame to reflect that
 Chat_ay %>% bind_rows(Hhat_ay %>% filter(year < 1990) %>%
                         mutate(Chat = Hhat,
                                seC = seH) %>%
@@ -207,6 +224,8 @@ jags_dat <-
     #Catch
     Chat_ay = matrix_Chat_ay,
     cvChat_ay = cvChat_ay,
+    
+    #Logbook data
     #Harvest by species and user: 
     Hlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                   matrix(H_ayg$H_lb, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
@@ -216,6 +235,17 @@ jags_dat <-
     # logbook ye rf harvested by guides
     Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                     matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+    #Releases by species and user: 
+    Rlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                    matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+    # logbook pelagic rf harvested by guides
+    Rlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                     matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+    # logbook ye rf harvested by guides
+    Rlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                     matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+    
+    #SWHS DATA:
     # SWHS estimates of rockfish harvests
     Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
                      matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
@@ -224,9 +254,19 @@ jags_dat <-
                        matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
       cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
             matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
-    Z = Z, #spline
-    Q = makeQ(2, C), #spline stuff
-    zero = rep(0, C),
+    # SWHS estimates of rockfish Catches
+    Chat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+                     matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
+    # cv of SWHS estimates
+    cvChat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+                       matrix(Chat_ayg$seC, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)) / 
+      cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+            matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
+    #Spline:
+    Z = Z, #spline, same for C and H
+    Q = makeQ(2, C), #spline stuff; same for C and H
+    zero = rep(0, C), #same for C and H
+    #comp data
     comp_area = comp$area_n,
     comp_year = comp$year_n,
     comp_user = comp$user_n,
@@ -238,30 +278,52 @@ jags_dat <-
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
+jags_dat$Hhat_ay
+jags_dat$Chat_ay
+
 jags_dat$Hlb_ayg   
 jags_dat$Hlbp_ayg
 jags_dat$Hlby_ayg
 
+jags_dat$Rlb_ayg   
+jags_dat$Rlbp_ayg
+jags_dat$Rlby_ayg
+
+str(jags_dat$Hlby_ayg); str(jags_dat$Rlby_ayg)
+
 jags_dat$cvHhat_ay
 jags_dat$cvChat_ay
 # Run Jags --------------------------------------------------------
-ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- 10;
-params <- c("logbc", "mu_bc", "sd_bc",
-            "pG", "b1_pG", "b2_pG",
+ni <- 5E5; nb <- ni*.5; nc <- 3; nt <- 10;
+params <- c(#SWHS bias; assumed same for C and H
+            "logbc", "mu_bc", "sd_bc",
+            #User proportions (proportion guided); different for H and C
+            "pG_H", "b1_pG_H", "b2_pG_H",
+            "pG_C", "b1_pG_C", "b2_pG_C",
+            #proportion harvested:
             "pH", "pH_int", "pH_slo",
+            #proportions same for catch and harvest? thinking on it?
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
             "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "mu_beta0_yellow", "tau_beta0_yellow",
             "p_black", "beta0_black", "beta1_black", "beta2_black", "mu_beta0_black", "tau_beta0_black",
-            "re_pelagic", "sd_comp", 
-             "Htrend_ay", "H_ay", "sigma", "lambda", "H_ayg", "H_ayu", 
+            #random effects on species
+            "re_pelagic", "re_black","re_yellow",
+            "sd_comp", 
+            #harvest estimates and spline parts
+             "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
              "Hb_ayg", "Hb_ayu", "Hb_ay",
              "Hy_ayg", "Hy_ayu", "Hy_ay",
-             "logHhat_ay") #need to add in releases:
+             "logHhat_ay",
+            #catch estimates and spline parts
+            "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
+            "Cb_ayg", "Cb_ayu", "Cb_ay",
+            "Cy_ayg", "Cy_ayu", "Cy_ay",
+            "logChat_ay") #need to add in releases:
 
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\models\\model_H.txt",
+    model.file = ".\\models\\model_H_C.txt",
     data = jags_dat, 
     parallel = TRUE, 
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
@@ -275,14 +337,17 @@ jagsUI::traceplot(postH, Rhat_min = 1.1)
 #saveRDS(postH, ".\\posts\\postH.rds")
 postH <- readRDS(".\\posts\\postH.rds")
 
+library(coda)
 library(shinystan)
-launch_shinystan(as.shinystan(postH))
+launch_shinystan(as.shinystan(postH$samples))
 
 # Inspect posterior --------------------------------------------------------
 str(postH)
 
-postH$mean$lambda
-postH$mean$sigma
+postH$mean$lambda_H
+postH$mean$lambda_C
+postH$mean$sigma_H
+postH$mean$sigma_C
 postH$mean$H_ay
 postH$q2.5$pH_slo
 postH$mean$pH_slo
@@ -307,6 +372,19 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
+as.data.frame(
+  rbind(t(jags_dat$Chat_ay),
+        t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+        t(postH$mean$C_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(1977:REP_YR, times = 3),
+         source = rep(c("SWHS", "trend", "C"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = C, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
 # ** observation error --------------------------------------------------------
 as.data.frame(
   rbind(t(jags_dat$Hhat_ay),
@@ -319,6 +397,30 @@ as.data.frame(
   ggplot(aes(x = year, y = H, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
+
+as.data.frame(
+  rbind(t(jags_dat$Chat_ay),
+        t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(1977:REP_YR, times = 2),
+         source = rep(c("SWHS", "mean"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = C, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
+#as.data.frame(
+#  rbind(t(jags_dat$Chat_ay),
+#        t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
+#  setNames(nm = unique(H_ayg$area)) %>%
+#  mutate(year = rep(1977:REP_YR, times = 2),
+#         source = rep(c("SWHS", "mean"), each = Y)) %>%
+#  pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+#  ggplot(aes(x = year, y = C, color = source)) +
+#  geom_line() + 
+#  facet_wrap(. ~ area, scales = "free")
 
 # ** logbook harvest vrs. model total harvest -------------------------------------------------------- 
 as.data.frame(
@@ -391,25 +493,35 @@ as.data.frame(
 
 # * User comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-pG <- postH$sims.list$b1_pG / (postH$sims.list$b1_pG + postH$sims.list$b2_pG) %>%
+pG_H <- postH$sims.list$b1_pG_H / (postH$sims.list$b1_pG_H + postH$sims.list$b2_pG_H) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) 
-pG %>%
-  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pG") %>%
+pG_H %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pG_H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = pG)) +
+  ggplot(aes(x = pG_H)) +
+  geom_histogram(binwidth = 0.02) +
+  facet_wrap(.~area)
+
+pG_C <- postH$sims.list$b1_pG_C / (postH$sims.list$b1_pG_C + postH$sims.list$b2_pG_C) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) 
+pG_C %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pG_C") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = pG_C)) +
   geom_histogram(binwidth = 0.02) +
   facet_wrap(.~area)
 
 # ** annual estimates  --------------------------------------------------------
 pG_mod <- 
-  postH$mean$pG %>%
+  postH$mean$pG_H %>%
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = unique(Hhat_ay$year),
          source = "model") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "pG")
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG_H")
 pG_obs <- 
   (jags_dat$Hhat_ayg/jags_dat$Hhat_ay)[,35:Y] %>%
   t() %>%
@@ -417,10 +529,10 @@ pG_obs <-
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = unique(Hhat_ayg$year),
          source = "observed") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "pG")
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG_H")
 rbind(pG_mod, pG_obs) %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = pG, color = source)) +
+  ggplot(aes(x = year, y = pG_H, color = source)) +
   geom_point() +
   geom_line() +
   coord_cartesian(ylim = c(0, 1)) +
@@ -760,8 +872,11 @@ as.data.frame(
   geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
                 position=position_dodge(0.05))
 
+# Tomorrow:
 
-    
+# Check what's going on with Eastside (Kodiak); unguided and total seem to be absent?
+# plot releases
+# plot SWHS and LB direct estimates 
 #------------------------------------------------------------------------------
 
 

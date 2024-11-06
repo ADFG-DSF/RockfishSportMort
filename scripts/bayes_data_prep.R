@@ -29,10 +29,6 @@ lut <-
 # Logbook data ----
 #-------------------------------------------------------------------------------
 H_ayg0 <- #logbook harvest by area, user = guided, year
-#  read_xlsx(paste0(".\\rawdata\\logbook_harvest.xlsx"), 
-#            sheet = "logbook_harvest",
-#            range = "B1:G595", 
-#            na = "NA")
 read.csv(paste0("data/raw_dat/logbook_harvest_thru",REP_YR,".csv")) %>% 
   select(-c(Region,not_ye_nonpel_harv))
   
@@ -80,12 +76,15 @@ H_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EYKT",
                                             "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
                                             "WKMA","WESTSIDE","MAINLAND")) %>%
-  bind_rows(check %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
+  bind_rows(a_check %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
   arrange(year,area) -> amalg
  
 with(amalg %>%
        filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year))                
+     table(area,year)) # These should all be 2's if the amalgamated areas are already done
+                      # If they are 1's then they aren't yet in the data set and
+                      # need to be added in.
+
 #!!! BSAI and SOKO2SAP missing in 2022 and 2023 so need to add them back in
 H_ayg0 %>% bind_rows(amalg %>% filter(year %in% c(2022,2023) & area %in% c("BSAI","SOKO2SAP"))) %>%
   arrange(area, year) -> H_ayg0
@@ -117,8 +116,90 @@ H_ayg %>%
 
 H_ayg %>% filter(region == "Kodiak")
 
-
 saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
+
+# -Logbook release data: -------------------------------------------------------
+R_ayg0 <- #logbook harvest by area, user = guided, year
+  read.csv(paste0("data/raw_dat/logbook_release_thru",REP_YR,".csv")) %>% 
+  select(-c(Region,not_ye_nonpel_rel))
+
+colnames(R_ayg0)
+colnames(R_ayg0) <- c("year", "area", "R", "Rp", "Rnp", "Rye")
+
+table(R_ayg0$Rye[R_ayg0$year <= 2005], useNA = "always") #these should all be NA
+R_ayg0$Rye[R_ayg0$year <= 2005] <- NA
+
+table(R_ayg0$area)
+R_ayg0 %>%
+  group_by(area) %>%
+  summarise(R = sum(R)) %>%
+  print(n = 100)
+
+R_ayg0 %>% filter(is.na(area))
+
+R_ayg0 %>% filter(year > 2019 & area %in% c("BSAI","ALEUTIAN","BERING",
+                                            "EWYKT","IBS","EKYT",
+                                            "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
+                                            "WKMA","WESTSIDE","MAINLAND"))
+
+# Identify where logbook data amalgamations need to be done. They were not done
+# for 2 of the 4 amalgamated areas in 2022 and 2023 so keep an eye on this: 
+R_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
+                                 ifelse(area %in% c("IBS","EYKT"),"EWYKT",
+                                        ifelse(area %in% c("SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK"),"SOKO2SAP",
+                                               ifelse(area %in% c("WESTSIDE","MAINLAND"),"WKMA",NA))))) %>%
+  filter(!is.na(AMALG)) %>%
+  group_by(year,AMALG) %>%
+  summarise(R = sum(R, na.rm = T),
+            Rp = sum(Rp, na.rm = T),
+            Rnp = sum(Rnp, na.rm = T),
+            Rye = sum(Rye, na.rm = T)) -> a_check2
+
+R_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
+                              "EWYKT","IBS","EYKT",
+                              "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
+                              "WKMA","WESTSIDE","MAINLAND")) %>%
+  bind_rows(a_check2 %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
+  arrange(year,area) -> amalg2; amalg2
+
+with(amalg2 %>%
+       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
+     table(area,year)) # These should all be 2's if the amalgamated areas are already done
+                       # If they are 1's then they aren't yet in the data set and
+                       # need to be added in. 
+
+#!!! BSAI and SOKO2SAP missing in all years so need to add them back in
+R_ayg0 %>% bind_rows(amalg2 %>% filter(area %in% c("BSAI","SOKO2SAP"))) %>%
+  arrange(area, year) -> R_ayg0
+
+#double check... 
+with(R_ayg0 %>%
+       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
+     table(area,year))    
+
+R_ayg <-
+  R_ayg0 %>%
+  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", #get rid of areas contained in amalgamated areas
+                       "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND",
+                       "SOUTHEAST","SOUTHWEST"))) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
+         area = ifelse(area == "northeas", "northeast", area)) %>%
+  left_join(lut, by = "area") %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE)) %>%
+  arrange(region, area, year)
+
+table(R_ayg$region, R_ayg$area)
+
+R_ayg %>% filter(is.na(area))
+
+R_ayg %>%
+  ggplot(aes(x = year, y = R, color = area)) +
+  geom_line() +
+  facet_grid(region ~ .)
+
+R_ayg %>% filter(region == "Kodiak")
+
+saveRDS(R_ayg, ".\\data\\bayes_dat\\R_ayg.rds")
 
 #-------------------------------------------------------------------------------
 # SWHS Data
