@@ -45,7 +45,7 @@ SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.cs
 #For Southcentral we need to weight the samples for PWS and NG respective to the landings:
 # Port level data comes with the IPHC reports from Jake:
 #SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), #2022
-SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
+SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
                        sheet = "Halibut Area Harvest",
                        range = paste0("A5:X41"), 
                        na = "NA") %>% clean_names()
@@ -477,6 +477,8 @@ SE_port
 SC_port_gui
 SC_port_priv
 
+SC_port_priv %>% filter(CFMU == "EASTSIDE" & YEAR == 2022)
+
 #Portion calculation already done for SE (Go Chris!)
 #Need to do it for SC
 library(boot)
@@ -519,7 +521,9 @@ SC_port_priv %>%
           select(Year = YEAR, User , TotalRF_n,YE_n,BRF_n,Pel_n,NP_n, NotYE_Nonpel_n)) %>%
   #rename(CFMU = RptArea) %>%
   relocate(c(Year,User,RptArea), .before = everything())-> SC_step1
- 
+
+SC_step1 %>% filter(RptArea == "EASTSIDE") %>% print(n = 60)
+
 View(SC_step1)
 ## FLAG!!! Clay's number are not matching up with historical stuff for CI. Looks like
 ## Clay's code is under counting things!! 
@@ -590,7 +594,7 @@ SC_step1 %>% group_by(RptArea) %>%
                                                                             Year < 2020]))) -> SC_port_raw
 
 SC_port_raw
-SE_port
+SC_port_raw %>% filter(RptArea == "EASTSIDE" & Year > 2021)
 #Step 2 is dealing with the weighted area proportions: 
 # Here we'll substitute the proportional data from the weighted analysis above for
 # NG, PWSI and PWSO
@@ -634,6 +638,8 @@ left_join(SC_port_raw,wted_ests,by = c("Year","RptArea","User")) %>%
          NotYE_Nonpel_n = ifelse(RptArea %in% c("NG","PWSI","PWSO"),(wt_NP - wt_YE),NotYE_Nonpel_n)) -> SC_port_fin
 
 View(SC_port_fin)
+
+SC_port_fin %>%  filter(RptArea == "EASTSIDE" & Year > 2021)
 # looks good,
 
 # Here we would append this if necessary to the older data. 
@@ -649,6 +655,10 @@ View(SC_port_fin)
 
 lastyr <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR-1,".csv"))
 
+lastyr %>%  filter(Rpt_Area == "EASTSIDE" & Year > 2021)
+
+lastyr <- lastyr %>% filter(Year < 2022)
+
 tosave <- SC_port_fin[,-c(34:43)]
 names(tosave) <-names(lastyr)
 
@@ -658,7 +668,9 @@ View(rbind(lastyr,tosave) %>% arrange(User, Rpt_Area, Year) %>% filter(Year > 20
 Species_comp_Region2
 
 final <- rbind(lastyr %>% filter(Year < YEAR),
-               tosave %>% filter(Year == YEAR)) %>% arrange(User, Rpt_Area, Year) %>% data.frame()
+               tosave %>% 
+                 filter(Year %in% c(YEAR-1,YEAR))) %>% #filter(Year == YEAR)
+  arrange(User, Rpt_Area, Year) %>% data.frame()
 View(final)
 
 write.csv(final,paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"),row.names=F)

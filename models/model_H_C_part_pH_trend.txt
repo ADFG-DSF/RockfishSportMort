@@ -34,14 +34,13 @@ model{
   b1_pG_C[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
   b2_pG_C[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
   
-  # logit parameters for proportion estimates defined by mean, temp slope and private angler affect. 
+  # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_pelagic[a] ~ dnorm(0, 0.001)
   beta2_pelagic[a] ~ dnorm(0, 0.001)
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
   beta1_yellow[a] ~ dnorm(0, 0.001)
   beta2_yellow[a] ~ dnorm(0, 0.001)
-  beta3_yellow[a] ~ dnorm(0, 0.001) #allowing more curvature to p_yellow
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
@@ -126,24 +125,32 @@ model{
    logH_ay[a, y] ~ dnorm(Htrend_ay[a, y], prec_H[a])
    Htrend_ay[a, y] <- Z[y, ] %*% beta_H[a, 1:C]   # Harvest temproal trend defined by penalized spline 
 
-   tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
-   Chat_ay[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])
-#### seems to really struggle with the pH based lieklihood? 
-#### Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
-
-   logChat_ay[a, y] <- logC_ay[a, y] + logbc[a, y]
-   logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
-   Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]   # Harvest temproal trend defined by penalized spline 
-
-   #Proportion harvested   
+   #Proportion harvested 
    logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y
-   #tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
-   #Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
+   tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
+   } #END EVERY YEAR
 
+  for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on retention probability model 
+    Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
+
+  ##  logChat_ay[a, y] <- logC_ay[a, y] + logbc[a, y]
+  ##  logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
+  ##  Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]   # Harvest temproal trend defined by penalized spline 
+  }
+
+  for (y in 43:Y){ #After regs force changes in retention probability, C is fit to data
+    Chat_ay[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])
+
+    logChat_ay[a, y] <- logC_ay[a, y] + logbc[a, y]
+    logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
+    Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]   # Harvest temproal trend defined by penalized spline 
+  }
+   
+  for (1 in 1:Y) {
    #Composition logistic regression
    for(u in 1:2){
     logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
-    logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u] + beta3_yellow[a] * pow(y, 2)
+    logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u]
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)

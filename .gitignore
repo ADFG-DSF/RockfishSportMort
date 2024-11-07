@@ -5,5 +5,5 @@
 .xlsx
 *.pdf
 .csv
-posts/
+*posts/
 *.png

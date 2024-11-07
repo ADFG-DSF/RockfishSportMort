@@ -487,9 +487,12 @@ sppcompR1_0 <-
   read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
             range = "A1:I1000") %>%
   rename_all(.funs = tolower) %>%
+  mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
   filter_all(any_vars(!is.na(.))) %>%
   mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n","notye_nonpel_n"),as.numeric)
+
+unique(sppcompR1_0$user)
 
 table(sppcompR1_0$area)
 
@@ -510,7 +513,14 @@ sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_
   rename_all(.funs = tolower) %>%
   rename(area = rpt_area) %>%
   select(area,year,user,totalrf_n,ye_n,black_n,pelagic_n,nonpel_n,notye_nonpel_n)
+
+unique(sppcompR2_0$user)
+
 table(sppcompR2_0$area)
+
+with(sppcompR2_0, table(area,user))
+
+sppcompR2_0 %>% filter(area == "EASTSIDE")
 #Note no samples from SOKO2SAP (= southeast + southwest + sakpen + chignik)
 #Note no samples from BSAI (= aleutian + bering)
 #Note only westside from WKMA (= westside + mainland)

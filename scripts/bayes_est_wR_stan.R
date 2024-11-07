@@ -160,27 +160,21 @@ S_ayu %>%
   geom_line(aes(linetype = user)) +
   facet_wrap(area ~ ., scales = "free")
 
-#----------------------------------------------------------------------------
 # Prep data for jags --------------------------------------------------------
-start_yr <- 1977 # 1996 or 1977
-end_yr <- 2019
+start_year <- 1977 # 1996 or 1977
 
-H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
+Hhat_ayg <- Hhat_ayu %>% filter(user == "guided"); unique(Hhat_ayg$area)
+Hhat_ayp <- Hhat_ayu %>% filter(user == "private")
 
-R_ayg <- R_ayg %>% filter(year >= start_yr & year <= end_yr)
-
-Hhat_ayg <- Hhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr); unique(Hhat_ayg$area)
-Hhat_ayp <- Hhat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
-
-Chat_ayg <- Chat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
-Chat_ayp <- Chat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
+Chat_ayg <- Chat_ayu %>% filter(user == "guided")
+Chat_ayp <- Chat_ayu %>% filter(user == "private")
 
 # Separate out the unknowns in the pre-1996 data
-Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
-Chat_Uy <- Chat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
+Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN")
+Chat_Uy <- Chat_ay %>% filter(area == "UNKNOWN")
 
-Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
-Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
+Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_year)
+Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_year)
 
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
@@ -188,22 +182,16 @@ Y = length(unique(Hhat_ay$year))
 C<- 5
 Z <- bspline(1:Y, K = C) #bspline(1:24, K = C)
 
-comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+comp <- S_ayu %>% 
          mutate(area_n = as.numeric(area), 
           user_n = ifelse(user == "charter", 0, 1), 
-          year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
-          #region_n = ifelse()
+          year_n = year - (start_year - 1),  #year - 1995, changed with the addition of the old data... 
           source = 1) %>% 
-         select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
-                region,area) %>%
+         select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n) %>%
          filter(N != 0) %>%
-         mutate(yellow = ifelse(N - pelagic == 0, NA, yellow))
+         mutate(yellow = ifelse(N - pelagic ==0, NA, yellow))
   
 range(comp$year_n)
-
-with(comp, table(area_n, area))
-with(comp, table(user_n,area))
-with(S_ayu, table(user,area))
 
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
@@ -227,11 +215,7 @@ cvChat_ay[is.na(cvChat_ay)] <- 1
 dim(matrix_Hhat_ay)
 dim(matrix_Chat_ay)
 
-with(comp,table(area_n,area))
-
-#Create JAGs data and then bundle it up
-
-jags_dat <- 
+stan_dat <- 
   list(
     A = A, Y = Y, C = C,
     #Harvest
@@ -310,7 +294,7 @@ str(jags_dat$Hlby_ayg); str(jags_dat$Rlby_ayg)
 jags_dat$cvHhat_ay
 jags_dat$cvChat_ay
 # Run Jags --------------------------------------------------------
-ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- 10;
+ni <- 5E5; nb <- ni*.5; nc <- 3; nt <- 10;
 params <- c(#SWHS bias; assumed same for C and H
             "logbc", "mu_bc", "sd_bc",
             #User proportions (proportion guided); different for H and C
@@ -349,16 +333,12 @@ postH <-
 runtime <- Sys.time() - tstart; runtime
 
 postH
-#Note 5e5 iterations about 1 hour and ~95% converged
 
-rhat <- get_Rhat(postH, cutoff = 1.1)
+rhat <- get_Rhat(postH, cutoff = 1.15)
 rhat
 jagsUI::traceplot(postH, Rhat_min = 1.1)
 
-#Note 5e5 iterations about 1 hour and ~95% converged
-#Note 1e5 iterations 20 min and ~95% converged
-
-mod_name <- "post_HCRmod_dev95conv"
+mod_name <- "post_HCRmod_dev"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
@@ -383,6 +363,7 @@ postH$mean$sd_comp
 paste0(round(postH$mean$beta1_pelagic, 3), "(", round(postH$q2.5$beta1_pelagic, 3), ", ", round(postH$q97.5$beta1_pelagic, 3), ")")
 paste0(round(postH$mean$beta2_pelagic, 3), "(", round(postH$q2.5$beta2_pelagic, 3), ", ", round(postH$q97.5$beta2_pelagic, 3), ")")
 
+
 # * Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
 as.data.frame(
@@ -390,7 +371,7 @@ as.data.frame(
         t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)),
         t(postH$mean$H_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
+  mutate(year = rep(1977:REP_YR, times = 3),
          source = rep(c("SWHS", "trend", "H"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -403,7 +384,7 @@ as.data.frame(
         t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
         t(postH$mean$C_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
+  mutate(year = rep(1977:REP_YR, times = 3),
          source = rep(c("SWHS", "trend", "C"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -416,7 +397,7 @@ as.data.frame(
   rbind(t(jags_dat$Hhat_ay),
         t(apply(exp(postH$sims.list$logHhat_ay), c(2,3), mean)))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-   mutate(year = rep(start_yr:end_yr, times = 2),
+   mutate(year = rep(1977:REP_YR, times = 2),
           source = rep(c("SWHS", "mean"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -428,7 +409,7 @@ as.data.frame(
   rbind(t(jags_dat$Chat_ay),
         t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 2),
+  mutate(year = rep(1977:REP_YR, times = 2),
          source = rep(c("SWHS", "mean"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -440,7 +421,7 @@ as.data.frame(
 #  rbind(t(jags_dat$Chat_ay),
 #        t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
 #  setNames(nm = unique(H_ayg$area)) %>%
-#  mutate(year = rep(start_yr:end_yr, times = 2),
+#  mutate(year = rep(1977:REP_YR, times = 2),
 #         source = rep(c("SWHS", "mean"), each = Y)) %>%
 #  pivot_longer(!c(year, source), names_to = "area", values_to = "C") %>%
 #  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -455,7 +436,7 @@ as.data.frame(
         t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)),
         t(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 4),
+  mutate(year = rep(1977:REP_YR, times = 4),
          source = rep(c("logbook", "Harvest", "trend", "SWHS"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(yr_group = ifelse(year <= 1997, "no logbook", ifelse(year <= 2010, "No user", "full data")),
@@ -471,7 +452,7 @@ as.data.frame(
         t(postH$mean$H_ayu),
         t(postH$mean$H_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 4),
+  mutate(year = rep(1977:REP_YR, times = 4),
          source = rep(c("model", "logbook", "model", "model"), each = Y),
          user = rep(c("charter", "charter", "private", "total"), each = Y)) %>%
   pivot_longer(!c(year, source, user), names_to = "area", values_to = "H") %>%
@@ -484,7 +465,7 @@ as.data.frame(
 as.data.frame(
   t(postH$mean$H_ayg) - t(jags_dat$Hlb_ayg)) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = start_yr:end_yr) %>%
+  mutate(year = 1977:REP_YR) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = res)) +
@@ -496,7 +477,7 @@ as.data.frame(
 as.data.frame(
   t(log(postH$mean$H_ay) + postH$mean$logbc) - t(log(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = start_yr:end_yr) %>%
+  mutate(year = 1977:REP_YR) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = res)) +
@@ -509,7 +490,7 @@ as.data.frame(
   rbind(t(postH$mean$Hy_ayg),
         t(jags_dat$Hlby_ayg))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 2),
+  mutate(year = rep(1977:REP_YR, times = 2),
          source = rep(c("model", "logbook"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -588,11 +569,6 @@ postH$sims.list$sd_bc %>%
 
 # ** annual estimates --------------------------------------------------------
 # mean log bias in swhs estimates
-
-exp(postH$q2.5$logbc)
-exp(postH$mean$logbc)
-exp(postH$q97.5$logbc)
-
 mu_bc <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
@@ -601,7 +577,7 @@ bc_mod <-
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = unique(Hhat_ay$year),
          source = "model") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") 
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc")
 bc_obs <- 
   (jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,35:Y] %>%
   t() %>%
@@ -708,22 +684,6 @@ p_black_obs <-
          user = ifelse(comp_user == 0, "charter", "private"),
          p_black = comp_black / comp_pelagic,
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
-
-p_black_obs2 <-
-  comp %>%
-  mutate(year = year_n + 1976, #1995,
-         area = unique(H_ayg$area)[area_n],
-         user = ifelse(user_n == 0, "charter", "private"),
-         source = ifelse(source == 1, "sample", "logbook"),
-         p_black = black / N,
-         area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  select(year, area, user, source, p_black) #%>%
-  #rbind(H_ayg %>% 
-  #        mutate(p_black = Hp / H, 
-  #               user = "charter", 
-  #               source = "logbook") %>% 
-  #        select(year, area, user, source, p_pelagic))
-
 p_black_trend <-
   data.frame(
     p_black = boot::inv.logit(
@@ -818,7 +778,7 @@ as.data.frame(
         t(postH$mean$Hb_ayu),
         t(postH$mean$Hb_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
+  mutate(year = rep(1977:REP_YR, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -827,7 +787,7 @@ as.data.frame(
           t(postH$q2.5$Hb_ayu),
           t(postH$q2.5$Hb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
+      mutate(year = rep(1977:REP_YR, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -837,7 +797,7 @@ as.data.frame(
           t(postH$q97.5$Hb_ayu),
           t(postH$q97.5$Hb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
+      mutate(year = rep(1977:REP_YR, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -884,7 +844,7 @@ as.data.frame(
         t(postH$mean$Hy_ayu),
         t(postH$mean$Hy_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
+  mutate(year = rep(1977:REP_YR, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -893,7 +853,7 @@ as.data.frame(
           t(postH$q2.5$Hy_ayu),
           t(postH$q2.5$Hy_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
+      mutate(year = rep(1977:REP_YR, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -903,7 +863,7 @@ as.data.frame(
           t(postH$q97.5$Hy_ayu),
           t(postH$q97.5$Hy_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
+      mutate(year = rep(1977:REP_YR, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -919,82 +879,23 @@ as.data.frame(
   geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
                 position=position_dodge(0.05))
 
-# !! NOTE !! Eastside private are being estimated near 0. I don't think there is 
-# anything wrong; better use of data in model and howard methods are small and
-# likely the result of borrowing species comp data from other region. 
-
 # Tomorrow:
 
-# work on polynomial shape to p_yellow and other comp data. Maybe spine
+# Check what's going on with Eastside (Kodiak); unguided and total seem to be absent?
 # plot releases
 # plot SWHS and LB direct estimates 
-# try pH partial model to try. 
-# Leave Chat as NA in years before data available. 
-
 #------------------------------------------------------------------------------
 
 
 # BRF annual plots and compare to Howard methods:
-as.data.frame(
-  rbind(t(postH$mean$Hy_ayg),
-        t(postH$mean$Hy_ayu),
-        t(postH$mean$Hy_ay))) %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
-  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(as.data.frame(
-    rbind(t(postH$q2.5$Hy_ayg),
-          t(postH$q2.5$Hy_ayu),
-          t(postH$q2.5$Hy_ay))) %>%
-      setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
-      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
-      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
-    by = c("year","user","area")) %>%
-  left_join(as.data.frame(
-    rbind(t(postH$q97.5$Hy_ayg),
-          t(postH$q97.5$Hy_ayu),
-          t(postH$q97.5$Hy_ay))) %>%
-      setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
-      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
-      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
-    by = c("year","user","area")) %>%
-  mutate(area = toupper(area)) -> arg
-
-arg %>% filter(area == "EASTSIDE") %>% print(n = 150)
-
-ggplot(data = arg, aes(x = year, y = H, color = user)) +
-  geom_line() + 
-  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
-  facet_wrap(. ~ area, scales = "free") 
-
-unique(H_ayg$area)
-unique(Hhat_ayu$area) 
-unique(Hhat_ay$area) 
-
-H_ayg %>% filter(area == "eastside")
-Hhat_ayu %>% filter(area == "eastside") %>% print(n = 30)
-Hhat_ay %>% filter(area == "eastside") %>% print(n = 50)
-
-with(comp, table(area_n, area))
-
-comp %>% filter(area == "eastside") %>% print(n = 50)
+ggplot()
 
 
-ye_how %>% filter(area == "EASTSIDE",
-                  user == "unguided",
-                  year <= end_yr) %>% print(n = 100) ->yehow
 
-arg %>% filter(area == "EASTSIDE",
-               user == "unguided",
-               year >= 1998) %>% print(n = 150)->yemod
 
-plot(yehow$H_how ~ yemod$H)
+
+
+
 
 
 
