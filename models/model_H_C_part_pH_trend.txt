@@ -130,7 +130,7 @@ model{
    tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
    } #END EVERY YEAR
 
-  for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on retention probability model 
+  for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
     Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
 
   ##  logChat_ay[a, y] <- logC_ay[a, y] + logbc[a, y]

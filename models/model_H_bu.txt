@@ -42,7 +42,7 @@ model{
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
-  for(y in 3:Y){ #logbook likelihood; guided lbs harvested by area and year
+  for(y in 3:Y){ #logbook likelihood; guided harvest by area and year
    Hlb_ayg[a, y] ~ dpois(H_ayg[a, y])   # all rockfish
    Hlbp_ayg[a, y] ~ dpois(H_ayg[a, y] * p_pelagic[a, y, 1]) #pelagic rockfish
   }

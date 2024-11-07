@@ -144,6 +144,7 @@ model{
    for(u in 1:2){
     logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
     logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u] + beta3_yellow[a] * pow(y, 2)
+    ## Other yellow option: logit(p_yellow[a, y, u]) <- beta0_yellow[a] + (beta1_yellow[a] * y) / (1 + beta2_yellow[a] * y) + re_yellow[a, y, u]
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)

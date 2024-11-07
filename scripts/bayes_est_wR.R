@@ -923,9 +923,14 @@ as.data.frame(
 # anything wrong; better use of data in model and howard methods are small and
 # likely the result of borrowing species comp data from other region. 
 
-# Tomorrow:
+#-------------------------------------------------------------------------------
+# TODOs
 
-# work on polynomial shape to p_yellow and other comp data. Maybe spine
+# work on polynomial shape to p_yellow and other comp data.yellow Maybe spline? to allow
+#      regulatory changes? 
+# eg: logit(p_yellow[a, y, u]) <- beta0_yellow[a] + (beta1_yellow[a] * y) / (1 + beta2_yellow[a] * y) + re_yellow[a, y, u]
+# logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + beta3_yellow[a] * pow(y, 2) + beta4_yellow[a] * pow(y, 3) + re_yellow[a, y, u]
+
 # plot releases
 # plot SWHS and LB direct estimates 
 # try pH partial model to try. 

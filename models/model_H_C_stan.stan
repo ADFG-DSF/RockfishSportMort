@@ -239,6 +239,7 @@ model {
       for(u in 1:2){
         logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * pH[a, y] + beta2_pelagic[a] * pH[a, y] * pH[a, y] + re_pelagic[a, y]
         logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * pH[a, y] + beta2_yellow[a] * pH[a, y] * pH[a, y] + re_yellow[a, y] + beta3_yellow[a] * pow(y, 2)
+        ## Other yellow option: logit(p_yellow[a, y, u]) <- beta0_yellow[a] + (beta1_yellow[a] * y) / (1 + beta2_yellow[a] * y) + re_yellow[a, y, u]
         logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * pH[a, y] + beta2_black[a] * pH[a, y] * pH[a, y] + re_black[a, y]
       }
     }
