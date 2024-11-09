@@ -84,8 +84,9 @@ Chat_ay <-
 
 Chat_ay %>% filter(is.na(Chat))
 #DEV Code; delete once we figure out how to deal with the blanks
-Chat_ay %>% mutate(Chat = ifelse(is.na(Chat),1,Chat),
-                   seC = ifelse(is.na(seC),1,seC)) -> Chat_ay
+#put large CV on seC where there are no estimates.
+#Chat_ay %>% mutate(#Chat = ifelse(is.na(Chat),1,Chat),
+#                   seC = ifelse(is.na(seC),1,seC)) -> Chat_ay
 
 # Survey data on catch composition
 S_ayu0 <- 
@@ -185,7 +186,7 @@ Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
-C<- 5
+C <- 7
 Z <- bspline(1:Y, K = C) #bspline(1:24, K = C)
 
 comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
@@ -205,24 +206,25 @@ with(comp, table(area_n, area))
 with(comp, table(user_n,area))
 with(S_ayu, table(user,area))
 
+
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
 cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
   matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 cvHhat_ay[is.na(cvHhat_ay)] <- 1
 
-#Assume that catch = harvest prior to 1990. modify catch data frame to reflect that
-Chat_ay %>% bind_rows(Hhat_ay %>% filter(year < 1990) %>%
-                        mutate(Chat = Hhat,
-                               seC = seH) %>%
-                        select(-c(Hhat,seH))) %>%
-  arrange(region, area, year) -> Chat_ay
 
-matrix_Chat_ay <- matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
+with(Chat_ay, table(area,year))
+
+matrix_Chat_ay <- cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Chat_ay$year))),
+                        matrix(Chat_ay$Chat, nrow = A, ncol = length(unique(Chat_ay$year)), byrow = TRUE))
+
 #matrix_Chat_ay[4, 1:5] <- NA
-cvChat_ay = matrix(Chat_ay$seC, nrow = A, ncol = Y, byrow = TRUE) /
-  matrix(Chat_ay$Chat, nrow = A, ncol = Y, byrow = TRUE)
-cvChat_ay[is.na(cvChat_ay)] <- 1
+cvChat_ay = cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Chat_ay$year))),
+                  matrix(Chat_ay$seC, nrow = A, ncol = length(unique(Chat_ay$year)), byrow = TRUE)) /
+  matrix_Chat_ay
+# need cv to be 1 when there is no data
+ cvChat_ay[is.na(cvChat_ay)] <- 1
 
 dim(matrix_Hhat_ay)
 dim(matrix_Chat_ay)
@@ -238,7 +240,8 @@ jags_dat <-
     Hhat_ay = matrix_Hhat_ay,
     cvHhat_ay = cvHhat_ay,
     #Catch
-    Chat_ay = matrix_Chat_ay,
+    Chat_ay_pH = matrix_Chat_ay,
+    Chat_ay_obs = matrix_Chat_ay,
     cvChat_ay = cvChat_ay,
     
     #Logbook data
@@ -294,7 +297,7 @@ jags_dat <-
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
-jags_dat$Hhat_ay
+jags_dat$Hhat_ayg
 jags_dat$Chat_ay
 
 jags_dat$Hlb_ayg   
@@ -310,14 +313,21 @@ str(jags_dat$Hlby_ayg); str(jags_dat$Rlby_ayg)
 jags_dat$cvHhat_ay
 jags_dat$cvChat_ay
 # Run Jags --------------------------------------------------------
-ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- 10;
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
 params <- c(#SWHS bias; assumed same for C and H
-            "logbc", "mu_bc", "sd_bc",
+            #"logbc", "mu_bc", "sd_bc",
+            #SWHS bias, separate C and H
+            "logbc_H", "mu_bc_H", "sd_bc_H",
+            "logbc_C", "mu_bc_C", "sd_bc_C",
             #User proportions (proportion guided); different for H and C
             "pG_H", "b1_pG_H", "b2_pG_H",
             "pG_C", "b1_pG_C", "b2_pG_C",
-            #proportion harvested:
-            "pH", "pH_int", "pH_slo",
+            #proportion harvested: 
+            "pH", 
+            #liner:
+            #  "pH_int", "pH_slo",
+            #polynomial
+              "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH",
             #proportions same for catch and harvest? thinking on it?
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
             "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "mu_beta0_yellow", "tau_beta0_yellow",
@@ -334,13 +344,17 @@ params <- c(#SWHS bias; assumed same for C and H
             "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
             "Cb_ayg", "Cb_ayu", "Cb_ay",
             "Cy_ayg", "Cy_ayu", "Cy_ay",
-            "logChat_ay") #need to add in releases:
+            "logChat_ay",
+            #releases
+            "R_ay", "R_ayg", "R_ayu", 
+            "Rb_ayg", "Rb_ayu", "Rb_ay",
+            "Ry_ayg", "Ry_ayu", "Ry_ay") #need to add in releases:
 
 tstart <- Sys.time()
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\models\\model_H_C.txt",
+    model.file = ".\\models\\model_HCR_poly_pH_split_bc.txt",
     data = jags_dat, 
     parallel = TRUE, 
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
@@ -356,9 +370,32 @@ rhat
 jagsUI::traceplot(postH, Rhat_min = 1.1)
 
 #Note 5e5 iterations about 1 hour and ~95% converged
-#Note 1e5 iterations 20 min and ~95% converged
+#Note 1e5 iterations 20 min and ~92% converged
+#Note 5e4 iters of model_H_C_part_pH_trend 10 minutes and 90% converged
+mod_name <- "post_HCR_poly_pH_split_bc"
+#get last mode run initial values:
+last_samples <- lapply(1:nc, function(chain) {
+  chain_data <- as.matrix(postH$samples[[chain]])
+  as.list(chain_data[nrow(chain_data), ])
+})
 
-mod_name <- "post_HCRmod_dev95conv"
+saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+
+last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+# Re-run the model with these initial values
+tstart <- Sys.time()
+postH <- jagsUI::jags(
+  parameters.to.save = params,
+  model.file = ".\\models\\model_HCR_poly_pH_split_bc.txt",
+  data = jags_dat, 
+  inits = last_samples,
+  parallel = TRUE, 
+  n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
+  store.data = TRUE
+)
+runtime <- Sys.time() - tstart; runtime
+
+mod_name <- "post_HCR_pH_mod_5e4_dev90conv"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
@@ -399,7 +436,7 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free")
 
 as.data.frame(
-  rbind(t(jags_dat$Chat_ay),
+  rbind(t(jags_dat$Chat_ay_pH),
         t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
         t(postH$mean$C_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -410,6 +447,50 @@ as.data.frame(
   ggplot(aes(x = year, y = C, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
+
+as.data.frame(
+  rbind(t(jags_dat$Chat_ay_pH - jags_dat$Hhat_ay),
+        #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+        t(postH$mean$R_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 2),
+         source = rep(c("SWHS", "R"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = R, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
+# * P(Harvested) --------------------------------------------------------
+# ** annual estimates  --------------------------------------------------------
+pH_mod <- 
+  postH$mean$pH %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year[1:42]),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
+pH_obs <- 
+  (jags_dat$Hhat_ay/jags_dat$Chat_ay_pH) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
+rbind(pH_mod, pH_obs) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = pH, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+# ** slope of logit  --------------------------------------------------------
+data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$pH_slo, ub = postH$q97.5$pH_slo) %>%
+  ggplot(aes(x = area, y = mean)) +
+  geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
 
 # ** observation error --------------------------------------------------------
 as.data.frame(
@@ -425,7 +506,7 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free")
 
 as.data.frame(
-  rbind(t(jags_dat$Chat_ay),
+  rbind(t(jags_dat$Chat_ay_pH),
         t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 2),
@@ -480,6 +561,8 @@ as.data.frame(
     geom_line() + 
     facet_wrap(. ~ area, scales = "free")
 
+
+
 # ** logbook residuals --------------------------------------------------------
 as.data.frame(
   t(postH$mean$H_ayg) - t(jags_dat$Hlb_ayg)) %>%
@@ -494,7 +577,7 @@ as.data.frame(
 
 # ** SWHS residuals --------------------------------------------------------
 as.data.frame(
-  t(log(postH$mean$H_ay) + postH$mean$logbc) - t(log(jags_dat$Hhat_ay))) %>%
+  t(log(postH$mean$H_ay) + postH$mean$logbc_H) - t(log(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = start_yr:end_yr) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
@@ -566,25 +649,43 @@ rbind(pG_mod, pG_obs) %>%
 
 # * SWHS bias --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
-exp(postH$sims.list$mu_bc) %>%
+exp(postH$sims.list$mu_bc_H) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = bc)) +
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         data = "H") %>%
+  rbind(exp(postH$sims.list$mu_bc_C) %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 data = "C")) %>%
+  
+  ggplot(aes(x = bc, col = data, fill = data, alpha = 0.2)) +
   geom_histogram(binwidth = .1) +
-  coord_cartesian(xlim = c(0, 2)) +
+  coord_cartesian(xlim = c(0, 6)) +
   geom_vline(aes(xintercept = 1)) +
   facet_wrap(.~area)
+
+
 # ** sd by area --------------------------------------------------------
-postH$sims.list$sd_bc %>%
+postH$sims.list$sd_bc_H %>%
   as.data.frame() %>%
   setNames(nm = unique(Hhat_ay$area)) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = se_bc)) +
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         data = "H") %>%
+  rbind(postH$sims.list$sd_bc_C %>%
+          as.data.frame() %>%
+          setNames(nm = unique(Hhat_ay$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "se_bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 data = "C")) %>%
+  
+  ggplot(aes(x = se_bc, col = data, fill = data, alpha = 0.2)) +
   geom_histogram(binwidth = 0.1) +
-  facet_wrap(.~area) + coord_cartesian(xlim = c(0, 1))
+  facet_wrap(.~area) + coord_cartesian(xlim = c(0, 4))
 
 # ** annual estimates --------------------------------------------------------
 # mean log bias in swhs estimates
@@ -593,9 +694,9 @@ exp(postH$q2.5$logbc)
 exp(postH$mean$logbc)
 exp(postH$q97.5$logbc)
 
-mu_bc <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc), 2, mean))
+mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
 bc_mod <- 
-  apply(exp(postH$sims.list$logbc), c(2, 3), mean) %>%
+  apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -615,41 +716,65 @@ rbind(bc_mod, bc_obs) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point() +
   geom_line() +
-  coord_cartesian(ylim = c(0, 2)) +
-  geom_hline(aes(yintercept = mu_bc), data = mu_bc) +
+  coord_cartesian(ylim = c(0, 5)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
   facet_wrap(. ~ area)
+#NOTE 11/8: BC is problem for Kodiak because of wild BSAI estimates
+#           SSEO also a little wild in early years
 
-# * P(Harvested) --------------------------------------------------------
-# ** annual estimates  --------------------------------------------------------
-pH_mod <- 
-  postH$mean$pH %>%
+range(postH$sims.list$logbc_C)
+range(postH$sims.list$logbc_H)
+
+range(exp(postH$sims.list$logbc_C))
+range(exp(postH$sims.list$logbc_H))
+
+mu_bc_C <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_C), 2, mean))
+
+bc_mod <- 
+  apply(exp(postH$sims.list$logbc_C), c(2, 3), mean) %>%
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = unique(Hhat_ay$year),
          source = "model") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
-pH_obs <- 
-  (jags_dat$Hhat_ay/jags_dat$Chat_ay) %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "C") %>%
+  rbind(apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ay$year),
+                 source = "model") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "H"))
+
+bc_obs <- 
+  (jags_dat$Chat_ayg/(jags_dat$Hlb_ayg + jags_dat$Rlb_ayg))[,35:Y] %>%
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
+  mutate(year = unique(Hhat_ayg$year),
          source = "observed") %>%
-  pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
-rbind(pH_mod, pH_obs) %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "C") %>%
+  rbind((jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,35:Y] %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ayg$year),
+                 source = "observed") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "H"))
+
+rbind(bc_mod, bc_obs) %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = pH, color = source)) +
-  geom_point() +
-  geom_line() +
-  coord_cartesian(ylim = c(0, 1)) +
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point(aes(shape = data)) +
+  geom_line(aes(linetype = data)) +
+  coord_cartesian(ylim = c(0, 5)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_C) +
   facet_wrap(. ~ area)
-
-# ** slope of logit  --------------------------------------------------------
-data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$pH_slo, ub = postH$q97.5$pH_slo) %>%
-  ggplot(aes(x = area, y = mean)) +
-    geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
-
+#PRELIM suggests that maybe H and C bias can be the same
 
 # * Composition --------------------------------------------------------
 # ** Pelagic annual  --------------------------------------------------------
@@ -923,6 +1048,196 @@ as.data.frame(
 # anything wrong; better use of data in model and howard methods are small and
 # likely the result of borrowing species comp data from other region. 
 
+#------------------------------------------------------------------------------
+# Check releases:
+postH$mean$R_ay
+postH$mean$Rb_ay
+postH$mean$Ry_ay
+
+as.data.frame(
+  rbind(t(postH$mean$R_ay),
+        t(postH$mean$Rb_ay),
+        t(postH$mean$Ry_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         group = rep(c("tot_r", "black_r", "yellow_r"), each = Y)) %>%
+  pivot_longer(!c(year,group), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  
+  bind_rows(as.data.frame(
+    rbind(t(jags_dat$Chat_ay_pH - jags_dat$Hhat_ay),
+          #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+          t(postH$mean$R_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 2),
+             group = rep(c("SWHS", "R_est"), each = Y)) %>%
+      pivot_longer(!c(year, group), names_to = "area", values_to = "R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) ) %>%
+
+ggplot(aes(x = year, y = R, color = group)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free") 
+
+as.data.frame(
+  rbind(t(postH$mean$R_ayg),
+        t(postH$mean$Rb_ayg),
+        t(postH$mean$Ry_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         group = rep(c("tot_r", "black_r", "yellow_r"), each = Y)) %>%
+  pivot_longer(!c(year,group), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  bind_rows(as.data.frame(
+    rbind(t(jags_dat$Chat_ayg - jags_dat$Hhat_ayg),
+          #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+          t(jags_dat$Rlb_ayg))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 2),
+             group = rep(c("SWHS", "lb_R"), each = Y)) %>%
+      pivot_longer(!c(year, group), names_to = "area", values_to = "R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) ) %>%
+  
+  ggplot(aes(x = year, y = R, color = group)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free") 
+  
+jags_dat$Rlb_ayg
+# * Black Rockfish RELEASE --------------------------------------------------------
+# ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
+
+brf_howR <- read.csv(paste0("output\\BRF_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_brf, var_gui_brf, priv_brf, var_priv_brf,
+         tot_brf = total_br_frel, var_tot_brf = var_total_br_frel) %>% unique() #note some duplicate BSAI and SOKO2SAPs
+
+brf_howR %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
+  pivot_longer(cols = c("gui_brf","priv_brf","tot_brf"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_brf","guided",
+                       ifelse(user == "priv_brf","unguided","All"))) %>%
+  left_join(brf_howR %>% select(-c("gui_brf","priv_brf","tot_brf")) %>%
+              pivot_longer(cols = c("var_gui_brf","var_priv_brf","var_tot_brf"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_brf","guided",
+                                   ifelse(user == "var_priv_brf","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> brf_howR
+
+as.data.frame(
+  rbind(t(postH$mean$Rb_ayg),
+        t(postH$mean$Rb_ayu),
+        t(postH$mean$Rb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rb_ayg),
+          t(postH$q2.5$Rb_ayu),
+          t(postH$q2.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rb_ayg),
+          t(postH$q97.5$Rb_ayu),
+          t(postH$q97.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(brf_howR, by = c("year","user","area")) %>%
+  
+  ggplot(aes(x = year, y = R, color = user)) +
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05))
+
+# * YELLOWEYE Rockfish Harvest --------------------------------------------------------
+# ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
+ye_howR <- read.csv(paste0("output\\YE_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_ye, var_gui_ye, priv_ye, var_priv_ye,
+         tot_ye = total_y_erel, var_tot_ye = var_total_y_erel) %>% unique()
+
+ye_howR %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
+  pivot_longer(cols = c("gui_ye","priv_ye","tot_ye"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_ye","guided",
+                       ifelse(user == "priv_ye","unguided","All"))) %>%
+  left_join(ye_howR %>% select(-c("gui_ye","priv_ye","tot_ye")) %>%
+              pivot_longer(cols = c("var_gui_ye","var_priv_ye","var_tot_ye"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_ye","guided",
+                                   ifelse(user == "var_priv_ye","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> ye_howR
+
+ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
+
+as.data.frame(
+  rbind(t(postH$mean$Ry_ayg),
+        t(postH$mean$Ry_ayu),
+        t(postH$mean$Ry_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Ry_ayg),
+          t(postH$q2.5$Ry_ayu),
+          t(postH$q2.5$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Ry_ayg),
+          t(postH$q97.5$Ry_ayu),
+          t(postH$q97.5$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(ye_howR, by = c("year","user","area")) %>%
+  
+  ggplot(aes(x = year, y = R, color = user)) +
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05))
+
+
+#
+
 #-------------------------------------------------------------------------------
 # TODOs
 
@@ -933,8 +1248,8 @@ as.data.frame(
 
 # plot releases
 # plot SWHS and LB direct estimates 
-# try pH partial model to try. 
-# Leave Chat as NA in years before data available. 
+
+# Spline YE proportions and experiment with different curves
 
 #------------------------------------------------------------------------------
 

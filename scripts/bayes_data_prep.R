@@ -114,8 +114,6 @@ H_ayg %>%
     geom_line() +
     facet_grid(region ~ .)
 
-H_ayg %>% filter(region == "Kodiak")
-
 saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
 
 # -Logbook release data: -------------------------------------------------------
@@ -197,8 +195,6 @@ R_ayg %>%
   geom_line() +
   facet_grid(region ~ .)
 
-R_ayg %>% filter(region == "Kodiak")
-
 saveRDS(R_ayg, ".\\data\\bayes_dat\\R_ayg.rds")
 
 #-------------------------------------------------------------------------------
@@ -208,20 +204,18 @@ saveRDS(R_ayg, ".\\data\\bayes_dat\\R_ayg.rds")
 #------------------------
 #need to retain unknowns to apportion out in model...
 lut_pre96 <- lut %>%
-  add_row(region = "Unknown", area = "UNKNOWN")
+  add_row(region = "Southeast", area = "UNKNOWN_R1") %>%
+  add_row(region = "Unknown_R2", area = "UNKNOWN_R2") %>%
+  add_row(region = "Central", area = "PWSO_I")
 
 Hhat_ay77to95 <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20240813.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20241107.xlsx"), 
                            sheet = "harvest",
-                           range = "A4:Q23") %>%
-  mutate_at(c("NORTHEAST","IBS","AFOGNAK","SSEO","BERING_AND_ALEUTIAN","NSEO",
-              "WESTSIDE","EASTSIDE"),as.numeric) %>%
-  rename("BSAI" = "BERING_AND_ALEUTIAN") %>%
+                           range = "A4:T23") %>%
+  mutate_at(c("UNKNOWN_R1","UNKNOWN_R2","EWYKT","BSAI","SOKO2SAP","NSEO","AFOGNAK",
+              "SSEO","PWSO_I","WKMA","EASTSIDE"),as.numeric) %>%
   rowwise() %>%
-  mutate(EWYKT = IBS, #No EKYT in pre-96
-         WKMA = WESTSIDE,  #no mainland 
-         PWSO = NA, # no PWSO in pre-96
-         SOKO2SAP = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
+  mutate(PWSO = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
   pivot_longer(!year, names_to = "area", values_to = "H")  %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area),area)) %>%
 #need to retain unknowns to apportion out in model...
@@ -234,17 +228,12 @@ table(Hhat_ay77to95$region, Hhat_ay77to95$area)
 with(Hhat_ay77to95, table(area, year))
 
 Chat_ay77to95 <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20240813.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\SWHS_1977_1995_rf_estimates_sent20241107.xlsx"), 
             sheet = "catch",
-            range = "A4:Q10") %>%
-  mutate_at(c("NORTHEAST","IBS","AFOGNAK","SSEO","BERING_AND_ALEUTIAN","NSEO",
-              "WESTSIDE","EASTSIDE"),as.numeric) %>%
-  rename("BSAI" = "BERING_AND_ALEUTIAN") %>%
+            range = "A4:R10") %>%
+  mutate_at(c("WKMA","EASTSIDE"),as.numeric) %>%
   rowwise() %>%
-  mutate(EWYKT = IBS, #No EKYT in pre-96
-         WKMA = WESTSIDE,  #no mainland 
-         PWSO = NA, # no PWSO in pre-96
-         SOKO2SAP = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
+  mutate(PWSO = NA) %>% # no southeast, no southwest, no sakpen, no chignik in pre-96) %>% 
   pivot_longer(!year, names_to = "area", values_to = "C")  %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area),area)) %>%
   #need to retain unknowns to apportion out in model...
@@ -290,34 +279,9 @@ table(seHhat_ay$region, seHhat_ay$area)
 
 Hhat_ay <- left_join(Hhat_ay0, seHhat_ay, by = c("year", "area", "region"))
 
-#bind with older data. Apply maximum observed cv per region to past
-Hhat_ay <- rbind(Hhat_ay77to95 %>% mutate(seH = NA),
-                 Hhat_ay) %>%
-  mutate(cv = seH / H) %>%
-  group_by(area) %>% 
-  mutate(seH = ifelse(is.na(seH),max(cv,na.rm=T) * H,seH),
-         seH = ifelse(is.infinite(seH),0.75 * H, seH)) %>% 
-  ungroup() %>% 
-  mutate(cv = seH / H) %>% arrange(region,area,year) #%>% select(-cv)
-
-Hhat_ay %>%
-  select(year, area, region, H, seH) %>%
-  ggplot(aes(year, H)) +
-  geom_line() +
-  facet_wrap(area ~ ., scales = "free")
-
-Hhat_ay %>%
-  select(year, area, region, H, seH, cv) %>%
-  ggplot(aes(year, cv)) +
-  geom_line() +
-  facet_wrap(area ~ ., scales = "free")
-
-Hhat_ay %>% filter(area == 'SSEO') %>% print(n = 50)
-
-#save it
-saveRDS(Hhat_ay, ".\\data\\bayes_dat\\Hhat_ay.rds")
-
-Hhat_ay %>% filter (area == "UNKNOWN")
+#-------------------------------------------------------------------------------
+#Get contemporary Chat 
+#-------------------------------------------------------------------------------
 # Chat_ay data ----
 Chat_ay0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
@@ -344,15 +308,122 @@ table(seChat_ay$region, seChat_ay$area)
 
 Chat_ay <- left_join(Chat_ay0, seChat_ay, by = c("year", "area", "region"))
 
+#-------------------------------------------------------------------------------
+# Apportion pre1996 unknown area data based on 1996 data
+# Note: Ideally this would be done in the estimation model to propogate the
+# uncertainty, but while developing the base model we'll do it outside the model
+# here. -pj
+#-------------------------------------------------------------------------------
+Hhat96 <- Hhat_ay %>% filter(year == 1996)
+
+H_Appors <- Hhat96 %>% 
+  mutate(region = ifelse(region %in% c("Kodiak","Central"),"Unknown_R2",region)) %>% #include Kodiak in Region 2 unknowns
+  group_by(region) %>%
+  mutate(H_tot = sum(H),
+         p = H / H_tot) %>% 
+  select(-c(year,H,seH,H_tot)) %>%
+  full_join(Hhat_ay77to95 %>% filter(area %in% c("UNKNOWN_R1","UNKNOWN_R2")) %>%
+              rename(areax = area) %>%
+              rename(H_unk = H),
+            by = "region") %>% 
+  #mutate(H = p * H_unk) %>% 
+  full_join(Hhat_ay77to95 %>% filter(area %in% c("PWSO_I") & !is.na(H)) %>%
+              rename(areax = area) %>%
+              rename(H_unk = H) %>%
+              mutate(PWS_IO_ratio = Hhat96$H[Hhat96$area == "PWSI"] / 
+                       (Hhat96$H[Hhat96$area == "PWSO"] + Hhat96$H[Hhat96$area == "PWSI"]),
+                     PWSI = H_unk * PWS_IO_ratio,
+                     PWSO = H_unk * (1 - PWS_IO_ratio)) %>%
+              select(-c(areax,H_unk,region,PWS_IO_ratio)) %>%
+              pivot_longer(cols = c("PWSI","PWSO"),
+                           names_to = "area",
+                           values_to = "H_pwsio"),
+            by = c("area","year")) %>% 
+  rowwise() %>%
+  mutate(H = sum(p * H_unk , H_pwsio, na.rm = T)) %>% 
+  select(year,area,region,H) %>%
+  mutate(region = ifelse(area %in% c("CI","NG","PWSI","PWSO"),"Central",
+                         ifelse(area %in% c("afognak","eastside","northeast","BSAI","SOKO2SAP","WKMA"),"Kodiak",region))) %>%
+  filter(H > 0) #%>%
+  
+
+rbind(Hhat_ay77to95 %>% filter(area != "UNKNOWN_R1" & area != "UNKNOWN_R2" & 
+                                 area != "PWSO_I"),
+      H_Appors) %>%
+  group_by(year,area,region) %>%
+  summarise(H = sum(H, na.rm = T)) -> Hhat_ay77to95
+  
+unique(Hhat_ay77to95$area)
+#
+#bind with older data. Apply maximum observed cv per region to past
+#
+Hhat_ay <- rbind(Hhat_ay77to95 %>% mutate(seH = NA) %>% data.frame(),
+                 Hhat_ay) %>%
+  mutate(cv = seH / H) %>%
+  group_by(area) %>% 
+  mutate(seH = ifelse(is.na(seH),max(cv,na.rm=T) * H,seH),
+         seH = ifelse(is.infinite(seH),0.75 * H, seH)) %>% 
+  ungroup() %>% 
+  mutate(cv = seH / H,
+         H = round(H,0)) %>% arrange(region,area,year) #%>% select(-cv)
+
+Hhat_ay %>%
+  select(year, area, region, H, seH) %>%
+  ggplot(aes(year, H)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
+Hhat_ay %>%
+  select(year, area, region, H, seH, cv) %>%
+  ggplot(aes(year, cv)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
+Hhat_ay %>% filter(area == 'SSEO') %>% print(n = 50)
+
+#save it
+saveRDS(Hhat_ay, ".\\data\\bayes_dat\\Hhat_ay.rds")
+
+Hhat_ay %>% filter (area == "UNKNOWN")
+
+#
+# Apportion pre1996 Cahtches:
+#
+Chat96 <- Chat_ay %>% filter(year == 1996)
+
+C_Appors <- Chat_ay77to95 %>% filter(area %in% c("PWSO_I") & !is.na(C)) %>%
+              rename(areax = area) %>%
+              rename(C_unk = C) %>%
+              mutate(PWS_IO_ratio = Chat96$C[Chat96$area == "PWSI"] / 
+                       (Chat96$C[Chat96$area == "PWSO"] + Chat96$C[Chat96$area == "PWSI"]),
+                     PWSI = C_unk * PWS_IO_ratio,
+                     PWSO = C_unk * (1 - PWS_IO_ratio)) %>%
+              select(-c(areax,C_unk,region,PWS_IO_ratio)) %>%
+              pivot_longer(cols = c("PWSI","PWSO"),
+                           names_to = "area",
+                           values_to = "C") %>%
+  mutate(region = "Central")#,
+            #by = c("area","year")) %>% filter(area %in% c("PWSI"))
+rbind(Chat_ay77to95 %>% filter(area != "UNKNOWN_R1" & area != "UNKNOWN_R2" & 
+                                 area != "PWSO_I"),
+      C_Appors) %>%
+  group_by(year,area,region) %>%
+  summarise(C = sum(C, na.rm = T)) ->  Chat_ay77to95 
+
+Chat_ay77to95 %>% print(n = 100)
+
+unique(Chat_ay77to95$area)
+
 #bind with older data. Assume that CV on older data is 0.2
-Chat_ay <- rbind(Chat_ay77to95 %>% mutate(seC = NA),
+Chat_ay <- rbind(Chat_ay77to95 %>% mutate(seC = NA) %>% data.frame(),
                  Chat_ay) %>% 
   mutate(cv = seC / C) %>%
   group_by(area) %>% 
   mutate(seC = ifelse(is.na(seC),max(cv,na.rm=T) * C, seC),
          seC = ifelse(is.infinite(seC),0.75 * C, seC)) %>% 
   ungroup() %>% 
-  mutate(cv = seC / C) %>%
+  mutate(cv = seC / C,
+         C = round(C, 0)) %>%
   arrange(region,area,year)
 #save it
 Chat_ay %>% filter (area == "UNKNOWN")

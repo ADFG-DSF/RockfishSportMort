@@ -10,20 +10,23 @@ model{
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
     }
  
- for(r in 1:3){ #priors for mean composition
+ for(r in 1:3){ #priors for mean composition & proportion harvested
   mu_beta0_pelagic[r] ~ dnorm(0, 0.001)
   tau_beta0_pelagic[r] ~ dgamma(0.001, 0.001)
   mu_beta0_yellow[r] ~ dnorm(0, 0.001)
   tau_beta0_yellow[r] ~ dgamma(0.001, 0.001)
   mu_beta0_black[r] ~ dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.001, 0.001)
+
+  mu_beta0_pH[r] ~ dnorm(0, 0.001)
+  tau_beta0_pH[r] ~ dgamma(0.001, 0.001)
   }
 
  for (a in 1:A){
   # SWHS H & C bias: for simplicity, assuming same bias in C and H estimates? 
   mu_bc[a] ~ dnorm(0, 0.001)              # mean log bias in SWHS H estimates
   tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]    # transformed sigma in mean log bias 
-  sd_bc[a] ~ dunif(0, 10)                 # sigma mean log bias?? 
+  sd_bc[a] ~ dgamma(shape = 2, rate = 2) #dunif(0, 10)                 # sigma mean log bias?? 
 
   #User proportions. 
   b1_pG_H[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
@@ -33,8 +36,12 @@ model{
   b2_pG_C[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #proportion of catch that is harvested
-  pH_int[a] ~ dnorm(0, 0.001)             # proportion of catch harvested intercept
-  pH_slo[a] ~ dnorm(0, 0.001)             # proportion of catch harvested slope  
+  #pH_int[a] ~ dnorm(0, 0.001)             # proportion of catch harvested intercept
+  #pH_slo[a] ~ dnorm(0, 0.001)             # proportion of catch harvested slope
+
+  beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])
+  beta1_pH[a] ~ dnorm(0, 0.001)
+  beta2_pH[a] ~ dnorm(0, 0.001)
   
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
@@ -86,9 +93,9 @@ model{
    C_ay[a, y] <- exp(logC_ay[a, y])               # total catch parameter
 
    #Total releases
-   R_ayg[a, y] <- C_ayg[a, y] - H_ayg[a, y]           # guided releases
-   R_ayu[a, y] <- C_ayu[a, y] -  H_ayu[a, y]    # unguide releases
-   R_ay[a, y] <- C_ay[a, y] - H_ay[a, y]               # total catch releases
+   R_ayg[a, y] <- R_ay[a, y] * pG_C[a, y] # max(C_ayg[a, y] - H_ayg[a, y], 0)           # guided releases
+   R_ayu[a, y] <- R_ay[a, y] * (1 - pG_C[a, y]) #max(C_ayu[a, y] -  H_ayu[a, y], 0)    # unguide releases
+   R_ay[a, y] <- max(C_ay[a, y] - H_ay[a, y], 0)               # total catch releases
 
    #Black rockfish
    Hb_ayg[a, y] <- H_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1]
@@ -99,9 +106,9 @@ model{
    Cb_ayu[a, y] <- C_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- Cb_ayg[a, y] - Hb_ayg[a, y]
-   Rb_ayu[a, y] <- Cb_ayu[a, y] - Hb_ayu[a, y]
-   Rb_ay[a, y] <- Cb_ay[a, y] - Hb_ay[a, y]
+   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] #Cb_ayg[a, y] - Hb_ayg[a, y]
+   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
+   Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
    Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
@@ -112,13 +119,13 @@ model{
    Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
-   Ry_ayg[a, y] <- Cy_ayg[a, y] - Hy_ayg[a, y]
-   Ry_ayu[a, y] <- Cy_ayu[a, y] - Hy_ayu[a, y]
-   Ry_ay[a, y] <- Cy_ay[a, y] - Hy_ay[a, y]
+   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+   Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp
    logbc[a, y] ~ dnorm(mu_bc[a], tau_bc[a])     # mean log bias in SWHS H estimates
-   pG_H[a, y] ~ dbeta(b1_pG_H[a], b2_pG_H[a])   # P(user)ay1 = p harv taken by charter anglers
+   pG_H[a, y] ~ dbeta(b1_pG_H[a], b2_pG_H[a])         # P(user)ay1 = frac of harv taken by charter anglers
    pG_C[a, y] ~ dbeta(b1_pG_C[a], b2_pG_C[a]) 
    
    #SWHS total likelihood	
@@ -134,14 +141,15 @@ model{
 
   for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
     #Proportion harvested calculated through 2018 before regulations started changing
-    logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y   
+    # logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y 
+    logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] * y + beta2_pH[a] * pow(y, 2)
+
     Chat_ay_pH[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
-###    logC_ay[a,y] <- log(Chat_ay[a,y])
-###    logChat_ay[a, y] <- logC_ay[a, y] ## bias correction already in Hhat_ay !+ logbc[a, y]
   }
 
   for (y in 1:13){ # fit Chat prior to 1990 to retention probability regression
 ###    Chat_ay[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
+    Chat_ay_obs[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
     logC_ay[a,y] <- log(Hhat_ay[a, y]) - log(pH[a, y])
     logChat_ay[a, y] <- log(Hhat_ay[a, y]) - log(pH[a, y]) ## bias correction already in Hhat_ay 
   }
