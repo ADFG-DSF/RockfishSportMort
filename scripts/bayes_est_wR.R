@@ -996,7 +996,7 @@ rbind(bc_mod, bc_obs) %>%
   coord_cartesian(ylim = c(0, 6)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_C, linetype = 1) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H, linetype = 2) +
-  facet_wrap(. ~ area) + coord_trans(y ='log10')
+  facet_wrap(. ~ area) #+ coord_trans(y ='log10')
   
 #PRELIM suggests that maybe H and C bias can be the same
 
