@@ -17,6 +17,7 @@ library(readxl)
 library(janitor)
 library(ggplot2)
 library(tidyverse)
+library(tidyr)
 
 source(".\\scripts//functions.R")
 
@@ -143,6 +144,45 @@ left_join(Chat_ay, Hhat_ay, by = c("area", "year", "region")) %>%
   ggplot(aes(year, N, color = source)) +
   geom_line() +
   facet_wrap(area ~ ., scales = "free")
+
+# * Logbook releases versus swhs releases --------------------------------------
+left_join(Chat_ay, Hhat_ay, by = c("area", "year", "region")) %>%
+  select(year, area, Chat, Hhat) %>%
+  mutate(Rhat = Chat - Hhat,
+         cat = "swhs_tot") %>%
+  select(year,area,cat,R = Rhat) %>%
+  rbind(left_join(Chat_ayu %>% filter(user == "guided"), 
+                  Hhat_ayu %>% filter(user == "guided"),
+                  by = c("area", "year", "region")) %>%
+          select(year, area, gChat = Chat, gHhat = Hhat) %>%
+          mutate(gRhat = gChat -gHhat,
+                 cat = "swhs_gui") %>%
+          select(year,area,cat,R = gRhat)) %>%
+  rbind(left_join(Chat_ayu %>% filter(user == "private"), 
+                  Hhat_ayu %>% filter(user == "private"), 
+                  by = c("area", "year", "region")) %>%
+          select(year, area, uChat = Chat, uHhat = Hhat) %>%
+          mutate(uRhat = uChat -uHhat,
+                 cat = "swhs_pri") %>%
+          select(year,area,cat,R = uRhat)) %>%
+  rbind(R_ayg %>% mutate(cat = "logbook") %>% select(year,area,cat,R)) %>%
+  ggplot(aes(year,R,color = cat)) + 
+  geom_line() +
+  facet_wrap(area~., scales = "free")
+
+left_join(Chat_ayu %>% filter(user == "guided"), 
+          Hhat_ayu %>% filter(user == "guided"),
+          by = c("area", "year", "region")) %>%
+  select(year, area, region, gChat = Chat, gHhat = Hhat) %>%
+  mutate(gRhat = gChat -gHhat) %>%
+  select(year,area,region,Rhat = gRhat) %>%
+  left_join(R_ayg %>% select(year,area,region,R),
+            by = c('area',"year","region")) %>%
+  ggplot(aes(R, Rhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  facet_grid(region ~ ., scales = "free")
 
 # * logbook vrs sample % pelagic --------------------------------------------------------
 rbind(S_ayu %>% mutate(pct_pel = pelagic_n / totalrf_n, source = "survey") %>% 
@@ -355,7 +395,7 @@ params <- c(#SWHS bias; assumed same for C and H
             "Rb_ayg", "Rb_ayu", "Rb_ay",
             "Ry_ayg", "Ry_ayu", "Ry_ay") #need to add in releases:
 
-ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
@@ -371,23 +411,6 @@ runtime <- Sys.time() - tstart; runtime
 
 postH
 #Note 5e5 iterations about 1 hour and ~95% converged
-
-rhat <- get_Rhat(postH, cutoff = 1.1)
-names(rhat)[1] <- "Rhat_values"
-rhat
-jagsUI::traceplot(postH, Rhat_min = 1.1)
-
-with(comp, table(area_n, area))
-
-rhat$Rhat_values %>% arrange(-Rhat)
-
-names(rhat)[1] <- "Rhat_values"
-
-jagsUI::traceplot(postH, parameters = "lambda_C")
-jagsUI::traceplot(postH, parameters = "lambda_H")
-
-jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H",
-                                        "mu_lambda_C","sigma_lambda_C"))
 
 #Note 5e5 iterations about 1 hour and ~95% converged
 #Note 1e5 iterations 20 min and ~92% converged
@@ -441,7 +464,7 @@ for (i in 1:3) {
   #last_samples[[i]]$'lambda_C[14]' <- runif(1,0.001,5)
   last_samples[[i]]$'lambda_C[15]' <- runif(1,0.001,5)
   last_samples[[i]]$'lambda_C[16]' <- runif(1,0.001,5)
-  }
+}
 
 # Re-run the model with these initial values
 
@@ -457,11 +480,83 @@ postH <- jagsUI::jags(
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_poly_pH_split_bc_15e5_91conv"
+mod_name <- "post_HCR_poly_pH_split_bc_1e5_91conv"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
+
+#-------------------------------------------------------------------------------
+# Convergence exam
+#-------------------------------------------------------------------------------
+
+rhat <- get_Rhat(postH, cutoff = 1.15)
+names(rhat)[1] <- "Rhat_values"
+rhat
+
+head(rhat$Rhat_values %>% arrange(-Rhat))
+#jagsUI::traceplot(postH, Rhat_min = 1.1)
+
+comp %>% select(area,area_n) %>% unique() %>%
+  add_row(area = "BSAI", area_n = 5) %>%
+  add_row(area = "SOKO2SAP", area_n = 6) %>%
+  add_row(area = "WKMA", area_n = 7) %>%
+  mutate(area_n = as.character(area_n))
+
+rhat_exam <- rhat$Rhat_values %>%
+  rownames_to_column(var = "Parameter") %>%
+  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n")
+
+rhat_exam %>% group_by(variable,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) %>% print(n = 100)
+
+rhat_exam %>% group_by(variable,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-n,-badRhat_avg) %>% print(n = 100)
+
+#--- Traceplots ----------------------------------------------------------------
+
+jagsUI::traceplot(postH, parameters = "lambda_H")
+
+jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
+
+jagsUI::traceplot(postH, parameters = "lambda_C")
+
+jagsUI::traceplot(postH, parameters = c("mu_lambda_C","sigma_lambda_C"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_pH","tau_beta0_pH",
+                                        "beta0_pH","beta1_pH",
+                                        "beta2_pH","beta3_pH"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
+                                        "beta0_yellow","beta1_yellow",
+                                        "beta2_yellow","beta3_yellow"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
+                                        "beta0_pelagic","beta1_pelagic",
+                                        "beta2_pelagic"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_pHblack",
+                                        "beta0_black","beta1_black",
+                                        "beta2_black"))
+
+jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
+jagsUI::traceplot(postH, parameters = "logbc_H")
+
+jagsUI::traceplot(postH, parameters = c("mu_bc_C","tau_bc_C","sd_bc_C"))
+jagsUI::traceplot(postH, parameters = "logbc_C")
 
 library(coda)
 library(shinystan)
@@ -512,18 +607,18 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
-as.data.frame(
-  rbind(t(jags_dat$Chat_ay_pH - jags_dat$Hhat_ay),
+#as.data.frame(
+#  rbind(t(jags_dat$Chat_ay_pH - jags_dat$Hhat_ay),
         #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
-        t(postH$mean$R_ay))) %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 2),
-         source = rep(c("SWHS", "R"), each = Y)) %>%
-  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = R, color = source)) +
-  geom_line() + 
-  facet_wrap(. ~ area, scales = "free")
+#        t(postH$mean$R_ay))) %>%
+#  setNames(nm = unique(H_ayg$area)) %>%
+#  mutate(year = rep(start_yr:end_yr, times = 2),
+#         source = rep(c("SWHS", "R"), each = Y)) %>%
+#  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+#  ggplot(aes(x = year, y = R, color = source)) +
+#  geom_line() + 
+#  facet_wrap(. ~ area, scales = "free")
 
 as.data.frame(
   rbind(t(jags_dat$Rlb_ayg),
@@ -553,8 +648,6 @@ as.data.frame(
 
 # * P(Harvested) --------------------------------------------------------
 # ** annual estimates  --------------------------------------------------------
-jagsUI::traceplot(postH, parameters = "re_pH")
-
 pH_mod <- 
   postH$mean$pH %>%
   t() %>%
@@ -580,9 +673,9 @@ rbind(pH_mod, pH_obs) %>%
   facet_wrap(. ~ area)
 
 # ** slope of logit  --------------------------------------------------------
-data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$pH_slo, ub = postH$q97.5$pH_slo) %>%
-  ggplot(aes(x = area, y = mean)) +
-  geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
+#data.frame(area = unique(H_ayg$area), lb = postH$q2.5$pH_slo, mean = postH$mean$pH_slo, ub = postH$q97.5$pH_slo) %>%
+#  ggplot(aes(x = area, y = mean)) +
+#  geom_pointrange(aes(y = mean, ymin = lb, ymax = ub))
 
 # ** observation error --------------------------------------------------------
 as.data.frame(
@@ -669,16 +762,27 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free_y")
 
 # ** SWHS residuals --------------------------------------------------------
+library(wesanderson)
+names(wes_palettes)
+pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
+
 as.data.frame(
   t(log(postH$mean$H_ay) + postH$mean$logbc_H) - t(log(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = start_yr:end_yr) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = res)) +
-  geom_point() +
+  left_join(as.data.frame(t(jags_dat$cvHhat_ay)) %>% setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = start_yr:end_yr) %>%
+              pivot_longer(!year, names_to = "area", values_to = "cv") %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area")) -> swhs_Hres
+swhs_Hres %>% ggplot(aes(x = year, y = res)) +
+  scale_color_gradientn(colours = pal) + 
+  geom_point(aes(color = cv)) +
   geom_hline(aes(yintercept = 0)) +
   facet_wrap(. ~ area, scales = "free_y")
+
 
 as.data.frame(
   t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
@@ -686,10 +790,17 @@ as.data.frame(
   mutate(year = start_yr:end_yr) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = res)) +
-  geom_point() +
+  left_join(as.data.frame(t(jags_dat$cvChat_ay)) %>% setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = start_yr:end_yr) %>%
+              pivot_longer(!year, names_to = "area", values_to = "cv") %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area"))-> swhs_Cres
+swhs_Cres %>%  ggplot(aes(x = year, y = res)) +
+  scale_color_gradientn(colours = pal) + 
+  geom_point(aes(color = cv)) +
   geom_hline(aes(yintercept = 0)) +
   facet_wrap(. ~ area, scales = "free_y")
+
 
 # ** yelloweye logbook harvest vrs. model charter harvest --------------------------------------------------------
 as.data.frame(
@@ -766,8 +877,7 @@ exp(postH$sims.list$mu_bc_H) %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  data = "C")) -> grr
 
-hist(grr$bc[grr$data == "C" & grr$area == "NG"], breaks = 50)
-grr[is.na(grr$bc),]  
+range(grr$bc) #YIKES!!!! 
 
 grr %>% filter(bc < 6) %>%
   ggplot(aes(x = bc, col = data, fill = data, alpha = 1)) +
@@ -883,10 +993,11 @@ rbind(bc_mod, bc_obs) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point(aes(shape = data)) +
   geom_line(aes(linetype = data)) +
-  coord_cartesian(ylim = c(0, 2)) +
+  coord_cartesian(ylim = c(0, 6)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_C, linetype = 1) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H, linetype = 2) +
-  facet_wrap(. ~ area)
+  facet_wrap(. ~ area) + coord_trans(y ='log10')
+  
 #PRELIM suggests that maybe H and C bias can be the same
 
 # * Composition --------------------------------------------------------

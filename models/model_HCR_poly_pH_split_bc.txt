@@ -100,8 +100,8 @@ model{
    C_ay[a, y] <- exp(logC_ay[a, y])               # total catch parameter
 
    #Total releases
-   R_ayg[a, y] <- R_ay[a, y] * pG_C[a, y] # max(C_ayg[a, y] - H_ayg[a, y], 0)           # guided releases
-   R_ayu[a, y] <- R_ay[a, y] * (1 - pG_C[a, y]) #max(C_ayu[a, y] -  H_ayu[a, y], 0)    # unguide releases
+   R_ayg[a, y] <- max(C_ayg[a, y] - H_ayg[a, y], 0)  # R_ay[a, y] * pG_C[a, y] #           # guided releases
+   R_ayu[a, y] <- max(C_ayu[a, y] -  H_ayu[a, y], 0) #R_ay[a, y] * (1 - pG_C[a, y]) #    # unguide releases
    R_ay[a, y] <- max(C_ay[a, y] - H_ay[a, y], 0)               # total catch releases
 
    #Black rockfish
@@ -113,8 +113,8 @@ model{
    Cb_ayu[a, y] <- C_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- Cb_ayg[a, y] - Hb_ayg[a, y] # R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] 
-   Rb_ayu[a, y] <- Cb_ayu[a, y] - Hb_ayu[a, y] # R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
+   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] # Cb_ayg[a, y] - Hb_ayg[a, y] #  
+   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] # Cb_ayu[a, y] - Hb_ayu[a, y] # 
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
@@ -126,8 +126,8 @@ model{
    Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
-   Ry_ayg[a, y] <- Cy_ayg[a, y] - Hy_ayg[a, y] #R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
-   Ry_ayu[a, y] <- Cy_ayu[a, y] - Hy_ayu[a, y] #R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] # Cy_ayg[a, y] - Hy_ayg[a, y] #
+   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # Cy_ayu[a, y] - Hy_ayu[a, y] #
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp
@@ -168,6 +168,7 @@ model{
 
   for (y in 14:Y){ #Fit C is fit to data starting in 1990 when SWHS started tracking this
     Chat_ay_obs[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])
+  ##!!!*** how to apply logbc_H here without influencing how it's estimated?   
     logChat_ay[a, y] <- logC_ay[a, y] + logbc_C[a, y]
     logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
     Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]
