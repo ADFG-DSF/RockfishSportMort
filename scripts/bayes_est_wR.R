@@ -186,7 +186,7 @@ Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end
 A = length(unique(Hhat_ay$area))
 Y = length(unique(Hhat_ay$year))
 
-C <- 7
+C <- 6
 Z <- bspline(1:Y, K = C) #bspline(1:24, K = C)
 
 comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
@@ -313,7 +313,7 @@ str(jags_dat$Hlby_ayg); str(jags_dat$Rlby_ayg)
 jags_dat$cvHhat_ay
 jags_dat$cvChat_ay
 # Run Jags --------------------------------------------------------
-ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
+
 params <- c(#SWHS bias; assumed same for C and H
             #"logbc", "mu_bc", "sd_bc",
             #SWHS bias, separate C and H
@@ -328,6 +328,7 @@ params <- c(#SWHS bias; assumed same for C and H
             #  "pH_int", "pH_slo",
             #polynomial
               "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH",
+            #"re_pH","sd_pH",
             #proportions same for catch and harvest? thinking on it?
             "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "mu_beta0_pelagic", "tau_beta0_pelagic",
             "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "mu_beta0_yellow", "tau_beta0_yellow",
@@ -340,15 +341,21 @@ params <- c(#SWHS bias; assumed same for C and H
              "Hb_ayg", "Hb_ayu", "Hb_ay",
              "Hy_ayg", "Hy_ayu", "Hy_ay",
              "logHhat_ay",
+            #with hierarchichal pline lambda
+            "mu_lambda_H","sigma_lambda_H",
             #catch estimates and spline parts
             "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
             "Cb_ayg", "Cb_ayu", "Cb_ay",
             "Cy_ayg", "Cy_ayu", "Cy_ay",
             "logChat_ay",
+            #with hierarchichal pline lambda
+            "mu_lambda_C","sigma_lambda_C",
             #releases
             "R_ay", "R_ayg", "R_ayu", 
             "Rb_ayg", "Rb_ayu", "Rb_ay",
             "Ry_ayg", "Ry_ayu", "Ry_ay") #need to add in releases:
+
+ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
@@ -356,7 +363,7 @@ postH <-
     parameters.to.save = params,
     model.file = ".\\models\\model_HCR_poly_pH_split_bc.txt",
     data = jags_dat, 
-    parallel = TRUE, 
+    parallel = TRUE, verbose = TRUE,
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
     store.data = TRUE)
@@ -366,12 +373,28 @@ postH
 #Note 5e5 iterations about 1 hour and ~95% converged
 
 rhat <- get_Rhat(postH, cutoff = 1.1)
+names(rhat)[1] <- "Rhat_values"
 rhat
 jagsUI::traceplot(postH, Rhat_min = 1.1)
+
+with(comp, table(area_n, area))
+
+rhat$Rhat_values %>% arrange(-Rhat)
+
+names(rhat)[1] <- "Rhat_values"
+
+jagsUI::traceplot(postH, parameters = "lambda_C")
+jagsUI::traceplot(postH, parameters = "lambda_H")
+
+jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H",
+                                        "mu_lambda_C","sigma_lambda_C"))
 
 #Note 5e5 iterations about 1 hour and ~95% converged
 #Note 1e5 iterations 20 min and ~92% converged
 #Note 5e4 iters of model_H_C_part_pH_trend 10 minutes and 90% converged
+#Note 1e7 iters HCR_poly_pH_split_bc 2.2 days and <90% converged 
+#15e5 = 8.5 hrs, 91& conv
+
 mod_name <- "post_HCR_poly_pH_split_bc"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
@@ -382,7 +405,46 @@ last_samples <- lapply(1:nc, function(chain) {
 saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 
 last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+
+str(last_samples)
+for (i in 1:3) {
+  last_samples[[i]]$'lambda_H[1]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[2]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[3]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[4]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[5]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[6]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[7]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[8]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[9]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[10]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[11]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[12]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[13]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[14]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_H[15]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_H[16]' <- runif(1,0.001,5)
+  
+  last_samples[[i]]$'lambda_C[1]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[2]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[3]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_C[4]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_C[5]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_C[6]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_C[7]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[8]' <- runif(1,0.001,5)
+  #last_samples[[i]]$'lambda_C[9]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[10]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[11]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[12]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[13]' <- runif(1,0.001,1)
+  #last_samples[[i]]$'lambda_C[14]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[15]' <- runif(1,0.001,5)
+  last_samples[[i]]$'lambda_C[16]' <- runif(1,0.001,5)
+  }
+
 # Re-run the model with these initial values
+
 tstart <- Sys.time()
 postH <- jagsUI::jags(
   parameters.to.save = params,
@@ -391,11 +453,11 @@ postH <- jagsUI::jags(
   inits = last_samples,
   parallel = TRUE, 
   n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
-  store.data = TRUE
+  store.data = TRUE, verbose = TRUE
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_pH_mod_5e4_dev90conv"
+mod_name <- "post_HCR_poly_pH_split_bc_15e5_91conv"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
@@ -422,6 +484,8 @@ paste0(round(postH$mean$beta2_pelagic, 3), "(", round(postH$q2.5$beta2_pelagic, 
 
 # * Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
+jagsUI::traceplot(postH, parameters = c("H_ay","C_ay"))
+
 as.data.frame(
   rbind(t(jags_dat$Hhat_ay),
         t(apply(exp(postH$sims.list$Htrend_ay), c(2,3), mean)),
@@ -461,8 +525,36 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
+as.data.frame(
+  rbind(t(jags_dat$Rlb_ayg),
+        #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+        t((postH$mean$C_ayg - postH$mean$H_ayg)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 2),
+         source = rep(c("LB", "R"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = R, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
+as.data.frame(
+  rbind(t(jags_dat$Rlby_ayg),
+        #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
+        t(postH$mean$Cy_ayg - postH$mean$Hy_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 2),
+         source = rep(c("LB", "R"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = R, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
 # * P(Harvested) --------------------------------------------------------
 # ** annual estimates  --------------------------------------------------------
+jagsUI::traceplot(postH, parameters = "re_pH")
+
 pH_mod <- 
   postH$mean$pH %>%
   t() %>%
@@ -518,8 +610,9 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free")
 
 #as.data.frame(
-#  rbind(t(jags_dat$Chat_ay),
-#        t(apply(exp(postH$sims.list$logChat_ay), c(2,3), mean)))) %>%
+#  rbind(t(jags_dat$Rlb_ayg),
+#        t(apply(exp(postH$sims.list$logChat_ayg), c(2,3), mean) -
+#            apply(exp(postH$sims.list$logHhat_ayg), c(2,3), mean)))) %>%
 #  setNames(nm = unique(H_ayg$area)) %>%
 #  mutate(year = rep(start_yr:end_yr, times = 2),
 #         source = rep(c("SWHS", "mean"), each = Y)) %>%
@@ -578,6 +671,17 @@ as.data.frame(
 # ** SWHS residuals --------------------------------------------------------
 as.data.frame(
   t(log(postH$mean$H_ay) + postH$mean$logbc_H) - t(log(jags_dat$Hhat_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = start_yr:end_yr) %>%
+  pivot_longer(!year, names_to = "area", values_to = "res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = res)) +
+  geom_point() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y")
+
+as.data.frame(
+  t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = start_yr:end_yr) %>%
   pivot_longer(!year, names_to = "area", values_to = "res") %>%
@@ -660,15 +764,20 @@ exp(postH$sims.list$mu_bc_H) %>%
           setNames(nm = unique(H_ayg$area)) %>%
           pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                 data = "C")) %>%
-  
-  ggplot(aes(x = bc, col = data, fill = data, alpha = 0.2)) +
+                 data = "C")) -> grr
+
+hist(grr$bc[grr$data == "C" & grr$area == "NG"], breaks = 50)
+grr[is.na(grr$bc),]  
+
+grr %>% filter(bc < 6) %>%
+  ggplot(aes(x = bc, col = data, fill = data, alpha = 1)) +
   geom_histogram(binwidth = .1) +
   coord_cartesian(xlim = c(0, 6)) +
   geom_vline(aes(xintercept = 1)) +
   facet_wrap(.~area)
 
-
+hist(grr$bc, breaks = 100)
+grr %>% filter(bc > 6) -> shit; unique(shit$area)
 # ** sd by area --------------------------------------------------------
 postH$sims.list$sd_bc_H %>%
   as.data.frame() %>%
@@ -689,6 +798,9 @@ postH$sims.list$sd_bc_H %>%
 
 # ** annual estimates --------------------------------------------------------
 # mean log bias in swhs estimates
+jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H",
+                                        "mu_bc_C","tau_bc_C"))
+
 
 exp(postH$q2.5$logbc)
 exp(postH$mean$logbc)
@@ -771,8 +883,9 @@ rbind(bc_mod, bc_obs) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point(aes(shape = data)) +
   geom_line(aes(linetype = data)) +
-  coord_cartesian(ylim = c(0, 5)) +
-  geom_hline(aes(yintercept = mu_bc), data = mu_bc_C) +
+  coord_cartesian(ylim = c(0, 2)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_C, linetype = 1) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H, linetype = 2) +
   facet_wrap(. ~ area)
 #PRELIM suggests that maybe H and C bias can be the same
 

@@ -6,7 +6,8 @@ data {
     // Harvest and Catch Data
     matrix[A, Y] Hhat_ay;          // Estimated harvest by area and year
     matrix[A, Y] cvHhat_ay;        // Coefficients of variation for Hhat_ay
-    matrix[A, Y] Chat_ay;          // Estimated catch by area and year
+    matrix[A, Y] Chat_ay_pH;          // Estimated catch by area and year
+    matrix[A, Y] Chat_ay_obs;          // Estimated catch by area and year
     matrix[A, Y] cvChat_ay;        // Coefficients of variation for Chat_ay
     
     // Logbook Data
@@ -43,52 +44,60 @@ data {
 
 parameters {
     // SWHS bias parameters
-    real logbc;
-    real mu_bc;
-    real<lower=0> sd_bc;
+    matrix[A,Y] logbc_H;
+    real mu_bc_H[A];
+    real<lower=0> sd_bc_H[A];
+    matrix[A,Y] logbc_C;
+    real mu_bc_C[A];
+    real<lower=0> sd_bc_C[A];
     
     // User proportions for guided (H for harvest, C for catch)
-    vector[A] pG_H;             // Proportion guided for harvest
-    real b1_pG_H;               // Regression parameter for pG_H
-    real b2_pG_H;               // Regression parameter for pG_H
-    vector[A] pG_C;             // Proportion guided for catch
-    real b1_pG_C;               // Regression parameter for pG_C
-    real b2_pG_C;               // Regression parameter for pG_C
+    matrix[A,Y] pG_H;             // Proportion guided for harvest
+    real b1_pG_H[A];               // Regression parameter for pG_H
+    real b2_pG_H[A];               // Regression parameter for pG_H
+    matrix[A,Y] pG_C;             // Proportion guided for catch
+    real b1_pG_C[A];               // Regression parameter for pG_C
+    real b2_pG_C[A];               // Regression parameter for pG_C
     
     // Proportion harvested
-    vector[A] pH;               // Proportion harvested
-    real pH_int;                // Intercept for pH
-    real pH_slo;                // Slope for pH
+    matrix[A,Y] pH;               // Proportion harvested
+    //real pH_int;                // Intercept for pH
+    //real pH_slo;                // Slope for pH
+    vector[A] mu_beta_pH;
+    vector[A] tau_beta_pH;
+    vector[A] beta0_pH;
+    vector[A] beta1_pH;
+    vector[A] beta2_pH;
 
     // Proportions for pelagic, yellow, black species
     vector[A] p_pelagic;        // Proportion pelagic
-    real beta0_pelagic;         // Intercept pelagic
-    real beta1_pelagic;         // Slope 1 pelagic
-    real beta2_pelagic;         // Slope 2 pelagic
-    real beta3_pelagic;         // Slope 3 pelagic
-    real mu_beta0_pelagic;      // Mean of beta0_pelagic
-    real<lower=0> tau_beta0_pelagic;  // Precision of beta0_pelagic
+    vector[A] beta0_pelagic;         // Intercept pelagic
+    vector[A] beta1_pelagic;         // Slope 1 pelagic
+    vector[A] beta2_pelagic;         // Slope 2 pelagic
+    vector[A] beta3_pelagic;         // Slope 3 pelagic
+    vector[3] mu_beta0_pelagic;      // Mean of beta0_pelagic
+    vector[3]<lower=0> tau_beta0_pelagic;  // Precision of beta0_pelagic
     
     vector[A] p_yellow;         // Proportion yelloweye
-    real beta0_yellow;          // Intercept yelloweye
-    real beta1_yellow;          // Slope 1 yelloweye
-    real beta2_yellow;          // Slope 2 yelloweye
-    real beta3_yellow;          // Slope 3 yelloweye
-    real mu_beta0_yellow;       // Mean of beta0_yellow
-    real<lower=0> tau_beta0_yellow;   // Precision of beta0_yellow
+    vector[A] beta0_yellow;          // Intercept yelloweye
+    vector[A] beta1_yellow;          // Slope 1 yelloweye
+    vector[A] beta2_yellow;          // Slope 2 yelloweye
+    vector[A] beta3_yellow;          // Slope 3 yelloweye
+    vector[3] mu_beta0_yellow;       // Mean of beta0_yellow
+    vector[3]<lower=0> tau_beta0_yellow;   // Precision of beta0_yellow
     
     vector[A] p_black;          // Proportion black
-    real beta0_black;           // Intercept black
-    real beta1_black;           // Slope 1 black
-    real beta2_black;           // Slope 2 black
-    real mu_beta0_black;        // Mean of beta0_black
-    real<lower=0> tau_beta0_black;    // Precision of beta0_black
+    vector[A] beta0_black;           // Intercept black
+    vector[A] beta1_black;           // Slope 1 black
+    vector[A] beta2_black;           // Slope 2 black
+    vector[3] mu_beta0_black;        // Mean of beta0_black
+    vector[3]<lower=0> tau_beta0_black;    // Precision of beta0_black
 
     // Random effects on species
-    vector[A] re_pelagic;       // Random effect pelagic
-    vector[A] re_black;         // Random effect black
-    vector[A] re_yellow;        // Random effect yellow
-    real<lower=0> sd_comp;      // Standard deviation for comp
+    array[A,Y,2] re_pelagic;       // Random effect pelagic
+    array[A,Y,2] re_black;         // Random effect black
+    array[A,Y,2] re_yellow;        // Random effect yellow
+    real<lower=0> sd_comp;      // Standard deviation for comp; tau_comp in JAGS model
     
     // Harvest estimates and spline parts
     matrix[A, Y] Htrend_ay;     // Harvest trend

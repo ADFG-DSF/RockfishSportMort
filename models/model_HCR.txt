@@ -21,7 +21,7 @@ model{
 
  for (a in 1:A){
   # SWHS H & C bias: for simplicity, assuming same bias in C and H estimates? 
-  mu_bc[a] ~ dnorm(0, 0.001)              # mean log bias in SWHS H estimates
+  mu_bc[a] ~ dnorm(0, 0.001)              # mean log bias in SWHS H estimates, centered strongly on 0 assumes no bias
   tau_bc[a] <- 1 / sd_bc[a] / sd_bc[a]    # transformed sigma in mean log bias 
   # sigma mean log bias; other options dgamma(shape = 2, rate = 2) and dlnorm(meanlog = 0, sdlog = 0.25)
   sd_bc[a] ~ dgamma(shape = 2, rate = 2) #dunif(0, 10)                 
