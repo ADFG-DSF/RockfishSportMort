@@ -4,8 +4,8 @@ model{
  sd_comp ~ dunif(0, 10)
  lambda_bc ~ dgamma(0.001, 0.001)
 
- #tau_pH <- 1 / sd_pH / sd_pH
- #sd_pH ~ dunif(0, 10)
+ shape_Ry ~ dunif(0, 10)   # Shape prior for Ry_est
+ rate_Ry ~ dunif(0, 10)    # Rate prior for Ry_est
   
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
@@ -23,6 +23,10 @@ model{
 
   mu_beta0_pH[r] ~ dnorm(0, 0.001)
   tau_beta0_pH[r] ~ dgamma(0.001, 0.001)
+
+  mu_bc_C_offset[r] ~ dnorm(1, 0.001)T(0.0000001,5) #hyperprior offset for bias in swhs catch estimates
+  tau_bc_C_offset[r] <- 1 / sd_bcCoff[r] / sd_bcCoff[r]
+  sd_bcCoff[r] ~ dunif(0, 10)
   }
 
  for (a in 1:A){
@@ -31,10 +35,7 @@ model{
   tau_bc_H[a] <- 1 / sd_bc_H[a] / sd_bc_H[a]    # transformed sigma in mean log bias 
   sd_bc_H[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
 
-  bc_C_offset[a] ~ dnorm(0, 0.001)T(,10)
-##  mu_bc_C[a] ~ dnorm(0, 0.001)T(,10)              # mean log bias in SWHS H estimates
-##  tau_bc_C[a] <- 1 / sd_bc_C[a] / sd_bc_C[a]    # transformed sigma in mean log bias 
-##  sd_bc_C[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
+  bc_C_offset[a] ~ dnorm(mu_bc_C_offset[regions[a]], tau_bc_C_offset[regions[a]]) #offset for bias in swhs catch estimates
 
   #User proportions. 
   b1_pG_H[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
@@ -45,7 +46,8 @@ model{
 
   #proportion of catch that is harvested
   beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])
-  beta1_pH[a] ~ dnorm(0, 0.001)
+  beta1_pH[a] ~ dnorm(1, 0.001) T(0,)   # Upper asymptote, constrained to be positive; K
+  ## beta1_pH[a] ~ dnorm(0, 0.001)
   beta2_pH[a] ~ dnorm(0, 0.001)
   beta3_pH[a] ~ dnorm(0, 0.001)
   
@@ -57,6 +59,7 @@ model{
   beta1_yellow[a] ~ dnorm(0, 0.001)
   beta2_yellow[a] ~ dnorm(0, 0.001)
   beta3_yellow[a] ~ dnorm(0, 0.001) #allowing more curvature to p_yellow
+  beta4_yellow[a] ~ dnorm(0, 0.001) # for logistic curve
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
@@ -76,18 +79,19 @@ model{
    Hlbp_ayg[a, y] ~ dpois(H_ayg[a, y] * p_pelagic[a, y, 1]) #pelagic rockfish
   } 
 
-## Maybe just fit to logbook release data for YE; other species estimates may not be reliable?
-##  for (y in 23:Y) { #logbook likelihood; guided release by area and year
-##    R_est_ayg[a, y] <- max(0.001, C_ayg[a, y] - H_ayg[a, y])
-##    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y])T(0,)   # all rockfish alt: dpois(C_ayg[a, y] - H_ayg[a, y])
-##    Rp_est_ayg[a, y] <- max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
-##    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y]) #pelagic rockfish; 
-##  }
+#logbook release data modelled as minimal estimates
+  for (y in 23:Y) { #logbook likelihood; guided release by area and year
+    R_est_ayg[a, y] <- max(0.001, C_ayg[a, y] - H_ayg[a, y])
+    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y])T(Rlb_ayg_bound[a, y],)   
+    Rp_est_ayg[a, y] <- max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
+    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y])T(Rlbp_ayg_bound[a, y],) 
+  }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
+
    Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
-   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y]) #alt: dpois(Cy_ayg[a, y] - Hy_ayg[a, y])
+   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
   }
 	
   for(y in 1:Y){
@@ -115,8 +119,8 @@ model{
    Cb_ayu[a, y] <- C_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] # Cb_ayg[a, y] - Hb_ayg[a, y] #  
-   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] # Cb_ayu[a, y] - Hb_ayu[a, y] # 
+   Rb_ayg[a, y] <- max(0, Cb_ayg[a, y] - Hb_ayg[a, y]) #R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1]   
+   Rb_ayu[a, y] <- max(0, Cb_ayu[a, y] - Hb_ayu[a, y]) #R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] 
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
@@ -128,14 +132,13 @@ model{
    Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
-   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] # Cy_ayg[a, y] - Hy_ayg[a, y] #
-   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # Cy_ayu[a, y] - Hy_ayu[a, y] #
+   Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) # R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] 
+   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # 
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp
    logbc_H[a, y] ~ dnorm(mu_bc_H[a], tau_bc_H[a])T(-20,3)     # mean log bias in SWHS H estimates
-##   logbc_C[a, y] ~ dnorm(mu_bc_C[a], tau_bc_C[a])T(-20,3)
-   logbc_C[a,y] <- logbc_H[a, y] + bc_C_offset[a]
+   logbc_C[a,y] <- logbc_H[a, y] * bc_C_offset[a]
 
    pG_H[a, y] ~ dbeta(b1_pG_H[a], b2_pG_H[a])         # P(user)ay1 = frac of harv taken by charter anglers
    pG_C[a, y] ~ dbeta(b1_pG_C[a], b2_pG_C[a]) 
@@ -154,8 +157,10 @@ model{
   for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
     #Proportion harvested calculated through 2018 before regulations started changing
     # logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y 
-    logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] * y + beta2_pH[a] * pow(y, 2) + beta3_pH[a] * pow(y, 3)##+ re_pH[a,y]
+    ##logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] * y + beta2_pH[a] * pow(y, 2) + beta3_pH[a] * pow(y, 3)##+ re_pH[a,y]
     ##logit(pH[a, y]) <- beta0_pH[a] + (beta1_pH[a] * y) / (1 + beta2_pH[a] * y) ##+ re_pH[a, y, u]
+    ##Logistic curve:
+    logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] / (1 + exp(beta2_pH[a] * (y - beta3_pH[a])))
 
     ##re_pH[a, y] ~ dnorm(0, tau_pH)
 
@@ -172,7 +177,7 @@ model{
   for (y in 14:Y){ #Fit C is fit to data starting in 1990 when SWHS started tracking this
     Chat_ay_obs[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])
   ##!!!*** how to apply logbc_H here without influencing how it's estimated?   
-    logChat_ay[a, y] <- logC_ay[a, y] + logbc_H[a, y]
+    logChat_ay[a, y] <- logC_ay[a, y] + logbc_C[a, y]
     logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
     Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]
   }
@@ -182,8 +187,12 @@ model{
    for(u in 1:2){
     logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
 
-    logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u] + beta3_yellow[a] * pow(y, 2)
+    ## logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u] + beta3_yellow[a] * pow(y, 2)
     ## Other yellow option: logit(p_yellow[a, y, u]) <- beta0_yellow[a] + (beta1_yellow[a] * y) / (1 + beta2_yellow[a] * y) + re_yellow[a, y, u]
+    ## logistic for yelloweye
+    logit(p_yellow[a, y, u]) <- re_yellow[a, y, u] + beta0_yellow[a] + 
+                                     beta1_yellow[a] / (1 + exp(-beta2_yellow[a] * (y - beta3_yellow[a]))) + 
+                                     beta4_yellow[a] * (u - 1)
 
     logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
 
@@ -224,12 +233,12 @@ for (r in 1:3){
  alpha_lambda_H[r] <- pow(mu_lambda_H[r], 2) / pow(sigma_lambda_H[r], 2)
  beta_lambda_H[r] <- mu_lambda_H[r] / pow(sigma_lambda_H[r], 2)
  mu_lambda_H[r] ~ dnorm(1, 0.1)  # Centered around small values
- sigma_lambda_H[r] ~ dunif(0, 10) # Allows for small variance across lambdas
+ sigma_lambda_H[r] ~ dunif(0, 20) # Allows for small variance across lambdas
 
  alpha_lambda_C[r] <- pow(mu_lambda_C[r], 2) / pow(sigma_lambda_C[r], 2)
  beta_lambda_C[r] <- mu_lambda_C[r] / pow(sigma_lambda_C[r], 2)
  mu_lambda_C[r] ~ dnorm(1, 0.1)  # Centered around small values
- sigma_lambda_C[r] ~ dunif(0, 10) 
+ sigma_lambda_C[r] ~ dunif(0, 20) 
 }
 
 # Or, one hyperprior to rule them all!
