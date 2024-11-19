@@ -8,14 +8,14 @@
 
 #### Local Directory
 The local directory will contain files that are not available in the git repository:
-* Juneau: Phil's H:\Documents\Rockfish_SF_moretality\
+* Juneau: Phil's H:\Documents\Rockfish_SF_mortality\
 * Anchorage S:\RTS\FishSci1_groundfish\catch_accounting\
 
 ## About this repository
 
 This repository houses the estimation procedure for harvest, release, and total sport fish mortality of rockfish in coastal Alaska developed as part of the [ADF&G Statewide Rockfish Initiative](https://stateofalaska.sharepoint.com/teams/DFGSPFStatewideRockfishInitiativeTeam). This is where the raw data is processed and formatted and houses the estimation proceedure. There are two methods/approaches for estimating rockfish harvest, release an mortality estimates. The method used to date (through 2023 estimates) has been the Howard method ([Howard et al. 2020](https://www.adfg.alaska.gov/FedAidPDFs/FDS20-25.pdf)) originally conducted by running SAS code followed by excel based calculations. Those methods were transitioned to R in 2024 for reproducibility and efficiency. One limitation of the Howard approach was a decision-tree process whereby data and information was borrowed from other areas when estimates were unavailable or unreliable due to limited sample sizes. A second limitation is that the proceedure could only produce estimate back through 1998 when the logbook program was initiated
 
-The second method is under development and comprises a Bayesian version of the Howard methods, orginally recomended in Howard et al. (2020), that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propogates uncertainty throughout the estimation proceedure and thus does not rely on the decision tree approach in the original Howard methods. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implemented. The original Bayesian methods were developed by Adam Reimer and has been further developed by the curret author. For communciation purposes we will refer to Howard methods and Reimer methods to distinguish the two approaches. 
+The second method is under development and comprises a Bayesian version of the Howard methods, orginally recomended in Howard et al. (2020), that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propogates uncertainty throughout the estimation proceedure and thus does not rely on the decision tree approach in the original Howard methods. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implemented. The original Bayesian methods were developed by Adam Reimer and has been further developed by the current author. For communciation purposes we will refer to Howard methods and Reimer methods to distinguish the two approaches. 
 
 ## Data reports for dissemination:
 
