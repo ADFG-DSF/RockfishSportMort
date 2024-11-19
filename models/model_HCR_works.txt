@@ -28,8 +28,8 @@ model{
   tau_bc_C_offset[r] <- 1 / sd_bcCoff[r] / sd_bcCoff[r]
   sd_bcCoff[r] ~ dunif(0, 10)
 
-  uRy_alpha[r] ~ dgamma(1,0.1)
-  uRy_beta[r] ~ dgamma(1,0.1)
+  #uRy_mean[r] ~ log(1)
+  #uRy_prec[r] ~ 1
   }
 
  for (a in 1:A){
@@ -39,6 +39,10 @@ model{
   sd_bc_H[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
 
   bc_C_offset[a] ~ dnorm(mu_bc_C_offset[regions[a]], tau_bc_C_offset[regions[a]]) #offset for bias in swhs catch estimates
+
+  #mu_bc_R[a] ~ dgamma(1,10) #constrained to be positivednorm(0, 0.001) #T(,10)              
+  #tau_bc_R[a] <- 1 / sd_bc_R[a] / sd_bc_R[a]    # transformed sigma in mean log bias 
+  #sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias
 
   #User proportions. 
   b1_pG_H[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
@@ -87,27 +91,39 @@ model{
   } 
 
 #logbook release data modelled as minimal estimates
-#  for (y in 23:Y) { #logbook likelihood; guided release by area and year
+  for (y in 23:Y) { #logbook likelihood; guided release by area and year
 #    R_est_ayg[a, y] <- max(0.001, C_ayg[a, y] - H_ayg[a, y])
 #    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y])T(Rlb_ayg_bound[a, y],)   
 #    Rp_est_ayg[a, y] <- max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
 #    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y])T(Rlbp_ayg_bound[a, y],) 
-#  }
+     logR[a, y] <- log(R_ayg[a, y])
+     Rlb_ayg_trunc[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg_bound[a, y],)
+     logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
+     Rlbp_ayg_trunc[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg_bound[a, y],)
+  }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
 
-   Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y]) <- Ry_ayg
+   Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y]) #<- Ry_ayg
    #totRy[a, y] <- Rlby_ayg[a, y] + uRy_ayg[a, y]
    #uRy_ayg[a, y] ~ dgamma(uRy_alpha[regions[a]], uRy_beta[regions[a]])
    #totRy[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
    #Rlby_ayg[a, y] + uRy_ayg[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
-   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y] - uRy_ayg[a, y])T(Rlby_ayg_bound[a, y],)
+   #Rlby_ayg[a, y] ~ dpois(Ry_est[a, y] - uRy_ayg[a, y])T(Rlby_ayg_bound[a, y],)
 
-   #*** Don't fit to the data. The data is just a bound and you fit to an amorphous latent variable
-   uRy_ayg ~ dgamma(uRy_alpha[regions[a]], uRy_beta[regions[a]])
+   #*** try bias correction from SWHS
+   #logbc_R[a, y] ~ dnorm(mu_bc_R[a], tau_bc_R[a])T(1,)
 
-   Ry_ayg ~ 
+   #logRyhat[a,y] <- logRy[a,y] - logbc_Ry[a,y]
+   #logRy <- log(Ry_ayg) 
+   #Rlby_ayg[a, y] ~ dlnorm(logRyhat[a,y], tauRyhat_ay[a,y])  #T(Rlby_ayg_bound[a, y],) #dpois(Ry[a, y])
+   #tauRyhat_ay[a, y] ~ dgamma(0.001, 0.001) #<- 1 / log(cvHhat_ay[a, y] * cvHhat_ay[a, y] + 1)
+
+   #Or JAGS censoring# change all the data to NA
+   #Rlby_ayg_trunc[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
+   logRy[a, y] <- log(Ry_ayg[a, y])
+   Rlby_ayg_trunc[a, y] ~ dlnorm(logRy[a, y],1)T(Rlby_ayg_bound[a, y],)
 
   }
 	
@@ -150,7 +166,7 @@ model{
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
    Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) # R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] 
-   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # 
+   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]  
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp

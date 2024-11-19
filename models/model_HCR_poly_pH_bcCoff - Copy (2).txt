@@ -4,8 +4,8 @@ model{
  sd_comp ~ dunif(0, 10)
  lambda_bc ~ dgamma(0.001, 0.001)
 
- shape_Ry ~ dunif(0, 10)   # Shape prior for Ry_est
- rate_Ry ~ dunif(0, 10)    # Rate prior for Ry_est
+ #tau_pH <- 1 / sd_pH / sd_pH
+ #sd_pH ~ dunif(0, 10)
   
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
@@ -79,20 +79,18 @@ model{
    Hlbp_ayg[a, y] ~ dpois(H_ayg[a, y] * p_pelagic[a, y, 1]) #pelagic rockfish
   } 
 
-#logbook release data modelled as minimal estimates
-  for (y in 23:Y) { #logbook likelihood; guided release by area and year
-    R_est_ayg[a, y] <- R_ayg[a, y] #<- max(0.001, C_ayg[a, y] - H_ayg[a, y])
-    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y]) #T(Rlb_ayg_bound[a, y],)   
-    
-    Rp_est_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] #max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
-    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y]) #T(Rlbp_ayg_bound[a, y],) 
-  }
+## Maybe just fit to logbook release data for YE; other species estimates may not be reliable?
+##  for (y in 23:Y) { #logbook likelihood; guided release by area and year
+##    R_est_ayg[a, y] <- max(0.001, C_ayg[a, y] - H_ayg[a, y])
+##    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y])T(0,)   # all rockfish alt: dpois(C_ayg[a, y] - H_ayg[a, y])
+##    Rp_est_ayg[a, y] <- max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
+##    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y]) #pelagic rockfish; 
+##  }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
-
-   Ry_est[a, y] <- Ry_ayg[a, y] #max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
-  # Rlby_ayg[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
+   Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
+   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y]) #alt: dpois(Cy_ayg[a, y] - Hy_ayg[a, y])
   }
 	
   for(y in 1:Y){
@@ -120,8 +118,8 @@ model{
    Cb_ayu[a, y] <- C_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- max(0, Cb_ayg[a, y] - Hb_ayg[a, y]) #R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1]   
-   Rb_ayu[a, y] <- max(0, Cb_ayu[a, y] - Hb_ayu[a, y]) #R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] 
+   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] # Cb_ayg[a, y] - Hb_ayg[a, y] #  
+   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] # Cb_ayu[a, y] - Hb_ayu[a, y] # 
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
@@ -133,8 +131,8 @@ model{
    Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
-   Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) # R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] 
-   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # 
+   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] # Cy_ayg[a, y] - Hy_ayg[a, y] #
+   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # Cy_ayu[a, y] - Hy_ayu[a, y] #
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp

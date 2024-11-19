@@ -138,6 +138,25 @@ left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
   stat_smooth(method = "lm", formula = y ~ x) +
   facet_grid(region ~ ., scales = "free")
 
+left_join(H_ayg, Hhat_ayu %>%
+            filter(user == "guided") %>%
+            mutate(Hhat = H) %>% select(-H), 
+          by = c("area", "year", "region")) %>%
+  select(year, area, H, Hhat) %>%
+  pivot_longer(starts_with("H"), names_to = "source", values_to = "H") %>%
+  ggplot(aes(year, H, color = source)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free_y")
+left_join(H_ayg, Hhat_ayu %>%
+            filter(user == "guided") %>%
+            mutate(Hhat = H) %>% select(-H), 
+          by = c("area", "year", "region")) %>%
+  ggplot(aes(H_lb, Hhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  facet_grid(region ~ ., scales = "free")
+
 # * SWHS catch Vrs SWHS harvest --------------------------------------------------------
 left_join(Chat_ay, Hhat_ay, by = c("area", "year", "region")) %>%
   select(year, area, Chat, Hhat) %>%
@@ -384,11 +403,11 @@ params <- c(#SWHS bias; assumed same for C and H
               "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
             #"re_pH","sd_pH",
             #proportions same for catch and harvest? thinking on it?
-            "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", 
+            "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
             "mu_beta0_pelagic", "tau_beta0_pelagic",
             "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
             "mu_beta0_yellow", "tau_beta0_yellow",
-            "p_black", "beta0_black", "beta1_black", "beta2_black", 
+            "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
             "mu_beta0_black", "tau_beta0_black",
             #random effects on species
             "re_pelagic", "re_black","re_yellow",
@@ -412,13 +431,13 @@ params <- c(#SWHS bias; assumed same for C and H
             "Rb_ayg", "Rb_ayu", "Rb_ay",
             "Ry_ayg", "Ry_ayu", "Ry_ay") #need to add in releases:
 
-ni <- 50E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 30E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\models\\model_HCR_truncR_bcCoff.txt",
+    model.file = ".\\models\\model_HCR_yeLBR.txt",
     data = jags_dat, 
     parallel = TRUE, verbose = TRUE,
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
@@ -436,14 +455,19 @@ postH
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_poly_pH_bcCoff"
+mod_name <- "post_HCR_yeLBR"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
   as.list(chain_data[nrow(chain_data), ])
 })
 
-saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+#saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+saveRDS(last_samples, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+
+mod_name <- "HCR_yeLBR"
+
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
 
 last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 
@@ -497,6 +521,8 @@ postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 # spline 7, 1e5 = still shit, but less so... 
 # spline 7 with multiplicitive C_offset 93% conv
 # 7 knot 25e5 16 hours 95% conv
+# 7 knots 50e5 > 98% converged
+
 
 rhat <- get_Rhat(postH, cutoff = 1.11)
 names(rhat)[1] <- "Rhat_values"
@@ -637,18 +663,19 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
-#as.data.frame(
-#  rbind(t(jags_dat$Chat_ay_pH - jags_dat$Hhat_ay),
+as.data.frame(
+  rbind(t(jags_dat$Chat_ayg - jags_dat$Hhat_ayg),
+        t(jags_dat$Rlb_ayg), 
         #t(apply(exp(postH$sims.list$Ctrend_ay), c(2,3), mean)),
-#        t(postH$mean$R_ay))) %>%
-#  setNames(nm = unique(H_ayg$area)) %>%
-#  mutate(year = rep(start_yr:end_yr, times = 2),
-#         source = rep(c("SWHS", "R"), each = Y)) %>%
-#  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
-#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-#  ggplot(aes(x = year, y = R, color = source)) +
-#  geom_line() + 
-#  facet_wrap(. ~ area, scales = "free")
+        t(postH$mean$R_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         source = rep(c("SWHS","LB" ,"R"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = R, color = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
 
 as.data.frame(
   rbind(t(jags_dat$Rlb_ayg),
@@ -1196,12 +1223,33 @@ p_black_trend <- data.frame(
       unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_black, c(4, 6, 6)))),
     area = unique(H_ayg$area))
 
+p_black_mod %>%
+  left_join(postH$mean$beta0_black %>% t() %>% data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              pivot_longer(cols = unique(H_ayg$area),
+                           names_to = "area", values_to = "beta0") %>%
+              left_join(postH$mean$beta1_black %>% t() %>% data.frame() %>%
+                          setNames(nm = unique(H_ayg$area)) %>%
+                          pivot_longer(cols = unique(H_ayg$area),
+                                       names_to = "area", values_to = "beta1"), 
+                        by = "area") %>%
+              left_join(postH$mean$beta2_black %>% t() %>% data.frame() %>%
+                          setNames(nm = unique(H_ayg$area)) %>%
+                          pivot_longer(cols = unique(H_ayg$area),
+                                       names_to = "area", values_to = "beta2"), 
+                        by = "area"), 
+                        by = c("area")) %>%
+  mutate(trend = ifelse(user == "charter",
+                        beta0+beta1*(year-1976)+beta2,
+                        beta0+beta1*(year-1976))) -> p_black_mod
+
 rbind(p_black_obs) %>%
   ggplot(aes(x = year, y = p_black, color = user)) +
   geom_ribbon(data = p_black_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point() +
   geom_line(data = p_black_mod) +
+  #geom_line(data = p_black_mod, aes(x=year, y=trend,color=user)) +
   geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
@@ -1287,6 +1335,39 @@ p_yellow_trend <-
       unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_yellow, c(4, 6, 6)))),
     area = unique(H_ayg$area))
 
+#p_yellow_mod %>%
+#  left_join(postH$mean$beta0_yellow %>% t() %>% data.frame() %>%
+#              setNames(nm = unique(H_ayg$area)) %>%
+#              pivot_longer(cols = unique(H_ayg$area),
+#                           names_to = "area", values_to = "beta0") %>%
+#              left_join(postH$mean$beta1_yellow %>% t() %>% data.frame() %>%
+#                          setNames(nm = unique(H_ayg$area)) %>%
+#                          pivot_longer(cols = unique(H_ayg$area),
+#                                       names_to = "area", values_to = "beta1"), 
+#                        by = "area") %>%
+#              left_join(postH$mean$beta2_yellow %>% t() %>% data.frame() %>%
+#                          setNames(nm = unique(H_ayg$area)) %>%
+#                          pivot_longer(cols = unique(H_ayg$area),
+#                                       names_to = "area", values_to = "beta2"), 
+#                        by = "area") %>%
+#              left_join(postH$mean$beta3_yellow %>% t() %>% data.frame() %>%
+#                          setNames(nm = unique(H_ayg$area)) %>%
+#                          pivot_longer(cols = unique(H_ayg$area),
+#                                       names_to = "area", values_to = "beta3"), 
+#                        by = c("area")) %>%
+#              left_join(postH$mean$beta4_yellow %>% t() %>% data.frame() %>%
+#                          setNames(nm = unique(H_ayg$area)) %>%
+#                          pivot_longer(cols = unique(H_ayg$area),
+#                                       names_to = "area", values_to = "beta4"), 
+#                        by = c("area")),
+#            by = c("area")) %>%
+#  mutate(trend = ifelse(user == "charter",
+#                        beta0 + beta1 / (1 + exp(-beta2 * ((year - 1976) - beta3))) + beta4,
+#                        beta0 + beta1 / (1 + exp(-beta2 * ((year - 1976) - beta3))))) -> p_yellow_mod
+
+#ggplot(p_yellow_mod) +
+#  geom_line(aes(x = year, y = trend, color = user)) +facet_wrap(. ~ area)
+
 rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
   geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
@@ -1295,6 +1376,7 @@ rbind(p_yellow_obs) %>%
               alpha = 0.15, color = NA) +
   geom_point() +
   geom_line(data = p_yellow_mod) +
+  #geom_line(data = p_yellow_mod, aes(x = year, y = trend, color = user)) +
   geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
   #geom_line(data = )
   geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +

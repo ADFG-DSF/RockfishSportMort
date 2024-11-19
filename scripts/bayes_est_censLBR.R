@@ -417,7 +417,7 @@ params <- c(#SWHS bias; assumed same for C and H
             #release estimation new stuff
             "totRy","uRy_ayg","uRy_alpha","uRy_beta") #need to add in releases:
 
-ni <- 18E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 1E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
@@ -431,8 +431,7 @@ postH <-
     store.data = TRUE)
 runtime <- Sys.time() - tstart; runtime
 
-14 / (47/60)
-(47/60)
+postH
 #Note 5e5 iterations about 1 hour and ~95% converged
 
 #Note 5e5 iterations about 1 hour and ~95% converged
@@ -442,19 +441,15 @@ runtime <- Sys.time() - tstart; runtime
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_censLBR"
+mod_name <- "post_HCR_poly_pH_bcCoff"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
   as.list(chain_data[nrow(chain_data), ])
 })
 
-#saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
-saveRDS(last_samples, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 
-mod_name <- "HCR_censLBR"
-
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
 
 
 last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
@@ -1280,6 +1275,10 @@ p_yellow_mod <-
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
 
+p_yellow_mod %>% filter(p_yellow > p_hi50 | p_yellow < p_lo50) %>% print(n =100)
+p_yellow_mod %>% filter(med_p > p_hi50 | med_p < p_lo50) %>% print(n =100)
+p_yellow_mod %>% filter(p_yellow > p_hi95 | p_yellow < p_lo95) %>% print(n =100)
+
 p_yellow_obs <-
   jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
   as.data.frame() %>%
@@ -1308,23 +1307,6 @@ rbind(p_yellow_obs) %>%
   geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area)
-
-#-------------------------------------------------------------------------------
-#random effects on p_yellow... 
-re_y <- 
-  rbind(postH$mean$re_yellow[,,1] %>% t(),
-        postH$mean$re_yellow[,,2] %>% t()) %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
-         source = "model") %>%
-  pivot_longer(-c(year, user, source), names_to = "area", values_to = "re_yellow")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
-
-re_y %>% ggplot(aes(x = year, y = re_yellow, color = user)) + 
-  geom_point() +
   facet_wrap(. ~ area)
 
 #-------------------------------------------------------------------------------

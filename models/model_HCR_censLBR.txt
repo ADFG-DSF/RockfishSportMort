@@ -55,6 +55,8 @@ model{
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_pelagic[a] ~ dnorm(0, 0.001)
   beta2_pelagic[a] ~ dnorm(0, 0.001)
+  beta3_pelagic[a] ~ dnorm(0, 0.001)
+  beta4_pelagic[a] ~ dnorm(0, 0.001)
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
   beta1_yellow[a] ~ dnorm(0, 0.001)
   beta2_yellow[a] ~ dnorm(0, 0.001)
@@ -63,6 +65,8 @@ model{
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.001)
   beta2_black[a] ~ dnorm(0, 0.001)
+  beta3_black[a] ~ dnorm(0, 0.001)
+  beta4_black[a] ~ dnorm(0, 0.001)
 	
   for(y in 35:Y){ #guided SWHS harvest likelihood
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
@@ -81,18 +85,18 @@ model{
 
 #logbook release data modelled as minimal estimates
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
-    R_est_ayg[a, y] <- R_ayg[a, y] #<- max(0.001, C_ayg[a, y] - H_ayg[a, y])
-    Rlb_ayg[a, y] ~ dpois(R_est_ayg[a,y]) #T(Rlb_ayg_bound[a, y],)   
-    
-    Rp_est_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] #max(0.001, (C_ay[a, y] - H_ay[a, y]) * p_pelagic[a, y, 1])
-    Rlbp_ayg[a, y] ~ dpois(Rp_est_ayg[a, y]) #T(Rlbp_ayg_bound[a, y],) 
+     logR[a, y] <- log(R_ayg[a, y])
+     Rlb_ayg_trunc[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg_bound[a, y],)
+     logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
+     Rlbp_ayg_trunc[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg_bound[a, y],)
   }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
 
-   Ry_est[a, y] <- Ry_ayg[a, y] #max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
-  # Rlby_ayg[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],)
+   logRy[a, y] <- log(Ry_ayg[a, y])
+   Rlby_ayg_trunc[a, y] ~ dlnorm(logRy[a, y],1)T(Rlby_ayg_bound[a, y],)
+
   }
 	
   for(y in 1:Y){
@@ -134,7 +138,7 @@ model{
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
    Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) # R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] 
-   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2] # 
+   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]  
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
    
    #SWHS Bias and user comp
@@ -157,13 +161,7 @@ model{
 
   for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
     #Proportion harvested calculated through 2018 before regulations started changing
-    # logit(pH[a, y]) <- pH_int[a] + pH_slo[a] * y 
-    ##logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] * y + beta2_pH[a] * pow(y, 2) + beta3_pH[a] * pow(y, 3)##+ re_pH[a,y]
-    ##logit(pH[a, y]) <- beta0_pH[a] + (beta1_pH[a] * y) / (1 + beta2_pH[a] * y) ##+ re_pH[a, y, u]
-    ##Logistic curve:
     logit(pH[a, y]) <- beta0_pH[a] + beta1_pH[a] / (1 + exp(beta2_pH[a] * (y - beta3_pH[a])))
-
-    ##re_pH[a, y] ~ dnorm(0, tau_pH)
 
     Chat_ay_pH[a, y] ~ dlnorm(log(Hhat_ay[a, y]) - log(pH[a, y]), tauChat_ay[a, y])
   }
@@ -176,8 +174,7 @@ model{
   }
 
   for (y in 14:Y){ #Fit C is fit to data starting in 1990 when SWHS started tracking this
-    Chat_ay_obs[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])
-  ##!!!*** how to apply logbc_H here without influencing how it's estimated?   
+    Chat_ay_obs[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])  
     logChat_ay[a, y] <- logC_ay[a, y] + logbc_C[a, y]
     logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
     Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]
@@ -186,16 +183,17 @@ model{
   for (y in 1:Y) {
    #Composition logistic regression
    for(u in 1:2){
-    logit(p_pelagic[a, y, u]) <- beta0_pelagic[a] + beta1_pelagic[a] * y + beta2_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
+    logit(p_pelagic[a, y, u]) <- re_pelagic[a, y, u] + beta0_pelagic[a] + 
+                                     beta1_pelagic[a] / (1 + exp(-beta2_pelagic[a] * (y - beta3_pelagic[a]))) + 
+                                     beta4_pelagic[a] * (u - 1)
 
-    ## logit(p_yellow[a, y, u]) <- beta0_yellow[a] + beta1_yellow[a] * y + beta2_yellow[a] * (u - 1) + re_yellow[a, y, u] + beta3_yellow[a] * pow(y, 2)
-    ## Other yellow option: logit(p_yellow[a, y, u]) <- beta0_yellow[a] + (beta1_yellow[a] * y) / (1 + beta2_yellow[a] * y) + re_yellow[a, y, u]
-    ## logistic for yelloweye
     logit(p_yellow[a, y, u]) <- re_yellow[a, y, u] + beta0_yellow[a] + 
                                      beta1_yellow[a] / (1 + exp(-beta2_yellow[a] * (y - beta3_yellow[a]))) + 
                                      beta4_yellow[a] * (u - 1)
 
-    logit(p_black[a, y, u]) <- beta0_black[a] + beta1_black[a] * y + beta2_black[a] * (u - 1) + re_black[a, y, u]
+    logit(p_black[a, y, u]) <- re_black[a, y, u] + beta0_black[a] + 
+                                     beta1_black[a] / (1 + exp(-beta2_black[a] * (y - beta3_black[a]))) + 
+                                     beta4_black[a] * (u - 1)
 
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
