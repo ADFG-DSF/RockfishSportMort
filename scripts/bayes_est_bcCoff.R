@@ -418,14 +418,14 @@ params <- c(#SWHS bias; assumed same for C and H
              "Hy_ayg", "Hy_ayu", "Hy_ay",
              "logHhat_ay",
             #with hierarchichal pline lambda
-            "mu_lambda_H","sigma_lambda_H",
+            "mu_lambda_H","sigma_lambda_H","beta_H",
             #catch estimates and spline parts
             "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
             "Cb_ayg", "Cb_ayu", "Cb_ay",
             "Cy_ayg", "Cy_ayu", "Cy_ay",
             "logChat_ay",
             #with hierarchichal pline lambda
-            "mu_lambda_C","sigma_lambda_C",
+            "mu_lambda_C","sigma_lambda_C","beta_C",
             #releases
             "R_ay", "R_ayg", "R_ayu", 
             "Rb_ayg", "Rb_ayu", "Rb_ay",
@@ -456,21 +456,16 @@ saveRDS(postH, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_yeLBR"
+inits_name <- "HCR_censLBR_1bc_25e5iter_inits"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
   as.list(chain_data[nrow(chain_data), ])
 })
 
-#saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
-saveRDS(last_samples, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",inits_name,"_inits.rds"))
 
-mod_name <- "HCR_yeLBR"
-
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
-
-last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",inits_name,".rds"))
 
 str(last_samples)
 for (i in 1:3) {
@@ -497,10 +492,14 @@ for (i in 1:3) {
 
 # Re-run the model with these initial values
 
+ni <- 24E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+
+mod_name <- "model_HCR_allLBR_xspline"
+
 tstart <- Sys.time()
 postH <- jagsUI::jags(
   parameters.to.save = params,
-  model.file = ".\\models\\model_HCR_poly_pH_bcCoff.txt",
+  model.file = paste0(".\\models\\",mod_name,".txt"),
   data = jags_dat, 
   inits = last_samples,
   parallel = TRUE, 
@@ -509,7 +508,7 @@ postH <- jagsUI::jags(
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "HCR_yeLBR_x"
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,"_",ni,".rds"))
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 

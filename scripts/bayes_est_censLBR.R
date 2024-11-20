@@ -417,13 +417,13 @@ params <- c(#SWHS bias; assumed same for C and H
             #release estimation new stuff
             "totRy","uRy_ayg","uRy_alpha","uRy_beta") #need to add in releases:
 
-ni <- 25E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 1E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\models\\model_HCR_censLBR.txt",
+    model.file = ".\\models\\model_HCR_censLBR_xspline.txt",
     data = jags_dat, 
     parallel = TRUE, verbose = TRUE,
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
@@ -431,9 +431,14 @@ postH <-
     store.data = TRUE)
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "HCR_censLBR_25e5iter"
+mod_name <- "HCR_yeLBR_25e5iter"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
+
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
+
+#- Load posteriors: 
+
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 #Note 5e5 iterations about 1 hour and ~95% converged
 
@@ -444,16 +449,16 @@ postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_censLBR"
+inits_name <- "HCR_censLBR_1bc_25e5iter_inits"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
   as.list(chain_data[nrow(chain_data), ])
 })
 
-saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",inits_name,"_inits.rds"))
 
-last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",inits_name,".rds"))
 
 str(last_samples)
 for (i in 1:3) {
@@ -481,12 +486,14 @@ for (i in 1:3) {
 # Re-run the model with these initial values
 18/(45/60)
 
-ni <- 25E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 24E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+
+mod_name <- "model_HCR_censLBR_xspline"
 
 tstart <- Sys.time()
 postH <- jagsUI::jags(
   parameters.to.save = params,
-  model.file = ".\\models\\model_HCR_censLBR.txt",
+  model.file = paste0(".\\models\\",mod_name,".txt"),
   data = jags_dat, 
   inits = last_samples,
   parallel = TRUE, 
@@ -495,9 +502,11 @@ postH <- jagsUI::jags(
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_censLBR_25e5"
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,"_",ni,".rds"))
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
+
+postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
 #-------------------------------------------------------------------------------
 # Convergence exam
@@ -507,6 +516,10 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 # spline 7 with multiplicitive C_offset 93% conv
 # 7 knot 25e5 16 hours 95% conv
 # 7 knot censored; 90% converged ~ 14 hours
+
+# 7 knot, 25e5 censLBR_1bc 99% converged in ~20ish hours
+# 7 knot, 25e5 censLBR 98% converged in ~20ish hours
+# 7 knot, 25e5 yeLBR 98% converged in ~20ish hours
 
 rhat <- get_Rhat(postH, cutoff = 1.11)
 names(rhat)[1] <- "Rhat_values"
@@ -733,6 +746,7 @@ pH_obs <-
   mutate(year = unique(Hhat_ay$year),
          source = "observed") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "pH")
+
 rbind(pH_mod, pH_obs %>% mutate(pH_lo95 = NA, pH_hi95 = NA)) %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = pH, color = source)) +
@@ -1224,10 +1238,6 @@ rbind(p_black_obs) %>%
   facet_wrap(. ~ area)
 
 # ** yellow/non-pelagic annual  --------------------------------------------------------
-jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
-                                        "beta0_yellow","beta1_yellow",
-                                        "beta2_yellow","beta3_yellow"))
-
 p_yellow_mod <- 
   rbind(postH$mean$p_yellow[,,1] %>% t(),
         postH$mean$p_yellow[,,2] %>% t()) %>%
@@ -1283,10 +1293,6 @@ p_yellow_mod <-
               pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
-
-p_yellow_mod %>% filter(p_yellow > p_hi50 | p_yellow < p_lo50) %>% print(n =100)
-p_yellow_mod %>% filter(med_p > p_hi50 | med_p < p_lo50) %>% print(n =100)
-p_yellow_mod %>% filter(p_yellow > p_hi95 | p_yellow < p_lo95) %>% print(n =100)
 
 p_yellow_obs <-
   jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
