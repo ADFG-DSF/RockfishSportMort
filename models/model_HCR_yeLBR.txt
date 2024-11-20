@@ -45,28 +45,28 @@ model{
   b2_pG_C[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #proportion of catch that is harvested
-  beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])
-  beta1_pH[a] ~ dnorm(1, 0.001) T(0,)   # Upper asymptote, constrained to be positive; K
-  ## beta1_pH[a] ~ dnorm(0, 0.001)
-  beta2_pH[a] ~ dnorm(0, 0.001)
-  beta3_pH[a] ~ dnorm(0, 0.001)
+    beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])
+  beta1_pH[a] ~ dnorm(1, 0.01) T(0,)   # Upper asymptote, constrained to be positive; K
+  ## beta1_pH[a] ~ dnorm(0, 0.01)
+  beta2_pH[a] ~ dnorm(0, 0.01) #slope
+  beta3_pH[a] ~ dnorm(34, 0.01)T(0,)  #inflection point
   
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
-  beta1_pelagic[a] ~ dnorm(0, 0.001)
-  beta2_pelagic[a] ~ dnorm(0, 0.001)
-  beta3_pelagic[a] ~ dnorm(0, 0.001)
-  beta4_pelagic[a] ~ dnorm(0, 0.001)
+  beta1_pelagic[a] ~ dnorm(0, 0.1)T(0,)
+  beta2_pelagic[a] ~ dnorm(0, 0.1)
+  beta3_pelagic[a] ~ dnorm(34, 0.1)T(0,) #inflexion sometime during last 20-25 years, center around 
+  beta4_pelagic[a] ~ dnorm(0, 0.1)
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
-  beta1_yellow[a] ~ dnorm(0, 0.001)
-  beta2_yellow[a] ~ dnorm(0, 0.001)
-  beta3_yellow[a] ~ dnorm(0, 0.001) #allowing more curvature to p_yellow
-  beta4_yellow[a] ~ dnorm(0, 0.001) # for logistic curve
+  beta1_yellow[a] ~ dnorm(0, 0.1)T(0,)
+  beta2_yellow[a] ~ dnorm(0, 0.1)
+  beta3_yellow[a] ~ dnorm(34, 0.1)T(0,) #allowing more curvature to p_yellow
+  beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
-  beta1_black[a] ~ dnorm(0, 0.001)
-  beta2_black[a] ~ dnorm(0, 0.001)
-  beta3_black[a] ~ dnorm(0, 0.001)
-  beta4_black[a] ~ dnorm(0, 0.001)
+  beta1_black[a] ~ dnorm(0, 0.1)T(0,)
+  beta2_black[a] ~ dnorm(0, 0.1)
+  beta3_black[a] ~ dnorm(34, 0.1)T(0,)
+  beta4_black[a] ~ dnorm(0, 0.1)
 	
   for(y in 35:Y){ #guided SWHS harvest likelihood
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)

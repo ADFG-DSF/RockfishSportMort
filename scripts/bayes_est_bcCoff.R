@@ -431,7 +431,7 @@ params <- c(#SWHS bias; assumed same for C and H
             "Rb_ayg", "Rb_ayu", "Rb_ay",
             "Ry_ayg", "Ry_ayu", "Ry_ay") #need to add in releases:
 
-ni <- 30E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 25E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
@@ -445,7 +445,8 @@ postH <-
     store.data = TRUE)
 runtime <- Sys.time() - tstart; runtime
 
-postH
+mod_name <- "HCR_yeLBR_25e5iter"
+saveRDS(postH, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 #Note 5e5 iterations about 1 hour and ~95% converged
 
 #Note 5e5 iterations about 1 hour and ~95% converged
@@ -508,7 +509,7 @@ postH <- jagsUI::jags(
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_poly_pH_bcCoff_50e5_7kn"
+mod_name <- "HCR_yeLBR_x"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
@@ -565,9 +566,13 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = "lambda_H")
 
+jagsUI::traceplot(postH, parameters = "beta_H")
+
 jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 
 jagsUI::traceplot(postH, parameters = "lambda_C")
+
+jagsUI::traceplot(postH, parameters = "beta_C")
 
 jagsUI::traceplot(postH, parameters = c("mu_lambda_C","sigma_lambda_C"))
 

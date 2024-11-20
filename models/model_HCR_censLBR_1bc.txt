@@ -35,8 +35,6 @@ model{
   tau_bc_H[a] <- 1 / sd_bc_H[a] / sd_bc_H[a]    # transformed sigma in mean log bias 
   sd_bc_H[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
 
-  bc_C_offset[a] ~ dnorm(mu_bc_C_offset[regions[a]], tau_bc_C_offset[regions[a]]) #offset for bias in swhs catch estimates
-
   #User proportions. 
   b1_pG_H[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
   b2_pG_H[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
@@ -45,11 +43,11 @@ model{
   b2_pG_C[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #proportion of catch that is harvested
-  beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])
+  beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]]) #intercept
   beta1_pH[a] ~ dnorm(1, 0.01) T(0,)   # Upper asymptote, constrained to be positive; K
   ## beta1_pH[a] ~ dnorm(0, 0.01)
   beta2_pH[a] ~ dnorm(0, 0.01) #slope
-  beta3_pH[a] ~ dnorm(34, 0.01)T(0,)  #inflection point
+  beta3_pH[a] ~ dnorm(34, 0.01)T(0,) #inflection point
   
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
@@ -143,7 +141,6 @@ model{
    
    #SWHS Bias and user comp
    logbc_H[a, y] ~ dnorm(mu_bc_H[a], tau_bc_H[a])T(-20,3)     # mean log bias in SWHS H estimates
-   logbc_C[a,y] <- logbc_H[a, y] * bc_C_offset[a]
 
    pG_H[a, y] ~ dbeta(b1_pG_H[a], b2_pG_H[a])         # P(user)ay1 = frac of harv taken by charter anglers
    pG_C[a, y] ~ dbeta(b1_pG_C[a], b2_pG_C[a]) 
@@ -175,7 +172,7 @@ model{
 
   for (y in 14:Y){ #Fit C is fit to data starting in 1990 when SWHS started tracking this
     Chat_ay_obs[a, y] ~ dlnorm(logChat_ay[a, y], tauChat_ay[a, y])  
-    logChat_ay[a, y] <- logC_ay[a, y] + logbc_C[a, y]
+    logChat_ay[a, y] <- logC_ay[a, y] + logbc_H[a, y]
     logC_ay[a, y] ~ dnorm(Ctrend_ay[a, y], prec_C[a])
     Ctrend_ay[a, y] <- Z[y, ] %*% beta_C[a, 1:C]
   }
@@ -203,18 +200,18 @@ model{
  
  #Spline parameters
  prec_H[a] <- pow(sigma_H[a], -2)
- sigma_H[a] <- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
+ sigma_H[a] <- 0.25 #~ dunif(0, 10) 
  beta_H[a, 1:C] ~ dmnorm(zero[1:C] + beta0_H[a], lambda_H[a] * Q[1:C, 1:C])
  gamma_H[a, 1:C] <- beta_H[a, 1:C] - beta0_H[a]
  beta0_H[a] ~ dnorm(0, 1e-6)
 
- #Lambda hierarchichal approach: smoothing penalty
+ #Lambda hierarchichal approach:
  #lambda_H[a] ~ dgamma(1, 1) #dgamma(0.001, 0.001)
  #lambda_H[a] ~ dgamma(alpha_lambda_H, beta_lambda_H)
  lambda_H[a] ~ dgamma(alpha_lambda_H[regions[a]], beta_lambda_H[regions[a]])
  
  prec_C[a] <- pow(sigma_C[a], -2)
- sigma_C[a] <- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
+ sigma_C[a] <- 0.25 #~ dunif(0, 10) 
  beta_C[a, 1:C] ~ dmnorm(zero[1:C] + beta0_C[a], lambda_C[a] * Q[1:C, 1:C])
  gamma_C[a, 1:C] <- beta_C[a, 1:C] - beta0_C[a]
  beta0_C[a] ~ dnorm(0, 1e-6) 
@@ -231,12 +228,12 @@ model{
 for (r in 1:3){
  alpha_lambda_H[r] <- pow(mu_lambda_H[r], 2) / pow(sigma_lambda_H[r], 2)
  beta_lambda_H[r] <- mu_lambda_H[r] / pow(sigma_lambda_H[r], 2)
- mu_lambda_H[r] ~ dnorm(1, 0.1)  # Centered around small values; ~ dnorm(0.5, 0.1)  # Favor weaker smoothing.
- sigma_lambda_H[r] ~ dunif(0, 20) # alternative: ~ dt(0, 1, 1) T(0, )
+ mu_lambda_H[r] ~ dnorm(1, 0.1)  # Centered around small values
+ sigma_lambda_H[r] ~ dunif(0, 20) # Allows for small variance across lambdas
 
  alpha_lambda_C[r] <- pow(mu_lambda_C[r], 2) / pow(sigma_lambda_C[r], 2)
  beta_lambda_C[r] <- mu_lambda_C[r] / pow(sigma_lambda_C[r], 2)
- mu_lambda_C[r] ~ dnorm(1, 0.1)  # Centered around small values; ~ dnorm(0.5, 0.1)  # Favor weaker smoothing.
+ mu_lambda_C[r] ~ dnorm(1, 0.1)  # Centered around small values
  sigma_lambda_C[r] ~ dunif(0, 20) 
 }
 

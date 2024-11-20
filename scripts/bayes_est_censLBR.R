@@ -402,14 +402,14 @@ params <- c(#SWHS bias; assumed same for C and H
              "Hy_ayg", "Hy_ayu", "Hy_ay",
              "logHhat_ay",
             #with hierarchichal pline lambda
-            "mu_lambda_H","sigma_lambda_H",
+            "mu_lambda_H","sigma_lambda_H","beta_H",
             #catch estimates and spline parts
             "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
             "Cb_ayg", "Cb_ayu", "Cb_ay",
             "Cy_ayg", "Cy_ayu", "Cy_ay",
             "logChat_ay",
             #with hierarchichal pline lambda
-            "mu_lambda_C","sigma_lambda_C",
+            "mu_lambda_C","sigma_lambda_C","beta_C",
             #releases
             "R_ay", "R_ayg", "R_ayu", 
             "Rb_ayg", "Rb_ayu", "Rb_ay",
@@ -417,7 +417,7 @@ params <- c(#SWHS bias; assumed same for C and H
             #release estimation new stuff
             "totRy","uRy_ayg","uRy_alpha","uRy_beta") #need to add in releases:
 
-ni <- 1E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 25E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
@@ -431,7 +431,10 @@ postH <-
     store.data = TRUE)
 runtime <- Sys.time() - tstart; runtime
 
-postH
+mod_name <- "HCR_censLBR_25e5iter"
+
+saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
+postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 #Note 5e5 iterations about 1 hour and ~95% converged
 
 #Note 5e5 iterations about 1 hour and ~95% converged
@@ -441,7 +444,7 @@ postH
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_poly_pH_bcCoff"
+mod_name <- "post_HCR_censLBR"
 #get last mode run initial values:
 last_samples <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
@@ -449,8 +452,6 @@ last_samples <- lapply(1:nc, function(chain) {
 })
 
 saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
-
-
 
 last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 
@@ -478,11 +479,14 @@ for (i in 1:3) {
 }
 
 # Re-run the model with these initial values
+18/(45/60)
+
+ni <- 25E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- jagsUI::jags(
   parameters.to.save = params,
-  model.file = ".\\models\\model_HCR_truncR_bcCoff.txt",
+  model.file = ".\\models\\model_HCR_censLBR.txt",
   data = jags_dat, 
   inits = last_samples,
   parallel = TRUE, 
@@ -491,11 +495,9 @@ postH <- jagsUI::jags(
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_truncR_bcCoff_60e5_7kn"
+mod_name <- "post_HCR_censLBR_25e5"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
-
-postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
 #-------------------------------------------------------------------------------
 # Convergence exam
@@ -504,6 +506,7 @@ postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 # spline 7, 1e5 = still shit, but less so... 
 # spline 7 with multiplicitive C_offset 93% conv
 # 7 knot 25e5 16 hours 95% conv
+# 7 knot censored; 90% converged ~ 14 hours
 
 rhat <- get_Rhat(postH, cutoff = 1.11)
 names(rhat)[1] <- "Rhat_values"
@@ -546,9 +549,13 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = "lambda_H")
 
+jagsUI::traceplot(postH, parameters = "beta_H")
+
 jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 
 jagsUI::traceplot(postH, parameters = "lambda_C")
+
+jagsUI::traceplot(postH, parameters = "beta_C")
 
 jagsUI::traceplot(postH, parameters = c("mu_lambda_C","sigma_lambda_C"))
 
@@ -564,7 +571,8 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
                                         "beta0_yellow","beta1_yellow",
-                                        "beta2_yellow","beta3_yellow"))
+                                        "beta2_yellow","beta3_yellow",
+                                        "beta4_yellow"))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
@@ -580,11 +588,12 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
                                         "beta0_pelagic","beta1_pelagic",
-                                        "beta2_pelagic"))
+                                        "beta2_pelagic","beta3_pelagic",
+                                        "beta4_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_pHblack",
                                         "beta0_black","beta1_black",
-                                        "beta2_black"))
+                                        "beta2_black","beta3_black","beta4_black"))
 
 jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
 jagsUI::traceplot(postH, parameters = "logbc_H")
@@ -785,7 +794,7 @@ as.data.frame(
         t(jags_dat$Hhat_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 4),
-         source = rep(c("logbook", "Harvest", "trend", "SWHS"), each = Y)) %>%
+         source = rep(c("Logbook (guided)", "Harvest Est", "trend", "SWHS total"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(yr_group = ifelse(year <= 1997, "no logbook", ifelse(year <= 2010, "No user", "full data")),
          area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
