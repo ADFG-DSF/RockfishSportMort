@@ -5,8 +5,15 @@ model{
  lambda_bc ~ dgamma(0.001, 0.001)
   
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
-  comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
+  comp_pelagic_P[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
   comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n] + 1], comp_pelagic[n])
+###  comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
+  comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_nonpel[n])
+    }
+
+#YE likelihoods
+ for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
+  comp_pelagic_Y[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
     }
  
