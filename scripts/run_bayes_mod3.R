@@ -88,7 +88,7 @@ if (use_inits == "yes") {
     data = jags_dat, 
     inits = last_inits,
     parallel = TRUE, 
-    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
+    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  # no burn-in for the second run
     store.data = TRUE, verbose = TRUE
   )
   runtime <- Sys.time() - tstart; runtime

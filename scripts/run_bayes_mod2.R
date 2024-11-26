@@ -49,15 +49,15 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 60E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000
+ni <- 20E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_censLBR_1bc_xspline"
+mod <- "model_HCR_yeLBR_xspline"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-lastrun <- "model_HCR_censLBR_1bc_xspline_2400000"
+lastrun <- "model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
 
@@ -88,7 +88,7 @@ if (use_inits == "yes") {
     data = jags_dat, 
     inits = last_inits,
     parallel = TRUE, 
-    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
+    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  # no burn-in for the second run
     store.data = TRUE, verbose = TRUE
   )
   runtime <- Sys.time() - tstart; runtime
@@ -97,10 +97,15 @@ if (use_inits == "yes") {
 #-------------------------------------------------------------------------------
 # Save these results?
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
-
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "model_HCR_allLBR_xspline_2400000"
+
+#model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
+#model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
+#model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
+#model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24; yuck <96% converged.
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 

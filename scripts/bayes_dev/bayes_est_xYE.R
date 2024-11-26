@@ -205,7 +205,7 @@ S_ayu %>%
 #----------------------------------------------------------------------------
 # Prep data for jags --------------------------------------------------------
 start_yr <- 1977 # 1996 or 1977
-end_yr <- 2019
+end_yr <- 2023
 
 H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
 
@@ -238,10 +238,30 @@ comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
           year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
           #region_n = ifelse()
           source = 1) %>% 
-         select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
+         select(year,year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
                 region,area) %>%
          filter(N != 0) %>%
-         mutate(yellow = ifelse(N - pelagic == 0, NA, yellow))
+         mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) 
+
+compX <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+  mutate(area_n = as.numeric(area), 
+         user_n = ifelse(user == "charter", 0, 1), 
+         year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+         #region_n = ifelse()
+         source = 1) %>% 
+  select(year,year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
+         region,area) %>%
+  filter(N != 0) %>%
+  mutate(yellow = ifelse(N - pelagic == 0, NA, yellow),
+         yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
+                           NA,yellow),
+         pelagic_x = pelagic,
+         N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
+                      NA,N)) %>%
+  filter(!is.na(N_x))
+
+compX %>% filter(area == "CSEO") %>% print(n =50)
+comp %>% filter(area == "CSEO") %>% print(n =50)
   
 range(comp$year_n)
 
@@ -249,6 +269,7 @@ with(comp, table(area_n, area))
 with(comp, table(user_n,area))
 with(S_ayu, table(user,area))
 
+comp %>% filter(region == "Southeast") %>% print(n = 50)
 
 matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
 #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
@@ -344,6 +365,12 @@ jags_dat <-
     comp_black = comp$black,
     comp_yellow = comp$yellow,
     N = dim(comp)[1],
+    
+    comp_pelagic_x = compX$pelagic_x,
+    comp_yellow_x = compX$yellow_x,
+    comp_N_x = compX$N_x,
+    N_x = dim(compX)[1],
+    
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
 
@@ -391,6 +418,8 @@ params <- c(#SWHS bias; assumed same for C and H
             "mu_beta0_pelagic", "tau_beta0_pelagic",
             "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
             "mu_beta0_yellow", "tau_beta0_yellow",
+            "p_yellow_x", "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+            "mu_beta0_yellow_x", "tau_beta0_yellow_x",
             "p_black", "beta0_black", "beta1_black", "beta2_black", "beta3_black","beta4_black",
             "mu_beta0_black", "tau_beta0_black",
             #random effects on species
@@ -401,15 +430,15 @@ params <- c(#SWHS bias; assumed same for C and H
              "Hb_ayg", "Hb_ayu", "Hb_ay",
              "Hy_ayg", "Hy_ayu", "Hy_ay",
              "logHhat_ay",
-            #with hierarchichal pline lambda
-            "mu_lambda_H","sigma_lambda_H",
+            #with hierarchichal spline lambda
+            "mu_lambda_H","sigma_lambda_H","sigma_H",
             #catch estimates and spline parts
             "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
             "Cb_ayg", "Cb_ayu", "Cb_ay",
             "Cy_ayg", "Cy_ayu", "Cy_ay",
             "logChat_ay",
-            #with hierarchichal pline lambda
-            "mu_lambda_C","sigma_lambda_C",
+            #with hierarchichal spline lambda
+            "mu_lambda_C","sigma_lambda_C","sigma_C",
             #releases
             "R_ay", "R_ayg", "R_ayu", 
             "Rb_ayg", "Rb_ayu", "Rb_ay",
@@ -417,13 +446,13 @@ params <- c(#SWHS bias; assumed same for C and H
             #release estimation new stuff
             "totRy","uRy_ayg","uRy_alpha","uRy_beta") #need to add in releases:
 
-ni <- 18E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000;
+ni <- 12E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000;
 
 tstart <- Sys.time()
 postH <- 
   jagsUI::jags(
     parameters.to.save = params,
-    model.file = ".\\models\\model_HCR_censLBR.txt",
+    model.file = ".\\models\\model_HCR_yeLBR_xspline_xYE.txt",
     data = jags_dat, 
     parallel = TRUE, verbose = TRUE,
     #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
@@ -442,24 +471,24 @@ runtime <- Sys.time() - tstart; runtime
 #15e5 = 8.5 hrs, 91& conv
 # 24e5 bcCoff 13.5 hours, 90% converged but better. 
 
-mod_name <- "post_HCR_censLBR"
+init_mod <- "model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24"
+
+last_post <- readRDS(paste0(".\\output\\bayes_posts\\",init_mod,".rds"))
+
 #get last mode run initial values:
-last_samples <- lapply(1:nc, function(chain) {
-  chain_data <- as.matrix(postH$samples[[chain]])
+last_inits <- lapply(1:nc, function(chain) {
+  chain_data <- as.matrix(last_post$samples[[chain]])
   as.list(chain_data[nrow(chain_data), ])
 })
 
 #saveRDS(last_samples, paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
-saveRDS(last_samples, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\data\\bayes_dat\\",mod_name,"_inits.rds"))
+#saveRDS(last_samples, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\data\\bayes_dat\\",mod_name,"_inits.rds"))
 
-mod_name <- "HCR_censLBR"
+#mod_name <- "model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24"
 
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
+#saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod_name,".rds"))
 
-
-last_samples <- readRDS(paste0(".\\data\\bayes_dat\\",mod_name,"_inits.rds"))
-
-str(last_samples)
+str(last_inits)
 for (i in 1:3) {
   last_samples[[i]]$'mu_bc_C_offset[1]' <- runif(1,0.001,5)
   last_samples[[i]]$'mu_bc_C_offset[2]' <- runif(1,0.001,5)
@@ -483,22 +512,22 @@ for (i in 1:3) {
 }
 
 # Re-run the model with these initial values
+mod <- "model_HCR_yeLBR_xspline_xYE"
 
 tstart <- Sys.time()
 postH <- jagsUI::jags(
   parameters.to.save = params,
-  model.file = ".\\models\\model_HCR_truncR_bcCoff.txt",
+  model.file = paste0(".\\models\\",mod,".txt"),
   data = jags_dat, 
-  inits = last_samples,
+  inits = last_inits,
   parallel = TRUE, 
-  n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
+  n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  # no burn-in for the second run
   store.data = TRUE, verbose = TRUE
 )
 runtime <- Sys.time() - tstart; runtime
 
-mod_name <- "post_HCR_truncR_bcCoff_60e5_7kn"
-
-saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
+saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",mod_name,".rds"))
 
@@ -1280,8 +1309,64 @@ p_yellow_mod <-
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
 
+p_yellowX_mod <- 
+  rbind(postH$mean$p_yellow_x[,,1] %>% t(),
+        postH$mean$p_yellow_x[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_yellow_x[,,1] %>% t(),
+                  postH$q2.5$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_yellow_x[,,1] %>% t(),
+                  postH$q97.5$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q25$p_yellow_x[,,1] %>% t(),
+                  postH$q25$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q75$p_yellow_x[,,1] %>% t(),
+                  postH$q75$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q50$p_yellow_x[,,1] %>% t(),
+                  postH$q50$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
 p_yellow_obs <-
-  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
   as.data.frame() %>%
   mutate(year = comp_year + 1976,
          area = unique(H_ayg$area)[comp_area],
@@ -1302,8 +1387,10 @@ rbind(p_yellow_obs) %>%
   geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo50, ymax = p_hi50, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
-  geom_line(data = p_yellow_mod) +
-  geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
+  geom_line(data = p_yellow_mod, linetype = 2) +
+  #geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
+  geom_line(data = p_yellowX_mod) +
+  #geom_line(data = p_yellowX_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
   #geom_line(data = )
   geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +

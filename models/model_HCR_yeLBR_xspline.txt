@@ -91,7 +91,7 @@ model{
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
    Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
-   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y]) #alt: dpois(Cy_ayg[a, y] - Hy_ayg[a, y])
+   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y])T(Rlby_ayg_bound[a, y],) #alt: dpois(Cy_ayg[a, y] - Hy_ayg[a, y])
   }
 	
   for(y in 1:Y){

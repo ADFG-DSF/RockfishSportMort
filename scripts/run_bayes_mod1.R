@@ -49,17 +49,17 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 60E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000
+ni <- 20E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_censLBR_xspline"
+mod <- "model_HCR_allLBR_xspline"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
 lastrun <- "model_HCR_censLBR_xspline_2400000"
 
-initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
+initspost <- postH #readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -88,7 +88,7 @@ if (use_inits == "yes") {
     data = jags_dat, 
     inits = last_inits,
     parallel = TRUE, 
-    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = 0,  # no burn-in for the second run
+    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  # no burn-in for the second run
     store.data = TRUE, verbose = TRUE
   )
   runtime <- Sys.time() - tstart; runtime
@@ -97,10 +97,15 @@ if (use_inits == "yes") {
 #-------------------------------------------------------------------------------
 # Save these results?
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
-
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "model_HCR_allLBR_xspline_2400000"
+results <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
+
+#model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
+#model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
+#model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
+#model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24; yuck <96% converged.
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -295,7 +300,22 @@ as.data.frame(
          source = rep(c("LB", "R"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(t(postH$q97.5$R_ayg) %>% data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(start_yr:end_yr, times = 1),
+                     source = "R") %>%
+              pivot_longer(!c(year, source), names_to = "area", values_to = "R_hi") %>%
+              left_join(t(postH$q2.5$R_ayg) %>% data.frame() %>%
+                          setNames(nm = unique(H_ayg$area)) %>%
+                          mutate(year = rep(start_yr:end_yr, times = 1),
+                                 source = "R") %>%
+                          pivot_longer(!c(year, source), names_to = "area", values_to = "R_lo"),
+                        by = c("year","source","area")),
+            by = c("year","source","area")) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = R, color = source)) +
+  geom_ribbon(aes(ymin = R_lo, ymax = R_hi, fill = source),
+              color = NA, alpha = 0.3) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
@@ -369,6 +389,7 @@ as.data.frame(
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = H, color = source)) +
   geom_line() + 
+  facet_wrap(. ~ area)
   facet_wrap(. ~ area, scales = "free")
 
 as.data.frame(
@@ -381,6 +402,7 @@ as.data.frame(
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = year, y = C, color = source)) +
   geom_line() + 
+  facet_wrap(. ~ area)
   facet_wrap(. ~ area, scales = "free")
 
 #as.data.frame(
@@ -1240,11 +1262,14 @@ as.data.frame(
   
   ggplot(aes(x = year, y = R, color = user)) +
   geom_line() + 
-  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  #geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
   geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05))
+                position=position_dodge(0.05)) +
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  geom_line()
+
 
 # * YELLOWEYE Rockfish Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
