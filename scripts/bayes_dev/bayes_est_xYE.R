@@ -243,17 +243,8 @@ comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
          filter(N != 0) %>%
          mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) 
 
-compX <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
-  mutate(area_n = as.numeric(area), 
-         user_n = ifelse(user == "charter", 0, 1), 
-         year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
-         #region_n = ifelse()
-         source = 1) %>% 
-  select(year,year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
-         region,area) %>%
-  filter(N != 0) %>%
-  mutate(yellow = ifelse(N - pelagic == 0, NA, yellow),
-         yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
+compX <- comp %>%
+  mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                            NA,yellow),
          pelagic_x = pelagic,
          N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
@@ -369,6 +360,9 @@ jags_dat <-
     comp_pelagic_x = compX$pelagic_x,
     comp_yellow_x = compX$yellow_x,
     comp_N_x = compX$N_x,
+    comp_area_x = compX$area_n,
+    comp_year_x = compX$year_n,
+    comp_user_x = compX$user_n,
     N_x = dim(compX)[1],
     
     regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)

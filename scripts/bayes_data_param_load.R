@@ -178,12 +178,19 @@ readinData <- function(spl_knts = 7,
            year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
            #region_n = ifelse()
            source = 1) %>% 
-    select(year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
+    select(year, year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
            region,area) %>%
     filter(N != 0) %>%
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
   ##         N = ifelse(is.na(yellow),NA,N))
   
+  compX <- comp %>%
+    mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
+                             NA,yellow),
+           pelagic_x = pelagic,
+           N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
+                        NA,N)) %>%
+    filter(!is.na(N_x))
   #comp %>% filter(region == "Southeast") %>% print(n =200)
   #comp %>% print(n =50)
   #range(comp$year_n)
@@ -243,17 +250,19 @@ readinData <- function(spl_knts = 7,
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlb_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                             matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlb_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlbp_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlbp_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook ye rf harvested by guides
       Rlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlby_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      
+      Rlby_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       #SWHS DATA:
       # SWHS estimates of rockfish harvests
       Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -284,6 +293,15 @@ readinData <- function(spl_knts = 7,
       comp_black = comp$black,
       comp_yellow = comp$yellow,
       N = dim(comp)[1],
+      
+      comp_pelagic_x = compX$pelagic_x,
+      comp_yellow_x = compX$yellow_x,
+      comp_N_x = compX$N_x,
+      comp_area_x = compX$area_n,
+      comp_year_x = compX$year_n,
+      comp_user_x = compX$user_n,
+      N_x = dim(compX)[1],
+      
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
   
@@ -297,6 +315,7 @@ readinData <- function(spl_knts = 7,
               Chat_ay = Chat_ay,
               S_ayu = S_ayu,
               comp = comp,
+              compX = compX,
               Y = Y, A = A))
 }
 
@@ -324,6 +343,8 @@ jags_params <- function(){
     "mu_beta0_pelagic", "tau_beta0_pelagic",
     "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
     "mu_beta0_yellow", "tau_beta0_yellow",
+    "p_yellow_x", "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+    "mu_beta0_yellow_x", "tau_beta0_yellow_x",
     "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
     "mu_beta0_black", "tau_beta0_black",
     #random effects on species

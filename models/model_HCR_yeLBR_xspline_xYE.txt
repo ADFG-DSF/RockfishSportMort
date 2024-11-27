@@ -13,7 +13,7 @@ model{
 
  for (n in 1:N_x){
   ### p_yellow caught; detatched from creel data when ye retention prohibited:
-  comp_yellow_x[n] ~ dbin(p_yellow_x[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N_x[n] - comp_pelagic_x[n])  
+  comp_yellow_x[n] ~ dbin(p_yellow_x[comp_area_x[n], comp_year_x[n], comp_user_x[n] + 1], comp_N_x[n] - comp_pelagic_x[n])    
  }
 
  for(r in 1:3){ #priors for mean composition & proportion harvested

@@ -25,7 +25,7 @@ source(".\\scripts//bayes_data_param_load.R")
 
 #year to run model through
 start_yr <- 1977
-end_yr <- 2019
+end_yr <- 2023
 
 #most recent Howard estimates: 
 REP_YR <- 2023 #for bringing in Howard estimats
@@ -49,17 +49,17 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.7; nc <- 3; nt <- ni / 1000
+ni <- 64E5; nb <- ni*.6; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_allLBR_xspline"
+mod <- "model_HCR_hybLBR_xspline_xYE"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-lastrun <- "model_HCR_censLBR_xspline_2400000"
+lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
 
-initspost <- postH #readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
+initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -100,7 +100,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",S
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
+results <- "model_HCR_yeLBR_xspline_xYE_thru2023_1e+06_2024-11-26"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -180,6 +180,10 @@ rhat_exam %>% group_by(variable,area) %>%
 jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
                                         "beta0_yellow","beta1_yellow",
                                         "beta2_yellow","beta3_yellow"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow_x","tau_beta0_yellow_x",
+                                        "beta0_yellow_x","beta1_yellow_x",
+                                        "beta2_yellow_x","beta3_yellow_x"))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
@@ -518,6 +522,18 @@ as.data.frame(
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
+as.data.frame(
+  rbind(t(postH$mean$Ry_ayg),
+        t(jags_dat$Rlby_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 2),
+         source = rep(c("model", "logbook"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = H, linetype = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
 # * User comp --------------------------------------------------------
 # ** mean by area --------------------------------------------------------
 pG_H <- postH$sims.list$b1_pG_H / (postH$sims.list$b1_pG_H + postH$sims.list$b2_pG_H) %>%
@@ -830,7 +846,8 @@ p_black_mod <-
             by = c("year","area","user"))
 
 p_black_obs <-
-  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  #jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
   as.data.frame() %>%
   mutate(year = comp_year + 1976,
          area = (unique(H_ayg$area)[comp_area]),
@@ -934,8 +951,65 @@ p_yellow_mod <-
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
 
+p_yellowX_mod <- 
+  rbind(postH$mean$p_yellow_x[,,1] %>% t(),
+        postH$mean$p_yellow_x[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_yellow_x[,,1] %>% t(),
+                  postH$q2.5$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_yellow_x[,,1] %>% t(),
+                  postH$q97.5$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q25$p_yellow_x[,,1] %>% t(),
+                  postH$q25$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q75$p_yellow_x[,,1] %>% t(),
+                  postH$q75$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q50$p_yellow_x[,,1] %>% t(),
+                  postH$q50$p_yellow_x[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
 p_yellow_obs <-
-  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+#  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
   as.data.frame() %>%
   mutate(year = comp_year + 1976,
          area = unique(H_ayg$area)[comp_area],
@@ -943,55 +1017,28 @@ p_yellow_obs <-
          p_yellow = comp_yellow / (comp_N - comp_pelagic),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
+p_yellowX_obs <- compX %>%
+  mutate(p_yellow = yellow_x / (N - pelagic),
+         user = ifelse(user_n == 0, "charter", "private"))
+  
 p_yellow_trend <-
   data.frame(
     p_yellow = boot::inv.logit(
       unlist(mapply(function(x, y) rep(x, each = y), postH$mean$mu_beta0_yellow, c(4, 6, 6)))),
     area = unique(H_ayg$area))
 
-#p_yellow_mod %>%
-#  left_join(postH$mean$beta0_yellow %>% t() %>% data.frame() %>%
-#              setNames(nm = unique(H_ayg$area)) %>%
-#              pivot_longer(cols = unique(H_ayg$area),
-#                           names_to = "area", values_to = "beta0") %>%
-#              left_join(postH$mean$beta1_yellow %>% t() %>% data.frame() %>%
-#                          setNames(nm = unique(H_ayg$area)) %>%
-#                          pivot_longer(cols = unique(H_ayg$area),
-#                                       names_to = "area", values_to = "beta1"), 
-#                        by = "area") %>%
-#              left_join(postH$mean$beta2_yellow %>% t() %>% data.frame() %>%
-#                          setNames(nm = unique(H_ayg$area)) %>%
-#                          pivot_longer(cols = unique(H_ayg$area),
-#                                       names_to = "area", values_to = "beta2"), 
-#                        by = "area") %>%
-#              left_join(postH$mean$beta3_yellow %>% t() %>% data.frame() %>%
-#                          setNames(nm = unique(H_ayg$area)) %>%
-#                          pivot_longer(cols = unique(H_ayg$area),
-#                                       names_to = "area", values_to = "beta3"), 
-#                        by = c("area")) %>%
-#              left_join(postH$mean$beta4_yellow %>% t() %>% data.frame() %>%
-#                          setNames(nm = unique(H_ayg$area)) %>%
-#                          pivot_longer(cols = unique(H_ayg$area),
-#                                       names_to = "area", values_to = "beta4"), 
-#                        by = c("area")),
-#            by = c("area")) %>%
-#  mutate(trend = ifelse(user == "charter",
-#                        beta0 + beta1 / (1 + exp(-beta2 * ((year - 1976) - beta3))) + beta4,
-#                        beta0 + beta1 / (1 + exp(-beta2 * ((year - 1976) - beta3))))) -> p_yellow_mod
-
-#ggplot(p_yellow_mod) +
-#  geom_line(aes(x = year, y = trend, color = user)) +facet_wrap(. ~ area)
-
 rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
-  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+  geom_ribbon(data = p_yellowX_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
   geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo50, ymax = p_hi50, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
-  geom_line(data = p_yellow_mod) +
+  geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
+  geom_line(data = p_yellow_mod, linetype = 2) +
+  geom_line(data = p_yellowX_mod) +
   #geom_line(data = p_yellow_mod, aes(x = year, y = trend, color = user)) +
-  geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
+  #geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
   #geom_line(data = )
   geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
