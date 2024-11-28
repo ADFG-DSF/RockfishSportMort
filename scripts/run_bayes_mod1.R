@@ -49,7 +49,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 64E5; nb <- ni*.6; nc <- 3; nt <- ni / 1000
+ni <- 70E5; nb <- ni*.6; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
 mod <- "model_HCR_hybLBR_xspline_xYE"
@@ -97,7 +97,7 @@ if (use_inits == "yes") {
 #-------------------------------------------------------------------------------
 # Save these results?
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),"_v2.rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "model_HCR_yeLBR_xspline_xYE_thru2023_1e+06_2024-11-26"
