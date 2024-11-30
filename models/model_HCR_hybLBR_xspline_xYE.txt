@@ -72,7 +72,7 @@ model{
   beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
   beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
   beta2_yellow_x[a] ~ dnorm(0, 0.1)
-  beta3_yellow_x[a] ~ dnorm(34, 0.1)T(0,) #allowing more curvature to p_yellow
+  beta3_yellow_x[a] ~ dnorm(34, 0.1)T(0,44) #inflection point must be before fishery closure?
   beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])

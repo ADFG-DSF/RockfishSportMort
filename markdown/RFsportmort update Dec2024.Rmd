@@ -31,8 +31,12 @@ list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
 
-mod <- "LB_hyb"
-res <- "model_HCR_hybLBR_xspline_xYE_thru2023_1e+05_2024-11-26"
+#mod <- "LB_fit"
+#mod <- "LB_hyb"
+mod <- "LB_cens"
+#res <- "model_HCR_fitLBR_xspline_xYE_thru2023_6400000_2024-11-30"
+#res <- "model_HCR_hybLBR_xspline_xYE_thru2023_6400000_2024-11-30"
+res <- "model_HCR_censLBR_xspline_xYE_thru2023_6400000_2024-11-29"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 #lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
@@ -1432,6 +1436,16 @@ rhat_exam %>% group_by(parameter) %>%
 
 tabl <- nrow(param_conv)
 
+round_up_even <- function(x) {
+  rounded <- ceiling(x)
+  if (rounded %% 2 != 0) {
+    rounded <- rounded + 1
+  }
+  return(rounded)
+}
+
+sapply(tabl, round_up_even) ->col1
+
 rhat_exam %>% group_by(parameter,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
@@ -1439,8 +1453,8 @@ rhat_exam %>% group_by(parameter,area) %>%
 
 with(par_x_area, table(parameter,area)) -> par_x_area_tbl
 
-t1 <- param_conv %>% slice(1:(tabl*0.5))
-t2 <- param_conv %>% slice(((tabl*0.5)+1):tabl)
+t1 <- param_conv %>% slice(1:(col1*0.5))
+t2 <- param_conv %>% slice(((col1*0.5)+1):tabl)
 
 kable1 <- t1 %>% 
   kable(format = "html") %>% 
