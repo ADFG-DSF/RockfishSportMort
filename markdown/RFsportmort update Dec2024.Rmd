@@ -1,6 +1,6 @@
 ---
 title: "Rockfish Historical Harvest Estimates"
-author: "Phil Joy"
+author: "Phil Joy & Adam Reimer"
 date: "December 2024"
 output:
   html_document:
@@ -18,6 +18,10 @@ library(ggplot2)
 library(tidyverse)
 library(wesanderson)
 library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
 
 source("../scripts/mkdwn_functions.R", echo = TRUE)
 start_yr <- 1977
@@ -55,12 +59,16 @@ postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 }
 </style>
 
+## Summary
+This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest, catches and releases of rockfish in Alaska waters. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and thus does not rely on the decision tree approach in the original Howard methods. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implemented. Harvest estimates should be mostly consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. Furthermore, the Howard methods are wholly reliant on logbook release estimates and ignore the release estimates from the SWHS data (inferred from the catch and harvest estimates). Here we explore several models that attempt to balance all of the data in estimating releases. 
 
 ## Data
 Harvest data was available for 22 commercial fishing management areas in Southcentral and Southeast Alaska. Areas with negligible rockfish harvest were pooled with adjacent areas for analysis. Specifically the Aleutian and Bering areas were pooled into an area labeled BSAI; the IBS and EKYT were pooled into an area labeled EKYKT; the Southeast, Southwest, SAKPEN and Chignik areas were pooled into an area labeled SOKO2PEN and the Westside and Mainland areas were pooled into an area labeled WKMA.
 
 ### Stateside Harvest Survey (SWHS)
-Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers. Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. SWHS estimates are believed to be biased. 
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers. Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each sommercial fisheries management unit was applied. 
+
+SWHS estimates are believed to be biased to some degree. These modelling efforts aim to estimate and correct for that bias with the assumption that logbook harvests are a census of guided harvests. 
 
 Rockfish release estimates are inferred from the difference between catch and harvest estimates. 
 
@@ -217,7 +225,7 @@ where
 Cboff_{a}~\sim~\textrm{Normal}(\mu_{(bC)r}, \sigma_{(bC)r})
 \end{equation}
 
-Reported guide logbook harvest $\widehat{LB}_{ay}$ is related to true harvest as:
+Reported guide logbook harvest $\widehat{LB}_H{ay}$ is related to true harvest as:
 
 \begin{equation}
 \widehat{LB}_H{ay}~\sim~\textrm{Poisson}(H_{ay1})\\
@@ -277,6 +285,24 @@ Before looking at results, here is a list of current issues that need to be reso
 # Results
 * **Model:** *`r mod`* 
 * **Model Run:** *`r res`* (Naming convention: modelname_thruYEAR_iters_rundate)
+```{r}
+rhat <- get_Rhat(postH, cutoff = 1.11)
+names(rhat)[1] <- "Rhat_values"
+all_rhat <- get_Rhat(postH,cutoff = 0.01)
+names(all_rhat)[1] <- "Rhat_values"
+as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2)
+```
+* **Proportion of parmaters converged (Rhat <= 1.1):** `r prop_conv`
+* *See end of document for summary of unconverged parameters.*
+
+```{r, fig.width = 6, fig.height = 2, fig.cap = "**Figure X.**- Rhat values and proportion of parameters that converged (Rhat < 1.1.)"}
+rhat_vals %>% data.frame() %>%
+  ggplot(aes(Rhat)) + 
+  geom_histogram(binwidth=0.1, colour="black", fill="white") +
+  geom_vline(aes(xintercept = 1)) 
+```
+
 
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
@@ -582,7 +608,8 @@ as.data.frame(
 
 
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 6.**- Yellow rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
-pal <- wes_palette(name = "Darjeeling1", n=3)
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "IsleofDogs1", n=3)
 
 ye_how <- read.csv(paste0("..\\output\\YE_harv_Howard_thru",REP_YR,".csv")) %>%
   clean_names() %>%
@@ -653,7 +680,8 @@ as.data.frame(
   labs(y = "Yelloweye Rockfish Harvests", x = "Year")
 ```
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 7.**- Yellow rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
-pal <- wes_palette(name = "Darjeeling1", n=3)
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "IsleofDogs1", n=3)
 
 ye_howR <- read.csv(paste0("..\\output\\YE_rel_Howard_thru",REP_YR,".csv")) %>%
   clean_names() %>%
@@ -1351,7 +1379,111 @@ rbind(p_yellow_obs) %>%
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagic rockfish that were yelloweye", x = "Year")
 ```
- 
+
+
+### Summary of unconverged parameters:
+
+```{r}           
+rhat_exam <- rhat$Rhat_values %>%
+  rownames_to_column(var = "Parameter") %>%
+  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n") %>%
+  mutate(parameter = variable) %>% select(-variable) %>%
+  filter(parameter %in% c("mu_bc_H", "sd_bc_H",
+                        #"logbc_C", "mu_bc_C", "sd_bc_C",
+                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+                        #User proportions (proportion guided); different for H and C
+                        "b1_pG_H", "b2_pG_H",
+                        "b1_pG_C", "b2_pG_C",
+                        #proportion harvested: 
+                        #polynomial
+                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+                        #"re_pH","sd_pH",
+                        #proportions same for catch and harvest? thinking on it?
+                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+                        "mu_beta0_pelagic", "tau_beta0_pelagic",
+                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+                        "mu_beta0_yellow", "tau_beta0_yellow",
+                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+                        "mu_beta0_black", "tau_beta0_black",
+                        #random effects on species
+                        #"re_pelagic", "re_black","re_yellow",
+                        "sd_comp", 
+                        #
+                        "mu_lambda_H","sigma_lambda_H","beta_H",
+                        #catch estimates and spline parts
+                        #with hierarchichal pline lambda
+                        "mu_lambda_C","sigma_lambda_C","beta_C")) 
+
+rhat_exam %>% group_by(parameter) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) ->param_conv
+
+tabl <- nrow(param_conv)
+
+rhat_exam %>% group_by(parameter,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) -> par_x_area
+
+with(par_x_area, table(parameter,area)) -> par_x_area_tbl
+
+t1 <- param_conv %>% slice(1:(tabl*0.5))
+t2 <- param_conv %>% slice(((tabl*0.5)+1):tabl)
+
+kable1 <- t1 %>% 
+  kable(format = "html") %>% 
+  kable_styling(full_width = FALSE)
+
+kable2 <- t2 %>% 
+  kable(format = "html") %>% 
+  kable_styling(full_width = FALSE)
+
+# Display side-by-side using a table layout
+div <- tags$table(
+  style = "width: 100%;",
+  tags$tr(
+    tags$td(style = "width: 50%;", HTML(kable1)),
+    tags$td(style = "width: 50%;", HTML(kable2))
+  )
+)
+
+caption <- tags$caption(
+  style = "text-align: center; font-weight: bold; margin-bottom: 10px;",
+  tags$strong("Table 1. "),
+  "Summary of unconverged parameters including the number (n) and the average Rhat from the unconverged parameters."
+)
+
+# Display the caption and the tables
+tags$div(
+  caption,
+  div
+)
+
+#kable(param_conv, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
+#      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
+#      caption = "**Table 1.** Summary of unconverged parameters") %>% #kable_styling(full_width = F)
+
+kable(par_x_area_tbl, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
+      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
+      caption = "**Table 2.** Summary of unconverged parameters by area") %>% kable_styling(full_width = F)
+
+#head(rhat$Rhat_values %>% arrange(-Rhat))
+#jagsUI::traceplot(postH, Rhat_min = 1.1)
+
+```
+
 # Other outstanding issues
 * We desperately need the SWHS data. I will not be able to do anything else until we have it.
 * Error Check: data, model, results

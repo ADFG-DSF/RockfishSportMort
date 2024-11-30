@@ -100,7 +100,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",S
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),"_v2.rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "model_HCR_yeLBR_xspline_xYE_thru2023_1e+06_2024-11-26"
+results <- "model_HCR_hybLBR_xspline_xYE_thru2023_1e+05_2024-11-26"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -132,15 +132,56 @@ rhat_exam <- rhat$Rhat_values %>%
               mutate(area_n = as.character(area_n)),
             by = "area_n")
 
-rhat_exam %>% group_by(variable,area) %>%
-  summarise(n = n(),
+rhat_exam %>% group_by(variable) %>%
+  filter(variable %in% c("mu_bc_H", "sd_bc_H",
+                        #"logbc_C", "mu_bc_C", "sd_bc_C",
+                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+                        #User proportions (proportion guided); different for H and C
+                        "b1_pG_H", "b2_pG_H",
+                        "b1_pG_C", "b2_pG_C",
+                        #proportion harvested: 
+                        #polynomial
+                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+                        #"re_pH","sd_pH",
+                        #proportions same for catch and harvest? thinking on it?
+                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+                        "mu_beta0_pelagic", "tau_beta0_pelagic",
+                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+                        "mu_beta0_yellow", "tau_beta0_yellow",
+                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+                        "mu_beta0_black", "tau_beta0_black",
+                        #random effects on species
+                        #"re_pelagic", "re_black","re_yellow",
+                        "sd_comp", 
+                        #
+                        "mu_lambda_H","sigma_lambda_H","beta_H",
+                        #catch estimates and spline parts
+                        #with hierarchichal pline lambda
+                        "mu_lambda_C","sigma_lambda_C","beta_C")) -> rhat_exam_params
+rhat_exam_params %>%  summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-badRhat_avg,-n) %>% print(n = 100)
+
+rhat_exam_params %>% group_by(area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-n)  #print(n = 100)
+
+rhat_exam_params %>% group_by(variable,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) -> par_x_area
+
+with(par_x_area, table(variable,area))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-n,-badRhat_avg) %>% print(n = 100)
+
+
 
 #--- Traceplots ----------------------------------------------------------------
 area_codes
