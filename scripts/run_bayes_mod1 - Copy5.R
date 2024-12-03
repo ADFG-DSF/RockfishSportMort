@@ -31,7 +31,7 @@ end_yr <- 2023
 REP_YR <- 2023 #for bringing in Howard estimats
 
 #load the data:
-list2env(readinData(spl_knts = 6,
+list2env(readinData(spl_knts = 7,
                     start_yr = start_yr,
                     end_yr = end_yr),
          .GlobalEnv)
@@ -53,7 +53,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 ni <- 12E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_censLBR_xYEv2"
+mod <- "model_HCR_hybLBR_xYEv2_flexlambda2"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
@@ -61,6 +61,8 @@ use_inits = "yes"
 lastrun <- "model_HCR_censLBR_xspline_xYE_thru2023_7e+06_2024-11-29_v2"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
+
+initspost <- postH
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -168,7 +170,7 @@ rhat_exam %>% group_by(variable) %>%
                         "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
                         #catch estimates and spline parts
                         #with hierarchichal pline lambda
-                        "mu_lambda_C","sigma_lambda_C","beta_C","beta0_C")) -> rhat_exam_params
+                        "mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",)) -> rhat_exam_params
 rhat_exam_params %>%  summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-badRhat_avg,-n) %>% print(n = 100)
@@ -591,9 +593,9 @@ as.data.frame(
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 2),
          source = rep(c("model", "logbook"), each = Y)) %>%
-  pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = R, linetype = source)) +
+  ggplot(aes(x = year, y = H, linetype = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 

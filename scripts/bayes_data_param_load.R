@@ -184,7 +184,7 @@ readinData <- function(spl_knts = 7,
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
   ##         N = ifelse(is.na(yellow),NA,N))
   
-  compX <- comp %>%
+  compX <- comp %>% filter(area_n %in% c(11,12,13,14,15,16)) %>%
     mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                              NA,yellow),
            pelagic_x = pelagic,
@@ -356,14 +356,14 @@ jags_params <- function(){
     "Hy_ayg", "Hy_ayu", "Hy_ay",
     "logHhat_ay",
     #with hierarchichal pline lambda
-    "mu_lambda_H","sigma_lambda_H","beta_H",
+    "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
     #catch estimates and spline parts
     "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
     "Cb_ayg", "Cb_ayu", "Cb_ay",
     "Cy_ayg", "Cy_ayu", "Cy_ay",
     "logChat_ay",
     #with hierarchichal pline lambda
-    "mu_lambda_C","sigma_lambda_C","beta_C",
+    "mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
     #releases
     "R_ay", "R_ayg", "R_ayu", 
     "Rb_ayg", "Rb_ayu", "Rb_ay",

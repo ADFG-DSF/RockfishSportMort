@@ -31,8 +31,9 @@ end_yr <- 2023
 REP_YR <- 2023 #for bringing in Howard estimats
 
 #load the data:
-list2env(readinData(start_yr = start_yr,
-                  end_yr = end_yr),
+list2env(readinData(spl_knts = 7,
+                    start_yr = start_yr,
+                    end_yr = end_yr),
          .GlobalEnv)
 
 #load parameters
@@ -49,17 +50,19 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 70E5; nb <- ni*.6; nc <- 3; nt <- ni / 1000
+ni <- 12E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_fitLBR_xspline_xYE"
+mod <- "model_HCR_censLBR_xYEv2_flexlambda2"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
+lastrun <- "model_HCR_censLBR_xspline_xYE_thru2023_7e+06_2024-11-29_v2"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
+
+initspost <- postH
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -96,11 +99,13 @@ if (use_inits == "yes") {
 
 #-------------------------------------------------------------------------------
 # Save these results?
-saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+other_label <- paste0(jags_dat$C,"kn")
+
+saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),"_v2.rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "model_HCR_yeLBR_xspline_xYE_thru2023_1e+06_2024-11-26"
+results <- "model_HCR_censLBR_xspline_xYE_thru2023_7e+06_2024-11-29_v2"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -114,6 +119,12 @@ postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
 rhat <- get_Rhat(postH, cutoff = 1.11)
 names(rhat)[1] <- "Rhat_values"
+
+all_rhat <- get_Rhat(postH,cutoff = 0.01)
+names(all_rhat)[1] <- "Rhat_values"
+as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2); prop_conv
+
 rhat
 
 head(rhat$Rhat_values %>% arrange(-Rhat))
@@ -132,15 +143,56 @@ rhat_exam <- rhat$Rhat_values %>%
               mutate(area_n = as.character(area_n)),
             by = "area_n")
 
-rhat_exam %>% group_by(variable,area) %>%
-  summarise(n = n(),
+rhat_exam %>% group_by(variable) %>%
+  filter(variable %in% c("mu_bc_H", "sd_bc_H",
+                        #"logbc_C", "mu_bc_C", "sd_bc_C",
+                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+                        #User proportions (proportion guided); different for H and C
+                        "b1_pG_H", "b2_pG_H",
+                        "b1_pG_C", "b2_pG_C",
+                        #proportion harvested: 
+                        #polynomial
+                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+                        #"re_pH","sd_pH",
+                        #proportions same for catch and harvest? thinking on it?
+                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+                        "mu_beta0_pelagic", "tau_beta0_pelagic",
+                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+                        "mu_beta0_yellow", "tau_beta0_yellow",
+                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+                        "mu_beta0_black", "tau_beta0_black",
+                        #random effects on species
+                        #"re_pelagic", "re_black","re_yellow",
+                        "sd_comp", 
+                        #
+                        "mu_lambda_H","sigma_lambda_H","beta_H",
+                        #catch estimates and spline parts
+                        #with hierarchichal pline lambda
+                        "mu_lambda_C","sigma_lambda_C","beta_C")) -> rhat_exam_params
+rhat_exam_params %>%  summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-badRhat_avg,-n) %>% print(n = 100)
+
+rhat_exam_params %>% group_by(area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-n)  #print(n = 100)
+
+rhat_exam_params %>% group_by(variable,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) -> par_x_area
+
+with(par_x_area, table(variable,area))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-n,-badRhat_avg) %>% print(n = 100)
+
+
 
 #--- Traceplots ----------------------------------------------------------------
 area_codes
@@ -154,6 +206,7 @@ rhat_exam %>% group_by(variable,area) %>%
 jagsUI::traceplot(postH, parameters = "lambda_H")
 
 jagsUI::traceplot(postH, parameters = "beta_H")
+jagsUI::traceplot(postH, parameters = "beta0_H")
 
 jagsUI::traceplot(postH, parameters = "sigma_H")
 
@@ -162,6 +215,7 @@ jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 jagsUI::traceplot(postH, parameters = "lambda_C")
 
 jagsUI::traceplot(postH, parameters = "beta_C")
+jagsUI::traceplot(postH, parameters = "beta0_C")
 
 jagsUI::traceplot(postH, parameters = "sigma_C")
 
@@ -179,11 +233,11 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
                                         "beta0_yellow","beta1_yellow",
-                                        "beta2_yellow","beta3_yellow"))
+                                        "beta2_yellow","beta3_yellow","beta4_yellow"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow_x","tau_beta0_yellow_x",
                                         "beta0_yellow_x","beta1_yellow_x",
-                                        "beta2_yellow_x","beta3_yellow_x"))
+                                        "beta2_yellow_x","beta3_yellow_x","beta4_yellow_x"))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
@@ -199,11 +253,11 @@ rhat_exam %>% group_by(variable,area) %>%
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
                                         "beta0_pelagic","beta1_pelagic",
-                                        "beta2_pelagic"))
+                                        "beta2_pelagic","beta3_pelagic","beta4_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
                                         "beta0_black","beta1_black",
-                                        "beta2_black"))
+                                        "beta2_black","beta3_black","beta4_black"))
 
 jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
 jagsUI::traceplot(postH, parameters = "logbc_H")
@@ -465,6 +519,17 @@ as.data.frame(
   geom_point() +
   geom_hline(aes(yintercept = 0)) +
   facet_wrap(. ~ area, scales = "free_y")
+  
+  as.data.frame(
+    t(postH$mean$R_ayg) - t(jags_dat$Rlb_ayg)) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = start_yr:end_yr) %>%
+    pivot_longer(!year, names_to = "area", values_to = "res") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    ggplot(aes(x = year, y = res)) +
+    geom_point() +
+    geom_hline(aes(yintercept = 0)) +
+    facet_wrap(. ~ area, scales = "free_y")
 
 # ** SWHS residuals --------------------------------------------------------
 #names(wes_palettes)
@@ -513,6 +578,18 @@ jagsUI::traceplot(postH, parameters = "logbc_C")
 as.data.frame(
   rbind(t(postH$mean$Hy_ayg),
         t(jags_dat$Hlby_ayg))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 2),
+         source = rep(c("model", "logbook"), each = Y)) %>%
+  pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = H, linetype = source)) +
+  geom_line() + 
+  facet_wrap(. ~ area, scales = "free")
+
+as.data.frame(
+  rbind(t(postH$mean$Ry_ayg),
+        t(jags_dat$Rlby_ayg))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 2),
          source = rep(c("model", "logbook"), each = Y)) %>%
@@ -834,7 +911,8 @@ p_black_mod <-
             by = c("year","area","user"))
 
 p_black_obs <-
-  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  #jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
   as.data.frame() %>%
   mutate(year = comp_year + 1976,
          area = (unique(H_ayg$area)[comp_area]),
@@ -1016,9 +1094,9 @@ p_yellow_trend <-
 
 rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
-  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+  geom_ribbon(data = p_yellowX_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
-  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo50, ymax = p_hi50, fill = user), 
+  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
   geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +

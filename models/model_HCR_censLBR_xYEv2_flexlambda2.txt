@@ -12,7 +12,7 @@ model{
     }
 
  for (n in 1:N_x){
-  ### p_yellow caught; detatched from creel data when ye retention prohibited:
+  ### p_yellow caught; detatched from creel data when ye retention prohibited: SE 2020-2024 (Y44:47)
   comp_yellow_x[n] ~ dbin(p_yellow_x[comp_area_x[n], comp_year_x[n], comp_user_x[n] + 1], comp_N_x[n] - comp_pelagic_x[n])  
  }
 
@@ -69,12 +69,6 @@ model{
   beta3_yellow[a] ~ dnorm(34, 0.1)T(0,) #allowing more curvature to p_yellow
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
-  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
-  beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_yellow_x[a] ~ dnorm(0, 0.1)
-  beta3_yellow_x[a] ~ dnorm(34, 0.1)T(0,43) #inflection point must be before fishery closure?
-  beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
-
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
   beta2_black[a] ~ dnorm(0, 0.1)
@@ -104,10 +98,10 @@ model{
      Rlbp_ayg_trunc[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg_bound[a, y],)
   }
   
-  for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year
+  for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year also censored
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
-   Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
-   Rlby_ayg[a, y] ~ dpois(Ry_est[a, y]) ##T(Rlby_ayg_bound[a, y],) #alt: dpois(Cy_ayg[a, y] - Hy_ayg[a, y])
+   logRy[a, y] <- log(Ry_ayg[a, y])
+   Rlby_ayg_trunc[a, y] ~ dlnorm(logRy[a, y],1)T(Rlby_ayg_bound[a, y],)
   }
 	
   for(y in 1:Y){
@@ -135,23 +129,19 @@ model{
    Cb_ayu[a, y] <- C_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- max(0, Cb_ayg[a, y] - Hb_ayg[a, y]) #R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1]   
-   Rb_ayu[a, y] <- max(0, Cb_ayu[a, y] - Hb_ayu[a, y]) #R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2] 
+   Rb_ayg[a, y] <- max(0, Cb_ayg[a, y] - Hb_ayg[a, y]) 
+   Rb_ayu[a, y] <- max(0, Cb_ayu[a, y] - Hb_ayu[a, y])  
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
-###   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] #split up below
-###   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
    Hy_ay[a, y] <- Hy_ayg[a, y] + Hy_ayu[a, y]
 
-   Cy_ayg[a, y] <- C_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
-   Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
    Cy_ay[a, y] <- Cy_ayg[a, y] + Cy_ayu[a, y]
 
-   Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) # R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1] 
-   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) # R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]  
+   Ry_ayg[a, y] <- max(0, Cy_ayg[a, y] - Hy_ayg[a, y]) 
+   Ry_ayu[a, y] <- max(0, Cy_ayu[a, y] - Hy_ayu[a, y]) 
    Ry_ay[a, y] <- Ry_ayg[a, y] + Ry_ayu[a, y]
-   
+
    #SWHS Bias and user comp
    logbc_H[a, y] ~ dnorm(mu_bc_H[a], tau_bc_H[a])T(-20,3)     # mean log bias in SWHS H estimates
    logbc_C[a,y] <- logbc_H[a, y] * bc_C_offset[a]
@@ -169,17 +159,6 @@ model{
    # Chat tau for all years: 
    tauChat_ay[a, y] <- 1 / log(cvChat_ay[a, y] * cvChat_ay[a, y] + 1)
    } #END EVERY YEAR
-
-### need to break up how we hind cast YE so that we use the release estimate curve that ignores the closed years. Also, need to break this out by areas since we only need to do this for SE: 
-  for (y in 1:28){
-   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
-   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
-  }   
-
-  for (y in 29:Y){
-   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
-   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
-  }
 
 ###  for (y in 1:42){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
   for (y in 1:Y){ #Prior to regulation changes in 2019, C is fit based on proportion harvested
@@ -212,10 +191,6 @@ model{
                                      beta1_yellow[a] / (1 + exp(-beta2_yellow[a] * (y - beta3_yellow[a]))) + 
                                      beta4_yellow[a] * (u - 1)
 
-    logit(p_yellow_x[a, y, u]) <- re_yellow_x[a, y, u] + beta0_yellow_x[a] + 
-                                     beta1_yellow_x[a] / (1 + exp(-beta2_yellow_x[a] * (y - beta3_yellow_x[a]))) + 
-                                     beta4_yellow_x[a] * (u - 1)
-
     logit(p_black[a, y, u]) <- re_black[a, y, u] + beta0_black[a] + 
                                      beta1_black[a] / (1 + exp(-beta2_black[a] * (y - beta3_black[a]))) + 
                                      beta4_black[a] * (u - 1)
@@ -223,13 +198,12 @@ model{
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
     re_yellow[a, y, u] ~ dnorm(0, tau_comp)
-    re_yellow_x[a, y, u] ~ dnorm(0, tau_comp) #share random effect estimates
    }
   }
- 
+
  #Spline parameters
  prec_H[a] <- pow(sigma_H[a], -2)
- sigma_H[a] <- 0.25 #~ dnorm(0,1)T(0.00001,10) #<- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
+ sigma_H[a] ~ dnorm(0.25,1)T(0.00001,10) #~ dnorm(0,1)T(0.00001,10) #<- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
  beta_H[a, 1:C] ~ dmnorm(zero[1:C] + beta0_H[a], lambda_H[a] * Q[1:C, 1:C])
  gamma_H[a, 1:C] <- beta_H[a, 1:C] - beta0_H[a]
  beta0_H[a] ~ dnorm(0, 1e-6)
@@ -240,7 +214,7 @@ model{
  lambda_H[a] ~ dgamma(alpha_lambda_H[regions[a]], beta_lambda_H[regions[a]])
  
  prec_C[a] <- pow(sigma_C[a], -2)
- sigma_C[a] <- 0.25 #~ dnorm(0,1)T(0.00001,10) #<- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
+ sigma_C[a] ~ dnorm(0.25,1)T(0.00001,10) #~ dnorm(0,1)T(0.00001,10) #<- 0.25 #~ dunif(0, 10) ~dnorm(0,1)T(0,10) 
  beta_C[a, 1:C] ~ dmnorm(zero[1:C] + beta0_C[a], lambda_C[a] * Q[1:C, 1:C])
  gamma_C[a, 1:C] <- beta_C[a, 1:C] - beta0_C[a]
  beta0_C[a] ~ dnorm(0, 1e-6) 
@@ -251,6 +225,53 @@ model{
  lambda_C[a] ~ dgamma(alpha_lambda_C[regions[a]], beta_lambda_C[regions[a]])
  }
 
+
+#Yelloweye stuff to deal with southeast retention closures
+ #Kodiak and Southcentral:
+ for (a in 1:10) {
+  for (y in 1:Y){
+   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+
+   Cy_ayg[a, y] <- C_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+  }
+ } 
+
+ #Southeast:
+ for (a in 11:16) {
+ # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
+  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
+  beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
+  beta2_yellow_x[a] ~ dnorm(0, 0.1)
+  beta3_yellow_x[a] ~ dnorm(34, 0.1)T(0,43) #inflection point must be before closure
+  beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
+
+  for (y in 1:Y){
+    for (u in 1:2){
+      logit(p_yellow_x[a, y, u]) <- re_yellow_x[a, y, u] + beta0_yellow_x[a] + 
+                                     beta1_yellow_x[a] / (1 + exp(-beta2_yellow_x[a] * (y - beta3_yellow_x[a]))) + beta4_yellow_x[a] * (u - 1)
+
+      re_yellow_x[a, y, u] ~ dnorm(0, tau_comp)
+    }
+  }
+
+  ### need to break up how we hind cast YE so that we use the release estimate curve that ignores the closed years
+  for (y in 1:28){
+   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
+   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
+  }   
+
+  for (y in 29:Y){
+   Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+  }
+
+  for (y in 1:Y){
+   Cy_ayg[a, y] <- C_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
+   Cy_ayu[a, y] <- C_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
+  }
+ }
  #hierarchichal lambda stuff: 
 # 2 options:
 ## Regional hyperpriors:
@@ -258,12 +279,12 @@ for (r in 1:3){
  alpha_lambda_H[r] <- pow(mu_lambda_H[r], 2) / pow(sigma_lambda_H[r], 2)
  beta_lambda_H[r] <- mu_lambda_H[r] / pow(sigma_lambda_H[r], 2)
  mu_lambda_H[r] ~ dnorm(1, 0.1)  # dnorm(0.5, 0.1) = weaker smoothing; (1,0.1)=more smoothing.
- sigma_lambda_H[r] ~ dt(0, 1, 1) T(0, ) # dunif(0, 20) # alternative: ~ dt(0, 1, 1) T(0, )
+ sigma_lambda_H[r] ~ dunif(0, 20) #dt(0, 1, 1) T(0, ) # dunif(0, 20) # alternative: ~ dt(0, 1, 1) T(0, )
 
  alpha_lambda_C[r] <- pow(mu_lambda_C[r], 2) / pow(sigma_lambda_C[r], 2)
  beta_lambda_C[r] <- mu_lambda_C[r] / pow(sigma_lambda_C[r], 2)
  mu_lambda_C[r] ~ dnorm(1, 0.1)  # Centered around small values; ~ dnorm(0.5, 0.1) = Favor weaker smoothing.
- sigma_lambda_C[r] ~ dt(0, 1, 1) T(0, ) #dunif(0, 20) 
+ sigma_lambda_C[r] ~ dunif(0, 20) #dt(0, 1, 1) T(0, ) #dunif(0, 20) 
 }
 
 # Or, one hyperprior to rule them all!

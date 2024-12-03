@@ -36,7 +36,7 @@ list2env(readinData(start_yr = start_yr,
 mod <- "LB_cens"
 #res <- "model_HCR_fitLBR_xspline_xYE_thru2023_6400000_2024-11-30"
 #res <- "model_HCR_hybLBR_xspline_xYE_thru2023_6400000_2024-11-30"
-res <- "model_HCR_censLBR_xspline_xYE_thru2023_6400000_2024-11-29"
+res <- "model_HCR_censLBR_xYEv2_thru2023_1200000_7kn_2024-12-03"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 #lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
@@ -70,13 +70,13 @@ This project seeks to improve on the Howard et al. (2020) methods used to estima
 Harvest data was available for 22 commercial fishing management areas in Southcentral and Southeast Alaska. Areas with negligible rockfish harvest were pooled with adjacent areas for analysis. Specifically the Aleutian and Bering areas were pooled into an area labeled BSAI; the IBS and EKYT were pooled into an area labeled EKYKT; the Southeast, Southwest, SAKPEN and Chignik areas were pooled into an area labeled SOKO2PEN and the Westside and Mainland areas were pooled into an area labeled WKMA.
 
 ### Stateside Harvest Survey (SWHS)
-Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers. Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each sommercial fisheries management unit was applied. 
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers. Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied. 
 
 SWHS estimates are believed to be biased to some degree. These modelling efforts aim to estimate and correct for that bias with the assumption that logbook harvests are a census of guided harvests. 
 
 Rockfish release estimates are inferred from the difference between catch and harvest estimates. 
 
-Adam noted that the first 5 years (23 years counting the historical data) in the SWHS data set for PWSO seem unreasonable (close to zero and not corroborated with logbook estimates). Adam recommended setting these harvests to unknown and setting values to missing, but this iteration of model development has been using the data. However, the patterns are clearly wrong and we will likely adopt Adam's approach after consultation with regional staff. 
+Adam noted that the first 5 years (23 years counting the historical data) in the SWHS data set for PWSO seem unreasonable (close to zero and not corroborated with logbook estimates). Adam recommended setting these harvests to unknown, but current model development has included the data. Once a satisfactory model has been identified we will exam the effects of censoring the PWSO data. 
 
 ### Creel Surveys
 NA  
@@ -84,10 +84,10 @@ NA
 ### Guide Logbooks
 Sport fishing guides were required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye rockfish were reported separately beginning in 2006. 
 
-Logbooks also record the number of rockfish released for the same categories. However, the reliability of the release data is somewhat questionable as reported releases are generally far lower than that estimated by the SWHS. As such several treatments of the data are considered.
+Logbooks also record the number of rockfish released for the same categories. However, the reliability of the release data is somewhat questionable as reported releases are generally far lower than that estimated by the SWHS. As such several treatments of the data are considered.  
 
 ### Logbook versus SWHS estimates
-Estimates of guided harvests and releases from the SWHS do not align with the census from charter logbooks. Logbook harvest reports are generally considered reliable and are used to assess the bias in SWHS reports. However, there is even greater disparity between release estimates in the two sources and it is debatable whether logbook releases should be treated as a census. The Howard et al. (2020) methods do treat the logbook release data as "true" and thus are considerably less than would be estimated from the SWHS data. Several models (explained below) were used to estimate releases and determine the best approach going forward. Model development has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
+Estimates of guided harvests and releases from the SWHS do not align with the census from charter logbooks. Logbook harvest reports are generally considered reliable and are used to assess the bias in SWHS reports. However, there is even greater disparity between release estimates in the two sources and it is debatable whether logbook releases should be treated as a census. The Howard et al. (2020) methods do treat the logbook release data as "true" and thus are considerably less than would be estimated from the SWHS data. 
 
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 1.**- SWHS harvest estimates from guided trips (Hhat) versus repoted harvests from charter logbooks (H_lb)."}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous", n = 16)
@@ -124,14 +124,16 @@ left_join(Chat_ayu %>% filter(user == "guided"),
   labs(x="Logbook releases", y = "") -> Ccomp
 
 ggarrange(Hcomp,Ccomp,
-          labels = c("Harvest","Releases"),
+          labels = c("Harvests","Releases"),
           ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
 ```
+
+To evaluate this discrepancy, several models were used to estimate releases. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treats the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development to date has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
 
 ### Composition data
 Harvest sampling data exists from Gulf of Alaska areas since 1993 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish.
 
-A current challenge at this juncture is how to accomodate the prohibition on retaining yelloweye in Southeast from 2020 through 2024. Because it is closed to retention the port sampling data is not reflective of releases while remaining an accurate description of the harvest. Current modelling efforts revolve around developing a separate yelloweye curve that censors the missing data. 
+A current challenge at this juncture is how to accommodate the prohibition on retaining yelloweye in Southeast from 2020 through 2024. Because it is closed to retention the port sampling data is not reflective of releases while remaining an accurate description of the harvest. Current modelling efforts revolve around developing a separate yelloweye curve that censors the missing data. 
 
 ## Process equations
 The true harvest $H_{ay}$ and catch $C_{ay}$ of rockfish  for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
@@ -281,10 +283,11 @@ where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year 
 Before looking at results, here is a list of current issues that need to be resolved as well as a list of development steps that still need to be taken.
 
 1. *Release estimation:* Although harvests estimates are mostly consistent with Howard etal methods, the new release estimation methods presented here are considerably different. It should be noted, however, that the scale of releases should not cause managers concern and not change our general understanding of fishing pressure on these stocks. Note that even when we fit to lb yelloweye release estimates the model still thinks there are a lot of unreported releases of rockfish and pelagic rockfish. I lean towards the hybrid model as a balancing of logbook data and swhs data. Additionally, the model struggles the most when all logbook releases are taken as a census. 
-2. *Fishery closures:* Retention of yelloweye has been prohibited in SE Alaska since 2020 and thus they are absent from port sampling. This means that pYE for releases is not estimable from the composition data. To deal with this I estimated a second pYE curve for releases that censors the port sampling data for years when the fishery is closed, and this allows the pYE curve to continue through the closed years based on where things were before the closure. I think this is working, but computationally it is VERY redundant and the pYE likelihoods are being calculated twice for most years and areas... and the model is already very slow. The composition data is vectorized at the moment so it will take some thought how to improve the efficiency of this portion of the model.
+2. *Fishery closures:* Retention of yelloweye has been prohibited in SE Alaska since 2020 and thus they are absent from port sampling. This means that pYE for releases is not estimable from the composition data. To deal with this I estimated a second pYE curve for releases that censors the port sampling data for years when the fishery is closed, and this allows the pYE curve to continue through the closed years based on where things were before the closure. I think this is working, but computationally it is a little redundant, although the second curve is only applied to SE data. The p_yelloweye curve looks good for the closed years in the $LB_{cens}$ model, but struggles in the $LB_{hyb}$ and $LB_{fit}$ models, even with the inflection point of the curve ($\beta4$ above/ $\beta3$ in model) truncated to keep it within the observed time period prior to the closure. 
 2. *Complete convergence* has not been achieved and spline parameters (in particular lambdas) are the main culprit. Feedback on prior choices would be helpful.
 3. *Prior choices* in general need to be vetted. Ideally, sensitivity testing would occur but the model is very slow to converge. 
 4. *Random effects on pH:* Should I include random effects on pH? The model does not currently have them but it might be useful for considering variability in the pH line used to estimate catches in pre-catch data years.
+5. *Model comparisons:* I need to write code for comparing models side by side as well as quantifying the differences between these methods and the Howard methods. 
  
 # Results
 * **Model:** *`r mod`* 
@@ -307,7 +310,20 @@ rhat_vals %>% data.frame() %>%
   geom_vline(aes(xintercept = 1)) 
 ```
 
-
+* **Model development notes:**
+  + 7 versus 6 knot splines: Convergence of lambda parameters continues to be a problem, most notably with PWSO
+    + Note that during some earlier development placing a flexible prior on Sigma_H and sigma_C seemed to help, but then oversmoothed the data with low estimates. These iterations are with sigma_H/_C fixed at 0.25 like Adam had, but may need to explore something else to get better model behavior. 
+    + $LB_{cens}$ 6 knots; lambda converged except PWSO. Same for Beta_H, which goes negative at one point. Constraining to be positive may be an option. Sigma_lambda_H[1](Southentral) also off. Lambda_C a total mess for this model.
+    + $LB_{cens}$ 7 knots; 99% converged versus 97% (12e5 iters) for 6 knots. Better PWSO but bad SOKO2SAP (which isn't going to be reliable anyways). But, hyperparameters for H spline not converged for Kodiak (SOKO2SAP probably). C lambdas still problematic. Note that Beta_H for PWSO also struggling. 
+    + $LB_{hyb}$ 6 knots;96% converged. Lambdas for PWSO, SOKO and SSEO yucky. Hyperparameters for splines also struggling. P_comp parameters also really ugly in this model, particularity for YE southeast closure. 
+    + $LB_{hyb}$ 7 knots;also 96% converged, but spline parameters look better. 
+    + $LB_{fit}$ 7 knots; only 92% converged. 
+  + Estimating Sigma_H and Sigma_C with prior, rather than fixing it at 0.25:
+    + $LB_{cens}$ 7 knots;
+    + $LB_{hyb}$ 7 knots;
+    + $LB_{fit}$ 7 knots;
+  + Censoring PWSO H and C data:
+  
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
 
@@ -1154,7 +1170,7 @@ p_pelagic_obs %>%
  
 ### P(black|pelagic)
  
-Note that in Southeast Alaska we only have composition data starting in 2006. If this exists earlier we defiantly want it. This is also an area where the early creel data Tania dug up may be of some use, particularly in areas with trends (North Southeast inside and South Southeast inside).
+Note that in Southeast Alaska we only have composition data starting in 2006. Tania dug up old SE data, but it did not provide any useful data for species apportionment.
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 17.**- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
 p_black_mod <- 
@@ -1367,7 +1383,7 @@ rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
   geom_ribbon(data = p_yellowX_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
-  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo50, ymax = p_hi50, fill = user), 
+  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
   geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
