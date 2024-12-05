@@ -50,10 +50,10 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 12E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- ni / 1000
 
 #model to run; see /models folder
-mod <- "model_HCR_censLBR_xYEv2"
+mod <- "model_HCR_fitLBR_xYEv2_flexlambda2_noChat"
 
 #Are we using starting values from a prior model?
 use_inits = "yes"
@@ -61,6 +61,8 @@ use_inits = "yes"
 lastrun <- "model_HCR_censLBR_xspline_xYE_thru2023_7e+06_2024-11-29_v2"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",lastrun,".rds"))
+
+initspost <- postH
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -103,7 +105,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),"_v2.rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "model_HCR_censLBR_xspline_xYE_thru2023_7e+06_2024-11-29_v2"
+results <- "model_HCR_censLBR_xYEv2_flexlambda_thru2023_1400000_7kn_2024-12-04"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -1094,7 +1096,7 @@ rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
   geom_ribbon(data = p_yellowX_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
-  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo50, ymax = p_hi50, fill = user), 
+  geom_ribbon(data = p_yellow_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
   geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
@@ -1369,7 +1371,7 @@ as.data.frame(
     by = c("year","user","area")) %>%
   mutate(area = toupper(area)) %>%
   left_join(brf_howR, by = c("year","user","area")) %>%
-  
+  filter(user %in% c("guided","unguided")) %>%
   ggplot(aes(x = year, y = R, color = user)) +
   geom_line() + 
   #geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +

@@ -31,12 +31,12 @@ list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
 
-#mod <- "LB_fit"
+mod <- "LB_fit"
 #mod <- "LB_hyb"
-mod <- "LB_cens"
+#mod <- "LB_cens"
 #res <- "model_HCR_fitLBR_xspline_xYE_thru2023_6400000_2024-11-30"
 #res <- "model_HCR_hybLBR_xspline_xYE_thru2023_6400000_2024-11-30"
-res <- "model_HCR_censLBR_xYEv2_thru2023_1200000_7kn_2024-12-03"
+res <- "model_HCR_fitLBR_xYEv2_flexlambda_thru2023_1400000_7kn_2024-12-04"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 #lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
@@ -128,7 +128,9 @@ ggarrange(Hcomp,Ccomp,
           ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
 ```
 
-To evaluate this discrepancy, several models were used to estimate releases. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treats the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development to date has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
+The Howard methods treat the logbook release data as a census and then use the ratio of guided:unguided releases in the SWHS to expand the logbook release estimates to generate total and unguided estimates. *NOTE: I am debating whether I need to rework the model to stay consistent with these methods? The fit model should ccomplish this, but unguided release estimates go to 0... if fitting to all logbook release estimates need to NOT use SWHS catch data, even with the bias correction?*
+
+To evaluate this discrepancy, several models were used to estimate releases in this exploration. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treats the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development to date has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
 
 ### Composition data
 Harvest sampling data exists from Gulf of Alaska areas since 1993 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish.
@@ -136,7 +138,7 @@ Harvest sampling data exists from Gulf of Alaska areas since 1993 and from South
 A current challenge at this juncture is how to accommodate the prohibition on retaining yelloweye in Southeast from 2020 through 2024. Because it is closed to retention the port sampling data is not reflective of releases while remaining an accurate description of the harvest. Current modelling efforts revolve around developing a separate yelloweye curve that censors the missing data. 
 
 ## Process equations
-The true harvest $H_{ay}$ and catch $C_{ay}$ of rockfish  for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
+The true harvest $H_{ay}$ and catch $C_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
 
 \begin{equation}
 \textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), 0.25)
@@ -319,10 +321,10 @@ rhat_vals %>% data.frame() %>%
     + $LB_{hyb}$ 7 knots;also 96% converged, but spline parameters look better. 
     + $LB_{fit}$ 7 knots; only 92% converged. 
   + Estimating Sigma_H and Sigma_C with prior, rather than fixing it at 0.25:
-    + $LB_{cens}$ 7 knots;
-    + $LB_{hyb}$ 7 knots;
-    + $LB_{fit}$ 7 knots;
-  + Censoring PWSO H and C data:
+    + $LB_{cens}$ 7 knots; 97% conv 14e5 iters. Lambdas better except for PWSO which is still a mess. Beta_yeelow_x still a little bit of a mess. Uni prior on sigma_lambda_H/C seemed to help, but maybe oversmoothing?
+    + $LB_{hyb}$ 7 knots;95% conv, p_yellow_x still wonky in hybrid model. 96% with uniform sigma_lambda_H/C.
+    + $LB_{fit}$ 7 knots;92% conv :(. Fit model still struggles the most. 
+  + Censoring PWSO H and C data, 
   
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
