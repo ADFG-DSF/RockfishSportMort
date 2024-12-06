@@ -68,7 +68,7 @@ get_Rhat <- function(post, cutoff = 1.1){
 # Logbook harvests by area, year for guided trips
 readinData <- function(spl_knts = 7,
                        start_yr = 1977,
-                       end_yr = 2023){
+                       end_yr = 2019){
   H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
     mutate(H_lb = ifelse(H == 0, 1, H))
   
@@ -88,14 +88,6 @@ readinData <- function(spl_knts = 7,
     readRDS(".//data//bayes_dat//Chat_ayu.rds")  %>% 
     mutate(Chat = ifelse(C == 0, 1, C), 
            seC = ifelse(seC == 0, 1, seC)) %>%
-    arrange(area, user, year)
-  
-  Rhat_ayu <- Hhat_ayu %>%
-    left_join(Chat_ayu, by = c("year","area","user","region")) %>%
-    mutate(R = C - H,
-           seR = sqrt(seH^2 + seC^2)) %>%
-    mutate(Rhat = ifelse(R <= 0, 1, R), 
-           seR = ifelse(seR == 0, 1, seR)) %>%
     arrange(area, user, year)
   
   # SWHS harvests by area, year
@@ -134,13 +126,6 @@ readinData <- function(spl_knts = 7,
   
   Chat_ay %>% filter(is.na(Chat))
   
-  Rhat_ay <- Hhat_ay %>%
-    left_join(Chat_ay, by = c("year","area","region")) %>%
-    filter(!is.na(Chat)) %>%
-    mutate(Rhat = Chat - Hhat,
-           seR = sqrt(seH^2 + seC^2)) %>%
-    mutate(Rhat = ifelse(Rhat <= 0, 1, Rhat), 
-           seR = ifelse(seR == 0, 1, seR)) 
   
   # Survey data on catch composition
   S_ayu0 <- 
@@ -169,15 +154,15 @@ readinData <- function(spl_knts = 7,
   Hhat_ayg <- Hhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr); unique(Hhat_ayg$area)
   Hhat_ayp <- Hhat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
   
-  Rhat_ayg <- Rhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
-  Rhat_ayp <- Rhat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
+  Chat_ayg <- Chat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
+  Chat_ayp <- Chat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
   
   # Separate out the unknowns in the pre-1996 data
   Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
-  Rhat_Uy <- Rhat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
+  Chat_Uy <- Chat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
   
   Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
-  Rhat_ay <- Rhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
+  Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
   Y = length(unique(Hhat_ay$year))
@@ -206,7 +191,14 @@ readinData <- function(spl_knts = 7,
            N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                         NA,N)) %>%
     filter(!is.na(N_x))
-
+  #comp %>% filter(region == "Southeast") %>% print(n =200)
+  #comp %>% print(n =50)
+  #range(comp$year_n)
+  
+  #with(comp, table(area_n, area))
+  #with(comp, table(user_n,area))
+  #with(S_ayu, table(user,area))
+  
   
   matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
   #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
@@ -214,20 +206,21 @@ readinData <- function(spl_knts = 7,
     matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
   cvHhat_ay[is.na(cvHhat_ay)] <- 1
   
-  #with(Chat_ay, table(area,year))
   
-  matrix_Rhat_ay <- cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Rhat_ay$year))),
-                          matrix(Rhat_ay$Rhat, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE))
+  with(Chat_ay, table(area,year))
+  
+  matrix_Chat_ay <- cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Chat_ay$year))),
+                          matrix(Chat_ay$Chat, nrow = A, ncol = length(unique(Chat_ay$year)), byrow = TRUE))
   
   #matrix_Chat_ay[4, 1:5] <- NA
-  cvRhat_ay = cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Rhat_ay$year))),
-                    matrix(Rhat_ay$seC, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE)) /
-    matrix_Rhat_ay
+  cvChat_ay = cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Chat_ay$year))),
+                    matrix(Chat_ay$seC, nrow = A, ncol = length(unique(Chat_ay$year)), byrow = TRUE)) /
+    matrix_Chat_ay
   # need cv to be 1 when there is no data
-  cvRhat_ay[is.na(cvRhat_ay)] <- 1
+  cvChat_ay[is.na(cvChat_ay)] <- 1
   
   dim(matrix_Hhat_ay)
-  dim(matrix_Rhat_ay)
+  dim(matrix_Chat_ay)
   
   #Create JAGs data and then bundle it up
   
@@ -237,9 +230,10 @@ readinData <- function(spl_knts = 7,
       #Harvest
       Hhat_ay = matrix_Hhat_ay,
       cvHhat_ay = cvHhat_ay,
-      #Releases
-      Rhat_ay = matrix_Rhat_ay,
-      cvRhat_ay = cvRhat_ay,
+      #Catch
+      Chat_ay_pH = matrix_Chat_ay,
+      Chat_ay_obs = matrix_Chat_ay,
+      cvChat_ay = cvChat_ay,
       
       #Logbook data
       #Harvest by species and user: 
@@ -254,17 +248,21 @@ readinData <- function(spl_knts = 7,
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlb_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                            matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlb_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlbp_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlbp_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                             matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlbp_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook ye rf harvested by guides
       Rlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlby_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlby_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlby_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       #SWHS DATA:
       # SWHS estimates of rockfish harvests
       Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -274,29 +272,14 @@ readinData <- function(spl_knts = 7,
                          matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
               matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
-      
-      Hhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
-                       matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
-      cvHhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
-                         matrix(Hhat_ayp$seH, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)) / 
-        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
-              matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
-      
       # SWHS estimates of rockfish Catches
-      Rhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
-                       matrix(Rhat_ayg$Rhat, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)),
+      Chat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+                       matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
       # cv of SWHS estimates
-      cvRhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
-                         matrix(Rhat_ayg$seC, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)) / 
-        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
-              matrix(Rhat_ayg$Rhat, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)),
-      Rhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
-                       matrix(Rhat_ayp$Rhat, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)),
-      # cv of SWHS estimates
-      cvRhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
-                         matrix(Rhat_ayp$seC, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)) / 
-        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
-              matrix(Rhat_ayp$Rhat, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)),
+      cvChat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+                         matrix(Chat_ayg$seC, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)) / 
+        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
+              matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
       #Spline:
       Z = Z, #spline, same for C and H
       Q = makeQ(2, C), #spline stuff; same for C and H
@@ -326,10 +309,10 @@ readinData <- function(spl_knts = 7,
               H_ayg = H_ayg,
               R_ayg = R_ayg,
               Hhat_ayu = Hhat_ayu,
-              Rhat_ayu = Rhat_ayu,
+              Chat_ayu = Chat_ayu,
               Hhat_ayg = Hhat_ayg,
               Hhat_ay = Hhat_ay,
-              Rhat_ay = Rhat_ay,
+              Chat_ay = Chat_ay,
               S_ayu = S_ayu,
               comp = comp,
               compX = compX,
@@ -344,16 +327,16 @@ jags_params <- function(){
     #SWHS bias, separate C and H
     "logbc_H", "mu_bc_H", "sd_bc_H",
     #"logbc_C", "mu_bc_C", "sd_bc_C",
-    "logbc_R","bc_R_offset","mu_bc_R_offset","sd_bcRoff",
-    #User proportions (proportion guided); different for H and R
-    "pG", "b1_pG", "b2_pG",
-    #"pG_R", "b1_pG_R", "b2_pG_R",
+    "logbc_C","bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+    #User proportions (proportion guided); different for H and C
+    "pG_H", "b1_pG_H", "b2_pG_H",
+    "pG_C", "b1_pG_C", "b2_pG_C",
     #proportion harvested: 
-    "pH", #"pHu",
-    "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
-    #random effects on pH
-    "re_pH", #"re_pHu",
-    "sd_pH",
+    "pH", 
+    #liner:
+    #  "pH_int", "pH_slo",
+    #polynomial
+    "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
     #"re_pH","sd_pH",
     #proportions same for catch and harvest? thinking on it?
     "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
@@ -375,13 +358,13 @@ jags_params <- function(){
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
     #catch estimates and spline parts
-    "Chat_ay","C_ay", "C_ayg", "C_ayu", 
+    "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
     "Cb_ayg", "Cb_ayu", "Cb_ay",
     "Cy_ayg", "Cy_ayu", "Cy_ay",
+    "logChat_ay",
     #with hierarchichal pline lambda
-    #"mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
+    "mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
     #releases
-    "logRhat_ay","logRhat_ayg",
     "R_ay", "R_ayg", "R_ayu", 
     "Rb_ayg", "Rb_ayu", "Rb_ay",
     "Ry_ayg", "Ry_ayu", "Ry_ay")
