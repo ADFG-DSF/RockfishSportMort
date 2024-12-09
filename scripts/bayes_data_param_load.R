@@ -355,7 +355,7 @@ jags_params <- function(){
     "pG", "b1_pG", "b2_pG",
     #"pG_R", "b1_pG_R", "b2_pG_R",
     #proportion harvested: 
-    "pH", #"pHu",
+    "pH", "tau_pH",#"pHu",
     "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
     #random effects on pH
     "re_pH", #"re_pHu",
@@ -372,7 +372,7 @@ jags_params <- function(){
     "mu_beta0_black", "tau_beta0_black",
     #random effects on species
     "re_pelagic", "re_black","re_yellow",
-    "sd_comp", 
+    "sd_comp", "tau_comp",
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
     "Hb_ayg", "Hb_ayu", "Hb_ay",
