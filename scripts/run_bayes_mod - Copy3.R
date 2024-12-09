@@ -53,7 +53,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 ni <- 16E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_hybLBR"
+mod <- "HR_fitLBR_xHS"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -1208,10 +1208,10 @@ p_pelagic_trend <-
     area = unique(H_ayg$area))
 
 rbind(beta0_pelagic <- postH$q50$beta0_pelagic,
-      beta1_pelagic <- postH$q50$beta1_pelagic,
-      beta2_pelagic <- postH$q50$beta2_pelagic,
-      beta3_pelagic <- postH$q50$beta3_pelagic,
-      beta4_pelagic <- postH$q50$beta4_pelagic) %>% t() %>%
+  beta1_pelagic <- postH$q50$beta1_pelagic,
+  beta2_pelagic <- postH$q50$beta2_pelagic,
+  beta3_pelagic <- postH$q50$beta3_pelagic,
+  beta4_pelagic <- postH$q50$beta4_pelagic) %>% t() %>%
   data.frame() %>%
   mutate(area = unique(H_ayg$area)) %>%
   rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
@@ -1224,7 +1224,7 @@ rbind(beta0_pelagic <- postH$q50$beta0_pelagic,
          p_pelagic = logit_to_prob(logit_pel),
          year = y + 1976,
          user = ifelse(u == 1, "charter","private"))-> pel_trend
-
+  
 p_pelagic_obs %>%
   ggplot(aes(x = year, y = p_pelagic, color = user)) +
   geom_ribbon(data = p_pelagic_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
@@ -1235,7 +1235,6 @@ p_pelagic_obs %>%
   geom_line(data=pel_trend) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)
-
 
 # ** black/pelagic annual  --------------------------------------------------------
 p_black_mod <- 
@@ -1527,7 +1526,6 @@ rbind(p_yellow_obs) %>%
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)
-
 
 #-------------------------------------------------------------------------------
 #center year for logistic regression of p_black 

@@ -29,7 +29,7 @@ model{
   tau_beta0_black[r] ~ dgamma(0.001, 0.01)
 
   mu_beta0_pH[r] ~ dnorm(0, 0.001)
-  tau_beta0_pH[r] ~ dgamma(0.001, 0.001)
+  tau_beta0_pH[r] ~ dgamma(0.001, 0.001)T(,100)
 
   mu_bc_R_offset[r] ~ dnorm(1, 0.001)T(0.0000001,5) #hyperprior offset for bias in swhs catch estimates
   tau_bc_R_offset[r] <- 1 / sd_bcRoff[r] / sd_bcRoff[r]
@@ -79,17 +79,17 @@ model{
    Hhat_ayg[a, y] ~ dlnorm(logHhat_ay[a, y] + log(pG[a, y]), tauHhat_ayg[a, y])
   }
 
-  for(y in 35:Y){ #guided SWHS release likelihood
-   tauRhat_ayg[a, y] <- 1 / log(cvRhat_ayg[a, y] * cvRhat_ayg[a, y] + 1)
-   logRhat_ayg[a, y] <- log(R_ayg[a, y]) + logbc_R[a, y] 
-   Rhat_ayg[a, y] ~ dlnorm(logRhat_ayg[a, y], tauRhat_ayg[a, y])
-  }
+  #for(y in 35:Y){ #guided SWHS release likelihood
+  # tauRhat_ayg[a, y] <- 1 / log(cvRhat_ayg[a, y] * cvRhat_ayg[a, y] + 1)
+  # logRhat_ayg[a, y] <- log(R_ayg[a, y]) + logbc_R[a, y] 
+  # Rhat_ayg[a, y] ~ dlnorm(logRhat_ayg[a, y], tauRhat_ayg[a, y])
+  #}
 
-  for (y in 14:Y){ #all user SWHS release likelihood
-   tauRhat_ay[a, y] <- 1 / log(cvRhat_ay[a, y] * cvRhat_ay[a, y] + 1)
-   logRhat_ay[a, y] <- log(R_ay[a, y]) + logbc_R[a, y]
-   Rhat_ay[a, y] ~ dlnorm(logRhat_ay[a, y], tauRhat_ay[a, y])
-  }
+  #for (y in 14:Y){ #all user SWHS release likelihood
+  # tauRhat_ay[a, y] <- 1 / log(cvRhat_ay[a, y] * cvRhat_ay[a, y] + 1)
+  # logRhat_ay[a, y] <- log(R_ay[a, y]) + logbc_R[a, y]
+  # Rhat_ay[a, y] ~ dlnorm(logRhat_ay[a, y], tauRhat_ay[a, y])
+  #}
 
   for(y in 22:Y){ #logbook likelihood; guided harvest by area and year
    Hlb_ayg[a, y] ~ dpois(H_ayg[a, y])   # all rockfish
@@ -98,15 +98,12 @@ model{
 
 #logbook release data censored for total and pelagic; modelled as minimal estimates
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
-     logR[a, y] <- log(R_ayg[a, y])
-     Rlb_ayg_cens[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg[a, y],)
-     logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
-     Rlbp_ayg_cens[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg[a, y],)
+    Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
+    Rlbp_ayg[a, y] ~ dpois(R_ayg[a, y] * p_pelagic[a, y, 1])  
   }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year also censored
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
-   ###Ry_est[a, y] <- max(0.001, Cy_ayg[a, y] - Hy_ayg[a, y])
    Rlby_ayg[a, y] ~ dpois(Ry_ayg[a, y])
   }
 	

@@ -64,6 +64,12 @@ get_Rhat <- function(post, cutoff = 1.1){
     "R^ quantiles" = quantile(post$summary[, "Rhat"], probs = seq(0.9, 1, by = .01), na.rm = TRUE))
 }
 
+#-------------------------------------------------------------------------------
+# for plotting logit
+logit_to_prob <- function(logit) {
+  exp(logit) / (1 + exp(logit))
+}
+
 # Read data --------------------------------------------------------
 # Logbook harvests by area, year for guided trips
 readinData <- function(spl_knts = 7,

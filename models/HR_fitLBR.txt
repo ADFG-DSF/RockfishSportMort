@@ -50,29 +50,29 @@ model{
 
   #proportion of catch that is harvested
   beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]]) #INTERCEPT
-  beta1_pH[a] ~ dnorm(0, 0.01) #T(0,)   # SCALING FACTOR (amplitude)
-  beta2_pH[a] ~ dnorm(0, 0.01)          # SLOPE
-  beta3_pH[a] ~ dnorm(34, 0.01)T(0,)    # INFLECTION POINT
+  beta1_pH[a] ~ dnorm(0, 0.1) #T(0,)   # SCALING FACTOR (amplitude)
+  beta2_pH[a] ~ dnorm(0, 0.1)T(0,)          # SLOPE
+  beta3_pH[a] ~ dnorm(34, 0.01)T(0,Y-3)    # INFLECTION POINT
   beta4_pH[a] ~ dnorm(0, 0.1)           # USER EFFECT
 
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])
-  beta1_pelagic[a] ~ dnorm(0, 0.01) #T(0,)
-  beta2_pelagic[a] ~ dnorm(0, 0.01)
-  beta3_pelagic[a] ~ dnorm(34, 0.01)T(0,) 
-  beta4_pelagic[a] ~ dnorm(0, 0.01)
+  beta1_pelagic[a] ~ dnorm(0, 0.1) #T(0,)
+  beta2_pelagic[a] ~ dnorm(0, 0.1)
+  beta3_pelagic[a] ~ dnorm(34, 0.01)T(0,Y-1) 
+  beta4_pelagic[a] ~ dnorm(0, 0.1)
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
-  beta1_yellow[a] ~ dnorm(0, 0.01) #T(0,)
-  beta2_yellow[a] ~ dnorm(0, 0.01)
-  beta3_yellow[a] ~ dnorm(34, 0.01)T(0,) #allowing more curvature to p_yellow
-  beta4_yellow[a] ~ dnorm(0, 0.01) # for logistic curve
+  beta1_yellow[a] ~ dnorm(0, 0.1) #T(0,)
+  beta2_yellow[a] ~ dnorm(0, 0.1)
+  beta3_yellow[a] ~ dnorm(34, 0.01)T(0,Y-1) #allowing more curvature to p_yellow
+  beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])
-  beta1_black[a] ~ dnorm(0, 0.01) #T(0,)
-  beta2_black[a] ~ dnorm(0, 0.01)
-  beta3_black[a] ~ dnorm(34, 0.01)T(0,)
-  beta4_black[a] ~ dnorm(0, 0.01)
+  beta1_black[a] ~ dnorm(0, 0.1) #T(0,)
+  beta2_black[a] ~ dnorm(0, 0.1)
+  beta3_black[a] ~ dnorm(34, 0.01)T(0,Y-1)
+  beta4_black[a] ~ dnorm(0, 0.1)
 	
   for(y in 35:Y){ #guided SWHS harvest likelihood
    tauHhat_ayg[a, y] <- 1 / log(cvHhat_ayg[a, y] * cvHhat_ayg[a, y] + 1)
@@ -218,10 +218,10 @@ model{
  for (a in 11:16) {
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
   beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x[regions[a]], tau_beta0_yellow_x[regions[a]])
-  beta1_yellow_x[a] ~ dnorm(0, 0.01) #T(0,)
-  beta2_yellow_x[a] ~ dnorm(0, 0.01)
+  beta1_yellow_x[a] ~ dnorm(0, 0.1) #T(0,)
+  beta2_yellow_x[a] ~ dnorm(0, 0.1)
   beta3_yellow_x[a] ~ dnorm(34, 0.01)T(0,42) #inflection point must be before closure
-  beta4_yellow_x[a] ~ dnorm(0, 0.01) # for logistic curve
+  beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
   for (y in 1:Y){
     for (u in 1:2){
