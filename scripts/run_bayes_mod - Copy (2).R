@@ -53,13 +53,13 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 ni <- 16E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_fitLBR"
+mod <- "HR_censLBR"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "no"
 
-use_this_model <- "HR_censLBR_thru2023_1600000_7kn_2024-12-07"
+use_this_model <- "HR_censLBR_thru2023_1600000_2024-12-10_v2"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -74,74 +74,76 @@ other_inits <- lapply(1:nc, function(chain) {
   as.list(chain_data[nrow(chain_data), ])
 })
 
+last_inits <- other_inits
+
 for (i in 1:3) { #i <- 1
-  last_inits[[i]]$'beta0_pH[1]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[2]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[3]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[4]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[5]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[6]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[7]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[8]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[9]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[10]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[11]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[12]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[13]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[14]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[15]' <- runif(1,-0.4,0)
-  last_inits[[i]]$'beta0_pH[16]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[1]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[2]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[3]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[4]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[5]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[6]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[7]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[8]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[9]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[10]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[11]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[12]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[13]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[14]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[15]' <- runif(1,-0.4,0)
+#  last_inits[[i]]$'beta0_pH[16]' <- runif(1,-0.4,0)
   
-  last_inits[[i]]$'beta1_pH[1]' <- 0
-  last_inits[[i]]$'beta1_pH[2]' <- 0
-  last_inits[[i]]$'beta1_pH[3]' <- 0
-  last_inits[[i]]$'beta1_pH[4]' <- 0
-  last_inits[[i]]$'beta1_pH[5]' <- 0
-  last_inits[[i]]$'beta1_pH[6]' <- 0
-  last_inits[[i]]$'beta1_pH[7]' <- 0
-  last_inits[[i]]$'beta1_pH[8]' <- 0
-  last_inits[[i]]$'beta1_pH[9]' <- 0
-  last_inits[[i]]$'beta1_pH[10]' <- 0
-  last_inits[[i]]$'beta1_pH[11]' <- 0
-  last_inits[[i]]$'beta1_pH[12]' <- 0
-  last_inits[[i]]$'beta1_pH[13]' <- 0
-  last_inits[[i]]$'beta1_pH[14]' <- 0
-  last_inits[[i]]$'beta1_pH[15]' <- 0
-  last_inits[[i]]$'beta1_pH[16]' <- 0
+#  last_inits[[i]]$'beta1_pH[1]' <- 0
+#  last_inits[[i]]$'beta1_pH[2]' <- 0
+#  last_inits[[i]]$'beta1_pH[3]' <- 0
+#  last_inits[[i]]$'beta1_pH[4]' <- 0
+#  last_inits[[i]]$'beta1_pH[5]' <- 0
+#  last_inits[[i]]$'beta1_pH[6]' <- 0
+#  last_inits[[i]]$'beta1_pH[7]' <- 0
+#  last_inits[[i]]$'beta1_pH[8]' <- 0
+#  last_inits[[i]]$'beta1_pH[9]' <- 0
+#  last_inits[[i]]$'beta1_pH[10]' <- 0
+#  last_inits[[i]]$'beta1_pH[11]' <- 0
+#  last_inits[[i]]$'beta1_pH[12]' <- 0
+#  last_inits[[i]]$'beta1_pH[13]' <- 0
+#  last_inits[[i]]$'beta1_pH[14]' <- 0
+#  last_inits[[i]]$'beta1_pH[15]' <- 0
+#  last_inits[[i]]$'beta1_pH[16]' <- 0
   
-  last_inits[[i]]$'beta2_pH[1]' <- 0
-  last_inits[[i]]$'beta2_pH[2]' <- 0
-  last_inits[[i]]$'beta2_pH[3]' <- 0
-  last_inits[[i]]$'beta2_pH[4]' <- 0
-  last_inits[[i]]$'beta2_pH[5]' <- 0
-  last_inits[[i]]$'beta2_pH[6]' <- 0
-  last_inits[[i]]$'beta2_pH[7]' <- 0
-  last_inits[[i]]$'beta2_pH[8]' <- 0
-  last_inits[[i]]$'beta2_pH[9]' <- 0
-  last_inits[[i]]$'beta2_pH[10]' <- 0
-  last_inits[[i]]$'beta2_pH[11]' <- 0
-  last_inits[[i]]$'beta2_pH[12]' <- 0
-  last_inits[[i]]$'beta2_pH[13]' <- 0
-  last_inits[[i]]$'beta2_pH[14]' <- 0
-  last_inits[[i]]$'beta2_pH[15]' <- 0
-  last_inits[[i]]$'beta2_pH[16]' <- 0
+#  last_inits[[i]]$'beta2_pH[1]' <- 0
+#  last_inits[[i]]$'beta2_pH[2]' <- 0
+#  last_inits[[i]]$'beta2_pH[3]' <- 0
+#  last_inits[[i]]$'beta2_pH[4]' <- 0
+#  last_inits[[i]]$'beta2_pH[5]' <- 0
+#  last_inits[[i]]$'beta2_pH[6]' <- 0
+#  last_inits[[i]]$'beta2_pH[7]' <- 0
+#  last_inits[[i]]$'beta2_pH[8]' <- 0
+#  last_inits[[i]]$'beta2_pH[9]' <- 0
+#  last_inits[[i]]$'beta2_pH[10]' <- 0
+#  last_inits[[i]]$'beta2_pH[11]' <- 0
+#  last_inits[[i]]$'beta2_pH[12]' <- 0
+#  last_inits[[i]]$'beta2_pH[13]' <- 0
+#  last_inits[[i]]$'beta2_pH[14]' <- 0
+#  last_inits[[i]]$'beta2_pH[15]' <- 0
+#  last_inits[[i]]$'beta2_pH[16]' <- 0
   
-  last_inits[[i]]$'beta3_pH[1]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[2]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[3]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[4]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[5]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[6]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[7]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[8]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[9]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[10]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[11]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[12]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[13]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[14]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[15]' <- runif(1,28,38)
-  last_inits[[i]]$'beta3_pH[16]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[1]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[2]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[3]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[4]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[5]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[6]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[7]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[8]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[9]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[10]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[11]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[12]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[13]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[14]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[15]' <- runif(1,28,38)
+#  last_inits[[i]]$'beta3_pH[16]' <- runif(1,28,38)
   
   last_inits[[i]]$'beta0_yellow[1]' <- runif(1,-0.6,-0.4)
   last_inits[[i]]$'beta0_yellow[2]' <- runif(1,-0.6,-0.4)
@@ -385,10 +387,10 @@ if (use_inits == "yes") {
 other_label <- paste0(jags_dat$C,"kn")
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),"_v2.rds"))
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_censLBR_thru2023_1600000_7kn_2024-12-07"
+results <- "HR_censLBR_thru2023_1600000_2024-12-10_v2"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -547,7 +549,7 @@ postH$mean$bc_C_offset; exp(postH$mean$bc_C_offset)
 jagsUI::traceplot(postH, parameters = c("bc_R_offset"))
 jagsUI::traceplot(postH, parameters = "logbc_R")
 
-jagsUI::traceplot(postH, parameters = c("b1_pG", "b2_pG","pG"))
+jagsUI::traceplot(postH, parameters = c("b1_pG", "b2_pG"))
 
 library(coda)
 library(shinystan)
@@ -743,7 +745,17 @@ pH_obs <-
          source = "SWHS") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-         p_lo95 = NA, p_hi95 = NA) #%>%
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlb_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+  
 
 rbind(beta0_pH <- postH$q50$beta0_pH,
       beta1_pH <- postH$q50$beta1_pH,

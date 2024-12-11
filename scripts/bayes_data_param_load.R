@@ -350,7 +350,8 @@ jags_params <- function(){
     #SWHS bias, separate C and H
     "logbc_H", "mu_bc_H", "sd_bc_H",
     #"logbc_C", "mu_bc_C", "sd_bc_C",
-    "logbc_R","bc_R_offset","mu_bc_R_offset","sd_bcRoff",
+    "logbc_R", "mu_bc_R", "sd_bc_R",
+    "bc_R_offset","mu_bc_R_offset","sd_bcRoff",
     #User proportions (proportion guided); different for H and R
     "pG", "b1_pG", "b2_pG",
     #"pG_R", "b1_pG_R", "b2_pG_R",

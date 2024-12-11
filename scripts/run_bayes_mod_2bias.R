@@ -50,10 +50,10 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 16E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 10E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_hybLBR"
+mod <- "HR_censLBR_2bias"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -546,7 +546,7 @@ jagsUI::traceplot(postH, parameters = "logbc_H")
 #jagsUI::traceplot(postH, parameters = c("mu_bc_C","tau_bc_C","sd_bc_C"))
 postH$mean$bc_C_offset; exp(postH$mean$bc_C_offset)
 
-jagsUI::traceplot(postH, parameters = c("bc_R_offset"))
+jagsUI::traceplot(postH, parameters = c("mu_bc_R","tau_bc_R","sd_bc_R"))
 jagsUI::traceplot(postH, parameters = "logbc_R")
 
 jagsUI::traceplot(postH, parameters = c("b1_pG", "b2_pG"))
@@ -1021,22 +1021,16 @@ exp(postH$sims.list$mu_bc_H) %>%
   pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
          data = "H") %>% #-> grr#%>%
-  rbind(exp(postH$sims.list$mu_bc_H * postH$sims.list$bc_R_offset) %>%
+  rbind(exp(postH$sims.list$mu_bc_R) %>%
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%
           pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                 data = "R")) %>%
-  rbind((postH$sims.list$bc_R_offset) %>%
-          as.data.frame() %>%
-          setNames(nm = unique(H_ayg$area)) %>%
-          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
-          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                 data = "R_offset")) -> bias
+                 data = "R")) -> bias
 
 range(bias$bc) #YIKES!!!! 
 
-bias %>% filter(bc < 6 & data != "R_offset") %>%
+bias %>% 
   ggplot(aes(x = bc, col = data, fill = data)) +
   geom_histogram(binwidth = .05, alpha = 0.2, position = "identity") +
   coord_cartesian(xlim = c(0, 3)) +
@@ -1084,9 +1078,7 @@ bc_mod <-
          source = "model") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
   mutate(data = "H") %>%
-  rbind(apply(exp(postH$sims.list$logbc_H * 
-                    array(postH$sims.list$bc_R_offset, 
-                          dim = c(dim(postH$sims.list$logbc_H)[1],jags_dat$A,Y))), c(2, 3), mean) %>%
+  rbind(apply(exp(postH$sims.list$logbc_R), c(2, 3), mean) %>%
           t() %>%
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%
@@ -1108,8 +1100,7 @@ bc_mod2 <-
          source = "model") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
   mutate(data = "H") %>%
-  rbind(exp(postH$q50$logbc_H * array(postH$q50$bc_R_offset,
-                                      dim = c(jags_dat$A,Y))) %>%
+  rbind(exp(postH$q50$logbc_R) %>%
           t() %>%
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%

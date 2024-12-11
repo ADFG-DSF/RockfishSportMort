@@ -29,11 +29,7 @@ model{
   tau_beta0_black[r] ~ dgamma(0.001, 0.01)
 
   mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
-  tau_beta0_pH[r] ~ dgamma(0.001, 0.001)
-
-  mu_bc_R_offset[r] ~ dnorm(1, 0.001)T(0.0000001,5) #hyperprior offset for bias in swhs catch estimates
-  tau_bc_R_offset[r] <- 1 / sd_bcRoff[r] / sd_bcRoff[r]
-  sd_bcRoff[r] ~ dunif(0, 10) # dt(0, 1, 1) T(0, ) 
+  tau_beta0_pH[r] ~ dgamma(0.001, 0.001) #T(,1000)
   }
 
  for (a in 1:A){
@@ -42,7 +38,9 @@ model{
   tau_bc_H[a] <- 1 / sd_bc_H[a] / sd_bc_H[a]    # transformed sigma in mean log bias 
   sd_bc_H[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
 
-  bc_R_offset[a] ~ dnorm(mu_bc_R_offset[regions[a]], tau_bc_R_offset[regions[a]])T(-20,8) #offset for release bias
+  mu_bc_R[a] ~ dnorm(0, 0.001) #T(,10)              # mean log bias in SWHS H estimates
+  tau_bc_R[a] <- 1 / sd_bc_R[a] / sd_bc_R[a]    # transformed sigma in mean log bias 
+  sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias
 
   #User proportions. 
   b1_pG[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
@@ -98,16 +96,13 @@ model{
 
 #logbook release data censored for total and pelagic; modelled as minimal estimates
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
-     logR[a, y] <- log(R_ayg[a, y])
-     Rlb_ayg_cens[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg[a, y],)
-     logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
-     Rlbp_ayg_cens[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg[a, y],)
+    Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
+    Rlbp_ayg[a, y] ~ dpois(R_ayg[a, y] * p_pelagic[a, y, 1])  
   }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year also censored
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
-   logRy[a, y] <- log(Ry_ayg[a, y])
-   Rlby_ayg_cens[a, y] ~ dlnorm(logRy[a, y],1)T(Rlby_ayg[a, y],)
+   Rlby_ayg[a, y] ~ dpois(Ry_ayg[a, y])
   }
 	
   for(y in 1:Y){
@@ -129,8 +124,6 @@ model{
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
    #Total releases
-  ### R_ayg[a, y] <- Chat_ay[a, y] * pG_R[a, y] * (1 - pH[a,y,1]) #R_ayg[a, y] * pG_R[a, y] #           
-  ### R_ayu[a, y] <- Chat_ay[a, y] * (1 - pG_R[a, y]) * (1 - pH[a,y,2])  #R_ayu[a, y] * (1 - pG_R[a, y]) # 
    R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]   #get rid of pG_R!!!      
    R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               
@@ -159,7 +152,7 @@ model{
 
    #SWHS Bias and user comp
    logbc_H[a, y] ~ dnorm(mu_bc_H[a], tau_bc_H[a])T(-20,3)     # mean log bias in SWHS H estimates
-   logbc_R[a,y] <- logbc_H[a, y] * bc_R_offset[a]
+   logbc_R[a,y] ~ dnorm(mu_bc_R[a], tau_bc_R[a])
 
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])         # P(user)ay1 = frac of harv taken by charter anglers
    } #END EVERY YEAR
