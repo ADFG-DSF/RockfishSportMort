@@ -59,13 +59,13 @@ model{
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_pelagic[a] ~ dnorm(0, 0.25) #T(0,)
   beta2_pelagic[a] ~ dnorm(0, 1)
-  beta3_pelagic[a] ~ dnorm(30, 0.005)T(0,Y-1) 
+  beta3_pelagic[a] ~ dnorm(30, 0.02)T(0,Y-2) 
   beta4_pelagic[a] ~ dnorm(0, 0.1)
 
-  beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-4.75,)
+  beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-4,)
   beta1_yellow[a] ~ dnorm(0, 0.1) #T(0,)
-  beta2_yellow[a] ~ dnorm(0, 0.1)
-  beta3_yellow[a] ~ dnorm(30, 0.01)T(0,Y-1)  
+  beta2_yellow[a] ~ dnorm(-5, 0.025)
+  beta3_yellow[a] ~ dnorm(30, 0.025)T(0,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
@@ -215,10 +215,10 @@ model{
  #Southeast:
  for (a in 11:16) {
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
-  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x[regions[a]], tau_beta0_yellow_x[regions[a]])T(-4.75,)
+  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x[regions[a]], tau_beta0_yellow_x[regions[a]])T(-4,)
   beta1_yellow_x[a] ~ dnorm(0, 0.25) #T(0,)
-  beta2_yellow_x[a] ~ dnorm(0, 1)
-  beta3_yellow_x[a] ~ dnorm(30, 0.05)T(0,40) #inflection point must be before closure
+  beta2_yellow_x[a] ~ dnorm(-5, 0.025)
+  beta3_yellow_x[a] ~ dnorm(30, 0.1)T(0,39) #inflection point must be before closure
   beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
   for (y in 1:Y){

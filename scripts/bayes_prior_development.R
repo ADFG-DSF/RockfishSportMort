@@ -70,9 +70,9 @@ hist(R_lb_adj, breaks = 100)
 #------------------------------------------------------------------------------
 # pH Logistic curves
 # best model runs: 
-m1 <- "HR_fitLBR_thru2023_1600000_2024-12-10_v2"
-m2 <- "HR_censLBR_thru2023_1600000_2024-12-10_v2"
-m3 <- "HR_hybLBR_thru2023_1600000_2024-12-10"
+m1 <- "HR_fitLBR_thru2023_1600000_2024-12-11"
+m2 <- "HR_censLBR_thru2023_1600000_2024-12-11"
+m3 <- "HR_hybLBR_thru2023_1600000_2024-12-11"
 
 post_m1 <- readRDS(paste0(".\\output\\bayes_posts\\",m1,".rds"))
 post_m2 <- readRDS(paste0(".\\output\\bayes_posts\\",m2,".rds"))
@@ -153,12 +153,12 @@ Y <- 47
 
 
 {
-  tau_mu0 <- 0.25
+  tau_mu0 <- 0.5
   mu_beta0 <- rnorm(n,-0.25,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
 tau_beta0 <- rgamma(n,0.001,0.001)
 
 beta0 <- rnorm(n*3,mu_beta0, tau_beta0) #INTERCEPT
-beta0 <- beta0[beta0 > -2.75]; beta0 <- sample(beta0,n,replace = F)
+beta0 <- beta0[beta0 > -4]; beta0 <- sample(beta0,n,replace = F)
 
 tau1 <- 0.25
 beta1 <- rnorm(3*n,0, 1/sqrt(tau1))
@@ -243,6 +243,23 @@ ggplot(pr_sim) +
 
 #-------------------------------------------------------------------------------
 #yelloweye logistic priors:
+
+post_m3$sims.list$beta0_yellow %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area))%>%
+  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta0_yellow
+post_m3$sims.list$beta1_yellow %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area))%>%
+  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta1_yellow
+post_m3$sims.list$beta2_yellow %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area))%>%
+  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta2_yellow
+post_m3$sims.list$beta3_yellow %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area))%>%
+  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta3_yellow
 post_m1$sims.list$beta0_yellow %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -277,23 +294,6 @@ post_m2$sims.list$beta3_yellow %>%
   setNames(nm = unique(H_ayg$area))%>%
   pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> cens_beta3_yellow
 
-post_m3$sims.list$beta0_yellow %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area))%>%
-  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta0_yellow
-post_m3$sims.list$beta1_yellow %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area))%>%
-  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta1_yellow
-post_m3$sims.list$beta2_yellow %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area))%>%
-  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta2_yellow
-post_m3$sims.list$beta3_yellow %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area))%>%
-  pivot_longer(cols = unique(H_ayg$area),names_to = "area", values_to = "yellow")-> hyb_beta3_yellow
-
 rbind(fit_beta0_yellow %>% mutate(model = "fit"),
       cens_beta0_yellow %>% mutate(model = "cens"),
       hyb_beta0_yellow %>% mutate(model = "hyb")) -> yellow_b0_mods
@@ -315,7 +315,7 @@ Y <- 47
 
 {
   tau_mu0 <- 0.25
-  mu_beta0 <- rnorm(n,0.5,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
+  mu_beta0 <- rnorm(n,0,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
   tau_beta0 <- rgamma(n,0.001,0.001)
   
   beta0 <- rnorm(n*3,mu_beta0, tau_beta0) #INTERCEPT
@@ -323,13 +323,13 @@ Y <- 47
   
   tau1 <- 0.1
   beta1 <- rnorm(n,0, 1/sqrt(tau1))
- # beta1 <- beta1[beta1 > 0]; beta1 <- sample(beta1,n,replace = F) # SCALING FACTOR (amplitude) #rep(2,n)
+  #beta1 <- beta1[beta1 < 1]; beta1 <- sample(beta1,n,replace = F) # SCALING FACTOR (amplitude) #rep(2,n)
   
-  tau2 <- 0.1
-  beta2 <- rnorm(n,0,  1/sqrt(tau2)) #0.1
-  #beta2 <- beta2[beta2 > 0]; beta2 <- sample(beta2,n,replace = F) #T(0,)          # SLOPE
+  tau2 <- 0.025
+  beta2 <- rnorm(n,-5,  1/sqrt(tau2)) #0.1
+  #beta2 <- beta2[beta2 < 1]; beta2 <- sample(beta2,n,replace = F) #T(0,)          # SLOPE
   
-  tau3 <- 0.01#sd = 10
+  tau3 <- 0.025#sd = 10
   beta3 <- rnorm(n*3,30,  1/sqrt(tau3)); beta3 <- beta3[beta3 > 0 & beta3 < Y-3]; beta3 <- sample(beta3,n,replace = F) #T(0,Y-3)    # INFLECTION POINT 
   
   cbind(beta0,beta1,beta2,beta3) %>% data.frame -> pr_sim
@@ -474,7 +474,7 @@ Y <- 47
 
 {
   tau_mu0 <- 0.1
-  mu_beta0 <- rnorm(n,0.5,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
+  mu_beta0 <- rnorm(n,0,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
   tau_beta0 <- rgamma(n,0.001,0.001)
   
   beta0 <- rnorm(n*3,mu_beta0, tau_beta0) #INTERCEPT
@@ -488,7 +488,7 @@ Y <- 47
   beta2 <- rnorm(n,0,  1/sqrt(tau2)) #0.1
   #beta2 <- beta2[beta2 > 0]; beta2 <- sample(beta2,n,replace = F) #T(0,)          # SLOPE
   
-  tau3 <- 0.05#sd = 10
+  tau3 <- 0.1#sd = 10
   beta3 <- rnorm(n*3,30,  1/sqrt(tau3)); beta3 <- beta3[beta3 > 0 & beta3 < Y-3]; beta3 <- sample(beta3,n,replace = F) #T(0,Y-3)    # INFLECTION POINT 
   
   cbind(beta0,beta1,beta2,beta3) %>% data.frame -> pr_sim
@@ -635,7 +635,7 @@ Y <- 47
 
 {
   tau_mu0 <- 0.1
-  mu_beta0 <- rnorm(n,0.5,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
+  mu_beta0 <- rnorm(n,0,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
   tau_beta0 <- rgamma(n,0.001,0.001)
   
   beta0 <- rnorm(n*3,mu_beta0, tau_beta0) #INTERCEPT
@@ -649,7 +649,7 @@ Y <- 47
   beta2 <- rnorm(n,0,  1/sqrt(tau2)) #0.1
   #beta2 <- beta2[beta2 > 0]; beta2 <- sample(beta2,n,replace = F) #T(0,)          # SLOPE
   
-  tau3 <- 0.01#sd = 10
+  tau3 <- 0.015#sd = 10
   beta3 <- rnorm(n*3,30,  1/sqrt(tau3)); beta3 <- beta3[beta3 > 0 & beta3 < Y-3]; beta3 <- sample(beta3,n,replace = F) #T(0,Y-3)    # INFLECTION POINT 
   
   cbind(beta0,beta1,beta2,beta3) %>% data.frame -> pr_sim
@@ -873,10 +873,14 @@ ggplot(pr_sim %>% filter(beta0 > -20 & beta0 < 15 &
                  fill = "cyan", color = "cyan", alpha = 0.25, bins = 100, position="identity") +
   geom_histogram(aes(beta0_hi, y = ..density..), 
                  fill = "darkblue", color = "darkblue", alpha = 0.25, bins = 100, position="identity") #+
-  #geom_histogram(data = black_b0_mods, 
-  #               aes(black, y = ..density.. ,fill = area), 
-  #               alpha = 0.2, bins = 100, position="identity") +
-  #facet_wrap(~model)
+
+ggplot(pr_sim %>% filter(beta0 > -20 & beta0 < 15)) +
+         geom_histogram(aes(beta0, y = ..density..), 
+                        fill = "blue", color = "blue", alpha = 0.25, bins = 100, position="identity") +
+  geom_histogram(data = black_b0_mods, 
+                 aes(black, y = ..density.. ,fill = area), 
+                 alpha = 0.2, bins = 100, position="identity") +
+  facet_wrap(~model)
 
 ggplot(pr_sim) +
   geom_histogram(aes(beta1, y = ..density..), fill = "blue", alpha = 1, bins = 100) +
