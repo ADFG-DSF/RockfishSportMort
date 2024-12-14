@@ -64,6 +64,12 @@ get_Rhat <- function(post, cutoff = 1.1){
     "R^ quantiles" = quantile(post$summary[, "Rhat"], probs = seq(0.9, 1, by = .01), na.rm = TRUE))
 }
 
+#-------------------------------------------------------------------------------
+# for plotting logit
+logit_to_prob <- function(logit) {
+  exp(logit) / (1 + exp(logit))
+}
+
 # Read data --------------------------------------------------------
 # Logbook harvests by area, year for guided trips
 readinData <- function(spl_knts = 7,
@@ -88,6 +94,14 @@ readinData <- function(spl_knts = 7,
     readRDS("..//data//bayes_dat//Chat_ayu.rds")  %>% 
     mutate(Chat = ifelse(C == 0, 1, C), 
            seC = ifelse(seC == 0, 1, seC)) %>%
+    arrange(area, user, year)
+  
+  Rhat_ayu <- Hhat_ayu %>%
+    left_join(Chat_ayu, by = c("year","area","user","region")) %>%
+    mutate(R = C - H,
+           seR = sqrt(seH^2 + seC^2)) %>%
+    mutate(Rhat = ifelse(R <= 0, 1, R), 
+           seR = ifelse(seR == 0, 1, seR)) %>%
     arrange(area, user, year)
   
   # SWHS harvests by area, year
@@ -126,6 +140,13 @@ readinData <- function(spl_knts = 7,
   
   Chat_ay %>% filter(is.na(Chat))
   
+  Rhat_ay <- Hhat_ay %>%
+    left_join(Chat_ay, by = c("year","area","region")) %>%
+    filter(!is.na(Chat)) %>%
+    mutate(Rhat = Chat - Hhat,
+           seR = sqrt(seH^2 + seC^2)) %>%
+    mutate(Rhat = ifelse(Rhat <= 0, 1, Rhat), 
+           seR = ifelse(seR == 0, 1, seR)) 
   
   # Survey data on catch composition
   S_ayu0 <- 
@@ -157,12 +178,17 @@ readinData <- function(spl_knts = 7,
   Chat_ayg <- Chat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
   Chat_ayp <- Chat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
   
+  Rhat_ayg <- Rhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
+  Rhat_ayp <- Rhat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
+  
   # Separate out the unknowns in the pre-1996 data
   Hhat_Uy <- Hhat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
   Chat_Uy <- Chat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
+  Rhat_Uy <- Rhat_ay %>% filter(area == "UNKNOWN" & year >= start_yr & year <= end_yr)
   
   Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
+  Rhat_ay <- Rhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
   Y = length(unique(Hhat_ay$year))
@@ -219,6 +245,16 @@ readinData <- function(spl_knts = 7,
   # need cv to be 1 when there is no data
   cvChat_ay[is.na(cvChat_ay)] <- 1
   
+  matrix_Rhat_ay <- cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Rhat_ay$year))),
+                          matrix(Rhat_ay$Rhat, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE))
+  
+  #matrix_Chat_ay[4, 1:5] <- NA
+  cvRhat_ay = cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Rhat_ay$year))),
+                    matrix(Rhat_ay$seC, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE)) /
+    matrix_Rhat_ay
+  # need cv to be 1 when there is no data
+  cvRhat_ay[is.na(cvRhat_ay)] <- 1
+  
   dim(matrix_Hhat_ay)
   dim(matrix_Chat_ay)
   
@@ -234,6 +270,9 @@ readinData <- function(spl_knts = 7,
       Chat_ay_pH = matrix_Chat_ay,
       Chat_ay_obs = matrix_Chat_ay,
       cvChat_ay = cvChat_ay,
+      #Releases
+      Rhat_ay = matrix_Rhat_ay,
+      cvRhat_ay = cvRhat_ay,
       
       #Logbook data
       #Harvest by species and user: 
@@ -272,6 +311,12 @@ readinData <- function(spl_knts = 7,
                          matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
               matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
+      Hhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
+                       matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
+      cvHhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
+                         matrix(Hhat_ayp$seH, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)) / 
+        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
+              matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
       # SWHS estimates of rockfish Catches
       Chat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
                        matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
@@ -280,6 +325,22 @@ readinData <- function(spl_knts = 7,
                          matrix(Chat_ayg$seC, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
               matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
+      
+      # SWHS estimates of rockfish Catches
+      Rhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
+                       matrix(Rhat_ayg$Rhat, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)),
+      # cv of SWHS estimates
+      cvRhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
+                         matrix(Rhat_ayg$seC, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)) / 
+        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
+              matrix(Rhat_ayg$Rhat, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)),
+      Rhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
+                       matrix(Rhat_ayp$Rhat, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)),
+      # cv of SWHS estimates
+      cvRhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
+                         matrix(Rhat_ayp$seC, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)) / 
+        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
+              matrix(Rhat_ayp$Rhat, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)),
       #Spline:
       Z = Z, #spline, same for C and H
       Q = makeQ(2, C), #spline stuff; same for C and H
@@ -310,9 +371,11 @@ readinData <- function(spl_knts = 7,
               R_ayg = R_ayg,
               Hhat_ayu = Hhat_ayu,
               Chat_ayu = Chat_ayu,
+              Rhat_ayu = Rhat_ayu,
               Hhat_ayg = Hhat_ayg,
               Hhat_ay = Hhat_ay,
               Chat_ay = Chat_ay,
+              Rhat_ay = Rhat_ay,
               S_ayu = S_ayu,
               comp = comp,
               compX = compX,
@@ -326,13 +389,14 @@ jags_params <- function(){
     #"logbc", "mu_bc", "sd_bc",
     #SWHS bias, separate C and H
     "logbc_H", "mu_bc_H", "sd_bc_H",
+    "logbc_R", "mu_bc_R", "sd_bc_R",
+    "bc_R_offset","mu_bc_R_offset","sd_bcRoff",
     #"logbc_C", "mu_bc_C", "sd_bc_C",
     "logbc_C","bc_C_offset","mu_bc_C_offset","sd_bcCoff",
     #User proportions (proportion guided); different for H and C
-    "pG_H", "b1_pG_H", "b2_pG_H",
-    "pG_C", "b1_pG_C", "b2_pG_C",
+    "pG", "b1_pG", "b2_pG",
     #proportion harvested: 
-    "pH", 
+    "pH", "tau_pH",
     #liner:
     #  "pH_int", "pH_slo",
     #polynomial
@@ -349,7 +413,7 @@ jags_params <- function(){
     "mu_beta0_black", "tau_beta0_black",
     #random effects on species
     "re_pelagic", "re_black","re_yellow",
-    "sd_comp", 
+    "sd_comp", "tau_comp",
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
     "Hb_ayg", "Hb_ayu", "Hb_ay",
@@ -358,13 +422,13 @@ jags_params <- function(){
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H",
     #catch estimates and spline parts
-    "Ctrend_ay", "C_ay", "sigma_C", "lambda_C", "C_ayg", "C_ayu", 
+    "Chat_ay","C_ay", "C_ayg", "C_ayu", 
     "Cb_ayg", "Cb_ayu", "Cb_ay",
     "Cy_ayg", "Cy_ayu", "Cy_ay",
-    "logChat_ay",
     #with hierarchichal pline lambda
-    "mu_lambda_C","sigma_lambda_C","beta_C",
+    #"mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
     #releases
+    "logRhat_ay","logRhat_ayg",
     "R_ay", "R_ayg", "R_ayu", 
     "Rb_ayg", "Rb_ayu", "Rb_ay",
     "Ry_ayg", "Ry_ayu", "Ry_ay")

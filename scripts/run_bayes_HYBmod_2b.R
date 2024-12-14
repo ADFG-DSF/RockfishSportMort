@@ -50,16 +50,16 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 20E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias"
+mod <- "HR_hybLBR_2bias"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "no"
+use_inits = "yes"
 
-use_this_model <- "HR_censLBR_2bias_thru2023_1e+06_2024-12-11" #for yelloweye betas:
+use_this_model <- "HR_hybLBR_2bias_thru2023_1400000_7kn_2024-12-13" #for yelloweye betas:
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -74,7 +74,7 @@ other_inits <- lapply(1:nc, function(chain) {
   as.list(chain_data[nrow(chain_data), ])
 })
 
-#last_inits <- other_inits
+last_inits <- other_inits
 
 for (i in 1:3) { #i <- 1
 #  last_inits[[i]]$'beta0_pH[1]' <- runif(1,-0.4,0)
@@ -287,6 +287,12 @@ for (i in 1:3) { #i <- 1
 # Name the initial values you want to use:
 inits_to_use <- last_inits
 
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_comp"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_pH"]
+})
 #-------------------------------------------------------------------------------
 #Run the model
 if (use_inits == "no") {
@@ -324,7 +330,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_thru2023_1e+06_2024-12-11"
+results <- "HR_censLBR_2bias_thru2023_1e+06_2024-12-12"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -971,7 +977,7 @@ bias %>% data.frame() %>%
   geom_vline(aes(xintercept = 1)) +
   facet_wrap(.~area)
 
-
+hist(bias$bc, breaks = 100)
 # ** sd by area --------------------------------------------------------
 postH$sims.list$sd_bc_H %>%
   as.data.frame() %>%

@@ -70,6 +70,44 @@ logit_to_prob <- function(logit) {
   exp(logit) / (1 + exp(logit))
 }
 
+#-------------------------------------------------------------------------------
+# getting modes:
+find_modes <- function(x, max_modes = 3, bw = "nrd0") {
+  if (length(x) < 2) {
+    stop("Input vector must have at least two elements.")
+  }
+  
+  # Perform kernel density estimation
+  dens <- density(x, bw = bw)
+  
+  # Find peaks (local maxima)
+  y <- dens$y
+  peaks <- which(diff(sign(diff(y))) == -2) + 1
+  
+  # Get the heights and corresponding x-values
+  mode_heights <- y[peaks]
+  mode_values <- dens$x[peaks]
+  
+  # Sort modes by height (descending)
+  sorted_indices <- order(mode_heights, decreasing = TRUE)
+  mode_heights <- mode_heights[sorted_indices]
+  mode_values <- mode_values[sorted_indices]
+  
+  # Return up to max_modes
+  num_modes <- min(length(mode_heights), max_modes)
+  mode_heights <- mode_heights[1:num_modes]
+  mode_values <- mode_values[1:num_modes]
+  
+  # Normalize heights relative to the highest peak
+  relative_heights <- mode_heights / max(mode_heights)
+  
+  # Return a data frame with mode values and relative heights
+  data.frame(
+    mode = mode_values,
+    relative_height = relative_heights
+  )
+}
+
 # Read data --------------------------------------------------------
 # Logbook harvests by area, year for guided trips
 readinData <- function(spl_knts = 7,
