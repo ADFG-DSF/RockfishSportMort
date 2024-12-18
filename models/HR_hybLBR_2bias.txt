@@ -23,14 +23,16 @@ model{
   tau_beta0_pelagic[r] ~ dgamma(0.01, 0.01)
   mu_beta0_yellow[r] ~ dnorm(0, 0.5) #dnorm(0, 0.001)
   tau_beta0_yellow[r] ~ dgamma(0.01, 0.01)
-  mu_beta0_yellow_x[r] ~ dnorm(0, 0.5) #dnorm(0, 0.001)
-  tau_beta0_yellow_x[r] ~ dgamma(0.01, 0.01)
   mu_beta0_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.01, 0.01)
 
   mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
   tau_beta0_pH[r] ~ dgamma(0.01, 0.01)
   }
+
+## for SOUTHEAST only
+  mu_beta0_yellow_x ~ dnorm(0, 0.5) #dnorm(0, 0.001)
+  tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
 
  for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 
@@ -63,13 +65,13 @@ model{
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-5,)
   beta1_yellow[a] ~ dnorm(0, 0.1)T(0,)
   beta2_yellow[a] ~ dnorm(-0.5, 0.05)
-  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
+##beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
   beta2_black[a] ~ dnorm(0, 0.1)
-  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
+##beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
 	
   for(y in 35:Y){ #guided SWHS harvest likelihood
@@ -203,6 +205,9 @@ model{
 #Yelloweye stuff to deal with southeast retention closures
  #Kodiak and Southcentral:
  for (a in 1:10) {
+  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5) 
+  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1) 
+
   for (y in 1:Y){
    for (u in 1:2){
         logit(p_yellow[a, y, u]) <- re_yellow[a, y, u] + beta0_yellow[a] + 
@@ -220,7 +225,10 @@ model{
  #Southeast:
  for (a in 11:16) {
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
-  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x[regions[a]], tau_beta0_yellow_x[regions[a]])T(-3,)
+  beta3_yellow[a] ~ dnorm(30, 0.05)T(29,Y-5)
+  beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)  
+
+  beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x, tau_beta0_yellow_x)T(-3,)
   beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
   beta2_yellow_x[a] ~ dnorm(-0.25, 0.025)
   beta3_yellow_x[a] ~ dnorm(30, 0.01)T(29,39) #inflection point must be before closure

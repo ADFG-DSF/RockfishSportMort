@@ -26,13 +26,22 @@ model{
   mu_beta0_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.01, 0.01)
 
+  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+  tau_beta2_pelagic[r] ~ dgamma(0.01, 0.01)
+  mu_beta2_yellow[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+  tau_beta2_yellow[r] ~ dgamma(0.01, 0.01)
+  mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+  tau_beta2_black[r] ~ dgamma(0.01, 0.01)
+
   mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
   tau_beta0_pH[r] ~ dgamma(0.01, 0.01)
   }
 
 ## for SOUTHEAST only
-  mu_beta0_yellow_x ~ dnorm(0, 0.5) #dnorm(0, 0.001)
+  mu_beta0_yellow_x ~ dnorm(0.5, 0.5) #dnorm(0, 0.001)
   tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
+  mu_beta2_yellow_x ~ dnorm(-1, 0.5) #dnorm(0, 0.001)
+  tau_beta2_yellow_x ~ dgamma(0.01, 0.01)
 
  for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 
@@ -42,7 +51,7 @@ model{
 
   mu_bc_R[a] ~ dnorm(0, 0.001) #T(,10)              # mean log bias in SWHS H estimates
   tau_bc_R[a] <- 1 / sd_bc_R[a] / sd_bc_R[a]    # transformed sigma in mean log bias 
-  sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias
+  sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
 
   #User proportions. 
   b1_pG[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
@@ -58,19 +67,19 @@ model{
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_pelagic[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_pelagic[a] ~ dnorm(0, 0.1)
+  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])#T(-10,10)
   beta3_pelagic[a] ~ dnorm(30, 0.05)T(19,Y-5) 
   beta4_pelagic[a] ~ dnorm(0, 0.1)
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-5,)
   beta1_yellow[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_yellow[a] ~ dnorm(-1, 0.1)
+  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])#T(-10,10)
 ##  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_black[a] ~ dnorm(0, 0.1)
+  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]])#T(-10,10)
 ##  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
 	
@@ -98,8 +107,10 @@ model{
 
 #logbook release data censored for total and pelagic; modelled as minimal estimates
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
-    Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
-    Rlbp_ayg[a, y] ~ dpois(R_ayg[a, y] * p_pelagic[a, y, 1])  
+     logR[a, y] <- log(R_ayg[a, y])
+     Rlb_ayg_cens[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg[a, y],)
+     logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
+     Rlbp_ayg_cens[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg[a, y],)
   }
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year also censored
@@ -126,7 +137,7 @@ model{
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
    #Total releases
-   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]   #get rid of pG_R!!!      
+   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
    R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               
 
@@ -203,8 +214,8 @@ model{
 #Yelloweye stuff to deal with southeast retention closures
  #Kodiak and Southcentral:
  for (a in 1:10) {
- beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)
- beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
+  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5) 
+  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1) 
 
   for (y in 1:Y){
    for (u in 1:2){
@@ -224,12 +235,12 @@ model{
  for (a in 11:16) {
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
   beta3_yellow[a] ~ dnorm(30, 0.05)T(29,Y-5)
-  beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)
+  beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)  
 
   beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x, tau_beta0_yellow_x)T(-3,)
-  beta1_yellow_x[a] ~ dnorm(0, 0.5)T(0,)
-  beta2_yellow_x[a] ~ dnorm(-1, 0.05)T(,2)
-  beta3_yellow_x[a] ~ dnorm(30, 0.1)T(29,39) #inflection point must be before closure
+  beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
+  beta2_yellow_x[a] ~ dnorm(mu_beta2_yellow_x, tau_beta2_yellow_x) #T(-10,2)
+  beta3_yellow_x[a] ~ dnorm(30, 0.01)T(29,39) #inflection point must be before closure
   beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
   for (y in 1:Y){

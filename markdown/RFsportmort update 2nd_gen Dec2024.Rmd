@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_cens_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_fit_",Sys.Date(),".html"))
       })
 ---
 
@@ -27,6 +27,9 @@ library(knitr)
 library(kableExtra)
 library(here)
 library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 start_yr <- 1977
@@ -39,16 +42,66 @@ list2env(readinData(start_yr = start_yr,
 #...............................................................................
 ##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
 #...............................................................................
-#mod <- "LB_fit"
+mod <- "LB_fit"
 #mod <- "LB_hyb_1b"
 #mod <- "LB_hyb_2b"
-mod <- "LB_cens" ##!!!FLAG
-#res <- "model_HCR_fitLBR_xspline_xYE_thru2023_6400000_2024-11-30"
-#res <- "model_HCR_hybLBR_xspline_xYE_thru2023_6400000_2024-11-30"
-res <- "HR_censLBR_thru2023_1400000_7kn_2024-12-13"
+#mod <- "LB_cens" ##!!!FLAG
+res <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+#res <- "HR_hybLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+#res <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
-#lastrun <- "model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24"
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_yellow_x\\[")|
+           str_detect(Parameter, "^beta1_yellow_x\\[")|
+           str_detect(Parameter, "^beta2_yellow_x\\[")|
+           str_detect(Parameter, "^beta3_yellow_x\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
 
 ```
 
@@ -366,10 +419,17 @@ x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})
 where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs and the number of yellow rockfish sampled modeled analogously with an appropriately substituted $N$.
  
 ### Unresolved issues and outstanding questions: 
-Before looking at results, here is a list of current issues that need to be resolved as well as a list of development steps that still need to be taken.
+The $LB_{cens}$ and $LB_{fit}$ models have been run to almost complete convergence while the $LB_{hyb}$ model still comes up short, likely as it struggles to resolve the disparate information from the SWHS and logbook data. In particular, the *p_harvest* logistic curve struggles in this model given the retention closures during recent years in southeast. The curve of the data is more parabolic in southeast with a gradual increase in similar to other regions but a drop in recent years when retention of yelloweye was prohibited. 
 
-2. *Complete convergence* has not been achieved and at this juncture the logistic cuves used for pH and p_comp appear to tbe the last hurdle. Spline parameters are resolving nicely in these models. 
-3. *Prior choices* in general need to be vetted. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
+The $LB_{cens}$ model is the best behaved and seems to fit the data the best, but results in much higher release estimates than the Howard methods as a result of not fitting to logbook release data and responding to the SWHS estimates. The $LB_{fit}$ model appears to most closely approximate the Howard release estimates and the model behaves well with the exception the *p_yellow_x* logit curve for Southeast which continues to resolve to a positive slope that does not appear to fit the data and is opposite of the negative slopes in the other two models. *I am not clear on why this is occurring, even with an informed prior that favors a negative slope.* The next step is to enforce a negative slope on that parameter, although I am somewhat uncomfortable with that.
+
+It may be worth considering something other than a logistic curve but I am unclear as to the best option. During early model development I fit a number of polynomials but their use for hindcasting was dubious as hindcast extrapolation before the observations seemed spurious. This is why I decided to force a logistic curve on the data that would come in flat at the beginning of the observed period. 
+
+Other issues include:  
+
+1. *Complete convergence* has not been achieved and the logistic curve parameters for p_pelagic and p_yellow remain the last sticking point. I think that p_pelagic will resolve with longer chains.
+2. *Estimate precision:* These models are producing more precise harvest estimates that in Adam's original model. I am not sure why at this juncture. sigma_H on the spline was switched from a fixed value to a prior centered around that fixed value, but the model estimates are in the same range as the fixed value. Would the number of knots in the spline explain this? 7 knots was settled on during early model fitting when it clearly performed better than fewer or more knots.  
+3. *Prior choices* in general need to be vetted. The priors on the logistic curves are fairly informed in an effort to achieve the desired shapes for hindcasting. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
 4. *Random effects on pH:* These are currently used in the model but because pH isn't linked to data as the p_comp data is I am not sure what to make of them or if they are appropriate.
 5. *Model comparisons:* I need to write code for comparing models side by side as well as quantifying the differences between these methods and the Howard methods. 
  
@@ -382,7 +442,7 @@ names(rhat)[1] <- "Rhat_values"
 all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
-prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2)
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4)
 ```
 * **Proportion of parmaters converged (Rhat <= 1.1):** `r prop_conv`
 * *See end of document for summary of unconverged parameters.*
@@ -1860,10 +1920,14 @@ kable(par_x_area_tbl, booktabs = TRUE, longtable = FALSE,  #format = "latex",
 
 ```
 
-# Other outstanding issues
-* We desperately need the SWHS data. I will not be able to do anything else until we have it.
-* Error Check: data, model, results
-* How do we use Tania's data
-  + We can use early creel survey estimates. Potential to bias things if the Creel does not account for the full area. We could also think about this strategically as many areas already have very small harvest by 1996.
-  + Can we get more composition data from Southeast?
-  + Can we get any early estimates of the guided/unguided ratio?
+### Parameter estimates: 
+```{r}
+#kable(summary_table, 
+#      digits = 3, 
+#      format = "markdown", 
+#      caption = "Parameter Estimates with Credibility Intervals")
+
+summary_table %>%
+  kbl(digits = 3, caption = "Summary Table of Parameter Estimates") %>%
+  kable_styling(full_width = FALSE, position = "center", font_size = 10, fixed_thead = TRUE)
+```

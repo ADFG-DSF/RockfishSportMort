@@ -50,16 +50,16 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.75; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 30E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias"
+mod <- "HR_fitLBR_2bias_hierbeta2"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_thru2023_1400000_7kn_2024-12-13" #for yelloweye betas:
+use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -74,7 +74,7 @@ other_inits <- lapply(1:nc, function(chain) {
   as.list(chain_data[nrow(chain_data), ])
 })
 
-last_inits <- other_inits
+#last_inits <- other_inits
 
 for (i in 1:3) { #i <- 1
 #  last_inits[[i]]$'beta0_pH[1]' <- runif(1,-0.4,0)
@@ -294,6 +294,7 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_pH"]
 })
 
+
 #-------------------------------------------------------------------------------
 #Run the model
 if (use_inits == "no") {
@@ -331,7 +332,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_censLBR_2bias_thru2023_1e+06_2024-12-12"
+results <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -349,7 +350,7 @@ names(rhat)[1] <- "Rhat_values"
 all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
-prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2); prop_conv
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4); prop_conv
 
 rhat
 
@@ -454,10 +455,12 @@ rhat_exam %>% group_by(variable,area) %>%
   filter(str_detect(variable, "pH"))
 
 jagsUI::traceplot(postH, parameters = c("sd_comp","mu_beta0_yellow","tau_beta0_yellow",
+                                        "mu_beta2_yellow","tau_beta2_yellow",
                                         "beta0_yellow","beta1_yellow",
                                         "beta2_yellow","beta3_yellow","beta4_yellow"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow_x","tau_beta0_yellow_x",
+                                        "mu_beta2_yellow_x","tau_beta2_yellow_x",
                                         "beta0_yellow_x","beta1_yellow_x",
                                         "beta2_yellow_x","beta3_yellow_x","beta4_yellow_x"))
 
@@ -474,10 +477,12 @@ rhat_exam %>% group_by(variable,area) %>%
   filter(str_detect(variable, "p_yellow")) %>% print(n=50)
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
+                                        "mu_beta2_pelagic","tau_beta2_pelagic",
                                         "beta0_pelagic","beta1_pelagic",
                                         "beta2_pelagic","beta3_pelagic","beta4_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
+                                        "mu_beta2_black","tau_beta2_blac",
                                         "beta0_black","beta1_black",
                                         "beta2_black","beta3_black","beta4_black"))
 
