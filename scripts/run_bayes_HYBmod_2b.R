@@ -50,10 +50,10 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 30E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_hybLBR_2bias_hierbeta2"
+mod <- "HR_hybLBR_2bias_hierbeta2_dbllog"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -330,7 +330,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_hybLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+results <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -445,6 +445,10 @@ jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))
+
+jagsUI::traceplot(postH, parameters = c("sd_pH2","mu_beta0_pH2","tau_beta0_pH2",
+                                        "beta0_pH2","beta1_pH2",
+                                        "beta2_pH2","beta3_pH2","beta4_pH2"))
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
@@ -719,6 +723,24 @@ rbind(beta0_pH <- postH$q50$beta0_pH,
          year = y + 1976,
          user = ifelse(u == 1, "charter","private"))-> pH_trend
 
+rbind(beta0_pH2 <- postH$q50$beta0_pH2,
+      beta1_pH2 <- postH$q50$beta1_pH2,
+      beta2_pH2 <- postH$q50$beta2_pH2,
+      beta3_pH2 <- postH$q50$beta3_pH2,
+      beta4_pH2 <- postH$q50$beta4_pH2) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pH2_trend
+
 pH_obs %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   geom_ribbon(data = pH_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
@@ -726,7 +748,8 @@ pH_obs %>% filter(user != "all") %>%
   geom_point(aes(shape = source)) +
   geom_point(data  = pH_obs %>% filter(user == "all"), color = "darkgrey") +
   geom_line(data = pH_mod, aes(color = user)) +
-  geom_line(data = pH_trend, aes(color = user)) +
+  #geom_line(data = pH_trend, aes(color = user)) +
+  geom_line(data = pH2_trend, aes(color = user), linetype = 4) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)

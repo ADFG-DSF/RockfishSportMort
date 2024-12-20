@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 30E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 2E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
 mod <- "HR_censLBR_hierbeta2"
@@ -397,7 +397,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16"
+results <- "HR_censLBR_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -415,7 +415,7 @@ names(rhat)[1] <- "Rhat_values"
 all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
-prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2); prop_conv
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4); prop_conv
 
 rhat
 

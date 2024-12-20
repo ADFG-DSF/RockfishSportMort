@@ -33,12 +33,14 @@ model{
   mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta2_black[r] ~ dgamma(0.1, 0.1)
 
-  mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
-  tau_beta0_pH[r] ~ dgamma(0.01, 0.01)
+  for (s in 1:2){
+    mu_beta0_pH[r,s] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
+    tau_beta0_pH[r,s] ~ dgamma(0.01, 0.01)
+    }  
   }
 
 ## for SOUTHEAST only
-  mu_beta0_yellow_x ~ dnorm(0.5, 0.5) #dnorm(0, 0.001)
+  mu_beta0_yellow_x ~ dnorm(0.25, 0.5) #dnorm(0, 0.001)
   tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
   mu_beta2_yellow_x ~ dnorm(-1, 0.5) #dnorm(0, 0.001)
   tau_beta2_yellow_x ~ dgamma(0.1, 0.1)
@@ -51,35 +53,37 @@ model{
 
   mu_bc_R[a] ~ dnorm(0, 0.001) #T(,10)              # mean log bias in SWHS H estimates
   tau_bc_R[a] <- 1 / sd_bc_R[a] / sd_bc_R[a]    # transformed sigma in mean log bias 
-  sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias 
+  sd_bc_R[a] ~ dgamma(2, 2) #dunif(0, 10)                 # sigma mean log bias
 
   #User proportions. 
   b1_pG[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #proportion of catch that is harvested
-  beta0_pH[a] ~ dnorm(mu_beta0_pH[regions[a]], tau_beta0_pH[regions[a]])T(-2.75,) #INTERCEPT
-  beta1_pH[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
-  beta2_pH[a] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
-  beta3_pH[a] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
-  beta4_pH[a] ~ dnorm(0, 0.1)               # USER EFFECT
+  for (s in 1:2){ #s = 1= pelagic, s = 2 = yelloweye
+    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #T(-2.75,) #INTERCEPT
+    beta1_pH[a,s] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+    beta2_pH[a,s] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+    beta3_pH[a,s] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
+    beta4_pH[a,s] ~ dnorm(0, 0.1)               # USER EFFECT
+  }
 
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_pelagic[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])#T(-10,10)
+  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
   beta3_pelagic[a] ~ dnorm(30, 0.05)T(19,Y-5) 
   beta4_pelagic[a] ~ dnorm(0, 0.1)
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-5,)
   beta1_yellow[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])#T(-10,10)
+  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]]) #T(-10,10)
 ##  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]])#T(-10,10)
+  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
 ##  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
 	
@@ -107,7 +111,7 @@ model{
 
 #logbook release data censored for total and pelagic; modelled as minimal estimates
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
-     logR[a, y] <- log(R_ayg[a, y])
+    logR[a, y] <- log(R_ayg[a, y])
      Rlb_ayg_cens[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg[a, y],)
      logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
      Rlbp_ayg_cens[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg[a, y],)
@@ -137,8 +141,10 @@ model{
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
    #Total releases
-   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
-   R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
+   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y]) / (H_ayg[a,y] * p_pelagic[a, y, 1] + Hy_ayg[a,y])
+   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y]) / (H_ayu[a,y] * p_pelagic[a, y, 2] + Hy_ayu[a,y])
+   R_ayg[a, y] <- (H_ayg[a, y] / pHg[a,y]) - H_ayg[a, y]   #get rid of pG_R!!!      
+   R_ayu[a, y] <- (H_ayu[a, y] / pHu[a,y]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               
 
    #Black rockfish
@@ -150,8 +156,8 @@ model{
    Cb_ayu[a, y] <- Hb_ayu[a, y] + Rb_ayu[a, y]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] 
-   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
+   Rb_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1,1]) - H_ayg[a, y]  #R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] 
+   Rb_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2,1]) - H_ayu[a, y]  #R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
@@ -174,10 +180,13 @@ model{
    #Composition logistic regression and pH logistic regression
    for(u in 1:2){
     #Proportion harvested: 
-    logit(pH[a, y, u]) <- re_pH[a, y, u] + beta0_pH[a] + 
-                                     beta1_pH[a] / (1 + exp(-beta2_pH[a] * (y - beta3_pH[a]))) + 
-                                     beta4_pH[a] * (u - 1)
-
+    for (s in 1:2) {
+      logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + beta0_pH[a,s] + 
+                                     beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s]))) + 
+                                     beta4_pH[a,s] * (u - 1)
+      re_pH[a, y, u, s] ~ dnorm(0, tau_pH)
+    }
+    
     #Species composition: 
     logit(p_pelagic[a, y, u]) <- re_pelagic[a, y, u] + beta0_pelagic[a] + 
                                      beta1_pelagic[a] / (1 + exp(-beta2_pelagic[a] * (y - beta3_pelagic[a]))) + beta4_pelagic[a] * (u - 1)
@@ -193,7 +202,6 @@ model{
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
     re_yellow[a, y, u] ~ dnorm(0, tau_comp)
-    re_pH[a, y, u] ~ dnorm(0, tau_pH)
    }
   }
 
@@ -214,8 +222,8 @@ model{
 #Yelloweye stuff to deal with southeast retention closures
  #Kodiak and Southcentral:
  for (a in 1:10) {
-  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5) 
-  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1) 
+ beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)
+ beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
 
   for (y in 1:Y){
    for (u in 1:2){
@@ -226,8 +234,8 @@ model{
    Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
    Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
 
-   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
-   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+   Ry_ayg[a, y] <- (Hy_ayg[a, y] / pH[a,y,1,2]) - Hy_ayg[a, y]  #R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Ry_ayu[a, y] <- (Hy_ayg[a, y] / pH[a,y,2,2]) - Hy_ayg[a, y]  #R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
   }
  } 
 
@@ -235,12 +243,12 @@ model{
  for (a in 11:16) {
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
   beta3_yellow[a] ~ dnorm(30, 0.05)T(29,Y-5)
-  beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)  
+  beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)
 
   beta0_yellow_x[a] ~ dnorm(mu_beta0_yellow_x, tau_beta0_yellow_x)T(-3,)
   beta1_yellow_x[a] ~ dnorm(0, 0.1)T(0,)
   beta2_yellow_x[a] ~ dnorm(mu_beta2_yellow_x, tau_beta2_yellow_x) #T(-10,2)
-  beta3_yellow_x[a] ~ dnorm(30, 0.01)T(29,39) #inflection point must be before closure
+  beta3_yellow_x[a] ~ dnorm(30, 0.1)T(29,39) #inflection point must be before closure
   beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
   for (y in 1:Y){
@@ -250,8 +258,8 @@ model{
 
       re_yellow_x[a, y, u] ~ dnorm(0, tau_comp)
     }
-   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
-   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
+   Ry_ayg[a, y] <- (Hy_ayg[a, y] / pH[a,y,1,2]) - Hy_ayg[a, y]  #R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
+   Ry_ayu[a, y] <- (Hy_ayg[a, y] / pH[a,y,2,2]) - Hy_ayg[a, y]  #R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
   }
 
   ### need to break up how we hind cast YE so that we use the release estimate curve that ignores the closed years

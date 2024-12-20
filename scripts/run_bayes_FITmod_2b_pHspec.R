@@ -50,14 +50,16 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias_hierbeta2"
+mod <- "HR_hybLBR_2bias_hierbeta2_2pH"
+
+params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
@@ -647,9 +649,9 @@ as.data.frame(
 #              pivot_longer(-c(year, source), names_to = "area", values_to = "pH_hi95"),
 #            by = c("year","source","area"))
 
-pH_mod <- 
-  rbind(postH$mean$pH[,,1] %>% t(),
-        postH$mean$pH[,,2] %>% t()) %>%
+pHall_mod <- 
+  rbind(postH$mean$pHg %>% t(), #postH$mean$pH[,,1] %>% t(),
+        postH$mean$pHu %>% t()) %>% #postH$mean$pH[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -657,8 +659,8 @@ pH_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$pH[,,1] %>% t(),
-                  postH$q2.5$pH[,,2] %>% t()) %>%
+  left_join(rbind(postH$q2.5$pHg %>% t(),
+                  postH$q2.5$pHu %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -667,8 +669,70 @@ pH_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$pH[,,1] %>% t(),
-                  postH$q97.5$pH[,,2] %>% t()) %>%
+  left_join(rbind(postH$q97.5$pHg %>% t(),
+                  postH$q97.5$pHu %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHpel_mod <- 
+  rbind(postH$mean$pH[,,1,1] %>% t(),
+        postH$mean$pH[,,2,1] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,1] %>% t(),
+                  postH$q2.5$pH[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,1] %>% t(),
+                  postH$q97.5$pH[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHye_mod <- 
+  rbind(postH$mean$pH[,,1,2] %>% t(),
+        postH$mean$pH[,,2,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,2] %>% t(),
+                  postH$q2.5$pH[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,2] %>% t(),
+                  postH$q97.5$pH[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -680,7 +744,7 @@ pH_mod <-
 
 #need to get Hhat_ayu and Rhat_ayu that are not part of model data
 
-pH_obs <- 
+pHall_obs <- 
   as.data.frame(
     rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
           t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
@@ -701,15 +765,60 @@ pH_obs <-
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
+
+pHpel_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlbp_ayg/(jags_dat$Rlbp_ayg + jags_dat$Hlbp_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+pHye_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlby_ayg/(jags_dat$Rlby_ayg + jags_dat$Hlby_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
   
 
-rbind(beta0_pH <- postH$q50$beta0_pH,
-      beta1_pH <- postH$q50$beta1_pH,
-      beta2_pH <- postH$q50$beta2_pH,
-      beta3_pH <- postH$q50$beta3_pH,
-      beta4_pH <- postH$q50$beta4_pH) %>% t() %>%
+rbind(beta0_pH <- postH$q50$beta0_pH[,1],
+      beta1_pH <- postH$q50$beta1_pH[,1],
+      beta2_pH <- postH$q50$beta2_pH[,1],
+      beta3_pH <- postH$q50$beta3_pH[,1],
+      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
   data.frame() %>%
-  mutate(area = unique(H_ayg$area)) %>%
+  mutate(area = unique(H_ayg$area),
+         species = "pelagic") %>%
   rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
   right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
                          area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
@@ -719,16 +828,59 @@ rbind(beta0_pH <- postH$q50$beta0_pH,
            beta4 * (u - 1),
          pH = logit_to_prob(logit_pH),
          year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pH_trend
+         user = ifelse(u == 1, "charter","private"))-> pHpel_trend
 
-pH_obs %>% filter(user != "all") %>%
+rbind(beta0_pH <- postH$q50$beta0_pH[,2],
+      beta1_pH <- postH$q50$beta1_pH[,2],
+      beta2_pH <- postH$q50$beta2_pH[,2],
+      beta3_pH <- postH$q50$beta3_pH[,2],
+      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "ye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHye_trend
+
+pHpel_obs %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
-  geom_ribbon(data = pH_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+  geom_ribbon(data = pHpel_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source)) +
-  geom_point(data  = pH_obs %>% filter(user == "all"), color = "darkgrey") +
-  geom_line(data = pH_mod, aes(color = user)) +
-  geom_line(data = pH_trend, aes(color = user)) +
+  geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_line(data = pHpel_mod, aes(color = user)) +
+  geom_line(data = pHpel_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+pHye_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  geom_ribbon(data = pHye_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source)) +
+  geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_line(data = pHye_mod, aes(color = user)) +
+  geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area)
+
+pHall_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  geom_ribbon(data = pHall_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source)) +
+  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_line(data = pHall_mod, aes(color = user)) +
+  #geom_line(data = pHall_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area)
@@ -1080,7 +1232,7 @@ rbind(bc_mod2, bc_obs) %>%
   ggplot(aes(x = year, y = bc, color = source)) +
   geom_point() +
   geom_line() +
-  coord_cartesian(ylim = c(0, 8)) +
+  #coord_cartesian(ylim = c(0, 8)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
   facet_wrap(. ~ area)
 
@@ -1448,20 +1600,20 @@ central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastsid
 
 rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
-  geom_ribbon(data = p_yellowX_mod, 
-              aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
-              alpha = 0.15, color = NA) +
-  geom_ribbon(data = p_yellow_mod %>% filter(area %in% central),
+  #geom_ribbon(data = p_yellowX_mod, 
+  #            aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+  #            alpha = 0.15, color = NA) +
+  geom_ribbon(data = p_yellow_mod, # %>% filter(area %in% central),
               aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.15, color = NA) +
   geom_point() +
   #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
-  geom_line(data = p_yellow_mod %>% filter(area %in% central), linetype = 2) +
-  geom_line(data = p_yellowX_mod, linetype=2) +
+  geom_line(data = p_yellow_mod, linetype = 2) +
+  #geom_line(data = p_yellowX_mod, linetype=2) +
   #geom_line(data = p_yellow_mod, aes(x = year, y = trend, color = user)) +
   #geom_line(data = p_yellow_mod, aes(, y = med_p), linetype = 2, size = 0.5) +
-  geom_line(data = yellow_x_trend) +
-  geom_line(data = yellow_trend %>% filter(area %in% central)) +
+  #geom_line(data = yellow_x_trend) +
+  geom_line(data = yellow_trend) +
   geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +

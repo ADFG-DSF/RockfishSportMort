@@ -27,11 +27,11 @@ model{
   tau_beta0_black[r] ~ dgamma(0.01, 0.01)
 
   mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_pelagic[r] ~ dgamma(0.01, 0.01)
+  tau_beta2_pelagic[r] ~ dgamma(0.1, 0.1)
   mu_beta2_yellow[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_yellow[r] ~ dgamma(0.01, 0.01)
+  tau_beta2_yellow[r] ~ dgamma(0.1, 0.1)
   mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_black[r] ~ dgamma(0.01, 0.01)
+  tau_beta2_black[r] ~ dgamma(0.1, 0.1)
 
   mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
   tau_beta0_pH[r] ~ dgamma(0.01, 0.01)
@@ -45,7 +45,7 @@ model{
   mu_beta0_yellow_x ~ dnorm(0.5, 0.5) #dnorm(0, 0.001)
   tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
   mu_beta2_yellow_x ~ dnorm(-1, 0.5) #dnorm(0, 0.001)
-  tau_beta2_yellow_x ~ dgamma(0.01, 0.01)
+  tau_beta2_yellow_x ~ dgamma(0.1, 0.1)
 
  for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 

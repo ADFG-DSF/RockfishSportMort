@@ -73,16 +73,18 @@ opt1 <- rgamma(10000,0.001,0.001)
 opt2 <- rgamma(10000,0.01,0.001)
 opt3 <- rgamma(10000,0.001,0.01)
 opt4 <- rgamma(10000,0.01,0.01)
+opt5 <- rgamma(10000,0.1,0.1)
 
-taus <- cbind(opt1 = opt1, opt2 = opt2, opt3 = opt3, opt4 = opt4)
+taus <- cbind(opt1 = opt1, opt2 = opt2, opt3 = opt3, opt4 = opt4, opt5 = opt5)
 
 ggplot(taus) +
-  geom_histogram(aes(opt1), color = "red", fill = "red", alpha = 0.25, bins = 100) +
-  geom_histogram(aes(opt2), color = "red", fill = "orange", alpha = 0.25, bins = 100) +
-  geom_histogram(aes(opt3), color = "red", fill = "goldenrod", alpha = 0.25, bins = 100) +
-  geom_histogram(aes(opt4), color = "red", fill = "violet", alpha = 0.25, bins = 100) 
+  #geom_histogram(aes(opt1), color = "red", fill = "red", alpha = 0.25, bins = 100) +
+  #geom_histogram(aes(opt2), color = "red", fill = "orange", alpha = 0.25, bins = 100) +
+  #geom_histogram(aes(opt3), color = "red", fill = "goldenrod", alpha = 0.25, bins = 100) +
+  #geom_histogram(aes(opt4), color = "red", fill = "violet", alpha = 0.25, bins = 100) +
+  geom_histogram(aes(opt5), color = "red", fill = "forestgreen", alpha = 0.25, bins = 100)
   
-range(opt1); range(opt2); range(opt3); range(opt4)
+range(opt1); range(opt2); range(opt3); range(opt4); range(opt5)
 
 #-------------------------------------------------------------------------------
 # pH Logistic curves

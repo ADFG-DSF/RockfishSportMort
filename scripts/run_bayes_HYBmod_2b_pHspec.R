@@ -50,14 +50,16 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias_hierbeta2"
+mod <- "HR_hybLBR_2bias_hierbeta2_2pH"
+
+params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
@@ -293,8 +295,6 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_pH"]
 })
-
-
 #-------------------------------------------------------------------------------
 #Run the model
 if (use_inits == "no") {
@@ -332,7 +332,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+results <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -350,7 +350,7 @@ names(rhat)[1] <- "Rhat_values"
 all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
-prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4); prop_conv
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),2); prop_conv
 
 rhat
 
@@ -482,7 +482,7 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
                                         "beta2_pelagic","beta3_pelagic","beta4_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
-                                        "mu_beta2_black","tau_beta2_blac",
+                                        "mu_beta2_black","tau_beta2_black",
                                         "beta0_black","beta1_black",
                                         "beta2_black","beta3_black","beta4_black"))
 
@@ -983,7 +983,7 @@ bias %>% data.frame() %>%
   geom_vline(aes(xintercept = 1)) +
   facet_wrap(.~area)
 
-
+hist(bias$bc, breaks = 100)
 # ** sd by area --------------------------------------------------------
 postH$sims.list$sd_bc_H %>%
   as.data.frame() %>%

@@ -4,7 +4,16 @@ model{
  sd_comp ~ dunif(0, 10)
  
  tau_pH <- 1 / sd_pH / sd_pH
+ tau_pH2 <- 1 / sd_pH / sd_pH
  sd_pH ~ dunif(0, 10)
+
+ tau_pHb <- 1 / sd_pHb / sd_pHb
+ tau_pH2b <- 1 / sd_pHb / sd_pHb
+ sd_pHb ~ dunif(0, 10)
+
+ tau_pHy <- 1 / sd_pHy / sd_pHy
+ tau_pH2y <- 1 / sd_pHy / sd_pHy
+ sd_pHy ~ dunif(0, 10)
    
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
@@ -35,6 +44,12 @@ model{
 
   mu_beta0_pH[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
   tau_beta0_pH[r] ~ dgamma(0.01, 0.01)
+
+  mu_beta0_pHb[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
+  tau_beta0_pHb[r] ~ dgamma(0.01, 0.01)
+
+  mu_beta0_pHy[r] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
+  tau_beta0_pHy[r] ~ dgamma(0.01, 0.01)
   }
 
 ## for SOUTHEAST only
@@ -42,6 +57,15 @@ model{
   tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
   mu_beta2_yellow_x ~ dnorm(-1, 0.5) #dnorm(0, 0.001)
   tau_beta2_yellow_x ~ dgamma(0.1, 0.1)
+
+  mu_beta0_pH2 ~ dnorm(0, 0.25) #dnorm(0, 0.001)
+  tau_beta0_pH2 ~ dgamma(0.01, 0.01)
+
+  mu_beta0_pH2b ~ dnorm(0, 0.25) #dnorm(0, 0.001)
+  tau_beta0_pH2b ~ dgamma(0.01, 0.01)
+
+  mu_beta0_pH2y ~ dnorm(0, 0.25) #dnorm(0, 0.001)
+  tau_beta0_pH2y ~ dgamma(0.01, 0.01)
 
  for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 
@@ -63,6 +87,19 @@ model{
   beta2_pH[a] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
   beta3_pH[a] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
   beta4_pH[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
+  beta0_pHb[a] ~ dnorm(mu_beta0_pHb[regions[a]], tau_beta0_pHb[regions[a]]) #T(-2.75,) #INTERCEPT
+  beta1_pHb[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pHb[a] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+  beta3_pHb[a] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
+  beta4_pHb[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
+  beta0_pHy[a] ~ dnorm(mu_beta0_pHy[regions[a]], tau_beta0_pHy[regions[a]]) #T(-2.75,) #INTERCEPT
+  beta1_pHy[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pHy[a] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+  beta3_pHy[a] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
+  beta4_pHy[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
 
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
@@ -136,9 +173,9 @@ model{
    C_ayu[a, y] <- H_ayu[a, y] + R_ayu[a, y]      # unguide catches
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
-   #Total releases
-   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
-   R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
+   #Total releases; logit curve split now between areas, double logit for SE because of closures
+##   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
+##   R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               
 
    #Black rockfish
@@ -150,8 +187,8 @@ model{
    Cb_ayu[a, y] <- Hb_ayu[a, y] + Rb_ayu[a, y]
    Cb_ay[a, y] <- Cb_ayg[a, y] + Cb_ayu[a, y]
 
-   Rb_ayg[a, y] <- R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] 
-   Rb_ayu[a, y] <- R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
+##   Rb_ayg[a, y] <- (Hb_ayg[a, y] / pHb[a,y,1]) - Hb_ayg[a, y] #R_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1] 
+##   Rb_ayu[a, y] <- (Hb_ayu[a, y] / pHb[a,y,2]) - Hb_ayu[a, y] #R_ayu[a, y] * p_pelagic[a, y, 2] * p_black[a, y, 2]
    Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
    #Yelloweye rockfish
@@ -173,18 +210,9 @@ model{
   for (y in 1:Y) {
    #Composition logistic regression and pH logistic regression
    for(u in 1:2){
-    #Proportion harvested: 
-    logit(pH[a, y, u]) <- re_pH[a, y, u] + beta0_pH[a] + 
-                                     beta1_pH[a] / (1 + exp(-beta2_pH[a] * (y - beta3_pH[a]))) + 
-                                     beta4_pH[a] * (u - 1)
-
     #Species composition: 
     logit(p_pelagic[a, y, u]) <- re_pelagic[a, y, u] + beta0_pelagic[a] + 
                                      beta1_pelagic[a] / (1 + exp(-beta2_pelagic[a] * (y - beta3_pelagic[a]))) + beta4_pelagic[a] * (u - 1)
-
-##    logit(p_yellow[a, y, u]) <- re_yellow[a, y, u] + beta0_yellow[a] + 
-##                                     beta1_yellow[a] / (1 + exp(-beta2_yellow[a] * (y - beta3_yellow[a]))) + 
-##                                     beta4_yellow[a] * (u - 1)
 
     logit(p_black[a, y, u]) <- re_black[a, y, u] + beta0_black[a] + 
                                      beta1_black[a] / (1 + exp(-beta2_black[a] * (y - beta3_black[a]))) + 
@@ -193,7 +221,6 @@ model{
     re_black[a, y, u] ~ dnorm(0, tau_comp)    # random effects
     re_pelagic[a, y, u] ~ dnorm(0, tau_comp)
     re_yellow[a, y, u] ~ dnorm(0, tau_comp)
-    re_pH[a, y, u] ~ dnorm(0, tau_pH)
    }
   }
 
@@ -219,6 +246,22 @@ model{
 
   for (y in 1:Y){
    for (u in 1:2){
+        #Proportion harvested: 
+        logit(pH[a, y, u]) <- re_pH[a, y, u] + beta0_pH[a] + 
+                                     beta1_pH[a] / (1 + exp(-beta2_pH[a] * (y - beta3_pH[a]))) + 
+                                     beta4_pH[a] * (u - 1)
+        re_pH[a, y, u] ~ dnorm(0, tau_pH)
+
+        logit(pHb[a, y, u]) <- re_pHb[a, y, u] + beta0_pHb[a] + 
+                                     beta1_pHb[a] / (1 + exp(-beta2_pHb[a] * (y - beta3_pHb[a]))) + 
+                                     beta4_pHb[a] * (u - 1)
+        re_pHb[a, y, u] ~ dnorm(0, tau_pHb)
+
+        logit(pHy[a, y, u]) <- re_pHy[a, y, u] + beta0_pHy[a] + 
+                                     beta1_pHy[a] / (1 + exp(-beta2_pHy[a] * (y - beta3_pHy[a]))) + 
+                                     beta4_pHy[a] * (u - 1)
+        re_pHy[a, y, u] ~ dnorm(0, tau_pHy)
+
         logit(p_yellow[a, y, u]) <- re_yellow[a, y, u] + beta0_yellow[a] + 
                                      beta1_yellow[a] / (1 + exp(-beta2_yellow[a] * (y - beta3_yellow[a]))) + 
                                      beta4_yellow[a] * (u - 1)
@@ -226,8 +269,14 @@ model{
    Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
    Hy_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
 
-   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
-   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+   Rb_ayg[a, y] <- (Hb_ayg[a, y] / pHb[a,y,1]) - Hb_ayg[a, y]         
+   Rb_ayu[a, y] <- (Hb_ayu[a, y] / pHb[a,y,2]) - Hb_ayu[a, y]
+
+   Ry_ayg[a, y] <- (Hy_ayg[a, y] / pHy[a,y,1]) - Hy_ayg[a, y]  #R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
+   Ry_ayu[a, y] <- (Hy_ayu[a, y] / pHy[a,y,2]) - Hy_ayu[a, y] #R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2]
+
+   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
+   R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
   }
  } 
 
@@ -243,6 +292,24 @@ model{
   beta3_yellow_x[a] ~ dnorm(30, 0.01)T(29,39) #inflection point must be before closure
   beta4_yellow_x[a] ~ dnorm(0, 0.1) # for logistic curve
 
+  beta0_pH2[a] ~ dnorm(mu_beta0_pH2, tau_beta0_pH2) #T(-2.75,) #INTERCEPT
+  beta1_pH2[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pH2[a] ~ dnorm(-1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+  beta3_pH2[a] ~ dnorm(45, 1)T(44,Y)     # INFLECTION POINT
+  beta4_pH2[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
+  beta0_pH2b[a] ~ dnorm(mu_beta0_pH2, tau_beta0_pH2) #T(-2.75,) #INTERCEPT
+  beta1_pH2b[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pH2b[a] ~ dnorm(-1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+  beta3_pH2b[a] ~ dnorm(45, 1)T(44,Y)     # INFLECTION POINT
+  beta4_pH2b[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
+  beta0_pH2y[a] ~ dnorm(mu_beta0_pH2, tau_beta0_pH2) #T(-2.75,) #INTERCEPT
+  beta1_pH2y[a] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pH2y[a] ~ dnorm(-1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+  beta3_pH2y[a] ~ dnorm(45, 1)T(44,Y)     # INFLECTION POINT
+  beta4_pH2y[a] ~ dnorm(0, 0.1)               # USER EFFECT
+
   for (y in 1:Y){
     for (u in 1:2){
       logit(p_yellow_x[a, y, u]) <- re_yellow_x[a, y, u] + beta0_yellow_x[a] + 
@@ -250,8 +317,62 @@ model{
 
       re_yellow_x[a, y, u] ~ dnorm(0, tau_comp)
     }
-   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
-   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
+##   Ry_ayg[a, y] <- R_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow_x[a, y, 1]
+##   Ry_ayu[a, y] <- R_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow_x[a, y, 2]
+  }
+
+  ##2 logit curves for southeast because of closures:
+  for (y in 1:43){
+   for (u in 1:2){ 
+    logit(pH[a, y, u]) <- re_pH[a, y, u] + beta0_pH[a] + 
+                                     beta1_pH[a] / (1 + exp(-beta2_pH[a] * (y - beta3_pH[a]))) + 
+                                     beta4_pH[a] * (u - 1)
+    re_pH[a, y, u] ~ dnorm(0, tau_pH)
+
+    logit(pHb[a, y, u]) <- re_pHb[a, y, u] + beta0_pHb[a] + 
+                                     beta1_pHb[a] / (1 + exp(-beta2_pHb[a] * (y - beta3_pHb[a]))) + 
+                                     beta4_pHb[a] * (u - 1)
+    re_pHb[a, y, u] ~ dnorm(0, tau_pHb)
+
+    logit(pHy[a, y, u]) <- re_pHy[a, y, u] + beta0_pHy[a] + 
+                                     beta1_pHy[a] / (1 + exp(-beta2_pHy[a] * (y - beta3_pHy[a]))) + 
+                                     beta4_pHy[a] * (u - 1)
+    re_pHy[a, y, u] ~ dnorm(0, tau_pHy)
+   }
+   R_ayg[a, y] <- (H_ayg[a, y] / pH[a,y,1]) - H_ayg[a, y]         
+   R_ayu[a, y] <- (H_ayu[a, y] / pH[a,y,2]) - H_ayu[a, y]
+
+   Rb_ayg[a, y] <- (Hb_ayg[a, y] / pHb[a,y,1]) - Hb_ayg[a, y]         
+   Rb_ayu[a, y] <- (Hb_ayu[a, y] / pHb[a,y,2]) - Hb_ayu[a, y]
+
+   Ry_ayg[a, y] <- (Hy_ayg[a, y] / pHy[a,y,1]) - Hy_ayg[a, y]         
+   Ry_ayu[a, y] <- (Hy_ayu[a, y] / pHy[a,y,2]) - Hy_ayu[a, y]
+  } 
+  for (y in 44:Y){
+    for (u in 1:2){ 
+      logit(pH2[a, y, u]) <- re_pH2[a, y, u] + beta0_pH2[a] + 
+                                     beta1_pH2[a] / (1 + exp(-beta2_pH2[a] * (y - beta3_pH2[a]))) + 
+                                     beta4_pH2[a] * (u - 1)
+      re_pH2[a, y, u] ~ dnorm(0, tau_pH2)
+
+      logit(pH2b[a, y, u]) <- re_pH2b[a, y, u] + beta0_pH2b[a] + 
+                                     beta1_pH2b[a] / (1 + exp(-beta2_pH2b[a] * (y - beta3_pH2b[a]))) + 
+                                     beta4_pH2b[a] * (u - 1)
+    re_pH2b[a, y, u] ~ dnorm(0, tau_pH2b)
+
+    logit(pH2y[a, y, u]) <- re_pH2y[a, y, u] + beta0_pH2y[a] + 
+                                     beta1_pH2y[a] / (1 + exp(-beta2_pH2y[a] * (y - beta3_pH2y[a]))) + 
+                                     beta4_pH2y[a] * (u - 1)
+    re_pH2y[a, y, u] ~ dnorm(0, tau_pH2y)
+   }
+   R_ayg[a, y] <- (H_ayg[a, y] / pH2[a,y,1]) - H_ayg[a, y]         
+   R_ayu[a, y] <- (H_ayu[a, y] / pH2[a,y,2]) - H_ayu[a, y]
+
+   Rb_ayg[a, y] <- (Hb_ayg[a, y] / pH2b[a,y,1]) - Hb_ayg[a, y]         
+   Rb_ayu[a, y] <- (Hb_ayu[a, y] / pH2b[a,y,2]) - Hb_ayu[a, y]
+
+   Ry_ayg[a, y] <- (Hy_ayg[a, y] / pH2y[a,y,1]) - Hy_ayg[a, y]         
+   Ry_ayu[a, y] <- (Hy_ayu[a, y] / pH2y[a,y,2]) - Hy_ayu[a, y]
   }
 
   ### need to break up how we hind cast YE so that we use the release estimate curve that ignores the closed years

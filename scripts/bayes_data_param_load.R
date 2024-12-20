@@ -395,9 +395,11 @@ jags_params <- function(){
     #"pG_R", "b1_pG_R", "b2_pG_R",
     #proportion harvested: 
     "pH", "tau_pH",#"pHu",
+    "pH2", "tau_pH2",#"pHu",
     "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
+    "mu_beta0_pH2","tau_beta0_pH2","beta0_pH2","beta1_pH2","beta2_pH2","beta3_pH2","beta4_pH2",
     #random effects on pH
-    "re_pH", #"re_pHu",
+    "re_pH", "re_pH2",
     "sd_pH",
     #"re_pH","sd_pH",
     #proportions same for catch and harvest? thinking on it?
