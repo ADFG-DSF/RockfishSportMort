@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_hyb_hb2_DRAFT_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_cens_hb2_DRAFT_",Sys.Date(),".html"))
       })
 ---
 
@@ -48,11 +48,11 @@ list2env(readinData(start_yr = start_yr,
 #mod <- "LB_hyb_2b"
 #mod <- "LB_hyb_2b_hb2"
 #mod <- "LB_cens" ##!!!FLAG
-mod <- "LB_hyb_hb2"
-#mod <- "LB_cens_hb2"
+#mod <- "LB_hyb_hb2"
+mod <- "LB_cens_hb2"
 #res <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
 #res <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
-res <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_1e+05_7kn_2024-12-20"
+res <- "HR_censLBR_2bias_hierbeta2_2pH_thru2023_2e+06_7kn_2024-12-22"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 summary_table <- postH$summary %>%
@@ -967,7 +967,7 @@ swhs_Hres %>% ggplot(aes(x = year, y = H_res)) +
 ```{r, fig.width = 10, fig.height = 6, fig.cap = "**Figure 10.**- Residual of SWHS releases"}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
 
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2")){
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_cens_hb2")){
   as.data.frame(
   #t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
   t(log(postH$mean$R_ay) + postH$mean$logbc_R) - t(log(jags_dat$Rhat_ay))) %>%
@@ -1351,7 +1351,7 @@ pHye_obs %>% filter(user != "all") %>%
 Figure 14 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
  
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 14.**- Mean SWHS bias for harvests and catches."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2")) { #2 bias
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2")) { #2 bias
   exp(postH$sims.list$mu_bc_H) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -1406,7 +1406,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
 Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
  
 ```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 15.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2")){
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2")){
   mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
