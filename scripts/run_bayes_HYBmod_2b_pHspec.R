@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 80E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 10E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
 mod <- "HR_hybLBR_2bias_hierbeta2_2pH"
@@ -59,7 +59,7 @@ params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
@@ -294,6 +294,9 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 })
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_pH"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "sd_pH"]
 })
 #-------------------------------------------------------------------------------
 #Run the model

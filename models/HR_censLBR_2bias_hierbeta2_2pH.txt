@@ -3,8 +3,10 @@ model{
  tau_comp <- 1 / sd_comp / sd_comp
  sd_comp ~ dunif(0, 10)
  
- tau_pH <- 1 / sd_pH / sd_pH
- sd_pH ~ dunif(0, 10)
+ for (s in 1:2){
+  tau_pH[s] <- 1 / sd_pH[s] / sd_pH[s]
+  sd_pH[s] ~ dunif(0, 10)
+ }
    
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
@@ -189,7 +191,7 @@ model{
       logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + beta0_pH[a,s] + 
                                      beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s]))) + 
                                      beta4_pH[a,s] * (u - 1)
-      re_pH[a, y, u, s] ~ dnorm(0, tau_pH)
+      re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
     }
     
     #Species composition: 

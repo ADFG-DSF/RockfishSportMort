@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_cens_hb2_DRAFT_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_hyb_2pH_",Sys.Date(),".html"))
       })
 ---
 
@@ -48,11 +48,12 @@ list2env(readinData(start_yr = start_yr,
 #mod <- "LB_hyb_2b"
 #mod <- "LB_hyb_2b_hb2"
 #mod <- "LB_cens" ##!!!FLAG
-#mod <- "LB_hyb_hb2"
-mod <- "LB_cens_hb2"
+mod <- "LB_hyb_hb2"
+#mod <- "LB_cens_hb2"
+#mod<-"LB_fit_hb2"
 #res <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
 #res <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
-res <- "HR_censLBR_2bias_hierbeta2_2pH_thru2023_2e+06_7kn_2024-12-22"
+res <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-28"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 summary_table <- postH$summary %>%

@@ -3,8 +3,10 @@ model{
  tau_comp <- 1 / sd_comp / sd_comp
  sd_comp ~ dunif(0, 10)
  
- tau_pH <- 1 / sd_pH / sd_pH
- sd_pH ~ dunif(0, 10)
+ for (s in 1:2){
+  tau_pH[s] <- 1 / sd_pH[s] / sd_pH[s]
+  sd_pH[s] ~ dunif(0, 10)
+ } 
    
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
@@ -21,24 +23,27 @@ model{
   mu_beta0_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta0_black[r] ~ dgamma(0.01, 0.01)
 
-  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_pelagic[r] ~ dgamma(0.1, 0.1)
-  mu_beta2_yellow[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_yellow[r] ~ dgamma(0.1, 0.1)
-  mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
-  tau_beta2_black[r] ~ dgamma(0.1, 0.1)
+##  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  tau_beta2_pelagic[r] ~ dgamma(0.1, 0.1)T(,100)
+##  mu_beta2_yellow[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  tau_beta2_yellow[r] ~ dgamma(0.1, 0.5)T(,100)
+##  mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  tau_beta2_black[r] ~ dgamma(0.1, 0.1)T(,100)
+
+  mu_beta0_pH[r,1] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  mu_beta2_pH[r,1] ~ dnorm(1, 0.1)
+##  mu_beta2_pH[r,2] ~ dnorm(-1, 0.1)
 
   for (s in 1:2){
-    mu_beta0_pH[r,s] ~ dnorm(-0.25, 0.25) #dnorm(0, 0.001)
     tau_beta0_pH[r,s] ~ dgamma(0.01, 0.01)
+##    tau_beta2_pH[r,s] ~ dgamma(0.1, 0.1) #T(,100)
     }  
   }
 
-## for SOUTHEAST only
-  mu_beta0_yellow_x ~ dnorm(0.25, 0.5) #dnorm(0, 0.001)
-  tau_beta0_yellow_x ~ dgamma(0.01, 0.01)
-  mu_beta2_yellow_x ~ dnorm(-1, 0.5) #dnorm(0, 0.001)
-  tau_beta2_yellow_x ~ dgamma(0.1, 0.1)
+#Yelloweye specifics:
+mu_beta0_pH[1,2] ~ dnorm(2.2, 1) #dnorm(0, 0.001)
+mu_beta0_pH[2,2] ~ dnorm(2.2, 1) #dnorm(0, 0.001)
+mu_beta0_pH[3,2] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
 
  for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 
@@ -58,27 +63,39 @@ model{
   for (s in 1:2){ #s = 1= pelagic, s = 2 = yelloweye
     beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s])T(-2.75,) #INTERCEPT
     beta1_pH[a,s] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
-    beta2_pH[a,s] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
+##    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s])#T(0,) # SLOPE 
+##    beta2_pH[a,s] ~ dnorm(0.5, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 5) #T(0,)
     beta3_pH[a,s] ~ dnorm(30, 0.01)T(19,Y-3)     # INFLECTION POINT
     beta4_pH[a,s] ~ dnorm(0, 0.1)               # USER EFFECT
   }
 
+  #BRF pH parameters
+  ##beta1_pH[a,1] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pH[a,1] ~ dnorm(1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 0.1) #T(0,)
+
+  #YE pH parameters
+  ##beta1_pH[a,2] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
+  beta2_pH[a,2] ~ dnorm(-1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 0.1) #T(0,)
+
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_pelagic[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
+  beta2_pelagic[a] ~ dnorm(0, 0.1)T(-10,10)
+##  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
   beta3_pelagic[a] ~ dnorm(30, 0.05)T(19,Y-5) 
   beta4_pelagic[a] ~ dnorm(0, 0.1)
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])T(-5,)
   beta1_yellow[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]]) #T(-10,10)
+  beta2_yellow[a] ~ dnorm(0, 0.1)T(-10,10)
+##  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]]) #T(-10,10)
 ##  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
-  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
+  beta2_black[a] ~ dnorm(0, 0.1)T(-10,10)
+##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
 ##  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
 	
@@ -183,7 +200,7 @@ model{
       logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + beta0_pH[a,s] + 
                                      beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s]))) + 
                                      beta4_pH[a,s] * (u - 1)
-      re_pH[a, y, u, s] ~ dnorm(0, tau_pH)
+      re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
     }
     
     #Species composition: 

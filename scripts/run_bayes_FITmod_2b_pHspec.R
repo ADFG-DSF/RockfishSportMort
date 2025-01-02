@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 80E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 10E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
 mod <- "HR_fitLBR_2bias_hierbeta2_2pH"
@@ -59,7 +59,7 @@ params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
@@ -334,7 +334,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+results <- "HR_fitLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-29"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -447,6 +447,7 @@ jagsUI::traceplot(postH, parameters = "sigma_H")
 jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 
 jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
+                                        "mu_beta2_pH","tau_beta2_pH",
                                         "beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))
 

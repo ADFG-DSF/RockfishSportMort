@@ -71,20 +71,67 @@ hist(R_lb_adj, breaks = 100)
 # p_X tau priors
 opt1 <- rgamma(10000,0.001,0.001)
 opt2 <- rgamma(10000,0.01,0.001)
-opt3 <- rgamma(10000,0.001,0.01)
-opt4 <- rgamma(10000,0.01,0.01)
-opt5 <- rgamma(10000,0.1,0.1)
+opt3 <- rgamma(10000,0.1,0.1)
+opt4 <- rgamma(10000,1,0.1)
+opt5 <- rgamma(10000,0.1,0.5)
 
 taus <- cbind(opt1 = opt1, opt2 = opt2, opt3 = opt3, opt4 = opt4, opt5 = opt5)
 
 ggplot(taus) +
   #geom_histogram(aes(opt1), color = "red", fill = "red", alpha = 0.25, bins = 100) +
   #geom_histogram(aes(opt2), color = "red", fill = "orange", alpha = 0.25, bins = 100) +
-  #geom_histogram(aes(opt3), color = "red", fill = "goldenrod", alpha = 0.25, bins = 100) +
-  #geom_histogram(aes(opt4), color = "red", fill = "violet", alpha = 0.25, bins = 100) +
-  geom_histogram(aes(opt5), color = "red", fill = "forestgreen", alpha = 0.25, bins = 100)
+  geom_histogram(aes(opt3), color = "goldenrod", fill = "goldenrod", alpha = 0.25, bins = 100) +
+  geom_histogram(aes(opt4), color = "violet", fill = "violet", alpha = 0.25, bins = 100) +
+  geom_histogram(aes(opt5), color = "forestgreen", fill = "forestgreen", alpha = 0.25, bins = 100)
   
 range(opt1); range(opt2); range(opt3); range(opt4); range(opt5)
+
+#-------------------------------------------------------------------------------
+opt1 <- rnorm(10000,0,0.1)
+opt2 <- rnorm(10000,0,0.01)
+
+mus <- cbind(opt1 = opt1, opt2 = opt2)
+
+ggplot(mus) +
+  geom_histogram(aes(opt1), color = "red", fill = "violet", alpha = 0.25, bins = 100) +
+  geom_histogram(aes(opt2), color = "forestgreen", fill = "forestgreen", alpha = 0.25, bins = 100)
+
+#-------------------------------------------------------------------------------
+# Beta prior for pH
+library(ggplot2)
+
+alpha <- 4 #0.00001
+beta <- 1.5
+
+# Plot the distribution
+x <- seq(0, 1, length.out = 100)
+y <- dbeta(x, alpha, beta)
+
+qplot(x, y, geom = "line") +
+  labs(title = "Beta Distribution", x = "x", y = "Density") +
+  theme_minimal()
+
+# Check mean and variance
+mean <- alpha / (alpha + beta)
+variance <- alpha * beta / ((alpha + beta)^2 * (alpha + beta + 1))
+mean
+variance
+
+#-------------------------------------------------------------------------------
+# General p_ curves:
+{
+  B0 <- 0 #mu_beta0_mu
+  B1 <- 5 #beta1_mu
+  B2 <- -1 #beta2_mu
+  B3 <- 30 #beta3_mu
+  
+  sv_line <- data.frame()
+  for (y in 1:Y){
+    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))))
+  }
+  sv_line %>% mutate(y = seq(1,Y,1)) -> sv_line
+  plot(sv_line$prop ~ sv_line$y)
+}
 
 #-------------------------------------------------------------------------------
 # pH Logistic curves
@@ -166,10 +213,6 @@ rbind(fit_beta3_pH %>% mutate(model = "fit"),
 
 n <- 1000
 Y <- 47
-
-
-
-
 
 {
   tau_mu0 <- 0.5
