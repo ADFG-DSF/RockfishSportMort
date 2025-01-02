@@ -718,9 +718,12 @@ brf_howR %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
          hi95_R_how = R_how + 1.96 * se_R_how) -> brf_howR
 
 as.data.frame(
-  rbind(t(postH$mean$Rb_ayg),
-        t(postH$mean$Rb_ayu),
-        t(postH$mean$Rb_ay))) %>%
+#  rbind(t(postH$mean$Rb_ayg),
+#        t(postH$mean$Rb_ayu),
+#        t(postH$mean$Rb_ay))) %>%
+  rbind(t(postH$q50$Rb_ayg),
+        t(postH$q50$Rb_ayu),
+        t(postH$q50$Rb_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -874,9 +877,12 @@ ye_howR %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
 #ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
 
 as.data.frame(
-  rbind(t(postH$mean$Ry_ayg),
-        t(postH$mean$Ry_ayu),
-        t(postH$mean$Ry_ay))) %>%
+#  rbind(t(postH$mean$Ry_ayg),
+#        t(postH$mean$Ry_ayu),
+#        t(postH$mean$Ry_ay))) %>%
+  rbind(t(postH$q50$Ry_ayg),
+        t(postH$q50$Ry_ayu),
+        t(postH$q50$Ry_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
