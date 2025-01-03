@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_hyb_2pH_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_fit_2pH_",Sys.Date(),".html"))
       })
 ---
 
@@ -48,12 +48,12 @@ list2env(readinData(start_yr = start_yr,
 #mod <- "LB_hyb_2b"
 #mod <- "LB_hyb_2b_hb2"
 #mod <- "LB_cens" ##!!!FLAG
-mod <- "LB_hyb_hb2"
+#mod <- "LB_hyb_hb2"
 #mod <- "LB_cens_hb2"
-#mod<-"LB_fit_hb2"
-#res <- "HR_fitLBR_2bias_thru2023_3e+06_7kn_2024-12-16"
+mod<-"LB_fit_hb2"
+res <- "HR_fitLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-29"
 #res <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
-res <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-28"
+#res <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-28"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 summary_table <- postH$summary %>%
@@ -680,7 +680,7 @@ brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
   geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
-                position=position_dodge(0.05)) + 
+                position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 16) +
@@ -761,7 +761,7 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
   geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05)) +
+                position=position_dodge(0.05), alpha = 0.3) +
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   geom_line() + 
   theme_bw(base_size = 16) +
@@ -838,7 +838,7 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
   geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
-                position=position_dodge(0.05)) + 
+                position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 16) +
@@ -919,7 +919,7 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
   geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05)) + 
+                position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 16) +
@@ -1154,13 +1154,13 @@ pHall_obs %>% filter(user != "all") %>%
   geom_ribbon(data = pHall_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source)) +
-  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHall_mod, aes(color = user)) +
   #geom_line(data = pHall_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(1, 18)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of total catches that were harvested", x = "Year")
 
@@ -1247,13 +1247,13 @@ pHpel_obs %>% filter(user != "all") %>%
   geom_ribbon(data = pHpel_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source)) +
-  geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
   #geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(1, 18)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic catches that were harvested", x = "Year")
 
@@ -1340,24 +1340,25 @@ pHye_obs %>% filter(user != "all") %>%
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHye_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source)) +
-  geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey") +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHye_mod, aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(1, 18)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of yelloweye catches that were harvested", x = "Year")
 
 ``` 
 <br>
+
 ### SWHS bias
  
 Figure 14 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
  
-```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 14.**- Mean SWHS bias for harvests and catches."}
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 14.**- Mean SWHS bias for harvests and catches. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
 if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2")) { #2 bias
   exp(postH$sims.list$mu_bc_H) %>%
   as.data.frame() %>%
@@ -1412,7 +1413,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
  
 Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
  
-```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 15.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023."}
+```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 15.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
 if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2")){
   mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
 bc_mod <- 
@@ -1683,7 +1684,7 @@ p_pelagic_obs %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of rockfish that were pelagic", x = "Year") +
-  scale_shape_manual(values = c(1, 18))
+  scale_shape_manual(values = c(19, 2))
 ```
  
 ### P(black|pelagic)
