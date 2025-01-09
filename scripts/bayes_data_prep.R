@@ -30,10 +30,11 @@ lut <-
 #-------------------------------------------------------------------------------
 H_ayg0 <- #logbook harvest by area, user = guided, year
 read.csv(paste0("data/raw_dat/logbook_harvest_thru",REP_YR,".csv")) %>% 
-  select(-c(Region,not_ye_nonpel_harv))
+  select(-c(Region))
+  #select(-c(Region,not_ye_nonpel_harv))
   
 colnames(H_ayg0)
-colnames(H_ayg0) <- c("year", "area", "H", "Hp", "Hnp", "Hye")
+colnames(H_ayg0) <- c("year", "area", "H", "Hp", "Hnp", "Hye", "Ho")
 
 table(H_ayg0$Hye[H_ayg0$year <= 2005], useNA = "always") #these should all be NA
 H_ayg0$Hye[H_ayg0$year <= 2005] <- NA
@@ -70,7 +71,8 @@ H_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
   summarise(H = sum(H, na.rm = T),
          Hp = sum(Hp, na.rm = T),
          Hnp = sum(Hnp, na.rm = T),
-         Hye = sum(Hye, na.rm = T)) -> a_check
+         Hye = sum(Hye, na.rm = T),
+         Ho = sum(Ho, na.rm=T)) -> a_check
 
 H_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EYKT",
@@ -119,10 +121,11 @@ saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
 # -Logbook release data: -------------------------------------------------------
 R_ayg0 <- #logbook harvest by area, user = guided, year
   read.csv(paste0("data/raw_dat/logbook_release_thru",REP_YR,".csv")) %>% 
-  select(-c(Region,not_ye_nonpel_rel))
+  #select(-c(Region,not_ye_nonpel_rel))
+  select(-c(Region))
 
 colnames(R_ayg0)
-colnames(R_ayg0) <- c("year", "area", "R", "Rp", "Rnp", "Rye")
+colnames(R_ayg0) <- c("year", "area", "R", "Rp", "Rnp", "Rye","Ro")
 
 table(R_ayg0$Rye[R_ayg0$year <= 2005], useNA = "always") #these should all be NA
 R_ayg0$Rye[R_ayg0$year <= 2005] <- NA
@@ -555,13 +558,17 @@ saveRDS(Chat_ayu, ".\\data\\bayes_dat\\Chat_ayu.rds")
 #-------------------------------------------------------------------------------
 
 sppcompR1_0 <- 
+  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
+            range = c("A1:I1000")),
   read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-            range = "A1:I1000") %>%
+            range = c("AH1:AH1000")),
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
+            range = c("AQ1:AQ1000")) ) %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
   filter_all(any_vars(!is.na(.))) %>%
-  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n","notye_nonpel_n"),as.numeric)
+  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n","notye_nonpel_n","dsr_n","slope_n"),as.numeric)
 
 unique(sppcompR1_0$user)
 
@@ -583,7 +590,8 @@ sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_
 #            range = "A1:I433") %>%
   rename_all(.funs = tolower) %>%
   rename(area = rpt_area) %>%
-  select(area,year,user,totalrf_n,ye_n,black_n,pelagic_n,nonpel_n,notye_nonpel_n)
+  select(area,year,user,totalrf_n,ye_n,black_n,pelagic_n,nonpel_n,notye_nonpel_n) %>%
+  mutate(dsr_n = NA, slope_n = NA)
 
 unique(sppcompR2_0$user)
 
@@ -600,7 +608,8 @@ sppcompR2 <-
   rbind(data.frame(area = rep(c("SOKO2SAP", "BSAI", "WKMA"), each = 2 * length(unique(sppcompR2_0$year))),
                    year = rep(unique(sppcompR2_0$year), times = 2 * 3),
                    user = rep(rep(c("charter", "private"), each = length(unique(sppcompR2_0$year))), times = 3),
-                   totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
+                   totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA,
+                   dsr_n = NA, slope_n = NA)) %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area)) %>%
   right_join(lut[lut$region != "Southeast",], by = "area") %>%
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 

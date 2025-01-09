@@ -92,10 +92,10 @@ mu_beta0_pH[3,2] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
 ##  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
-  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
+  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_black[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
   beta2_black[a] ~ dnorm(0, 0.1)T(-10,10)
-##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
+##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_black[regions[a]]) #T(-10,10)
 ##  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
 	
@@ -153,8 +153,15 @@ mu_beta0_pH[3,2] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
    #Total releases
-   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y]) / (H_ayg[a,y] * p_pelagic[a, y, 1] + Hy_ayg[a,y])
-   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y]) / (H_ayu[a,y] * p_pelagic[a, y, 2] + Hy_ayu[a,y])
+##   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y]) / (H_ayg[a,y] * p_pelagic[a, y, 1] + Hy_ayg[a,y])
+##   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y]) / (H_ayu[a,y] * p_pelagic[a, y, 2] + Hy_ayu[a,y])
+
+   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y] + pHnpny[a,y,1] * (H_ayg[a,y] * (1 - p_pelagic[a, y, 1]) - Hy_ayg[a,y])) / H_ayg[a,y]
+   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y] + pHnpny[a,y,2] * (H_ayu[a,y] * (1 - p_pelagic[a, y, 2]) - Hy_ayu[a,y])) / H_ayu[a,y]
+
+   pHnpny[a,y,1] ~ dbeta(3,1.5) #pH for non-pelagic, non yelloweye
+   pHnpny[a,y,2] ~ dbeta(3,1.5)
+
    R_ayg[a, y] <- (H_ayg[a, y] / pHg[a,y]) - H_ayg[a, y]   #get rid of pG_R!!!      
    R_ayu[a, y] <- (H_ayu[a, y] / pHu[a,y]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               

@@ -194,16 +194,17 @@ readinData <- function(spl_knts = 7,
     bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
                          year = rep(rep(1996:1997, each = 2), times = 6),
                          user = rep(c("charter", "private"), times = 12),
-                         totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA)) %>%
+                         totalrf_n = 0, ye_n = NA, black_n = NA, pelagic_n = NA, nonpel_n = NA, notye_nonpel_n = NA,
+                         dsr_n = NA, slope_n = NA)) %>%
     filter(year >= 1996) %>%
     arrange(user, area, year) 
   
   #When retention of YE is prohibited as n SE AK between 2020 through 2024 we need
   # to censor the survey/creel data
-  S_ayu <- S_ayu %>%
-    mutate(ye_n = ifelse(region == "Southeast" &
-                           year > 2019 & year < 2025,
-                         NA,ye_n))
+  #S_ayu <- S_ayu %>%
+  #  mutate(ye_n = ifelse(region == "Southeast" &
+  #                         year > 2019 & year < 2025,
+  #                       NA,ye_n))
   
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
@@ -237,7 +238,9 @@ readinData <- function(spl_knts = 7,
            year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
            #region_n = ifelse()
            source = 1) %>% 
-    select(year, year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
+    select(year, year_n, area_n, user_n, source, N = totalrf_n, 
+           pelagic = pelagic_n, black = black_n, yellow = ye_n, 
+           other = notye_nonpel_n, dsr = dsr_n, slope = slope_n,
            region,area) %>%
     filter(N != 0) %>%
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
@@ -295,6 +298,8 @@ readinData <- function(spl_knts = 7,
       # logbook ye rf harvested by guides
       Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                        matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+      Hlbo_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                       matrix(H_ayg$Ho, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
@@ -309,6 +314,11 @@ readinData <- function(spl_knts = 7,
       Rlby_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlby_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      #non-pelagic, non-yelloweye
+      Rlbo_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                       matrix(R_ayg$Ro, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlbo_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      
       #SWHS DATA:
       # SWHS estimates of rockfish harvests
       Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -353,15 +363,15 @@ readinData <- function(spl_knts = 7,
       comp_pelagic = comp$pelagic,
       comp_black = comp$black,
       comp_yellow = comp$yellow,
+      comp_other = comp$other,
+      comp_dsr = comp$dsr,
+      comp_slope = comp$slope,
       N = dim(comp)[1],
       
-      comp_pelagic_x = compX$pelagic_x,
-      comp_yellow_x = compX$yellow_x,
-      comp_N_x = compX$N_x,
-      comp_area_x = compX$area_n,
-      comp_year_x = compX$year_n,
-      comp_user_x = compX$user_n,
-      N_x = dim(compX)[1],
+      SEn1 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
+      SEn2 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
+      SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
+      SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
@@ -396,9 +406,12 @@ jags_params <- function(){
     #proportion harvested: 
     "pH", "tau_pH",#"pHu",
     "pH2", "tau_pH2",#"pHu",
-    "pHg","pHu",
-    "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
-    "mu_beta2_pH","tau_beta2_pH", #"beta2_pH2","beta1_pH2","beta2_pH2","beta3_pH2","beta4_pH2",
+    "pHg","pHu","pHnpny",
+    "mu_beta0_pH","tau_beta0_pH",
+    "mu_beta1_pH","tau_beta1_pH",
+    "mu_beta2_pH","tau_beta2_pH",
+    "mu_beta3_pH","tau_beta3_pH",
+    "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
@@ -428,6 +441,18 @@ jags_params <- function(){
     "mu_beta2_black", "tau_beta2_black",
     "mu_beta3_black", "tau_beta3_black",
     "mu_beta4_black", "tau_beta4_black",
+    "p_dsr", "beta0_dsr", "beta1_dsr", "beta2_dsr",  "beta3_dsr", "beta4_dsr",
+    "mu_beta0_dsr", "tau_beta0_dsr",
+    "mu_beta1_dsr", "tau_beta1_dsr",
+    "mu_beta2_dsr", "tau_beta2_dsr",
+    "mu_beta3_dsr", "tau_beta3_dsr",
+    "mu_beta4_dsr", "tau_beta4_dsrk",
+    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", "beta4_slope",
+    "mu_beta0_slope", "tau_beta0_slope",
+    "mu_beta1_slope", "tau_beta1_slope",
+    "mu_beta2_slope", "tau_beta2_slope",
+    "mu_beta3_slope", "tau_beta3_slope",
+    "mu_beta4_slope", "tau_beta4_slope",
     #random effects on species
     "re_pelagic", "re_black","re_yellow",
     "sd_comp", "tau_comp",
@@ -435,6 +460,9 @@ jags_params <- function(){
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
     "Hb_ayg", "Hb_ayu", "Hb_ay",
     "Hy_ayg", "Hy_ayu", "Hy_ay",
+    "Hd_ayg", "Hd_ayu", "Hd_ay",
+    "Hs_ayg", "Hs_ayu", "Hs_ay",
+    "Ho_ayg", "Ho_ayu", "Ho_ay",
     "logHhat_ay",
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
@@ -449,6 +477,9 @@ jags_params <- function(){
     "R_ay", "R_ayg", "R_ayu", 
     "Rb_ayg", "Rb_ayu", "Rb_ay",
     "Ry_ayg", "Ry_ayu", "Ry_ay",
+    "Ro_ayg", "Ro_ayu", "Ro_ay",
+    "Rd_ayg", "Rd_ayu", "Rd_ay",
+    "Rs_ayg", "Rs_ayu", "Rs_ay",
     "nonrecR_ayg")
   return(params)
 }

@@ -1,0 +1,2883 @@
+---
+title: "Rockfish Historical Harvest Estimates"
+author: "Phil Joy & Adam Reimer"
+date: "December 2024"
+output:
+  html_document:
+    self_contained: yes
+    keep_md: false
+
+knit: (function(input_file, encoding) {
+        rmarkdown::render(input_file, 
+                          output_file = paste0("RFsportmort_update_", "LB_fit_5pH_infPr",Sys.Date(),".html"))
+      })
+---
+
+```{r setup, include=FALSE}
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+#...............................................................................
+##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
+#...............................................................................
+
+mod<-"LB_fit_5pH_infPr"
+#mod<-"LB_fit_5pH"
+res <- "HR_fitLBR_2bias_hierbeta2_5pH_infPr_thru2023_1e+05_7kn_2025-01-09"
+#res <- "HR_fitLBR_2bias_hierbeta2_5pH_thru2023_6e+05_7kn_2025-01-09"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+
+```
+
+<style>
+.figure-container {
+  border: 1px solid #ccc;      /* Adds a border */
+  padding: 10px;              /* Space inside the box */
+  margin-bottom: 30px;        /* Space below the box */
+  background-color: #f9f9f9;  /* Light background */
+  border-radius: 5px;         /* Rounded corners */
+  box-sizing: border-box;     /* Ensures padding doesn’t shrink content */
+  width: 100%;                /* Allow the figure to use full width */
+}
+.figure-caption {
+  font-weight: bold;
+  margin-top: 10px;
+}
+.figure-container img, 
+.figure-container .ggplot {
+  max-width: 100%;            /* Prevent overflow for plots */
+  height: auto;               /* Maintain aspect ratio */
+}
+</style>
+
+## Summary
+This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest, catches and releases of rockfish in Alaska waters. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and thus does not rely on the decision tree approach in the original Howard methods. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implemented. Harvest estimates should be mostly consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. Furthermore, the Howard methods are wholly reliant on logbook release estimates and ignore the release estimates from the SWHS data (inferred from the catch and harvest estimates). Here we explore several models that attempt to balance all of the data in estimating releases. 
+
+## Data
+Harvest data was available for 22 commercial fishing management areas in Southcentral and Southeast Alaska. Areas with negligible rockfish harvest were pooled with adjacent areas for analysis. Specifically the Aleutian and Bering areas were pooled into an area labeled BSAI; the IBS and EKYT were pooled into an area labeled EKYKT; the Southeast, Southwest, SAKPEN and Chignik areas were pooled into an area labeled SOKO2PEN and the Westside and Mainland areas were pooled into an area labeled WKMA.
+
+### Stateside Harvest Survey (SWHS)
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure 0). Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied. 
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 0.**- Data sources for estimating rockfish harvests and releases in ADF&G commercial fisheries management units."}
+
+data_source_order <- c(
+  "SWHS total harvests",
+  "SWHS total releases",
+  "SWHS harvest by user group",
+  "SWHS releases by user group",
+  "Logbook total charter harvests",
+  "Logbook pelagic charter harvests",
+  "Logbook yelloweye charter harvests",
+  "Logbook total charter releases",
+  "Logbook pelagic charter releases",
+  "Logbook yelloweye charter releases",
+  "Central and Kodiak species composition data",
+  "Southeast species composition data"
+)
+
+rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
+      data = rep("SWHS total harvests",length(unique(Hhat_ay$year)))),
+      
+      cbind(year = as.numeric(unique(Rhat_ay$year)),
+      data = rep("SWHS total releases",length(unique(Rhat_ay$year)))),
+      
+      cbind(year = as.numeric(unique(Hhat_ayu$year)),
+      data = rep("SWHS harvest by user group",length(unique(Hhat_ayu$year)))),
+      
+      cbind(year = as.numeric(unique(Rhat_ayu$year)),
+      data = rep("SWHS releases by user group",length(unique(Rhat_ayu$year)))),
+      #Logbook
+      cbind(year = as.numeric(unique(H_ayg$year)),
+      data = rep("Logbook total charter harvests",length(unique(H_ayg$year)))),
+      
+      cbind(year = as.numeric(unique(H_ayg$year[!is.na(H_ayg$Hp)])),
+      data = rep("Logbook pelagic charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hp)])))),
+      
+      cbind(year = as.numeric(unique(H_ayg$year[!is.na(H_ayg$Hye)])),
+      data = rep("Logbook yelloweye charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hye)])))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year)),
+      data = rep("Logbook total charter releases",length(unique(R_ayg$year)))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rp)])),
+      data = rep("Logbook pelagic charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rp)])))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rye)])),
+      data = rep("Logbook yelloweye charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rye)])))),
+      #comp
+      cbind(year = as.numeric(unique(comp$year[comp$region != "Southeast"])),
+      data = rep("Central and Kodiak species composition data",length(unique(comp$year[comp$region != "Southeast"])))),
+      
+      cbind(year = as.numeric(unique(comp$year[comp$region == "Southeast"])),
+      data = rep("Southeast species composition data",length(unique(comp$year[comp$region == "Southeast"]))))) %>% data.frame() -> data_available
+  
+  ggplot(data = data_available,
+         aes(x = as.numeric(year), y = factor(data, levels = rev(data_source_order)))) + 
+  geom_point(size = 4, shape = 21, fill = "darkgrey") + 
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+    axis.text.y = element_text(size = 12)) +
+  scale_x_continuous(
+    breaks = seq(start_yr, end_yr, by = 2) # Adjust for every other year
+  ) +
+  labs(y = "Data Sources", x = "Year")
+```
+<br>
+
+SWHS estimates are believed to be biased to some degree. These modelling efforts aim to estimate and correct for that bias with the assumption that logbook harvests are a census of guided harvests.
+
+Rockfish release estimates are inferred from the difference between catch and harvest estimates. 
+
+Adam noted that the first 5 years (23 years counting the historical data) in the SWHS data set for PWSO seem unreasonable (close to zero and not corroborated with logbook estimates). Adam recommended setting these harvests to unknown, but current model development has included the data. Once a satisfactory model has been identified we will exam the effects of censoring the PWSO data. 
+
+### Creel Surveys
+NA  
+
+### Guide Logbooks
+Sport fishing guides were required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and "other" (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006. 
+
+Logbooks also record the number of rockfish released for the same categories. However, the reliability of the release data is somewhat questionable as reported releases are generally far lower than that estimated by the SWHS. As such several treatments of the data are considered.  
+
+### Logbook versus SWHS estimates
+Estimates of guided harvests and releases from the SWHS do not align with the census from charter logbooks. Logbook harvest reports are generally considered reliable and are used to assess the bias in SWHS reports. However, there is even greater disparity between release estimates in the two sources and it is debatable whether logbook releases should be treated as a census. The Howard et al. (2020) methods do treat the logbook release data as "true" and thus are considerably less than would be estimated from the SWHS data. 
+
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 1.**- SWHS harvest estimates from guided trips (Hhat) versus repoted harvests from charter logbooks (H_lb)."}
+pal <- wes_palette(name = "Zissou1Continuous", type = "continuous", n = 16)
+
+left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
+  mutate(area = toupper(area),
+         area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  ggplot(aes(H_lb, Hhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  scale_color_manual(values = pal) +
+  facet_grid(region ~ ., scales = "free") + theme_bw(base_size = 16) +
+  theme(plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(x="Logbook harvests", y = "SWHS estimates") -> Hcomp
+
+left_join(Chat_ayu %>% filter(user == "guided"), 
+          Hhat_ayu %>% filter(user == "guided"),
+          by = c("area", "year", "region")) %>%
+  select(year, area, region, gChat = Chat, gHhat = Hhat) %>%
+  mutate(gRhat = gChat -gHhat) %>%
+  select(year,area,region,Rhat = gRhat) %>%
+  left_join(R_ayg %>% select(year,area,region,R),
+            by = c('area',"year","region")) %>%
+  mutate(area = toupper(area),,
+         area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  ggplot(aes(R, Rhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  scale_color_manual(values = pal) +
+  facet_grid(region ~ ., scales = "free") + theme_bw(base_size = 16) +
+  theme(plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(x="Logbook releases", y = "") -> Ccomp
+
+ggarrange(Hcomp,Ccomp,
+          labels = c("Harvests","Releases"),
+          ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
+```
+<br>
+
+The Howard methods treat the logbook release data as a census and then use the ratio of guided:unguided releases in the SWHS to expand the logbook release estimates to generate total and unguided estimates. 
+
+To evaluate this discrepancy, several models were used to estimate releases in this exploration. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treats the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development to date has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
+
+### Composition data
+Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish.
+
+A current challenge at this juncture is how to accommodate the prohibition on retaining yelloweye in Southeast from 2020 through 2024. Because it is closed to retention the port sampling data is not reflective of releases while remaining an accurate description of the harvest. Current modelling efforts revolve around developing a separate yelloweye curve that censors the missing data. 
+
+## Process equations
+The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
+
+\begin{equation}
+\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_H})
+\end{equation} 
+
+where $f(a,y)$ in a p-spline basis with 7 components (knots) and a second degree penalty. The variance, $\sigma_H$,  was given a normal prior with a mean and standard deviation of 0.25 and 1, respectively. 
+
+Charter and private harvest $H_{ayu}$ (where *u* = 1 for charter anglers and *u* = 2 for private anglers) is a fraction of total annual harvest in each area:
+
+\begin{equation}
+H_{ay1}~=~H_{ay}P_{(user)ay1}\\H_{ay2}~=~H_{ay}(1-P_{(user)ay1})
+\end{equation}
+
+where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
+
+\begin{equation}
+P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a)
+\end{equation}
+
+with non-informative priors on both parameters.
+
+Annual black rockfish harvest $H_{(black)ayu}$ for each area and user group is:
+
+\begin{equation}
+H_{(black)ayu}~=~H_{ayu}P_{(pelagic)ayu}P_{(black|pelagic)ayu}
+\end{equation}
+
+where $P_{(pelagic)ayu}$ is the fraction of the annual harvest for each area and user group that was pelagic rockfish and $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.
+
+The southeast region also tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish. For the southeast region the harvest of those two assemblages is thus
+
+\begin{equation}
+H_{(DSR)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(DSR|non-pelagic)ayu}\\
+H_{(slope)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(slope|non-pelagic)ayu}\\
+\end{equation}
+
+where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. 
+
+Annual yelloweye rockfish harvest $H_{(yelloweye)ayu}$ for each area and user group is calculated differently for central/Kodiak areas and southeast areas. For central and Kodiak areas yelloweye rockfish harvests are calculated as
+
+\begin{equation}
+H_{(yelloweye)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(yelloweye|non-pelagic)ayu}
+\end{equation}
+
+where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish.
+
+For southeast areas yelloweye harvests are a fraction of the DSR harvests such that
+
+\begin{equation}
+H_{(yelloweye)ayu}~=~H_{(DSR)ayu}P_{(yelloweye|DSR)ayu}
+\end{equation}
+
+The composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve that would allow hindcasting without extrapolating beyond the limit of observed values such that:
+
+\begin{equation}
+\textrm{logit}(P_{(comp)ayu})~=~\beta1_{(comp)ayu} + \frac{\beta2_{(comp)ayu}}{(1 + exp(\beta3_{(comp)ayu}*(y - \beta4_{(comp)ayu})))} + \beta5_{(comp)ayu}*I(u=private)+re_{(comp)ayu}
+\end{equation}
+
+where the $\beta$ parameters define the intercept, scaling factor, slope, inflection point and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior.
+
+The true number of released rockfish $R_{ayu}$ were based on the proportion of the total catch harvested by area, year, user group and species grouping , $pH_{(comp)ayu}$. Thus, converting $H_{(comp)ayu}$ to total catches by user group, $C_{(comp)ayu}$, with $pH_{(comp)ayu}$ results in estimates of total releases such that
+
+\begin{equation}
+R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}
+\end{equation} 
+
+with total releases calculated from the sum of the user group releases. The proportion of total rockfish harvested by user group, $pH_{ayu}$, was assumed to be the mean of $pH_{(pelagic)ayu}$, $pH_{(yelloweye)ayu}$ and $pH_{(nonpel-nonYE)ayu}$ weighted by the relative harvest $H_{(comp)ayu}$ such that
+
+\begin{equation}
+R_{ayu}~=~ \frac{\sum ({H_{(comp)ayu} * pH_{(comp)ayu})}}{\sum {H_{(comp)ayu}}} 
+\end{equation}
+
+The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
+
+\begin{equation}
+\textrm{logit}(pH_{(pH)ayuc})~=~\beta1_{(pH)ayu} + \frac{\beta2_{(pH)ayuc}}{(1 + exp(\beta3_{(pH)ayuc}*(y - \beta4_{(pH)ayuc})))} + \beta5_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc}
+\end{equation}
+
+A random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990.
+
+
+## Observation equations
+SWHS estimates of annual rockfish **harvest** $\widehat{SWHS}_H{ay}$ were assumed to index true harvest:
+
+\begin{equation}
+\widehat{SWHS}_H{ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_{ay}), \sigma_{SWHSHay}^2\right)
+\end{equation}
+
+where bias in the SWHS harvest estimates $b_H{ay}$ is modeled hierarchically across years as:
+
+\begin{equation}
+b_H{ay}~\sim~\textrm{Normal}(\mu_H{(b)a}, \sigma_H{(b)a})
+\end{equation}
+
+with non-informative priors on both parameters. 
+
+SWHS estimates of guided angler harvest $\widehat{SWHS}_H{ay1}$ are related to total harvest by:
+
+\begin{equation}
+\widehat{SWHS}_H{ay1}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)
+\end{equation}
+
+Reported guide logbook harvest $\widehat{LB}_H{ay}$ is related to true harvest as:
+
+\begin{equation}
+\widehat{LB}_H{ay}~\sim~\textrm{Poisson}(H_{ay1})\\
+\widehat{LB}_H{(pelagic)ay}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})\\
+\widehat{LB}_H{(yelloweye)ay}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})\\
+\widehat{LB}_H{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(H_{(nonpel,nonye)ay1})\\
+\end{equation}
+
+Note that for central and Kodiak areas $H_{(nonpel,nonye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For southeast areas $H_{(nonpel,nonye)ay1}$ is equal to the sum of the DSR and slope harvests *minus* yelloweye harvests.
+
+SWHS estimates of annual rockfish **releases** $\widehat{SWHS}_R{ay}$ were assumed to index true releases in a similar fashion and thus modeled similarly. Because logbook release data is more questionable and demonstrates greater disagreement with SWHS estimates (Figure 1), several approaches have been explored. In the first approach model $LB_{fit}$ treats the release data as a true census and the releases are related to true releases just as harvests were modeled such that:
+
+\begin{equation}
+\widehat{LB}_R{ay}~\sim~\textrm{Poisson}(R_{ay1})\\
+\widehat{LB}_R{(pelagic)ay}~\sim~\textrm{Poisson}(R_{ay1}P_{(pelagic)ay1})\\
+\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})\\
+\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
+\end{equation}
+
+Similar to how harvests were modeled, central and Kodiak $R_{(nonpel,nonye)ay1}$ was equal to  total releases minus pelagic and yelloweye releases while for southeast areas it was equal to the sum of DSR and slope releases minues yelloweye releases. 
+
+In the second approach we consider the logbook release data to be a minimal estimate of the true releases. Thus model $LB_{cens}$ censors the release data (censored data is entered as NA) and treats the reported releases as a minimal number such that
+
+\begin{equation}
+\text{censored} \widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), 1\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right)\\
+\text{censored} \widehat{LB}_R{(pelagic)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(pelagic)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(pelagic)ay}, \infty\right)\\ 
+\text{censored} \widehat{LB}_R{(ye)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(ye)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(ye)ay}, \infty\right)\\ 
+\text{censored} \widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(nonpel,nonye)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(nonpel,nonye)ay}, \infty\right)
+\end{equation}
+
+Model $LB_{hyb}$ is a hybrid approach that treats the yelloweye releases as a reliable census of yelloweye releases (given the emphasis and ease of recording these fish) but censors the pelagic and total rockfish release estimates such that
+
+\begin{equation}
+\text{censored} \widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), 1\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right) \\
+\text{censored} \widehat{LB}_R{(pelagic)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(pelagic)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(pelagic)ay}, \infty\right) \\
+\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})\\
+\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
+\end{equation}
+
+SWHS estimates of guided angler release $\widehat{SWHS}_R{ay1}$ is modeled the same as harvests. 
+
+SWHS release bias was modeled differently in the $LB_{fit}$, $LB_{cens}$, and $LB_{hyb}$ models. Because the $LB_{fit}$ model assumes that logbook release data is true and the poison likelihoods assume a much smaller variance than the large variances associated with the SWHS release estimates, SWHS release estimates $b_R{ay}$ were modeled independently of the harvest bias $b_H{ay}$ such that
+
+\begin{equation}
+b_R{ay}~\sim~\textrm{Normal}(\mu_R{(b)a}, \sigma_R{(b)a})
+\end{equation}
+
+where bias in the SWHS release estimates $b_R{ay}$ is modeled hierarchically across years as:
+
+\begin{equation}
+b_R{ay}~\sim~\textrm{Normal}(\mu_R{(b)a}, \sigma_R{(b)a})
+\end{equation}
+
+with non-informative priors on both parameters.
+
+The $LB_{cens}$ model treats the logbook release data as lower bound on the release estimates and thus the likelihood linking true releases to the SWHS release estimates is dominant. During model development it was apparent that estimating bias in the SWHS data was more difficult and a different structure was employed that assumed  bias in SWHS release data followed a similar pattern to that of the harvests but is offset by some area specific amount. In these models $b_R{ay}$ differed from $b_H{ay}$ by offset $Rboff_{a}$ such that   
+
+\begin{equation}
+b_R{ay}~=~b_H{ay} + Rboff_{ay}
+\end{equation}
+
+where 
+
+\begin{equation}
+Rboff_{a}~\sim~\textrm{Normal}(\mu_{(bR)r}, \sigma_{(bR)r})
+\end{equation}
+
+such that $Rboff_{a}$ was modeled hierarchically across region *r*.
+
+The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
+
+\begin{equation}
+x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})
+\end{equation}
+
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs and the number of yellow rockfish sampled modeled analogously with an appropriately substituted $N$.
+ 
+### Unresolved issues and outstanding questions: 
+Models detailed in this markdown represent the next step in the modelling process whereby the pH parameters are separated out by species. This approach separates the compositional data that is germaine to the harvests from the release estimates and releases are now based on pH. Additionally, this approach allows the pH parameters to differ between pelagic and yelloweye which is appropriate given regulatory changes as well as fisherman and industry behaviour and is born out in the results. The approach results in great uncertainty around unguided release estimates, but that uncertainty is appropriate given the data. These models handle the yelloweye closures in southeast  much more appropriately given that the compositional data is no longer directly applied to the release estimates. These versions of the model are in development and it is unclear whether the $LB_{cens}$ model would work, but it appears applicable to the $LB_{fit}$ and $LB_{hyb}$ approaches. 
+
+Other issues include:  
+
+1. *Complete convergence* has not been achieved and the logistic curve parameters for p_pelagic and p_yellow remain the last sticking point. I think that p_pelagic will resolve with longer chains.
+2. *Estimate precision:* These models are producing more precise harvest estimates that in Adam's original model. I am not sure why at this juncture. sigma_H on the spline was switched from a fixed value to a prior centered around that fixed value, but the model estimates are in the same range as the fixed value. Would the number of knots in the spline explain this? 7 knots was settled on during early model fitting when it clearly performed better than fewer or more knots.  
+3. *Prior choices* in general need to be vetted. The priors on the logistic curves are fairly informed in an effort to achieve the desired shapes for hindcasting. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
+4. *Random effects on pH:* These are currently used in the model but because pH isn't linked to data as the p_comp data is I am not sure what to make of them or if they are appropriate.
+5. *Model comparisons:* I need to write code for comparing models side by side as well as quantifying the differences between these methods and the Howard methods. 
+ 
+# Results
+* **Model:** *`r mod`* 
+* **Model Run:** *`r res`* (Naming convention: modelname_thruYEAR_iters_rundate)
+```{r}
+rhat <- get_Rhat(postH, cutoff = 1.11)
+names(rhat)[1] <- "Rhat_values"
+all_rhat <- get_Rhat(postH,cutoff = 0.01)
+names(all_rhat)[1] <- "Rhat_values"
+as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4)
+```
+* **Proportion of parmaters converged (Rhat <= 1.1):** `r prop_conv`
+* *See end of document for summary of unconverged parameters.*
+
+```{r, fig.width = 6, fig.height = 2, fig.cap = "**Figure X.**- Rhat values and proportion of parameters that converged (Rhat < 1.1.)"}
+rhat_vals %>% data.frame() %>%
+  ggplot(aes(Rhat)) + 
+  geom_histogram(binwidth=0.1, colour="black", fill="white") +
+  geom_vline(aes(xintercept = 1)) 
+```
+
+* **Model development notes:**
+  + NA 
+  
+## Estimate comparison
+Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 2.**- Total rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+tot_how <- readxl::read_excel(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".xlsx"),
+                              sheet = "BRF harvest",
+                              range = "A1:N400") %>%
+  #read.csv(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>% filter(year <= end_yr) %>%
+  mutate(tot_rf = log_rfharv + priv_rfharv) %>%
+  select(region,year,area = rpt_area, gui_tot = log_rfharv,pri_tot=priv_rfharv,var = var_priv_rfharv, tot_rf) 
+
+tot_how %>% select(-var) %>%
+  pivot_longer(cols = c("gui_tot","pri_tot","tot_rf"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_tot","guided",
+                       ifelse(user == "pri_tot","unguided","All"))) %>%
+  filter(!is.na(area)) -> tot_how
+
+as.data.frame(
+  rbind(t(postH$mean$H_ayg),
+        t(postH$mean$H_ayu),
+        t(postH$mean$H_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$H_ayg),
+          t(postH$q2.5$H_ayu),
+          t(postH$q2.5$H_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$H_ayg),
+          t(postH$q97.5$H_ayu),
+          t(postH$q97.5$H_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(tot_how, by = c("year","user","area")) -> rf_plotdat
+
+rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(user == "All") %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = H_how, color = user, shape = user)) + 
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Total Rockfish Harvests", x = "Year")#+
+  #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+  #              position=position_dodge(0.05))
+```
+<br><br>
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 3.**- Total rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+tot_howR <- readxl::read_excel(paste0("..\\output\\release_estimates_Howard_thru",REP_YR,".xlsx"),
+                              sheet = "BRF release",
+                              range = "A1:N400") %>%
+  #read.csv(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>% filter(year <= end_yr) %>%
+  mutate(tot_rf = log_rfrel + priv_rfrel) %>%
+  select(region,year,area = rpt_area, gui_tot = log_rfrel,pri_tot=priv_rfrel,var = var_priv_rfrel, tot_rf) 
+
+tot_howR %>% select(-var) %>%
+  pivot_longer(cols = c("gui_tot","pri_tot","tot_rf"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_tot","guided",
+                       ifelse(user == "pri_tot","unguided","All"))) %>%
+  filter(!is.na(area)) -> tot_howR
+
+as.data.frame(
+  rbind(t(postH$mean$R_ayg),
+        t(postH$mean$R_ayu),
+        t(postH$mean$R_ay))) %>%
+  setNames(nm = unique(R_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$R_ayg),
+          t(postH$q2.5$R_ayu),
+          t(postH$q2.5$R_ay))) %>%
+      setNames(nm = unique(R_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$R_ayg),
+          t(postH$q97.5$R_ayu),
+          t(postH$q97.5$R_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(tot_howR, by = c("year","user","area")) -> rf_plotdat2
+
+rf_plotdat2 %>% mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered = TRUE)) %>%
+  filter(user == "All") %>%
+  ggplot(aes(x = year, y = R, color = user)) +
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) + 
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Total Rockfish Releases", x = "Year")#+
+  #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+  #              position=position_dodge(0.05))
+```
+<br>
+
+*Notes from Adam:* When looking at only black rockfish the most significant differences are for the Prince William Sound Inside area. I did not spend a great deal of time tracking this down although it looks like the previous version used bad values for $P_{(black)ayu}$ for at least unguided anglers. For the moment I would ignore the results for BSIA and SOKO2SAP. I think it is possible to give approximate values for these areas but it will require a little more coding which I have yet to do. 
+ 
+```{r, fig.width = 12, fig.height = 8, fig.cap = "**Figure 4.**- Black rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+
+pal <- wes_palette(name = "IsleofDogs1", n=3)
+
+brf_how <- read.csv(paste0("..\\output\\BRF_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_brf, var_gui_brf, priv_brf, var_priv_brf,
+         tot_brf = total_br_fharv, var_tot_brf = var_total_br_fharv) 
+
+brf_how %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
+  pivot_longer(cols = c("gui_brf","priv_brf","tot_brf"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_brf","guided",
+                       ifelse(user == "priv_brf","unguided","All"))) %>%
+  left_join(brf_how %>% select(-c("gui_brf","priv_brf","tot_brf")) %>%
+              pivot_longer(cols = c("var_gui_brf","var_priv_brf","var_tot_brf"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_brf","guided",
+                                   ifelse(user == "var_priv_brf","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> brf_how
+
+
+as.data.frame(
+  rbind(t(postH$mean$Hb_ayg),
+        t(postH$mean$Hb_ayu),
+        t(postH$mean$Hb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hb_ayg),
+          t(postH$q2.5$Hb_ayu),
+          t(postH$q2.5$Hb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hb_ayg),
+          t(postH$q97.5$Hb_ayu),
+          t(postH$q97.5$Hb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(brf_how, by = c("year","user","area")) -> brf_plotdat
+
+brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% filter(user != "All") %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Black Rockfish Harvests", x = "Year")
+```
+<br>
+
+And black rockfish releases...
+
+```{r, fig.width = 12, fig.height = 8, fig.cap = "**Figure 5.**- Black rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+pal <- wes_palette(name = "IsleofDogs1", n=3)
+
+brf_howR <- read.csv(paste0("..\\output\\BRF_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_brf, var_gui_brf, priv_brf, var_priv_brf,
+         tot_brf = total_br_frel, var_tot_brf = var_total_br_frel) %>% unique() #note some duplicate BSAI and SOKO2SAPs
+
+brf_howR %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
+  pivot_longer(cols = c("gui_brf","priv_brf","tot_brf"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_brf","guided",
+                       ifelse(user == "priv_brf","unguided","All"))) %>%
+  left_join(brf_howR %>% select(-c("gui_brf","priv_brf","tot_brf")) %>%
+              pivot_longer(cols = c("var_gui_brf","var_priv_brf","var_tot_brf"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_brf","guided",
+                                   ifelse(user == "var_priv_brf","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> brf_howR
+
+as.data.frame(
+#  rbind(t(postH$mean$Rb_ayg),
+#        t(postH$mean$Rb_ayu),
+#        t(postH$mean$Rb_ay))) %>%
+  rbind(t(postH$q50$Rb_ayg),
+        t(postH$q50$Rb_ayu),
+        t(postH$q50$Rb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q25$Rb_ayg),
+          t(postH$q25$Rb_ayu),
+          t(postH$q25$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q75$Rb_ayg),
+          t(postH$q75$Rb_ayu),
+          t(postH$q75$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(brf_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered = TRUE)) %>%
+  filter(user != "All") %>%
+  ggplot(aes(x = year, y = R, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_line() + 
+  #geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) +
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  geom_line() + 
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Black Rockfish Releases", x = "Year")
+
+```
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 6.**- Yellow rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)] 
+
+ye_how <- read.csv(paste0("..\\output\\YE_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_ye, var_gui_ye, priv_ye, var_priv_ye,
+         tot_ye = total_y_eharv, var_tot_ye = var_total_y_eharv) 
+
+ye_how %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
+  pivot_longer(cols = c("gui_ye","priv_ye","tot_ye"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_ye","guided",
+                       ifelse(user == "priv_ye","unguided","All"))) %>%
+  left_join(ye_how %>% select(-c("gui_ye","priv_ye","tot_ye")) %>%
+              pivot_longer(cols = c("var_gui_ye","var_priv_ye","var_tot_ye"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_ye","guided",
+                                   ifelse(user == "var_priv_ye","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> ye_how
+
+as.data.frame(
+  rbind(t(postH$mean$Hy_ayg),
+        t(postH$mean$Hy_ayu),
+        t(postH$mean$Hy_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hy_ayg),
+          t(postH$q2.5$Hy_ayu),
+          t(postH$q2.5$Hy_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hy_ayg),
+          t(postH$q97.5$Hy_ayu),
+          t(postH$q97.5$Hy_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(ye_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All") %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Yelloweye Rockfish Harvests", x = "Year")
+```
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 7.**- Yellow rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)]
+
+ye_howR <- read.csv(paste0("..\\output\\YE_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_ye, var_gui_ye, priv_ye, var_priv_ye,
+         tot_ye = total_y_erel, var_tot_ye = var_total_y_erel) %>% unique()
+
+ye_howR %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
+  pivot_longer(cols = c("gui_ye","priv_ye","tot_ye"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_ye","guided",
+                       ifelse(user == "priv_ye","unguided","All"))) %>%
+  left_join(ye_howR %>% select(-c("gui_ye","priv_ye","tot_ye")) %>%
+              pivot_longer(cols = c("var_gui_ye","var_priv_ye","var_tot_ye"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_ye","guided",
+                                   ifelse(user == "var_priv_ye","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> ye_howR
+
+#ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
+
+as.data.frame(
+#  rbind(t(postH$mean$Ry_ayg),
+#        t(postH$mean$Ry_ayu),
+#        t(postH$mean$Ry_ay))) %>%
+  rbind(t(postH$q50$Ry_ayg),
+        t(postH$q50$Ry_ayu),
+        t(postH$q50$Ry_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q25$Ry_ayg),
+          t(postH$q25$Ry_ayu),
+          t(postH$q25$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q75$Ry_ayg),
+          t(postH$q75$Ry_ayu),
+          t(postH$q75$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(ye_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All") %>%
+  ggplot(aes(x = year, y = R, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Yelloweye Rockfish Releases", x = "Year")
+```
+
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 6.**- DSR rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+pal <- wes_palette(name = "AsteroidCity1", n=3) 
+
+dsr_how <- read.csv(paste0("..\\output\\DSR_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_dsr, var_gui_dsr, priv_dsr, var_priv_dsr,
+         tot_dsr = total_ds_rharv, var_tot_dsr = var_total_ds_rharv) 
+
+dsr_how %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
+  pivot_longer(cols = c("gui_dsr","priv_dsr","tot_dsr"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_dsr","guided",
+                       ifelse(user == "priv_dsr","unguided","All"))) %>%
+  left_join(dsr_how %>% select(-c("gui_dsr","priv_dsr","tot_dsr")) %>%
+              pivot_longer(cols = c("var_gui_dsr","var_priv_dsr","var_tot_dsr"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_dsr","guided",
+                                   ifelse(user == "var_priv_dsr","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> dsr_how
+
+as.data.frame(
+  rbind(t(postH$mean$Hd_ayg),
+        t(postH$mean$Hd_ayu),
+        t(postH$mean$Hd_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hd_ayg),
+          t(postH$q2.5$Hd_ayu),
+          t(postH$q2.5$Hd_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hd_ayg),
+          t(postH$q97.5$Hd_ayu),
+          t(postH$q97.5$Hd_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(dsr_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "DSR Rockfish Harvests", x = "Year")
+```
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 7.**- DSR rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "AsteroidCity1", n=3)
+
+dsr_howR <- read.csv(paste0("..\\output\\DSR_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_dsr, var_gui_dsr, priv_dsr, var_priv_dsr,
+         tot_dsr = total_ds_rrel, var_tot_dsr = var_total_ds_rrel) %>% unique()
+
+dsr_howR %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
+  pivot_longer(cols = c("gui_dsr","priv_dsr","tot_dsr"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_dsr","guided",
+                       ifelse(user == "priv_dsr","unguided","All"))) %>%
+  left_join(dsr_howR %>% select(-c("gui_dsr","priv_dsr","tot_dsr")) %>%
+              pivot_longer(cols = c("var_gui_dsr","var_priv_dsr","var_tot_dsr"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_dsr","guided",
+                                   ifelse(user == "var_priv_dsr","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> dsr_howR
+
+#ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
+
+as.data.frame(
+#  rbind(t(postH$mean$Ry_ayg),
+#        t(postH$mean$Ry_ayu),
+#        t(postH$mean$Ry_ay))) %>%
+  rbind(t(postH$q50$Rd_ayg),
+        t(postH$q50$Rd_ayu),
+        t(postH$q50$Rd_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q25$Rd_ayg),
+          t(postH$q25$Rd_ayu),
+          t(postH$q25$Rd_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q75$Rd_ayg),
+          t(postH$q75$Rd_ayu),
+          t(postH$q75$Rd_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(dsr_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = R, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "DSR Rockfish Releases", x = "Year")
+```
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 6.**- Slope rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
+
+slope_how <- read.csv(paste0("..\\output\\SLO_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_slope, var_gui_slope, priv_slope, var_priv_slope,
+         tot_slope = total_slopeharv, var_tot_slope = var_total_slopeharv) 
+
+slope_how %>% select(-c("var_gui_slope","var_priv_slope","var_tot_slope")) %>%
+  pivot_longer(cols = c("gui_slope","priv_slope","tot_slope"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_slope","guided",
+                       ifelse(user == "priv_slope","unguided","All"))) %>%
+  left_join(slope_how %>% select(-c("gui_slope","priv_slope","tot_slope")) %>%
+              pivot_longer(cols = c("var_gui_slope","var_priv_slope","var_tot_slope"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_slope","guided",
+                                   ifelse(user == "var_priv_slope","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> slope_how
+
+as.data.frame(
+  rbind(t(postH$mean$Hs_ayg),
+        t(postH$mean$Hs_ayu),
+        t(postH$mean$Hs_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hs_ayg),
+          t(postH$q2.5$Hs_ayu),
+          t(postH$q2.5$Hs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hs_ayg),
+          t(postH$q97.5$Hs_ayu),
+          t(postH$q97.5$Hs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(slope_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = H, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Slope Rockfish Harvests", x = "Year")
+```
+<br><br>
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 7.**- Slope rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
+#pal <- wes_palette(name = "Darjeeling1", n=3)
+pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
+
+slope_howR <- read.csv(paste0("..\\output\\SLO_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_slope, var_gui_slope, priv_slope, var_priv_slope,
+         tot_slope = total_sloperel, var_tot_slope = var_total_sloperel) %>% unique()
+
+slope_howR %>% select(-c("var_gui_slope","var_priv_slope","var_tot_slope")) %>%
+  pivot_longer(cols = c("gui_slope","priv_slope","tot_slope"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_slope","guided",
+                       ifelse(user == "priv_slope","unguided","All"))) %>%
+  left_join(slope_howR %>% select(-c("gui_slope","priv_slope","tot_slope")) %>%
+              pivot_longer(cols = c("var_gui_slope","var_priv_slope","var_tot_slope"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_slope","guided",
+                                   ifelse(user == "var_priv_slope","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> slope_howR
+
+#ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
+
+as.data.frame(
+#  rbind(t(postH$mean$Ry_ayg),
+#        t(postH$mean$Ry_ayu),
+#        t(postH$mean$Ry_ay))) %>%
+  rbind(t(postH$q50$Rs_ayg),
+        t(postH$q50$Rs_ayu),
+        t(postH$q50$Rs_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q25$Rs_ayg),
+          t(postH$q25$Rs_ayu),
+          t(postH$q25$Rs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q75$Rs_ayg),
+          t(postH$q75$Rs_ayu),
+          t(postH$q75$Rs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(slope_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  
+  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = R, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
+  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+                position=position_dodge(0.05), alpha = 0.3) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Slope Rockfish Releases", x = "Year")
+```
+
+
+## Model fit
+### Logbook residuals
+```{r, fig.width = 8, fig.height = 6, fig.cap = "**Figure 8.**- Residuals from logbook harvests"}
+as.data.frame(
+  t(postH$mean$H_ayg) - t(jags_dat$Hlb_ayg)) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = start_yr:end_yr) %>%
+  pivot_longer(!year, names_to = "area", values_to = "res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = res)) +
+  geom_point() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Logbook residuals", x = "Year")
+```
+<br>
+
+### SWHS residuals
+```{r, fig.width = 10, fig.height = 6, fig.cap = "**Figure 9.**- Residuals from SWHS harvests."}
+pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
+
+as.data.frame(
+  t(log(postH$mean$H_ay) + postH$mean$logbc_H) - t(log(jags_dat$Hhat_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = start_yr:end_yr) %>%
+  pivot_longer(!year, names_to = "area", values_to = "H_res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(t(jags_dat$cvHhat_ay)) %>% setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = start_yr:end_yr) %>%
+              pivot_longer(!year, names_to = "area", values_to = "cv") %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area")) -> swhs_Hres
+swhs_Hres %>% ggplot(aes(x = year, y = H_res)) +
+  scale_color_gradientn(colours = pal) + 
+  geom_point(aes(color = cv)) +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "SWHS harvest residuals", x = "Year")
+```
+<br><br>
+
+```{r, fig.width = 10, fig.height = 6, fig.cap = "**Figure 10.**- Residual of SWHS releases"}
+pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
+
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_cens_hb2")){
+  as.data.frame(
+  #t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
+  t(log(postH$mean$R_ay) + postH$mean$logbc_R) - t(log(jags_dat$Rhat_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = start_yr:end_yr) %>%
+  pivot_longer(!year, names_to = "area", values_to = "R_res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(t(jags_dat$cvRhat_ay)) %>% setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = start_yr:end_yr) %>%
+              pivot_longer(!year, names_to = "area", values_to = "cv") %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area"))-> swhs_Rres
+
+swhs_Rres %>%  
+  filter(cv < 25) %>%
+  ggplot(aes(x = year, y = R_res)) +
+  scale_color_gradientn(colours = pal) + 
+  geom_point(aes(color = cv)) +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "SWHS catch residuals", x = "Year")
+} else {
+  as.data.frame(
+  #t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
+  t(log(postH$mean$R_ay) + postH$mean$logbc_R) - t(log(jags_dat$Rhat_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = start_yr:end_yr) %>%
+  pivot_longer(!year, names_to = "area", values_to = "R_res") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(t(jags_dat$cvRhat_ay)) %>% setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = start_yr:end_yr) %>%
+              pivot_longer(!year, names_to = "area", values_to = "cv") %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area"))-> swhs_Rres
+swhs_Rres %>%  
+  #filter(cv < 25) %>%
+  ggplot(aes(x = year, y = R_res)) +
+  scale_color_gradientn(colours = pal) + 
+  geom_point(aes(color = log(cv))) +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "SWHS release residuals", x = "Year")
+}
+```
+
+## Parameter estimates
+### P(Charter)
+ 
+These histograms show the posterior distribution of the mean percent of rockfish harvested by the charter fleet.
+ 
+```{r, fig.width = 8, fig.height = 6, fig.cap = "**Figure 11.**- Mean percent of harvest by charter anglers."}
+pG <- postH$sims.list$b1_pG / (postH$sims.list$b1_pG + postH$sims.list$b2_pG) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) 
+pG %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "pG") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = pG)) +
+  geom_histogram(binwidth = 0.02) +
+  facet_wrap(.~area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Observations", x = "Proportion of harvests from guided trips")
+```
+<br>
+
+When considered annually we see the percent of rockfish harvested by the charter fleet follows our data fairly well although we just do not have much information about this ratio. Prior to 2011 the percent charter is confounded with SWHS bias and should be mostly discounted. 
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 12.**- Annual estimates of the percent of harvest by charter anglers for 16 commerical fishing manamgent areas, 1996-2023."}
+pG_mod <- 
+  postH$mean$pG %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG") %>%
+  left_join(postH$q2.5$pG %>%
+              t() %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = unique(Hhat_ay$year),
+                     source = "model") %>%
+              pivot_longer(-c(year, source), names_to = "area", values_to = "pG_lo95"),
+            by = c("year","source","area")) %>%
+  left_join(postH$q97.5$pG %>%
+              t() %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = unique(Hhat_ay$year),
+                     source = "model") %>%
+              pivot_longer(-c(year, source), names_to = "area", values_to = "pG_hi95"),
+            by = c("year","source","area"))
+pG_obs <- 
+  (jags_dat$Hhat_ayg/jags_dat$Hhat_ay)[,35:Y] %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "pG")
+
+rbind(pG_mod, pG_obs%>% mutate(pG_lo95 = NA, pG_hi95 = NA)) %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = pG, color = source)) +
+  geom_ribbon(aes(ymin = pG_lo95, ymax = pG_hi95, borders = NA, fill = source), 
+              alpha = 0.2, color = NA) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of harvests from guided trips", x = "Year")
+
+```
+### P(Harvest)
+ 
+These plots show the fitted logistic line to the proportion of caught rockfish that are harvested. These estimates are used for hindcasting catch estimates based on the harvest data in early years when catch estimates are unavailable.
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of all rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
+pHall_mod <- 
+  rbind(postH$mean$pHg %>% t(), #postH$mean$pH[,,1] %>% t(),
+        postH$mean$pHu %>% t()) %>% #postH$mean$pH[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pHg %>% t(),
+                  postH$q2.5$pHu %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pHg %>% t(),
+                  postH$q97.5$pHu %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHall_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlb_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+pHall_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  geom_ribbon(data = pHall_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source)) +
+  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHall_mod, aes(color = user)) +
+  #geom_line(data = pHall_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of total catches that were harvested", x = "Year")
+
+``` 
+<br>
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of pelagic rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
+pal <- wes_palette(name = "Moonrise2", n=3)
+
+pHpel_mod <- 
+  rbind(postH$mean$pH[,,1,1] %>% t(),
+        postH$mean$pH[,,2,1] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,1] %>% t(),
+                  postH$q2.5$pH[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,1] %>% t(),
+                  postH$q97.5$pH[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+pHpel_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlbp_ayg/(jags_dat$Rlbp_ayg + jags_dat$Hlbp_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,1],
+      beta1_pH <- postH$q50$beta1_pH[,1],
+      beta2_pH <- postH$q50$beta2_pH[,1],
+      beta3_pH <- postH$q50$beta3_pH[,1],
+      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "pelagic") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHpel_trend
+
+pHpel_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHpel_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source)) +
+  geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHpel_mod, aes(color = user)) +
+  #geom_line(data = pHpel_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of pelagic catches that were harvested", x = "Year")
+
+``` 
+<br>
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of yelloweye rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)]
+
+pHye_mod <- 
+  rbind(postH$mean$pH[,,1,2] %>% t(),
+        postH$mean$pH[,,2,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,2] %>% t(),
+                  postH$q2.5$pH[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,2] %>% t(),
+                  postH$q97.5$pH[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHye_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t(jags_dat$Hlby_ayg/(jags_dat$Rlby_ayg + jags_dat$Hlby_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,2],
+      beta1_pH <- postH$q50$beta1_pH[,2],
+      beta2_pH <- postH$q50$beta2_pH[,2],
+      beta3_pH <- postH$q50$beta3_pH[,2],
+      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "ye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHye_trend
+
+pHye_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHye_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHye_mod, aes(color = user)) +
+  #geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of yelloweye catches that were harvested", x = "Year")
+
+``` 
+<br>
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of non-pelagic, non-yelloweye rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available. Note, that this is not estimated for Southeast areas because non=pelagics are divided between DSR (including yelloweye) and Slope species."}
+pal <- wes_palette(name = "BottleRocket2", n=5)[c(2,4)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+
+pHnpny_mod <- 
+  rbind(postH$mean$pH[,,1,3] %>% t(),
+        postH$mean$pH[,,2,3] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,3] %>% t(),
+                  postH$q2.5$pH[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,3] %>% t(),
+                  postH$q97.5$pH[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHnpny_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t((jags_dat$Hlb_ayg - jags_dat$Hlbp_ayg - jags_dat$Hlby_ayg)
+          /(jags_dat$Rlb_ayg - jags_dat$Rlbp_ayg - jags_dat$Rlby_ayg + 
+              jags_dat$Hlb_ayg - jags_dat$Hlbp_ayg - jags_dat$Hlby_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,3],
+      beta1_pH <- postH$q50$beta1_pH[,3],
+      beta2_pH <- postH$q50$beta2_pH[,3],
+      beta3_pH <- postH$q50$beta3_pH[,3],
+      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "nonp-nonye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHnpny_trend
+
+pHnpny_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHnpny_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHnpny_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHnpny_mod, aes(color = user)) +
+  #geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of non-pelagic, non-yelloweye catches that were harvested", x = "Year")
+
+``` 
+<br>
+
+```{r, fig.width = 10, fig.height = 5, fig.cap = "**Figure 13.**- Annual proportion of DSR rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available. Note that the observed logbook data is for all non-pelagic, non-yelloweye fish."}
+pal <- wes_palette(name = "AsteroidCity1", n=5)#[c(2,5)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+
+pHdsr_mod <- 
+  rbind(postH$mean$pH[,,1,4] %>% t(),
+        postH$mean$pH[,,2,4] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,4] %>% t(),
+                  postH$q2.5$pH[,,2,4] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,4] %>% t(),
+                  postH$q97.5$pH[,,2,4] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+
+pHdsr_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t((jags_dat$Hlbo_ayg)
+          /(jags_dat$Rlbo_ayg + 
+              jags_dat$Hlbo_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")%>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA)) %>%
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,4],
+      beta1_pH <- postH$q50$beta1_pH[,4],
+      beta2_pH <- postH$q50$beta2_pH[,4],
+      beta3_pH <- postH$q50$beta3_pH[,4],
+      beta4_pH <- postH$q50$beta4_pH[,4]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "DSR") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHdsr_trend
+
+pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHdsr_mod, 
+              aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHdsr_obs %>% filter(user == "all"), 
+             color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHdsr_mod, 
+            aes(color = user)) +
+  #geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of DSR catches harvested", x = "Year")
+
+``` 
+<br>
+
+```{r, fig.width = 10, fig.height = 5, fig.cap = "**Figure 13.**- Annual proportion of Slope rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available. Note that the observed logbook data is for all non-pelagic, non-yelloweye fish."}
+pal <- wes_palette(name = "Rushmore1", n=5)[c(3,4)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+
+pHslope_mod <- 
+  rbind(postH$mean$pH[,,1,5] %>% t(),
+        postH$mean$pH[,,2,5] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,5] %>% t(),
+                  postH$q2.5$pH[,,2,5] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,5] %>% t(),
+                  postH$q97.5$pH[,,2,5] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+
+pHslope_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t((jags_dat$Hlbo_ayg)
+          /(jags_dat$Rlbo_ayg + 
+              jags_dat$Hlbo_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA)) %>%
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,5],
+      beta1_pH <- postH$q50$beta1_pH[,5],
+      beta2_pH <- postH$q50$beta2_pH[,5],
+      beta3_pH <- postH$q50$beta3_pH[,5],
+      beta4_pH <- postH$q50$beta4_pH[,5]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "Slope") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHslope_trend
+
+pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHslope_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHslope_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHslope_mod, aes(color = user)) +
+  #geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of slope catches harvested", x = "Year")
+
+``` 
+### SWHS bias
+ 
+Figure 14 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
+ 
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 14.**- Mean SWHS bias for harvests and catches. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr")) { #2 bias
+  exp(postH$sims.list$mu_bc_H) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         data = "H") %>% #-> grr#%>%
+  rbind(exp(postH$sims.list$mu_bc_R) %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 data = "R")) -> bias
+
+bias %>% data.frame() %>% filter(bc < 50) %>%
+  ggplot(aes(x = bc, col = data, fill = data)) +
+  geom_histogram(binwidth = .05, alpha = 0.2, position = "identity") +
+  coord_cartesian(xlim = c(0, 5)) +
+  geom_vline(aes(xintercept = 1)) +
+  facet_wrap(.~area) + theme_bw(base_size = 16)+
+  labs(y = "Count", x = "Bias correction")
+} else { #1 bias with offset
+exp(postH$sims.list$mu_bc_H) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         data = "H") %>% #-> grr#%>%
+  rbind(exp(postH$sims.list$mu_bc_H * postH$sims.list$bc_R_offset) %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 data = "R")) %>%
+  rbind((postH$sims.list$bc_R_offset) %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          pivot_longer(cols = where(is.numeric), names_to = "area", values_to = "bc") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 data = "R_offset")) -> bias
+
+bias %>% filter(bc < 6 & data != "C_offset") %>%
+  ggplot(aes(x = bc, col = data, fill = data)) +
+  geom_histogram(binwidth = .05, alpha = 0.2, position = "identity") +
+  coord_cartesian(xlim = c(0, 3)) +
+  geom_vline(aes(xintercept = 1)) +
+  facet_wrap(.~area) + theme_bw(base_size = 16)+
+  labs(y = "Count", x = "Bias correction")
+}
+```
+<br>
+ 
+Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
+ 
+```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 15.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr")){
+  mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
+bc_mod <- 
+  apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>%
+  rbind(apply(exp(postH$sims.list$logbc_R), c(2, 3), mean) %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ay$year),
+                 source = "model") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+dim(postH$q50$logbc_H)
+dim(postH$q50$bc_R_offset)
+
+bc_mod2 <- 
+  #apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
+  exp(postH$q50$logbc_H) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>%
+  rbind(exp(postH$q50$logbc_R) %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ay$year),
+                 source = "model") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+bc_obs <- 
+  (jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,35:Y] %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>% 
+  rbind((jags_dat$Rhat_ayg/jags_dat$Rlb_ayg)[,35:Y] %>%
+  #rbind((jags_dat$Chat_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg))[,35:Y] %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+                 source = "observed") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+rbind(bc_mod2, bc_obs) %>%
+  filter(data == "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 5)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(y = "", x = "Year")-> Hbias
+
+rbind(bc_mod2, bc_obs) %>%
+  filter(data == "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 8)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(y = "", x = "Year")-> Rbias
+
+ggarrange(Hbias,Rbias,
+          labels = c("Harvests","Releases"),
+          ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
+} else {
+ mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
+bc_mod <- 
+  apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>%
+  rbind(apply(exp(postH$sims.list$logbc_H * 
+                    array(postH$sims.list$bc_R_offset, 
+                          dim = c(dim(postH$sims.list$logbc_H)[1],jags_dat$A,Y))), c(2, 3), mean) %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ay$year),
+                 source = "model") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+bc_mod2 <- 
+  #apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
+  exp(postH$q50$logbc_H) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ay$year),
+         source = "model") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>%
+  rbind(exp(postH$q50$logbc_H * array(postH$q50$bc_R_offset,
+                                      dim = c(jags_dat$A,Y))) %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ay$year),
+                 source = "model") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+bc_obs <- 
+  (jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,35:Y] %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+         source = "observed") %>%
+  pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+  mutate(data = "H") %>% 
+  rbind((jags_dat$Rhat_ayg/jags_dat$Rlb_ayg)[,35:Y] %>%
+  #rbind((jags_dat$Chat_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg))[,35:Y] %>%
+          t() %>%
+          as.data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+                 source = "observed") %>%
+          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+          mutate(data = "R"))
+
+rbind(bc_mod2, bc_obs) %>%
+  filter(data == "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(ylim = c(0, 5)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(y = "Bias correction for SWHS estimates", x = "Year") -> Hbias
+
+rbind(bc_mod2, bc_obs) %>%
+  filter(data == "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  ggplot(aes(x = year, y = bc, color = source)) +
+  geom_point() +
+  geom_line() +
+  #coord_cartesian(ylim = c(0, 5)) +
+  geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(y = "", x = "Year") -> Cbias
+
+ggarrange(Hbias,Cbias,
+          labels = c("Harvest","Releases"),
+          ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
+}
+```
+ 
+### P(pelagic)
+ 
+We model the percentage of pelagic rockfish in the harvest because we have the information for charter anglers (via logbooks) starting in 1998. Other than looking at the model estimates you can use Figure 8 to compare the two data streams for pelagic rockfish harvest. In general they are in agreement with major exceptions in Price William Sound inside, Prince William Sound outside (early in the time series) and South Southeast inside.
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 16.**- Annual estimates of the percent of the sport harvest that was pelagic rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
+pal <- wes_palette(name = "Moonrise2", n=3)
+
+p_pelagic_mod <- 
+  rbind(postH$mean$p_pelagic[,,1] %>% t(),
+        postH$mean$p_pelagic[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+  pivot_longer(-c(year, user), names_to = "area", values_to = "p_pelagic")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_pelagic[,,1] %>% t(),
+                  postH$q2.5$p_pelagic[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_pelagic[,,1] %>% t(),
+                  postH$q97.5$p_pelagic[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
+p_pelagic_obs <-
+  comp %>%
+  mutate(year = year_n + 1976, #1995,
+         area = unique(H_ayg$area)[area_n],
+         user = ifelse(user_n == 0, "charter", "private"),
+         source = ifelse(source == 1, "sample", "logbook"),
+         p_pelagic = pelagic / N,
+         area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  select(year, area, user, source, p_pelagic) %>%
+  rbind(H_ayg %>% 
+          mutate(p_pelagic = Hp / H, 
+                 user = "charter", 
+                 source = "logbook") %>% 
+          select(year, area, user, source, p_pelagic)) %>%
+  mutate(p_lo95 = NA, p_hi95 = NA)
+
+rbind(beta0_pelagic <- postH$q50$beta0_pelagic,
+      beta1_pelagic <- postH$q50$beta1_pelagic,
+      beta2_pelagic <- postH$q50$beta2_pelagic,
+      beta3_pelagic <- postH$q50$beta3_pelagic,
+      beta4_pelagic <- postH$q50$beta4_pelagic) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pel = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         p_pelagic = logit_to_prob(logit_pel),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pel_trend
+
+p_pelagic_obs %>%
+  ggplot(aes(x = year, y = p_pelagic, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = p_pelagic_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source)) +
+  geom_line(data = p_pelagic_mod, linetype = 2) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  geom_line(data=pel_trend) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of rockfish that were pelagic", x = "Year") +
+  scale_shape_manual(values = c(19, 2))
+```
+ 
+### P(black|pelagic)
+ 
+Note that in Southeast Alaska we only have composition data starting in 2006. Tania dug up old SE data, but it did not provide any useful data for species apportionment.
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 17.**- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
+pal <- wes_palette(name = "IsleofDogs1", n=3) 
+
+p_black_mod <- 
+  rbind(postH$mean$p_black[,,1] %>% t(),
+        postH$mean$p_black[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_black")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_black[,,1] %>% t(),
+                  postH$q2.5$p_black[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_black[,,1] %>% t(),
+                  postH$q97.5$p_black[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
+p_black_obs <-
+  #jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1976,
+         area = (unique(H_ayg$area)[comp_area]),
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_black = comp_black / comp_pelagic,
+         area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  mutate(p_lo95 = NA, p_hi95 = NA,
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+p_black_mod %>%
+  left_join(postH$mean$beta0_black %>% t() %>% data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              pivot_longer(cols = unique(H_ayg$area),
+                           names_to = "area", values_to = "beta0") %>%
+              left_join(postH$mean$beta1_black %>% t() %>% data.frame() %>%
+                          setNames(nm = unique(H_ayg$area)) %>%
+                          pivot_longer(cols = unique(H_ayg$area),
+                                       names_to = "area", values_to = "beta1"), 
+                        by = "area") %>%
+              left_join(postH$mean$beta2_black %>% t() %>% data.frame() %>%
+                          setNames(nm = unique(H_ayg$area)) %>%
+                          pivot_longer(cols = unique(H_ayg$area),
+                                       names_to = "area", values_to = "beta2"), 
+                        by = "area"), 
+            by = c("area")) %>%
+  mutate(trend = ifelse(user == "charter",
+                        beta0+beta1*(year-1976)+beta2,
+                        beta0+beta1*(year-1976))) %>% 
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) -> p_black_mod
+
+rbind(beta0_black <- postH$q50$beta0_black,
+      beta1_black <- postH$q50$beta1_black,
+      beta2_black <- postH$q50$beta2_black,
+      beta3_black <- postH$q50$beta3_black,
+      beta4_black <- postH$q50$beta4_black) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_b = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         p_black = logit_to_prob(logit_b),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> black_trend
+
+rbind(p_black_obs) %>%
+  ggplot(aes(x = year, y = p_black, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = p_black_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point() +
+  geom_line(data = p_black_mod, linetype = 2) +
+  #geom_line(data = p_black_mod, aes(x=year, y=trend,color=user)) +
+  #geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
+  geom_line(data=black_trend) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of pelagic rockfish that were black", x = "Year") +
+  scale_shape_manual(values = c(1, 18))
+```
+ 
+### P(yelloweye|non-pelagic / yelloweye|DSR)
+ 
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 18.**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were yelloweye rockfish for 16 commerical fishing manamgent areas, 1996-2023. Note that P(yelloweye) is the the proportion relative to non-pelagics for Central and Kodiak areas but is relative to DSR for Southeast areas."}
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)]
+
+p_yellow_mod <- 
+  rbind(postH$mean$p_yellow[,,1] %>% t(),
+        postH$mean$p_yellow[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_yellow[,,1] %>% t(),
+                  postH$q2.5$p_yellow[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_yellow[,,1] %>% t(),
+                  postH$q97.5$p_yellow[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q25$p_yellow[,,1] %>% t(),
+                  postH$q25$p_yellow[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q75$p_yellow[,,1] %>% t(),
+                  postH$q75$p_yellow[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q50$p_yellow[,,1] %>% t(),
+                  postH$q50$p_yellow[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
+p_yellow_obs <-
+#  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1976,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_yellow = comp_yellow / (comp_N - comp_pelagic),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+p_yellowX_obs <- compX %>%
+  mutate(p_yellow = yellow_x / (N - pelagic),
+         user = ifelse(user_n == 0, "charter", "private"))
+
+rbind(beta0_ye <- postH$q50$beta0_yellow,
+      beta1_ye <- postH$q50$beta1_yellow,
+      beta2_ye <- postH$q50$beta2_yellow,
+      beta3_ye <- postH$q50$beta3_yellow,
+      beta4_ye <- postH$q50$beta4_yellow) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_y = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         p_yellow = logit_to_prob(logit_y),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> yellow_trend
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+  
+rbind(p_yellow_obs) %>%
+  ggplot(aes(x = year, y = p_yellow, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = p_yellow_mod,
+              aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.15, color = NA) +
+  geom_point() +
+  #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
+  geom_line(data = p_yellow_mod, linetype = 2) +
+  geom_line(data = yellow_trend) +
+  #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of non-pelagic rockfish that were yelloweye", x = "Year")
+```
+### P(DSR|non-pelagic)
+ 
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 18.**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were DSR rockfish for 6 Southeast commerical fishing manamgent areas, 1996-2023."}
+pal <- wes_palette(name = "AsteroidCity1", n=3) 
+
+p_dsr_mod <- 
+  rbind(postH$mean$p_dsr[,,1] %>% t(),
+        postH$mean$p_dsr[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_dsr")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_dsr[,,1] %>% t(),
+                  postH$q2.5$p_dsr[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_dsr[,,1] %>% t(),
+                  postH$q97.5$p_dsr[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q25$p_dsr[,,1] %>% t(),
+                  postH$q25$p_dsr[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q75$p_dsr[,,1] %>% t(),
+                  postH$q75$p_dsr[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q50$p_dsr[,,1] %>% t(),
+                  postH$q50$p_dsr[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
+p_dsr_obs <-
+#  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1976,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_dsr = comp_dsr / (comp_N - comp_pelagic),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+rbind(beta0_dsr <- postH$q50$beta0_dsr,
+      beta1_dsr <- postH$q50$beta1_dsr,
+      beta2_dsr <- postH$q50$beta2_dsr,
+      beta3_dsr <- postH$q50$beta3_dsr,
+      beta4_dsr <- postH$q50$beta4_dsr) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_y = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         p_dsr = logit_to_prob(logit_y),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> dsr_trend
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+  
+rbind(p_dsr_obs) %>% filter(area %in% southeast) %>%
+  ggplot(aes(x = year, y = p_dsr, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = p_dsr_mod %>% filter(area %in% southeast),
+              aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.15, color = NA) +
+  geom_point() +
+  #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
+  geom_line(data = p_dsr_mod %>% filter(area %in% southeast), linetype = 2) +
+  geom_line(data = dsr_trend %>% filter(area %in% southeast)) +
+  #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of non-pelagics that were DSR", x = "Year")
+```
+### P(slope|non-pelagic)
+ 
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 18.**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. Note that P(yelloweye) is the the proportion relative to non-pelagics for Central and Kodiak areas but is relative to DSR for Southeast areas."}
+pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
+
+p_slope_mod <- 
+  rbind(postH$mean$p_slope[,,1] %>% t(),
+        postH$mean$p_slope[,,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_slope")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$p_slope[,,1] %>% t(),
+                  postH$q2.5$p_slope[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q97.5$p_slope[,,1] %>% t(),
+                  postH$q97.5$p_slope[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q25$p_slope[,,1] %>% t(),
+                  postH$q25$p_slope[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q75$p_slope[,,1] %>% t(),
+                  postH$q75$p_slope[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user")) %>%
+  left_join(rbind(postH$q50$p_slope[,,1] %>% t(),
+                  postH$q50$p_slope[,,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user"))
+
+p_slope_obs <-
+#  jags_dat[grep("comp_", names(jags_dat), value = TRUE)] %>%
+  jags_dat[grep("comp_(?!.*_x)", names(jags_dat), value = TRUE, perl = TRUE)] %>%
+  as.data.frame() %>%
+  mutate(year = comp_year + 1976,
+         area = unique(H_ayg$area)[comp_area],
+         user = ifelse(comp_user == 0, "charter", "private"),
+         p_slope = comp_slope / (comp_N - comp_pelagic),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+rbind(beta0_slope <- postH$q50$beta0_slope,
+      beta1_slope <- postH$q50$beta1_slope,
+      beta2_slope <- postH$q50$beta2_slope,
+      beta3_slope <- postH$q50$beta3_slope,
+      beta4_slope <- postH$q50$beta4_slope) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area)) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_y = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         p_slope = logit_to_prob(logit_y),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> slope_trend
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+  
+rbind(p_slope_obs %>% filter(area %in% southeast)) %>%
+  ggplot(aes(x = year, y = p_slope, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = p_slope_mod %>% filter(area %in% southeast),
+              aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.15, color = NA) +
+  geom_point() +
+  #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
+  geom_line(data = p_slope_mod %>% filter(area %in% southeast), linetype = 2) +
+  geom_line(data = slope_trend %>% filter(area %in% southeast)) +
+  #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of non-pelagics that were slope", x = "Year")
+```
+<br><br>
+
+
+### Summary of unconverged parameters:
+
+```{r}           
+rhat_exam <- rhat$Rhat_values %>%
+  rownames_to_column(var = "Parameter") %>%
+  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n") %>%
+  mutate(parameter = variable) %>% select(-variable) %>%
+  filter(parameter %in% c("mu_bc_H", "sd_bc_H",
+                        #"logbc_C", "mu_bc_C", "sd_bc_C",
+                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+                        #User proportions (proportion guided); different for H and C
+                        "b1_pG_H", "b2_pG_H",
+                        "b1_pG_C", "b2_pG_C",
+                        #proportion harvested: 
+                        #polynomial
+                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+                        #"re_pH","sd_pH",
+                        #proportions same for catch and harvest? thinking on it?
+                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+                        "mu_beta0_pelagic", "tau_beta0_pelagic",
+                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+                        "mu_beta0_yellow", "tau_beta0_yellow",
+                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+                        "mu_beta0_black", "tau_beta0_black",
+                        #random effects on species
+                        #"re_pelagic", "re_black","re_yellow",
+                        "sd_comp", 
+                        #
+                        "mu_lambda_H","sigma_lambda_H","beta_H",
+                        #catch estimates and spline parts
+                        #with hierarchichal pline lambda
+                        "mu_lambda_C","sigma_lambda_C","beta_C")) 
+
+rhat_exam %>% group_by(parameter) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) ->param_conv
+
+tabl <- nrow(param_conv)
+
+round_up_even <- function(x) {
+  rounded <- ceiling(x)
+  if (rounded %% 2 != 0) {
+    rounded <- rounded + 1
+  }
+  return(rounded)
+}
+
+sapply(tabl, round_up_even) ->col1
+
+rhat_exam %>% group_by(parameter,area) %>%
+  summarise(n = n(),
+            badRhat_avg = mean(Rhat)) %>%
+  arrange(-badRhat_avg,-n) -> par_x_area
+
+with(par_x_area, table(parameter,area)) -> par_x_area_tbl
+
+t1 <- param_conv %>% slice(1:(col1*0.5))
+t2 <- param_conv %>% slice(((col1*0.5)+1):tabl)
+
+kable1 <- t1 %>% 
+  kable(format = "html") %>% 
+  kable_styling(full_width = FALSE)
+
+kable2 <- t2 %>% 
+  kable(format = "html") %>% 
+  kable_styling(full_width = FALSE)
+
+# Display side-by-side using a table layout
+div <- tags$table(
+  style = "width: 100%;",
+  tags$tr(
+    tags$td(style = "width: 50%;", HTML(kable1)),
+    tags$td(style = "width: 50%;", HTML(kable2))
+  )
+)
+
+caption <- tags$caption(
+  style = "text-align: center; font-weight: bold; margin-bottom: 10px;",
+  tags$strong("Table 1. "),
+  "Summary of unconverged parameters including the number (n) and the average Rhat from the unconverged parameters."
+)
+
+# Display the caption and the tables
+tags$div(
+  caption,
+  div
+)
+
+#kable(param_conv, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
+#      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
+#      caption = "**Table 1.** Summary of unconverged parameters") %>% #kable_styling(full_width = F)
+
+kable(par_x_area_tbl, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
+      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
+      caption = "**Table 2.** Summary of unconverged parameters by area") %>% kable_styling(full_width = F)
+
+#head(rhat$Rhat_values %>% arrange(-Rhat))
+#jagsUI::traceplot(postH, Rhat_min = 1.1)
+
+```
+
+### Parameter estimates: 
+```{r}
+#kable(summary_table, 
+#      digits = 3, 
+#      format = "markdown", 
+#      caption = "Parameter Estimates with Credibility Intervals")
+
+summary_table %>%
+  kbl(digits = 3, caption = "Summary Table of Parameter Estimates") %>%
+  kable_styling(full_width = FALSE, position = "center", font_size = 10, fixed_thead = TRUE)
+```

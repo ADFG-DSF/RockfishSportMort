@@ -9,8 +9,9 @@ model{
  for(n in 1:N){ #composition likelihoods; comp_ denoted by x_ayu in rmarkdown...
   comp_pelagic[n] ~ dbin(p_pelagic[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n])
   comp_black[n] ~ dbin(p_black[comp_area[n], comp_year[n] , comp_user[n] + 1], comp_pelagic[n])
-  ### p_yellow harvested = creel data
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
+  # comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
+  # comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
     }
 
  for(r in 1:3){ #priors for mean composition & proportion harvested
@@ -32,7 +33,7 @@ model{
 ##  mu_beta2_pH[r,1] ~ dnorm(1, 0.1)
 ##  mu_beta2_pH[r,2] ~ dnorm(-1, 0.1)
 
-  for (s in 1:2){
+  for (s in 1:2){ #for (s in 1:4){
     tau_beta0_pH[r,s] ~ dgamma(0.01, 0.01)
 ##    tau_beta2_pH[r,s] ~ dgamma(0.1, 0.1) #T(,100)
     }  
@@ -42,6 +43,15 @@ model{
 mu_beta0_pH[1,2] ~ dnorm(2.2, 1) #dnorm(0, 0.001)
 mu_beta0_pH[2,2] ~ dnorm(2.2, 1) #dnorm(0, 0.001)
 mu_beta0_pH[3,2] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+
+#SE species assemblages:
+##  mu_beta0_dsr[3] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  tau_beta0_dsr[3] ~ dgamma(0.01, 0.01)
+##  mu_beta0_slope[3] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  tau_beta0_slope[3] ~ dgamma(0.01, 0.01) 
+## mu_beta0_pH[3,3] ~ dnorm(0, 1) #dnorm(0, 0.001) #DSR
+## mu_beta0_pH[3,4] ~ dnorm(0, 1) #dnorm(0, 0.001) #SLOPE
+
 
 for (a in 1:A){
   # SWHS H bias: need separate bias for C based on logbook R estimates 
@@ -58,7 +68,7 @@ for (a in 1:A){
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #proportion of catch that is harvested
-  for (s in 1:2){ #s = 1= pelagic, s = 2 = yelloweye
+  for (s in 1:2){ #s = 1= pelagic, s = 2 = yelloweye, 3 = dsr, 4 = slope
     beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s])T(-2.75,) #INTERCEPT
     beta1_pH[a,s] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
 ##    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s])#T(0,) # SLOPE 
@@ -75,6 +85,10 @@ for (a in 1:A){
   ##beta1_pH[a,2] ~ dnorm(0, 0.1)T(0,)        # SCALING FACTOR (amplitude)
   beta2_pH[a,2] ~ dnorm(-1, 0.1) #T(0,)          # SLOPE #dnorm(0.5, 0.1) #T(0,)
 
+  #DSR and SLOPE
+##  beta2_pH[a,3] ~ dnorm(0, 0.1) #T(0,)
+##  beta2_pH[a,4] ~ dnorm(0, 0.1) #T(0,)
+
   # logit parameters for proportion estimates defined by mean, temp slope and private angler effect. 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
   beta1_pelagic[a] ~ dnorm(0, 0.1)T(0,)
@@ -90,9 +104,9 @@ for (a in 1:A){
 ##  beta3_yellow[a] ~ dnorm(30, 0.05)T(19,Y-5)  
   beta4_yellow[a] ~ dnorm(0, 0.1) # for logistic curve
 
-  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_pelagic[regions[a]])T(-5,)
+  beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_black[regions[a]])T(-5,)
   beta1_black[a] ~ dnorm(0, 0.1)T(0,)
-##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_pelagic[regions[a]]) #T(-10,10)
+##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_black[regions[a]]) #T(-10,10)
   beta2_black[a] ~ dnorm(0, 0.1)T(-10,10)
 ##  beta3_black[a] ~ dnorm(30, 0.005)T(19,Y-1)
   beta4_black[a] ~ dnorm(0, 0.1)
@@ -149,9 +163,16 @@ for (a in 1:A){
    C_ay[a, y] <- C_ayg[a, y] + C_ayu[a, y]      # total catch parameter
    
    #Total releases
-   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y]) / (H_ayg[a,y] * p_pelagic[a, y, 1] + Hy_ayg[a,y])
-   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y]) / (H_ayu[a,y] * p_pelagic[a, y, 2] + Hy_ayu[a,y])
-   R_ayg[a, y] <- (H_ayg[a, y] / pHg[a,y]) - H_ayg[a, y]   #get rid of pG_R!!!      
+##   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y]) / (H_ayg[a,y] * p_pelagic[a, y, 1] + Hy_ayg[a,y])
+##   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y]) / (H_ayu[a,y] * p_pelagic[a, y, 2] + Hy_ayu[a,y])
+
+   pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y] + pHnpny[a,y,1] * (H_ayg[a,y] * (1 - p_pelagic[a, y, 1]) - Hy_ayg[a,y])) / H_ayg[a,y]
+   pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y] + pHnpny[a,y,2] * (H_ayu[a,y] * (1 - p_pelagic[a, y, 2]) - Hy_ayu[a,y])) / H_ayu[a,y]
+
+   pHnpny[a,y,1] ~ dbeta(3,1.5) #pH for non-pelagic, non yelloweye
+   pHnpny[a,y,2] ~ dbeta(3,1.5)
+
+   R_ayg[a, y] <- (H_ayg[a, y] / pHg[a,y]) - H_ayg[a, y]        
    R_ayu[a, y] <- (H_ayu[a, y] / pHu[a,y]) - H_ayu[a, y]
    R_ay[a, y] <- R_ayg[a, y] + R_ayu[a, y] #exp(logR_ay[a, y])               
 
@@ -243,6 +264,16 @@ for (a in 1:A){
  # p_yellow for southeast retention closures; just do for SE areas 11,12,13,14,15,16
   beta3_yellow[a] ~ dnorm(30, 0.05)T(29,Y-5)
   beta3_black[a] ~ dnorm(30, 0.005)T(29,Y-1)
+
+#  beta0_dsr[a] ~ dnorm(mu_beta0_dsr[regions[a]], tau_beta0_dsr[regions[a]])T(-5,)
+#  beta1_dsr[a] ~ dnorm(0, 0.1)T(0,)
+#  beta2_dsr[a] ~ dnorm(0, 0.1)T(-10,10)
+#  beta4_dsr[a] ~ dnorm(0, 0.1)
+
+#  beta0_slope[a] ~ dnorm(mu_beta0_slope[regions[a]], tau_beta0_slope[regions[a]])T(-5,)
+#  beta1_slope[a] ~ dnorm(0, 0.1)T(0,)
+#  beta2_slope[a] ~ dnorm(0, 0.1)T(-10,10)
+#  beta4_slope[a] ~ dnorm(0, 0.1)
  }
  
 #hierarchichal lambda stuff: 

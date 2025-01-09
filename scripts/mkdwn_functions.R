@@ -162,10 +162,10 @@ readinData <- function(spl_knts = 7,
   
   #When retention of YE is prohibited as n SE AK between 2020 through 2024 we need
   # to censor the survey/creel data
-  S_ayu <- S_ayu %>%
-    mutate(ye_n = ifelse(region == "Southeast" &
-                           year > 2019 & year < 2025,
-                         NA,ye_n))
+  #S_ayu <- S_ayu %>%
+  #  mutate(ye_n = ifelse(region == "Southeast" &
+  #                         year > 2019 & year < 2025,
+  #                       NA,ye_n))
   
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
@@ -204,10 +204,12 @@ readinData <- function(spl_knts = 7,
            year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
            #region_n = ifelse()
            source = 1) %>% 
-    select(year, year_n, area_n, user_n, source, N = totalrf_n, pelagic = pelagic_n, black = black_n, yellow = ye_n,
+    select(year, year_n, area_n, user_n, source, N = totalrf_n, 
+           pelagic = pelagic_n, black = black_n, yellow = ye_n, 
+           other = notye_nonpel_n, dsr = dsr_n, slope = slope_n,
            region,area) %>%
     filter(N != 0) %>%
-    mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
+    mutate(yellow = ifelse(N - pelagic == 0, NA, yellow))  #,
   ##         N = ifelse(is.na(yellow),NA,N))
   
   compX <- comp %>%
@@ -266,10 +268,6 @@ readinData <- function(spl_knts = 7,
       #Harvest
       Hhat_ay = matrix_Hhat_ay,
       cvHhat_ay = cvHhat_ay,
-      #Catch
-      Chat_ay_pH = matrix_Chat_ay,
-      Chat_ay_obs = matrix_Chat_ay,
-      cvChat_ay = cvChat_ay,
       #Releases
       Rhat_ay = matrix_Rhat_ay,
       cvRhat_ay = cvRhat_ay,
@@ -284,24 +282,27 @@ readinData <- function(spl_knts = 7,
       # logbook ye rf harvested by guides
       Hlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
                        matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+      Hlbo_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(H_ayg$year))),
+                       matrix(H_ayg$Ho, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlb_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
-                            matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlb_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlbp_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
-                             matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlbp_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlbp_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook ye rf harvested by guides
       Rlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlby_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlby_ayg_trunc = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlby_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      #non-pelagic, non-yelloweye
+      Rlbo_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                       matrix(R_ayg$Ro, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      Rlbo_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      
       #SWHS DATA:
       # SWHS estimates of rockfish harvests
       Hhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
@@ -311,20 +312,13 @@ readinData <- function(spl_knts = 7,
                          matrix(Hhat_ayg$seH, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayg$year))),
               matrix(Hhat_ayg$Hhat, nrow = A, ncol = length(unique(Hhat_ayg$year)), byrow = TRUE)),
+      
       Hhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
                        matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
       cvHhat_ayu = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
                          matrix(Hhat_ayp$seH, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
               matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
-      # SWHS estimates of rockfish Catches
-      Chat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
-                       matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
-      # cv of SWHS estimates
-      cvChat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
-                         matrix(Chat_ayg$seC, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)) / 
-        cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Chat_ayg$year))),
-              matrix(Chat_ayg$Chat, nrow = A, ncol = length(unique(Chat_ayg$year)), byrow = TRUE)),
       
       # SWHS estimates of rockfish Catches
       Rhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
@@ -353,15 +347,15 @@ readinData <- function(spl_knts = 7,
       comp_pelagic = comp$pelagic,
       comp_black = comp$black,
       comp_yellow = comp$yellow,
+      comp_other = comp$other,
+      comp_dsr = comp$dsr,
+      comp_slope = comp$slope,
       N = dim(comp)[1],
       
-      comp_pelagic_x = compX$pelagic_x,
-      comp_yellow_x = compX$yellow_x,
-      comp_N_x = compX$N_x,
-      comp_area_x = compX$area_n,
-      comp_year_x = compX$year_n,
-      comp_user_x = compX$user_n,
-      N_x = dim(compX)[1],
+      SEn1 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
+      SEn2 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
+      SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
+      SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
     )
@@ -389,28 +383,59 @@ jags_params <- function(){
     #"logbc", "mu_bc", "sd_bc",
     #SWHS bias, separate C and H
     "logbc_H", "mu_bc_H", "sd_bc_H",
+    #"logbc_C", "mu_bc_C", "sd_bc_C",
     "logbc_R", "mu_bc_R", "sd_bc_R",
     "bc_R_offset","mu_bc_R_offset","sd_bcRoff",
-    #"logbc_C", "mu_bc_C", "sd_bc_C",
-    "logbc_C","bc_C_offset","mu_bc_C_offset","sd_bcCoff",
-    #User proportions (proportion guided); different for H and C
+    #User proportions (proportion guided); different for H and R
     "pG", "b1_pG", "b2_pG",
+    #"pG_R", "b1_pG_R", "b2_pG_R",
     #proportion harvested: 
-    "pH", "tau_pH",
-    #liner:
-    #  "pH_int", "pH_slo",
-    #polynomial
-    "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+    "pH", "tau_pH",#"pHu",
+    "pH2", "tau_pH2",#"pHu",
+    "pHg","pHu","pHnpny",
+    "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
+    "mu_beta2_pH","tau_beta2_pH", #"beta2_pH2","beta1_pH2","beta2_pH2","beta3_pH2","beta4_pH2",
+    #random effects on pH
+    "re_pH", "re_pH2",
+    "sd_pH", "mu_pH",
     #"re_pH","sd_pH",
     #proportions same for catch and harvest? thinking on it?
     "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
     "mu_beta0_pelagic", "tau_beta0_pelagic",
+    "mu_beta1_pelagic", "tau_beta1_pelagic",
+    "mu_beta2_pelagic", "tau_beta2_pelagic",
+    "mu_beta3_pelagic", "tau_beta3_pelagic",
+    "mu_beta4_pelagic", "tau_beta4_pelagic",
     "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
     "mu_beta0_yellow", "tau_beta0_yellow",
+    "mu_beta1_yellow", "tau_beta1_yellow",
+    "mu_beta2_yellow", "tau_beta2_yellow",
+    "mu_beta3_yellow", "tau_beta3_yellow",
+    "mu_beta4_yellow", "tau_beta4_yellow",
     "p_yellow_x", "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
     "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+    "mu_beta1_yellow_x", "tau_beta1_yellow_x",
+    "mu_beta2_yellow_x", "tau_beta2_yellow_x",
+    "mu_beta3_yellow_x", "tau_beta3_yellow_x",
+    "mu_beta4_yellow_x", "tau_beta4_yellow_x",
     "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
     "mu_beta0_black", "tau_beta0_black",
+    "mu_beta1_black", "tau_beta1_black",
+    "mu_beta2_black", "tau_beta2_black",
+    "mu_beta3_black", "tau_beta3_black",
+    "mu_beta4_black", "tau_beta4_black",
+    "p_dsr", "beta0_dsr", "beta1_dsr", "beta2_dsr",  "beta3_dsr", "beta4_dsr",
+    "mu_beta0_dsr", "tau_beta0_dsr",
+    "mu_beta1_dsr", "tau_beta1_dsr",
+    "mu_beta2_dsr", "tau_beta2_dsr",
+    "mu_beta3_dsr", "tau_beta3_dsr",
+    "mu_beta4_dsr", "tau_beta4_dsrk",
+    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", "beta4_slope",
+    "mu_beta0_slope", "tau_beta0_slope",
+    "mu_beta1_slope", "tau_beta1_slope",
+    "mu_beta2_slope", "tau_beta2_slope",
+    "mu_beta3_slope", "tau_beta3_slope",
+    "mu_beta4_slope", "tau_beta4_slope",
     #random effects on species
     "re_pelagic", "re_black","re_yellow",
     "sd_comp", "tau_comp",
@@ -418,9 +443,12 @@ jags_params <- function(){
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
     "Hb_ayg", "Hb_ayu", "Hb_ay",
     "Hy_ayg", "Hy_ayu", "Hy_ay",
+    "Hd_ayg", "Hd_ayu", "Hd_ay",
+    "Hs_ayg", "Hs_ayu", "Hs_ay",
+    "Ho_ayg", "Ho_ayu", "Ho_ay",
     "logHhat_ay",
     #with hierarchichal pline lambda
-    "mu_lambda_H","sigma_lambda_H","beta_H",
+    "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
     #catch estimates and spline parts
     "Chat_ay","C_ay", "C_ayg", "C_ayu", 
     "Cb_ayg", "Cb_ayu", "Cb_ay",
@@ -431,7 +459,11 @@ jags_params <- function(){
     "logRhat_ay","logRhat_ayg",
     "R_ay", "R_ayg", "R_ayu", 
     "Rb_ayg", "Rb_ayu", "Rb_ay",
-    "Ry_ayg", "Ry_ayu", "Ry_ay")
+    "Ry_ayg", "Ry_ayu", "Ry_ay",
+    "Ro_ayg", "Ro_ayu", "Ro_ay",
+    "Rd_ayg", "Rd_ayu", "Rd_ay",
+    "Rs_ayg", "Rs_ayu", "Rs_ay",
+    "nonrecR_ayg")
   return(params)
 }
 

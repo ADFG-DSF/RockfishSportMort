@@ -50,16 +50,17 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 8E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
-mod <- "HR_hybLBR_2bias_hierbeta2_2pH"
+mod <- "HR_hybLBR_2bias_hierbeta2_3pH"
+#8E5 = 22 .2 hours
 
 params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "no"
+use_inits = "yes"
 
 use_this_model <- "HR_censLBR_thru2023_3e+06_7kn_2024-12-16" #for yelloweye betas:
 
@@ -76,218 +77,56 @@ other_inits <- lapply(1:nc, function(chain) {
   as.list(chain_data[nrow(chain_data), ])
 })
 
-#last_inits <- other_inits
-
-for (i in 1:3) { #i <- 1
-#  last_inits[[i]]$'beta0_pH[1]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[2]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[3]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[4]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[5]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[6]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[7]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[8]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[9]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[10]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[11]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[12]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[13]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[14]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[15]' <- runif(1,-0.4,0)
-#  last_inits[[i]]$'beta0_pH[16]' <- runif(1,-0.4,0)
-  
-#  last_inits[[i]]$'beta1_pH[1]' <- 0
-#  last_inits[[i]]$'beta1_pH[2]' <- 0
-#  last_inits[[i]]$'beta1_pH[3]' <- 0
-#  last_inits[[i]]$'beta1_pH[4]' <- 0
-#  last_inits[[i]]$'beta1_pH[5]' <- 0
-#  last_inits[[i]]$'beta1_pH[6]' <- 0
-#  last_inits[[i]]$'beta1_pH[7]' <- 0
-#  last_inits[[i]]$'beta1_pH[8]' <- 0
-#  last_inits[[i]]$'beta1_pH[9]' <- 0
-#  last_inits[[i]]$'beta1_pH[10]' <- 0
-#  last_inits[[i]]$'beta1_pH[11]' <- 0
-#  last_inits[[i]]$'beta1_pH[12]' <- 0
-#  last_inits[[i]]$'beta1_pH[13]' <- 0
-#  last_inits[[i]]$'beta1_pH[14]' <- 0
-#  last_inits[[i]]$'beta1_pH[15]' <- 0
-#  last_inits[[i]]$'beta1_pH[16]' <- 0
-  
-#  last_inits[[i]]$'beta2_pH[1]' <- 0
-#  last_inits[[i]]$'beta2_pH[2]' <- 0
-#  last_inits[[i]]$'beta2_pH[3]' <- 0
-#  last_inits[[i]]$'beta2_pH[4]' <- 0
-#  last_inits[[i]]$'beta2_pH[5]' <- 0
-#  last_inits[[i]]$'beta2_pH[6]' <- 0
-#  last_inits[[i]]$'beta2_pH[7]' <- 0
-#  last_inits[[i]]$'beta2_pH[8]' <- 0
-#  last_inits[[i]]$'beta2_pH[9]' <- 0
-#  last_inits[[i]]$'beta2_pH[10]' <- 0
-#  last_inits[[i]]$'beta2_pH[11]' <- 0
-#  last_inits[[i]]$'beta2_pH[12]' <- 0
-#  last_inits[[i]]$'beta2_pH[13]' <- 0
-#  last_inits[[i]]$'beta2_pH[14]' <- 0
-#  last_inits[[i]]$'beta2_pH[15]' <- 0
-#  last_inits[[i]]$'beta2_pH[16]' <- 0
-  
-#  last_inits[[i]]$'beta3_pH[1]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[2]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[3]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[4]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[5]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[6]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[7]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[8]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[9]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[10]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[11]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[12]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[13]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[14]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[15]' <- runif(1,28,38)
-#  last_inits[[i]]$'beta3_pH[16]' <- runif(1,28,38)
-  
-  last_inits[[i]]$'beta0_yellow[1]' <- other_inits[[i]]$'beta0_yellow[1]'
-  last_inits[[i]]$'beta0_yellow[2]' <- other_inits[[i]]$'beta0_yellow[2]'
-  last_inits[[i]]$'beta0_yellow[3]' <- other_inits[[i]]$'beta0_yellow[3]'
-  last_inits[[i]]$'beta0_yellow[4]' <- other_inits[[i]]$'beta0_yellow[4]'
-  last_inits[[i]]$'beta0_yellow[5]' <- other_inits[[i]]$'beta0_yellow[5]'
-  last_inits[[i]]$'beta0_yellow[6]' <- other_inits[[i]]$'beta0_yellow[6]'
-  last_inits[[i]]$'beta0_yellow[7]' <- other_inits[[i]]$'beta0_yellow[7]'
-  last_inits[[i]]$'beta0_yellow[8]' <- other_inits[[i]]$'beta0_yellow[8]'
-  last_inits[[i]]$'beta0_yellow[9]' <- other_inits[[i]]$'beta0_yellow[9]'
-  last_inits[[i]]$'beta0_yellow[10]' <- other_inits[[i]]$'beta0_yellow[10]'
-  last_inits[[i]]$'beta0_yellow[11]' <- other_inits[[i]]$'beta0_yellow[11]'
-  last_inits[[i]]$'beta0_yellow[12]' <- other_inits[[i]]$'beta0_yellow[12]'
-  last_inits[[i]]$'beta0_yellow[13]' <- other_inits[[i]]$'beta0_yellow[13]'
-  last_inits[[i]]$'beta0_yellow[14]' <- other_inits[[i]]$'beta0_yellow[14]'
-  last_inits[[i]]$'beta0_yellow[15]' <- other_inits[[i]]$'beta0_yellow[15]'
-  last_inits[[i]]$'beta0_yellow[16]' <- other_inits[[i]]$'beta0_yellow[16]'
-  
-  last_inits[[i]]$'beta1_yellow[1]' <- other_inits[[i]]$'beta1_yellow[1]'
-  last_inits[[i]]$'beta1_yellow[2]' <- other_inits[[i]]$'beta1_yellow[2]'
-  last_inits[[i]]$'beta1_yellow[3]' <-other_inits[[i]]$'beta1_yellow[3]'
-  last_inits[[i]]$'beta1_yellow[4]' <- other_inits[[i]]$'beta1_yellow[4]'
-  last_inits[[i]]$'beta1_yellow[5]' <- other_inits[[i]]$'beta1_yellow[5]'
-  last_inits[[i]]$'beta1_yellow[6]' <- other_inits[[i]]$'beta1_yellow[6]'
-  last_inits[[i]]$'beta1_yellow[7]' <- other_inits[[i]]$'beta1_yellow[7]'
-  last_inits[[i]]$'beta1_yellow[8]' <- other_inits[[i]]$'beta1_yellow[8]'
-  last_inits[[i]]$'beta1_yellow[9]' <-other_inits[[i]]$'beta1_yellow[9]'
-  last_inits[[i]]$'beta1_yellow[10]' <- other_inits[[i]]$'beta1_yellow[10]'
-  last_inits[[i]]$'beta1_yellow[11]' <- other_inits[[i]]$'beta1_yellow[11]'
-  last_inits[[i]]$'beta1_yellow[12]' <-other_inits[[i]]$'beta1_yellow[12]'
-  last_inits[[i]]$'beta1_yellow[13]' <- other_inits[[i]]$'beta1_yellow[13]'
-  last_inits[[i]]$'beta1_yellow[14]' <- other_inits[[i]]$'beta1_yellow[14]'
-  last_inits[[i]]$'beta1_yellow[15]' <- other_inits[[i]]$'beta1_yellow[15]'
-  last_inits[[i]]$'beta1_yellow[16]' <- other_inits[[i]]$'beta1_yellow[16]'
-  
-  last_inits[[i]]$'beta2_yellow[1]' <- other_inits[[i]]$'beta2_yellow[1]'
-  last_inits[[i]]$'beta2_yellow[2]' <- other_inits[[i]]$'beta2_yellow[2]'
-  last_inits[[i]]$'beta2_yellow[3]' <- other_inits[[i]]$'beta2_yellow[3]'
-  last_inits[[i]]$'beta2_yellow[4]' <- other_inits[[i]]$'beta2_yellow[4]'
-  last_inits[[i]]$'beta2_yellow[5]' <- other_inits[[i]]$'beta2_yellow[5]'
-  last_inits[[i]]$'beta2_yellow[6]' <- other_inits[[i]]$'beta2_yellow[6]'
-  last_inits[[i]]$'beta2_yellow[7]' <- other_inits[[i]]$'beta2_yellow[7]'
-  last_inits[[i]]$'beta2_yellow[8]' <- other_inits[[i]]$'beta2_yellow[8]'
-  last_inits[[i]]$'beta2_yellow[9]' <- other_inits[[i]]$'beta2_yellow[9]'
-  last_inits[[i]]$'beta2_yellow[10]' <- other_inits[[i]]$'beta2_yellow[10]'
-  last_inits[[i]]$'beta2_yellow[11]' <- other_inits[[i]]$'beta2_yellow[11]'
-  last_inits[[i]]$'beta2_yellow[12]' <- other_inits[[i]]$'beta2_yellow[12]'
-  last_inits[[i]]$'beta2_yellow[13]' <- other_inits[[i]]$'beta2_yellow[13]'
-  last_inits[[i]]$'beta2_yellow[14]' <- other_inits[[i]]$'beta2_yellow[14]'
-  last_inits[[i]]$'beta2_yellow[15]' <-other_inits[[i]]$'beta2_yellow[15]'
-  last_inits[[i]]$'beta2_yellow[16]' <- other_inits[[i]]$'beta2_yellow[16]'
-  
-  last_inits[[i]]$'beta3_yellow[1]' <- other_inits[[i]]$'beta3_yellow[1]'
-  last_inits[[i]]$'beta3_yellow[2]' <-other_inits[[i]]$'beta3_yellow[2]'
-  last_inits[[i]]$'beta3_yellow[3]' <- other_inits[[i]]$'beta3_yellow[3]'
-  last_inits[[i]]$'beta3_yellow[4]' <- other_inits[[i]]$'beta3_yellow[4]'
-  last_inits[[i]]$'beta3_yellow[5]' <-other_inits[[i]]$'beta3_yellow[5]'
-  last_inits[[i]]$'beta3_yellow[6]' <- other_inits[[i]]$'beta3_yellow[6]'
-  last_inits[[i]]$'beta3_yellow[7]' <- other_inits[[i]]$'beta3_yellow[7]'
-  last_inits[[i]]$'beta3_yellow[8]' <- other_inits[[i]]$'beta3_yellow[8]'
-  last_inits[[i]]$'beta3_yellow[9]' <- other_inits[[i]]$'beta3_yellow[9]'
-  last_inits[[i]]$'beta3_yellow[10]' <- other_inits[[i]]$'beta3_yellow[10]'
-  last_inits[[i]]$'beta3_yellow[11]' <- other_inits[[i]]$'beta3_yellow[11]'
-  last_inits[[i]]$'beta3_yellow[12]' <- other_inits[[i]]$'beta3_yellow[12]'
-  last_inits[[i]]$'beta3_yellow[13]' <- other_inits[[i]]$'beta3_yellow[13]'
-  last_inits[[i]]$'beta3_yellow[14]' <-other_inits[[i]]$'beta3_yellow[14]'
-  last_inits[[i]]$'beta3_yellow[15]' <- other_inits[[i]]$'beta3_yellow[15]'
-  last_inits[[i]]$'beta3_yellow[16]' <- other_inits[[i]]$'beta3_yellow[16]'
-  
-  last_inits[[i]]$'beta0_yellow_x[1]' <- other_inits[[i]]$'beta0_yellow_x[1]'
-  last_inits[[i]]$'beta0_yellow_x[2]' <- other_inits[[i]]$'beta0_yellow_x[2]'
-  last_inits[[i]]$'beta0_yellow_x[3]' <- other_inits[[i]]$'beta0_yellow_x[3]'
-  last_inits[[i]]$'beta0_yellow_x[4]' <- other_inits[[i]]$'beta0_yellow_x[4]'
-  last_inits[[i]]$'beta0_yellow_x[5]' <- other_inits[[i]]$'beta0_yellow_x[5]'
-  last_inits[[i]]$'beta0_yellow_x[6]' <- other_inits[[i]]$'beta0_yellow_x[6]'
-  last_inits[[i]]$'beta0_yellow_x[7]' <- other_inits[[i]]$'beta0_yellow_x[7]'
-  last_inits[[i]]$'beta0_yellow_x[8]' <- other_inits[[i]]$'beta0_yellow_x[8]'
-  last_inits[[i]]$'beta0_yellow_x[9]' <- other_inits[[i]]$'beta0_yellow_x[9]'
-  last_inits[[i]]$'beta0_yellow_x[10]' <- other_inits[[i]]$'beta0_yellow_x[10]'
-  last_inits[[i]]$'beta0_yellow_x[11]' <- other_inits[[i]]$'beta0_yellow_x[11]'
-  last_inits[[i]]$'beta0_yellow_x[12]' <- other_inits[[i]]$'beta0_yellow_x[12]'
-  last_inits[[i]]$'beta0_yellow_x[13]' <- other_inits[[i]]$'beta0_yellow_x[13]'
-  last_inits[[i]]$'beta0_yellow_x[14]' <- other_inits[[i]]$'beta0_yellow_x[14]'
-  last_inits[[i]]$'beta0_yellow_x[15]' <- other_inits[[i]]$'beta0_yellow_x[15]'
-  last_inits[[i]]$'beta0_yellow_x[16]' <- other_inits[[i]]$'beta0_yellow_x[16]'
-  
-  last_inits[[i]]$'beta1_yellow_x[1]' <- other_inits[[i]]$'beta1_yellow_x[1]'
-  last_inits[[i]]$'beta1_yellow_x[2]' <- other_inits[[i]]$'beta1_yellow_x[2]'
-  last_inits[[i]]$'beta1_yellow_x[3]' <-other_inits[[i]]$'beta1_yellow_x[3]'
-  last_inits[[i]]$'beta1_yellow_x[4]' <- other_inits[[i]]$'beta1_yellow_x[4]'
-  last_inits[[i]]$'beta1_yellow_x[5]' <- other_inits[[i]]$'beta1_yellow_x[5]'
-  last_inits[[i]]$'beta1_yellow_x[6]' <- other_inits[[i]]$'beta1_yellow_x[6]'
-  last_inits[[i]]$'beta1_yellow_x[7]' <- other_inits[[i]]$'beta1_yellow_x[7]'
-  last_inits[[i]]$'beta1_yellow_x[8]' <- other_inits[[i]]$'beta1_yellow_x[8]'
-  last_inits[[i]]$'beta1_yellow_x[9]' <-other_inits[[i]]$'beta1_yellow_x[9]'
-  last_inits[[i]]$'beta1_yellow_x[10]' <- other_inits[[i]]$'beta1_yellow_x[10]'
-  last_inits[[i]]$'beta1_yellow_x[11]' <- other_inits[[i]]$'beta1_yellow_x[11]'
-  last_inits[[i]]$'beta1_yellow_x[12]' <-other_inits[[i]]$'beta1_yellow_x[12]'
-  last_inits[[i]]$'beta1_yellow_x[13]' <- other_inits[[i]]$'beta1_yellow_x[13]'
-  last_inits[[i]]$'beta1_yellow_x[14]' <- other_inits[[i]]$'beta1_yellow_x[14]'
-  last_inits[[i]]$'beta1_yellow_x[15]' <- other_inits[[i]]$'beta1_yellow_x[15]'
-  last_inits[[i]]$'beta1_yellow_x[16]' <- other_inits[[i]]$'beta1_yellow_x[16]'
-  
-  last_inits[[i]]$'beta2_yellow_x[1]' <- other_inits[[i]]$'beta2_yellow_x[1]'
-  last_inits[[i]]$'beta2_yellow_x[2]' <- other_inits[[i]]$'beta2_yellow_x[2]'
-  last_inits[[i]]$'beta2_yellow_x[3]' <- other_inits[[i]]$'beta2_yellow_x[3]'
-  last_inits[[i]]$'beta2_yellow_x[4]' <- other_inits[[i]]$'beta2_yellow_x[4]'
-  last_inits[[i]]$'beta2_yellow_x[5]' <- other_inits[[i]]$'beta2_yellow_x[5]'
-  last_inits[[i]]$'beta2_yellow_x[6]' <- other_inits[[i]]$'beta2_yellow_x[6]'
-  last_inits[[i]]$'beta2_yellow_x[7]' <- other_inits[[i]]$'beta2_yellow_x[7]'
-  last_inits[[i]]$'beta2_yellow_x[8]' <- other_inits[[i]]$'beta2_yellow_x[8]'
-  last_inits[[i]]$'beta2_yellow_x[9]' <- other_inits[[i]]$'beta2_yellow_x[9]'
-  last_inits[[i]]$'beta2_yellow_x[10]' <- other_inits[[i]]$'beta2_yellow_x[10]'
-  last_inits[[i]]$'beta2_yellow_x[11]' <- other_inits[[i]]$'beta2_yellow_x[11]'
-  last_inits[[i]]$'beta2_yellow_x[12]' <- other_inits[[i]]$'beta2_yellow_x[12]'
-  last_inits[[i]]$'beta2_yellow_x[13]' <- other_inits[[i]]$'beta2_yellow_x[13]'
-  last_inits[[i]]$'beta2_yellow_x[14]' <- other_inits[[i]]$'beta2_yellow_x[14]'
-  last_inits[[i]]$'beta2_yellow_x[15]' <-other_inits[[i]]$'beta2_yellow_x[15]'
-  last_inits[[i]]$'beta2_yellow_x[16]' <- other_inits[[i]]$'beta2_yellow_x[16]'
-  
-  last_inits[[i]]$'beta3_yellow_x[1]' <- other_inits[[i]]$'beta3_yellow_x[1]'
-  last_inits[[i]]$'beta3_yellow_x[2]' <-other_inits[[i]]$'beta3_yellow_x[2]'
-  last_inits[[i]]$'beta3_yellow_x[3]' <- other_inits[[i]]$'beta3_yellow_x[3]'
-  last_inits[[i]]$'beta3_yellow_x[4]' <- other_inits[[i]]$'beta3_yellow_x[4]'
-  last_inits[[i]]$'beta3_yellow_x[5]' <-other_inits[[i]]$'beta3_yellow_x[5]'
-  last_inits[[i]]$'beta3_yellow_x[6]' <- other_inits[[i]]$'beta3_yellow_x[6]'
-  last_inits[[i]]$'beta3_yellow_x[7]' <- other_inits[[i]]$'beta3_yellow_x[7]'
-  last_inits[[i]]$'beta3_yellow_x[8]' <- other_inits[[i]]$'beta3_yellow_x[8]'
-  last_inits[[i]]$'beta3_yellow_x[9]' <- other_inits[[i]]$'beta3_yellow_x[9]'
-  last_inits[[i]]$'beta3_yellow_x[10]' <- other_inits[[i]]$'beta3_yellow_x[10]'
-  last_inits[[i]]$'beta3_yellow_x[11]' <- other_inits[[i]]$'beta3_yellow_x[11]'
-  last_inits[[i]]$'beta3_yellow_x[12]' <- other_inits[[i]]$'beta3_yellow_x[12]'
-  last_inits[[i]]$'beta3_yellow_x[13]' <- other_inits[[i]]$'beta3_yellow_x[13]'
-  last_inits[[i]]$'beta3_yellow_x[14]' <-other_inits[[i]]$'beta3_yellow_x[14]'
-  last_inits[[i]]$'beta3_yellow_x[15]' <- other_inits[[i]]$'beta3_yellow_x[15]'
-  last_inits[[i]]$'beta3_yellow_x[16]' <- other_inits[[i]]$'beta3_yellow_x[16]'
-  
-  
-}
-
 # Name the initial values you want to use:
 inits_to_use <- last_inits
+
+for (i in 1:3){ #i <- 1
+  #Central
+  inits_to_use[[i]]$`beta0_pH[1,1]` <- runif(1,0.75,1.25) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[1,1]` <- runif(1,1.25,1.75)
+  inits_to_use[[i]]$`beta2_pH[1,1]` <- runif(1,0.25,0.75)
+  inits_to_use[[i]]$`beta3_pH[1,1]` <- runif(1,27,33)
+  
+  inits_to_use[[i]]$`beta0_pH[1,2]` <- runif(1,1.5,2.5) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[1,2]` <- runif(1,1.5,2.5)
+  inits_to_use[[i]]$`beta2_pH[1,2]` <- runif(1,-1.5,-0.5)
+  inits_to_use[[i]]$`beta3_pH[1,2]` <- runif(1,35,46)
+  
+  inits_to_use[[i]]$`beta0_pH[1,3]` <- runif(1,0.75,1.25) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[1,3]` <- runif(1,2,3)
+  inits_to_use[[i]]$`beta2_pH[1,3]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`beta3_pH[1,3]` <- runif(1,30,40)
+  #Kodiak
+  inits_to_use[[i]]$`beta0_pH[2,1]` <- runif(1,-0.5,0.5) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[2,1]` <- runif(1,2,3)
+  inits_to_use[[i]]$`beta2_pH[2,1]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`beta3_pH[2,1]` <- runif(1,25,35)
+  
+  inits_to_use[[i]]$`beta0_pH[2,2]` <- runif(1,2,4) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[2,2]` <- runif(1,0.01,0.5)
+  inits_to_use[[i]]$`beta2_pH[2,2]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`beta3_pH[2,2]` <- runif(1,25,40)
+  
+  inits_to_use[[i]]$`beta0_pH[2,3]` <- runif(1,-1,1) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[2,3]` <- runif(1,2,3)
+  inits_to_use[[i]]$`beta2_pH[2,3]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`beta3_pH[2,3]` <- runif(1,25,40)
+  #Southeast
+  inits_to_use[[i]]$`beta0_pH[3,1]` <- runif(1,-0.5,0) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[3,1]` <- runif(1,2,4)
+  inits_to_use[[i]]$`beta2_pH[3,1]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`beta3_pH[3,1]` <- runif(1,20,40)
+  
+  inits_to_use[[i]]$`beta0_pH[3,2]` <- runif(1,-4,-2) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[3,2]` <- runif(1,5,7)
+  inits_to_use[[i]]$`beta2_pH[3,2]` <- runif(1,-4,-2)
+  inits_to_use[[i]]$`beta3_pH[3,2]` <- runif(1,30,42)
+  
+  inits_to_use[[i]]$`beta0_pH[3,3]` <- runif(1,0,2) #r1, s1
+  inits_to_use[[i]]$`beta1_pH[3,3]` <- runif(1,2,3)
+  inits_to_use[[i]]$`beta2_pH[3,3]` <- runif(1,0,00.5)
+  inits_to_use[[i]]$`beta3_pH[3,3]` <- runif(1,30,42)
+}
 
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_comp"]
@@ -335,7 +174,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
+results <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_2500000_7kn_2025-01-06"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged

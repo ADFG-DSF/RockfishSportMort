@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_fit_2pH_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_hyb_3pH_",Sys.Date(),".html"))
       })
 ---
 
@@ -48,11 +48,11 @@ list2env(readinData(start_yr = start_yr,
 #mod <- "LB_hyb_2b"
 #mod <- "LB_hyb_2b_hb2"
 #mod <- "LB_cens" ##!!!FLAG
-#mod <- "LB_hyb_hb2"
+mod <- "LB_hyb_hb2"
 #mod <- "LB_cens_hb2"
-mod<-"LB_fit_hb2"
-res <- "HR_fitLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-29"
-#res <- "HR_hybLBR_2bias_hierbeta2_thru2023_3e+06_7kn_2024-12-19"
+#mod<-"LB_fit_hb2"
+#res <- "HR_fitLBR_2bias_hierbeta2_3pH_thru2023_750000_7kn_2025-01-09"
+res <- "HR_hybLBR_2bias_hierbeta2_3pH_thru2023_8e+05_7kn_2025-01-09"
 #res <- "HR_hybLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-28"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -321,7 +321,7 @@ The true number of released rockfish $R_{ayu}$ were based on the proportion of t
 R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}
 \end{equation} 
 
-with total releases calculated from the sum of the user group releases. The proportion of total rockfish harvested by user group, $pH_{ayu}$, was assumed to be the mean of $pH_{(pelagic)ayu}$ and $pH_{(yelloweye)ayu}$ weighted by the relative harvest $H_{(comp)ayu}$ such that
+with total releases calculated from the sum of the user group releases. The proportion of total rockfish harvested by user group, $pH_{ayu}$, was assumed to be the mean of $pH_{(pelagic)ayu}$, $pH_{(yelloweye)ayu}$ and $pH_{(nonpel-nonYE)ayu}$ weighted by the relative harvest $H_{(comp)ayu}$ such that
 
 \begin{equation}
 R_{ayu}~=~ \frac{\sum ({H_{(comp)ayu} * pH_{(comp)ayu})}}{\sum {H_{(comp)ayu}}} 
@@ -598,23 +598,7 @@ rf_plotdat2 %>% mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered 
 *Notes from Adam:* When looking at only black rockfish the most significant differences are for the Prince William Sound Inside area. I did not spend a great deal of time tracking this down although it looks like the previous version used bad values for $P_{(black)ayu}$ for at least unguided anglers. For the moment I would ignore the results for BSIA and SOKO2SAP. I think it is possible to give approximate values for these areas but it will require a little more coding which I have yet to do. 
  
 ```{r, fig.width = 12, fig.height = 8, fig.cap = "**Figure 4.**- Black rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
-#Hb_mod <- tableH(long(postH$mean$Hb_ay), long(postH$sd$Hb_ay), long(postH$q2.5$Hb_ay), long(postH$q97.5$Hb_ay))
-#Hb_point <- 
-#  readxl::read_excel("..\\harvest estimates excel version_sw.xlsx",
-#                     range = "BRF harvest!B3:V332",
-#                     col_types = c("numeric", "text", rep("skip", 18), "numeric"),
-#                     col_names = c("year", "area", "H")) %>%
-#  filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND"))) %>%
-#  mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAS"), tolower(area), area),
-#         area = ifelse(area == "northeas", "northeast", area)) %>%
-#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
-#ggplot(Hb_mod, aes(x = year, y = mean)) +
-#  geom_line() +
-#  geom_ribbon(aes(ymin = q2.5, ymax = q97.5), alpha = .2) +
-#  geom_point(data = Hb_point, aes(y = H)) +
-#  facet_wrap(area~., scales = "free_y") + 
-#  theme_bw(base_size = 16) +
-#  labs(y = "Black Rockfish", x = "Year")
+
 pal <- wes_palette(name = "IsleofDogs1", n=3)
 
 brf_how <- read.csv(paste0("..\\output\\BRF_harv_Howard_thru",REP_YR,".csv")) %>%
@@ -773,7 +757,7 @@ as.data.frame(
 
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 6.**- Yellow rockfish harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
 #pal <- wes_palette(name = "Darjeeling1", n=3)
-pal <- wes_palette(name = "AsteroidCity1", n=3) 
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)] 
 
 ye_how <- read.csv(paste0("..\\output\\YE_harv_Howard_thru",REP_YR,".csv")) %>%
   clean_names() %>%
@@ -849,7 +833,7 @@ as.data.frame(
 
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 7.**- Yellow rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates."}
 #pal <- wes_palette(name = "Darjeeling1", n=3)
-pal <- wes_palette(name = "AsteroidCity1", n=3)
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)] 
 
 ye_howR <- read.csv(paste0("..\\output\\YE_rel_Howard_thru",REP_YR,".csv")) %>%
   clean_names() %>%
@@ -1259,8 +1243,8 @@ pHpel_obs %>% filter(user != "all") %>%
 
 ``` 
 <br>
-```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of all rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
-pal <- wes_palette(name = "AsteroidCity1", n=3)
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of yelloweye rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)] 
 
 pHye_mod <- 
   rbind(postH$mean$pH[,,1,2] %>% t(),
@@ -1353,6 +1337,104 @@ pHye_obs %>% filter(user != "all") %>%
 
 ``` 
 <br>
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of non-pelagic, non-yelloweye rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
+pal <- wes_palette(name = "BottleRocket2", n=5)[c(2,4)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
+#library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
+
+pHnpny_mod <- 
+  rbind(postH$mean$pH[,,1,3] %>% t(),
+        postH$mean$pH[,,2,3] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH$q2.5$pH[,,1,3] %>% t(),
+                  postH$q2.5$pH[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH$q97.5$pH[,,1,3] %>% t(),
+                  postH$q97.5$pH[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pHnpny_obs <- 
+  as.data.frame(
+    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+         source = "SWHS (all RF)") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         p_lo95 = NA, p_hi95 = NA)  %>% 
+  rbind(t((jags_dat$Hlb_ayg - jags_dat$Hlbp_ayg - jags_dat$Hlby_ayg)
+          /(jags_dat$Rlb_ayg - jags_dat$Rlbp_ayg - jags_dat$Rlby_ayg + 
+              jags_dat$Hlb_ayg - jags_dat$Hlbp_ayg - jags_dat$Hlby_ayg)) %>%
+          data.frame() %>%
+          setNames(nm = unique(H_ayg$area)) %>%
+          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+                 source = "logbook") %>%
+          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                 p_lo95 = NA, p_hi95 = NA))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,3],
+      beta1_pH <- postH$q50$beta1_pH[,3],
+      beta2_pH <- postH$q50$beta2_pH[,3],
+      beta3_pH <- postH$q50$beta3_pH[,3],
+      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "nonp-nonye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+           beta4 * (u - 1),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHnpny_trend
+
+pHnpny_obs %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = pH, color = user)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pHnpny_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+              alpha = 0.2, color = NA) +
+  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
+  geom_point(data  = pHnpny_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_line(data = pHnpny_mod, aes(color = user)) +
+  #geom_line(data = pHye_trend, aes(color = user)) +
+  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(. ~ area) +
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of non-pelagic, non-yelloweye catches that were harvested", x = "Year")
+
+``` 
+
 
 ### SWHS bias
  
@@ -1796,7 +1878,7 @@ rbind(p_black_obs) %>%
 ### P(yelloweye|non-pelagic)
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 18.**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were yelloweye rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
-pal <- wes_palette(name = "AsteroidCity1", n=3) 
+pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)] 
 
 p_yellow_mod <- 
   rbind(postH$mean$p_yellow[,,1] %>% t(),

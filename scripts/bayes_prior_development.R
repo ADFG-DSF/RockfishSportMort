@@ -87,8 +87,8 @@ ggplot(taus) +
 range(opt1); range(opt2); range(opt3); range(opt4); range(opt5)
 
 #-------------------------------------------------------------------------------
-opt1 <- rnorm(10000,0,0.1)
-opt2 <- rnorm(10000,0,0.01)
+opt1 <- rnorm(10000,-3,0.1)
+opt2 <- rnorm(10000,-3,0.5)
 
 mus <- cbind(opt1 = opt1, opt2 = opt2)
 
@@ -100,7 +100,7 @@ ggplot(mus) +
 # Beta prior for pH
 library(ggplot2)
 
-alpha <- 4 #0.00001
+alpha <- 3 #0.00001
 beta <- 1.5
 
 # Plot the distribution
@@ -118,8 +118,9 @@ mean
 variance
 
 #-------------------------------------------------------------------------------
-# General p_ curves:
+# General p_ curves and starting values:
 {
+  Y <- 47
   B0 <- 0 #mu_beta0_mu
   B1 <- 5 #beta1_mu
   B2 <- -1 #beta2_mu
@@ -132,6 +133,41 @@ variance
   sv_line %>% mutate(y = seq(1,Y,1)) -> sv_line
   plot(sv_line$prop ~ sv_line$y)
 }
+
+p_sv_fun <- function(B0,B1,B2,B3){
+  sv_line <- data.frame()
+  for (y in 1:Y){
+    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))))
+  }
+  sv_line %>% mutate(y = seq(1,Y,1)) -> sv_line
+  plot(sv_line$prop ~ sv_line$y, ylim = c(0,1))
+}
+
+#pH all
+p_sv_fun(B0 = 1.2, B1 = 1.5, B2 = 0.5, B3 = 30) #central
+p_sv_fun(B0 = 0, B1 = 1, B2 = 0.5, B3 = 30) #Kodiak
+p_sv_fun(B0 = 0.5, B1 = 1.75, B2 = 0.5, B3 = 30) #southeast
+
+#pH pel
+p_sv_fun(B0 = 1, B1 = 1.5, B2 = 0.5, B3 = 30) #central
+p_sv_fun(B0 = 0, B1 = 2.5, B2 = 0.20, B3 = 30) #Kodiak
+p_sv_fun(B0 = -0.25, B1 = 3, B2 = 0.5, B3 = 30) #southeast
+
+#pH ye
+p_sv_fun(B0 = 2, B1 = 2, B2 = -1, B3 = 45) #central
+p_sv_fun(B0 = 3, B1 = 0, B2 = 0.20, B3 = 30) #Kodiak
+p_sv_fun(B0 = -3, B1 = 6, B2 = -3, B3 = 44) #southeast
+
+#pH nonpel - nonye
+p_sv_fun(B0 = 1, B1 = 2.5, B2 = 0.25, B3 = 37) #central
+p_sv_fun(B0 = 0, B1 = 2.5, B2 = 0.25, B3 = 37) #Kodiak
+p_sv_fun(B0 = -2, B1 = 3, B2 = -0.5, B3 = 44) #southeast
+
+#pH DSR
+p_sv_fun(B0 = -2, B1 = 5, B2 = -0.5, B3 = 40) #southeast
+
+#pH slope
+p_sv_fun(B0 = -2, B1 = 5, B2 = -0.5, B3 = 40) #southeast
 
 #-------------------------------------------------------------------------------
 # pH Logistic curves
