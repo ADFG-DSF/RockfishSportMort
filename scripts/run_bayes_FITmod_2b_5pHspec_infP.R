@@ -50,11 +50,11 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 5E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 4e5 = 15 hours, 85% converged.
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias_hierbeta2_5pH_infPr"
+mod <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -143,6 +143,63 @@ for (i in 1:3){ #i <- 1
     inits_to_use[[i]]$`mu_beta3_pH[3,5]` <- runif(1,30,42)
 }
 
+for (i in 1:3){ #i <- 1
+  #Central
+  inits_to_use[[i]]$`mu_beta0_pelagic[1,1]` <- runif(1,1,1.5) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_pelagic[1,1]` <- runif(1,1.25,1.75)
+  inits_to_use[[i]]$`mu_beta2_pelagic[1,1]` <- runif(1,0.25,0.75)
+  inits_to_use[[i]]$`mu_beta3_pelagic[1,1]` <- runif(1,27,33)
+  
+  inits_to_use[[i]]$`mu_beta0_yellow[1,2]` <- runif(1,0,0.4) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_yellow[1,2]` <- runif(1,0.5,1.5)
+  inits_to_use[[i]]$`mu_beta2_yellow[1,2]` <- runif(1,-1,0)
+  inits_to_use[[i]]$`mu_beta3_yellow[1,2]` <- runif(1,25,35)
+  
+  inits_to_use[[i]]$`mu_beta0_black[1,3]` <- runif(1,0.75,1.25) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_black[1,3]` <- runif(1,-0.5,0.5)
+  inits_to_use[[i]]$`mu_beta2_black[1,3]` <- runif(1,0,1)
+  inits_to_use[[i]]$`mu_beta3_black[1,3]` <- runif(1,30,40)
+  #Kodiak
+  inits_to_use[[i]]$`mu_beta0_pelagic[2,1]` <- runif(1,1,1.5) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_pelagic[2,1]` <- runif(1,0,1)
+  inits_to_use[[i]]$`mu_beta2_pelagic[2,1]` <- runif(1,0,0.2)
+  inits_to_use[[i]]$`mu_beta3_pelagic[2,1]` <- runif(1,25,35)
+  
+  inits_to_use[[i]]$`mu_beta0_yellow[2,2]` <- runif(1,0,1) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_yellow[2,2]` <- runif(1,0.5,1.5)
+  inits_to_use[[i]]$`mu_beta2_yellow[2,2]` <- runif(1,-1,0)
+  inits_to_use[[i]]$`mu_beta3_yellow[2,2]` <- runif(1,25,35)
+  
+  inits_to_use[[i]]$`mu_beta0_black[2,3]` <- runif(1,1,2) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_black[2,3]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`mu_beta2_black[2,3]` <- runif(1,-1,0)
+  inits_to_use[[i]]$`mu_beta3_black[2,3]` <- runif(1,25,35)
+  #Southeast
+  inits_to_use[[i]]$`mu_beta0_pelagic[3,1]` <- runif(1,-0.5,0.5) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_pelagic[3,1]` <- runif(1,2,3)
+  inits_to_use[[i]]$`mu_beta2_pelagic[3,1]` <- runif(1,0,1)
+  inits_to_use[[i]]$`mu_beta3_pelagic[3,1]` <- runif(1,25,40)
+  
+  inits_to_use[[i]]$`mu_beta0_yellow[3,2]` <- runif(1,-2,-1) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_yellow[3,2]` <- runif(1,1,2.5)
+  inits_to_use[[i]]$`mu_beta2_yellow[3,2]` <- runif(1,-2,0)
+  inits_to_use[[i]]$`mu_beta3_yellow[3,2]` <- runif(1,35,42)
+  
+  inits_to_use[[i]]$`mu_beta0_black[3,4]` <- runif(1,1,2) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_black[3,4]` <- runif(1,-0.5,0.5)
+  inits_to_use[[i]]$`mu_beta2_black[3,4]` <- runif(1,0,0.5)
+  inits_to_use[[i]]$`mu_beta3_black[3,4]` <- runif(1,25,35)
+  
+  inits_to_use[[i]]$`mu_beta0_dsr` <- runif(1,-2,-1) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_dsr` <- runif(1,3,5)
+  inits_to_use[[i]]$`mu_beta2_dsr` <- runif(1,-2,0)
+  inits_to_use[[i]]$`mu_beta3_dsr` <- runif(1,35,43)
+  
+  inits_to_use[[i]]$`mu_beta0_slope` <- runif(1,-3,-1) #r1, s1
+  inits_to_use[[i]]$`mu_beta1_slope` <- runif(1,3,5)
+  inits_to_use[[i]]$`mu_beta2_slope` <- runif(1,0,2)
+  inits_to_use[[i]]$`mu_beta3_slope` <- runif(1,35,43)
+}
 
 #-------------------------------------------------------------------------------
 #Run the model
@@ -296,7 +353,8 @@ jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "mu_beta1_pH","tau_beta1_pH",
                                         "mu_beta2_pH","tau_beta2_pH",
-                                        "mu_beta3_pH","tau_beta3_pH"))
+                                        "mu_beta3_pH","tau_beta3_pH",
+                                        "mu_beta4_pH","tau_beta4_pH"))
 
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))

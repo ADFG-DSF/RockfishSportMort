@@ -70,7 +70,7 @@ hist(R_lb_adj, breaks = 100)
 #------------------------------------------------------------------------------
 # p_X tau priors
 opt1 <- rgamma(10000,0.001,0.001)
-opt2 <- rgamma(10000,0.01,0.001)
+opt2 <- rgamma(10000,0.01,0.01)
 opt3 <- rgamma(10000,0.1,0.1)
 opt4 <- rgamma(10000,1,0.1)
 opt5 <- rgamma(10000,0.1,0.5)
@@ -79,7 +79,7 @@ taus <- cbind(opt1 = opt1, opt2 = opt2, opt3 = opt3, opt4 = opt4, opt5 = opt5)
 
 ggplot(taus) +
   #geom_histogram(aes(opt1), color = "red", fill = "red", alpha = 0.25, bins = 100) +
-  #geom_histogram(aes(opt2), color = "red", fill = "orange", alpha = 0.25, bins = 100) +
+  geom_histogram(aes(opt2), color = "red", fill = "red", alpha = 0.25, bins = 100) +
   geom_histogram(aes(opt3), color = "goldenrod", fill = "goldenrod", alpha = 0.25, bins = 100) +
   geom_histogram(aes(opt4), color = "violet", fill = "violet", alpha = 0.25, bins = 100) +
   geom_histogram(aes(opt5), color = "forestgreen", fill = "forestgreen", alpha = 0.25, bins = 100)
@@ -168,6 +168,29 @@ p_sv_fun(B0 = -2, B1 = 5, B2 = -0.5, B3 = 40) #southeast
 
 #pH slope
 p_sv_fun(B0 = -2, B1 = 5, B2 = -0.5, B3 = 40) #southeast
+
+#Species comp starting values:
+# Pelagic
+p_sv_fun(B0 = 1.2, B1 = 1.5, B2 = 0.5, B3 = 30) #central
+p_sv_fun(B0 = 1.2, B1 = 0.5, B2 = 0.1, B3 = 30) #Kodiak
+p_sv_fun(B0 = 0., B1 = 2.5, B2 = 0.5, B3 = 35) #southeast
+
+#YE
+p_sv_fun(B0 = 0.2, B1 = 1., B2 = -0.5, B3 = 30) #central
+p_sv_fun(B0 = 0.5, B1 = 1, B2 = -0.5, B3 = 30) #Kodiak
+p_sv_fun(B0 = -1.5, B1 = 1.75, B2 = -1, B3 = 38) #southeast
+
+#Black
+p_sv_fun(B0 = 1., B1 = 0, B2 = 0.5, B3 = 30) #central
+p_sv_fun(B0 = 1.5, B1 = 0.2, B2 = -0.5, B3 = 30) #Kodiak
+p_sv_fun(B0 = 1.5, B1 = 0, B2 = 0.1, B3 = 30) #southeast
+
+#DSR
+p_sv_fun(B0 = -1.5, B1 = 4, B2 = -1, B3 = 40) #southeast
+
+#Slope
+p_sv_fun(B0 = -2, B1 = 4, B2 = 1, B3 = 40) #southeast
+
 
 #-------------------------------------------------------------------------------
 # pH Logistic curves

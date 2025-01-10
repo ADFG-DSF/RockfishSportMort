@@ -46,27 +46,15 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
   add_row(area = "WKMA", area_n = 7) %>%
   mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
 
-jags_dat$comp_area[jags_dat$comp_area > 10]
-jags_dat$comp_year
-jags_dat$comp_user
-
-row.names(comp[comp$region == "Southeast" & comp$user_n == 0,])
-SEn1 <- min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,])))
-SEn2 <- max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,])))
-SEn3 <- min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,])))
-SEn4 <- max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,])))
-
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 6E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E5; nb <- ni*.4; nc <- 3; nt <- (ni - nb) / 1000
 # 4e5 = 15 hours, 85% converged.
 
 #model to run; see /models folder
 mod <- "HR_fitLBR_2bias_hierbeta2_5pH"
-
-params <- c(params, "pHg","pHu")
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -104,55 +92,58 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 
 for (i in 1:3){ #i <- 1
   #Central
-  inits_to_use[[i]]$`mu_beta0_pH[1,1]` <- runif(1,0.75,1.25) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[1,1]` <- runif(1,1.25,1.75)
-  inits_to_use[[i]]$`mu_beta2_pH[1,1]` <- runif(1,0.25,0.75)
-  inits_to_use[[i]]$`mu_beta3_pH[1,1]` <- runif(1,27,33)
+  for (a in 1:4){
+    inits_to_use[[i]]$`beta0_pH[a,1]` <- runif(1,0.75,1.25) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,1]` <- runif(1,1.25,1.75)
+    inits_to_use[[i]]$`beta2_pH[a,1]` <- runif(1,0.25,0.75)
+    inits_to_use[[i]]$`beta3_pH[a,1]` <- runif(1,27,33)
+    
+    inits_to_use[[i]]$`beta0_pH[a,2]` <- runif(1,1.5,2.5) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,2]` <- runif(1,1.5,2.5)
+    inits_to_use[[i]]$`beta2_pH[a,2]` <- runif(1,-1.5,-0.5)
+    inits_to_use[[i]]$`beta3_pH[a,2]` <- runif(1,35,46)
+    
+    inits_to_use[[i]]$`beta0_pH[a,3]` <- runif(1,0.75,1.25) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,3]` <- runif(1,2,3)
+    inits_to_use[[i]]$`beta2_pH[a,3]` <- runif(1,0,0.5)
+    inits_to_use[[i]]$`beta3_pH[a,3]` <- runif(1,30,40)
+  }
   
-  inits_to_use[[i]]$`mu_beta0_pH[1,2]` <- runif(1,1.5,2.5) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[1,2]` <- runif(1,1.5,2.5)
-  inits_to_use[[i]]$`mu_beta2_pH[1,2]` <- runif(1,-1.5,-0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[1,2]` <- runif(1,35,46)
-  
-  inits_to_use[[i]]$`mu_beta0_pH[1,3]` <- runif(1,0.75,1.25) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[1,3]` <- runif(1,2,3)
-  inits_to_use[[i]]$`mu_beta2_pH[1,3]` <- runif(1,0,0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[1,3]` <- runif(1,30,40)
   #Kodiak
-  inits_to_use[[i]]$`mu_beta0_pH[2,1]` <- runif(1,-0.5,0.5) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[2,1]` <- runif(1,2,3)
-  inits_to_use[[i]]$`mu_beta2_pH[2,1]` <- runif(1,0,0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[2,1]` <- runif(1,25,35)
+  for (a in 5:10){
+    inits_to_use[[i]]$`beta0_pH[a,1]` <- runif(1,-0.5,0.5) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,1]` <- runif(1,2,3)
+    inits_to_use[[i]]$`beta2_pH[a,1]` <- runif(1,0,0.5)
+    inits_to_use[[i]]$`beta3_pH[a,1]` <- runif(1,25,35)
+    
+    inits_to_use[[i]]$`beta0_pH[a,2]` <- runif(1,2,4) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,2]` <- runif(1,0.01,0.5)
+    inits_to_use[[i]]$`beta2_pH[a,2]` <- runif(1,0,0.5)
+    inits_to_use[[i]]$`beta3_pH[a,2]` <- runif(1,25,40)
+    
+    inits_to_use[[i]]$`beta0_pH[a,3]` <- runif(1,-1,1) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,3]` <- runif(1,2,3)
+    inits_to_use[[i]]$`beta2_pH[a,3]` <- runif(1,0,0.5)
+    inits_to_use[[i]]$`beta3_pH[a,3]` <- runif(1,25,40)
+  }
   
-  inits_to_use[[i]]$`mu_beta0_pH[2,2]` <- runif(1,2,4) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[2,2]` <- runif(1,0.01,0.5)
-  inits_to_use[[i]]$`mu_beta2_pH[2,2]` <- runif(1,0,0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[2,2]` <- runif(1,25,40)
-  
-  inits_to_use[[i]]$`mu_beta0_pH[2,3]` <- runif(1,-1,1) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[2,3]` <- runif(1,2,3)
-  inits_to_use[[i]]$`mu_beta2_pH[2,3]` <- runif(1,0,0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[2,3]` <- runif(1,25,40)
   #Southeast
-  inits_to_use[[i]]$`mu_beta0_pH[3,1]` <- runif(1,-0.5,0) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[3,1]` <- runif(1,2,4)
-  inits_to_use[[i]]$`mu_beta2_pH[3,1]` <- runif(1,0,0.5)
-  inits_to_use[[i]]$`mu_beta3_pH[3,1]` <- runif(1,20,40)
-  
-  inits_to_use[[i]]$`mu_beta0_pH[3,2]` <- runif(1,-4,-2) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[3,2]` <- runif(1,5,7)
-  inits_to_use[[i]]$`mu_beta2_pH[3,2]` <- runif(1,-4,-2)
-  inits_to_use[[i]]$`mu_beta3_pH[3,2]` <- runif(1,30,42)
-  
-  inits_to_use[[i]]$`mu_beta0_pH[3,4]` <- runif(1,-3,-1) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[3,4]` <- runif(1,4,6)
-  inits_to_use[[i]]$`mu_beta2_pH[3,4]` <- runif(1,-1,0)
-  inits_to_use[[i]]$`mu_beta3_pH[3,4]` <- runif(1,30,42)
-  
-  inits_to_use[[i]]$`mu_beta0_pH[3,5]` <- runif(1,-3,-1) #r1, s1
-  inits_to_use[[i]]$`mu_beta1_pH[3,5]` <- runif(1,4,6)
-  inits_to_use[[i]]$`mu_beta2_pH[3,5]` <- runif(1,-1,0)
-  inits_to_use[[i]]$`mu_beta3_pH[3,5]` <- runif(1,30,42)
+  for (a in 11:16){
+    inits_to_use[[i]]$`beta0_pH[a,1]` <- runif(1,-0.5,0) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,1]` <- runif(1,2,4)
+    inits_to_use[[i]]$`beta2_pH[a,1]` <- runif(1,0,0.5)
+    inits_to_use[[i]]$`beta3_pH[a,1]` <- runif(1,20,40)
+    
+    inits_to_use[[i]]$`beta0_pH[a,2]` <- runif(1,-4,-2) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,2]` <- runif(1,5,7)
+    inits_to_use[[i]]$`beta2_pH[a,2]` <- runif(1,-4,-2)
+    inits_to_use[[i]]$`beta3_pH[a,2]` <- runif(1,30,42)
+    
+    inits_to_use[[i]]$`beta0_pH[a,3]` <- runif(1,0,2) #r1, s1
+    inits_to_use[[i]]$`beta1_pH[a,3]` <- runif(1,2,3)
+    inits_to_use[[i]]$`beta2_pH[a,3]` <- runif(1,0,00.5)
+    inits_to_use[[i]]$`beta3_pH[a,3]` <- runif(1,30,42)
+  }
 }
 
 
@@ -193,7 +184,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-29"
+results <- "HR_fitLBR_2bias_hierbeta2_5pH_thru2023_6e+05_7kn_2025-01-09"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
