@@ -411,6 +411,7 @@ jags_params <- function(){
     "mu_beta1_pH","tau_beta1_pH",
     "mu_beta2_pH","tau_beta2_pH",
     "mu_beta3_pH","tau_beta3_pH",
+    "mu_beta4_pH","tau_beta4_pH",
     "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
     #random effects on pH
     "re_pH", "re_pH2",
@@ -458,6 +459,7 @@ jags_params <- function(){
     "sd_comp", "tau_comp",
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
+    "Hp_ayg", "Hp_ayu", "Hp_ay",
     "Hb_ayg", "Hb_ayu", "Hb_ay",
     "Hy_ayg", "Hy_ayu", "Hy_ay",
     "Hd_ayg", "Hd_ayu", "Hd_ay",
@@ -467,14 +469,15 @@ jags_params <- function(){
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
     #catch estimates and spline parts
-    "Chat_ay","C_ay", "C_ayg", "C_ayu", 
-    "Cb_ayg", "Cb_ayu", "Cb_ay",
-    "Cy_ayg", "Cy_ayu", "Cy_ay",
+    #"Chat_ay","C_ay", "C_ayg", "C_ayu", 
+    #"Cb_ayg", "Cb_ayu", "Cb_ay",
+    #"Cy_ayg", "Cy_ayu", "Cy_ay",
     #with hierarchichal pline lambda
     #"mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
     #releases
     "logRhat_ay","logRhat_ayg",
     "R_ay", "R_ayg", "R_ayu", 
+    "Rp_ayg", "Rp_ayu", "Rp_ay",
     "Rb_ayg", "Rb_ayu", "Rb_ay",
     "Ry_ayg", "Ry_ayu", "Ry_ay",
     "Ro_ayg", "Ro_ayu", "Ro_ay",

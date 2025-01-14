@@ -147,6 +147,7 @@ for (a in 1:A){
   
   for(y in 30:Y){ #logbook likelihood; guided yelloweye harvest and release by area and year also censored
    Hlby_ayg[a, y] ~ dpois(Hy_ayg[a, y])
+   Hlbo_ayg[a, y] ~ dpois(Ho_ayg[a, y])
    Rlby_ayg[a, y] ~ dpois(Ry_ayg[a, y])
    Rlbo_ayg[a,y] ~ dpois(Ro_ayg[a,y])
   }

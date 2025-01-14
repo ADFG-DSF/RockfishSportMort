@@ -57,7 +57,7 @@ model{
     tau_beta3_pH[r,s] ~ dgamma(0.1, 0.1)
 
     tau_beta2_pH[r,s] <- 1 / sd_beta2_pH[r,s] / sd_beta2_pH[r,s]
-    sd_beta2_pH[r,s] ~ dunif(0, 10)
+    sd_beta2_pH[r,s] ~ dunif(0.1, 10)
     }  
   }
 
@@ -104,10 +104,10 @@ mu_beta1_pH[3,2] ~ dlnorm(log(6), 0.1)
 mu_beta2_pH[3,2] ~ dnorm(-3, 0.1)
 mu_beta3_pH[3,2] ~ dunif(29,Y-1) #dnorm(43, 0.01)
 
-#mu_beta0_pH[3,3] ~ dnorm(-2, 0.1) #dnorm(0, 0.001)
-#mu_beta1_pH[3,3] ~ dlnorm(log(3), 0.1)
-#mu_beta2_pH[3,3] ~ dnorm(-0.50, 0.1)
-#mu_beta3_pH[3,3] ~ dunif(29,Y-1) #dnorm(44, 0.01)
+# mu_beta0_pH[3,3] ~ dnorm(-2, 0.1) #dnorm(0, 0.001)
+# mu_beta1_pH[3,3] ~ dlnorm(log(3), 0.1)
+# mu_beta2_pH[3,3] ~ dnorm(-0.50, 0.1)
+# mu_beta3_pH[3,3] ~ dunif(29,Y-1) #dnorm(44, 0.01)
 
 mu_beta0_pH[3,4] ~ dnorm(-2, 0.1) #dnorm(0, 0.001)
 mu_beta1_pH[3,4] ~ dlnorm(log(5), 0.1)
@@ -375,29 +375,29 @@ for (a in 11:16){
     Hy_ayg[a, y] <- Hd_ayg[a, y] * p_yellow[a, y, 1]
     Hy_ayu[a, y] <- Hd_ayu[a, y] * p_yellow[a, y, 2]
 
-      Hd_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_dsr[a, y, 1]
-      Hd_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_dsr[a, y, 2]
-      Hd_ay[a, y] <- Hd_ayg[a, y] + Hd_ayu[a, y]
+    Hd_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_dsr[a, y, 1]
+    Hd_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_dsr[a, y, 2]
+    Hd_ay[a, y] <- Hd_ayg[a, y] + Hd_ayu[a, y]
 
-      Rd_ayg[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,1,4]) - Hd_ayg[a, y])  
-      Rd_ayu[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,2,4]) - Hd_ayg[a, y])  
-      Rd_ay[a, y] <- Rd_ayg[a, y] + Rd_ayu[a, y]
+    Rd_ayg[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,1,4]) - Hd_ayg[a, y])  
+    Rd_ayu[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,2,4]) - Hd_ayg[a, y])  
+    Rd_ay[a, y] <- Rd_ayg[a, y] + Rd_ayu[a, y]
 
-      Hs_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1]
-      Hs_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2]
-      Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
+    Hs_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1]
+    Hs_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2]
+    Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
 
-      Rs_ayg[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,1,5]) - Hs_ayg[a, y])  
-      Rs_ayu[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,2,5]) - Hs_ayg[a, y])  
-      Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
+    Rs_ayg[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,1,5]) - Hs_ayg[a, y])  
+    Rs_ayu[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,2,5]) - Hs_ayg[a, y])  
+    Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
-      Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] - Hy_ayg[a, y] 
-      Ho_ayu[a, y] <- Hs_ayu[a, y] + Hd_ayu[a, y] - Hy_ayu[a, y] 
-      Ho_ay[a, y] <- Ho_ayg[a, y] + Ho_ayu[a, y]
+    Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] - Hy_ayg[a, y] 
+    Ho_ayu[a, y] <- Hs_ayu[a, y] + Hd_ayu[a, y] - Hy_ayu[a, y] 
+    Ho_ay[a, y] <- Ho_ayg[a, y] + Ho_ayu[a, y]
 
-      Ro_ayg[a, y] <- max(0.001,Rs_ayg[a, y] + Rd_ayg[a, y] - Ry_ayg[a, y] ) 
-      Ro_ayu[a, y] <- max(0.001,Rs_ayu[a, y] + Rd_ayu[a, y] - Ry_ayu[a, y] ) 
-      Ro_ay[a, y] <- Ro_ayg[a, y] + Ro_ayu[a, y]
+    Ro_ayg[a, y] <- max(0.001,Rs_ayg[a, y] + Rd_ayg[a, y] - Ry_ayg[a, y] ) 
+    Ro_ayu[a, y] <- max(0.001,Rs_ayu[a, y] + Rd_ayu[a, y] - Ry_ayu[a, y] ) 
+    Ro_ay[a, y] <- Ro_ayg[a, y] + Ro_ayu[a, y]
 
     for (u in 1:2){
       for (s in 4:5){

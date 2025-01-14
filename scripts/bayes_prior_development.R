@@ -125,26 +125,27 @@ variance
   B1 <- 5 #beta1_mu
   B2 <- -1 #beta2_mu
   B3 <- 30 #beta3_mu
+  B4 <- 1
   
   sv_line <- data.frame()
   for (y in 1:Y){
-    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))))
+    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))) + B4)
   }
   sv_line %>% mutate(y = seq(1,Y,1)) -> sv_line
   plot(sv_line$prop ~ sv_line$y)
 }
 
-p_sv_fun <- function(B0,B1,B2,B3){
+p_sv_fun <- function(B0,B1,B2,B3,B4){
   sv_line <- data.frame()
   for (y in 1:Y){
-    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))))
+    sv_line[y,"prop"] <- logit_to_prob(B0 + B1 / (1 + exp(-B2 * (y - B3))) + B4)
   }
   sv_line %>% mutate(y = seq(1,Y,1)) -> sv_line
   plot(sv_line$prop ~ sv_line$y, ylim = c(0,1))
 }
 
 #pH all
-p_sv_fun(B0 = 1.2, B1 = 1.5, B2 = 0.5, B3 = 30) #central
+p_sv_fun(B0 = 1.2, B1 = 1.5, B2 = 0.5, B3 = 30, B4 = -1) #central
 p_sv_fun(B0 = 0, B1 = 1, B2 = 0.5, B3 = 30) #Kodiak
 p_sv_fun(B0 = 0.5, B1 = 1.75, B2 = 0.5, B3 = 30) #southeast
 
@@ -273,9 +274,14 @@ rbind(fit_beta3_pH %>% mutate(model = "fit"),
 n <- 1000
 Y <- 47
 
+b0 <- 1
+b1 <- 1.5
+b2 <- 0.5
+b3 <- 30
+
 {
-  tau_mu0 <- 0.5
-  mu_beta0 <- rnorm(n,-0.25,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
+  tau_mu0 <- 0.1
+  mu_beta0 <- rnorm(n,b0,1/sqrt(tau_mu0)) #rnorm(n,-0.25,1)
 tau_beta0 <- rgamma(n,0.001,0.001)
 
 beta0 <- rnorm(n*3,mu_beta0, tau_beta0) #INTERCEPT

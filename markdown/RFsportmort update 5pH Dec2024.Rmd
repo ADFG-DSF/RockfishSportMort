@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_fit_5pH_infPr",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_fit_5pH_infPr_uniB",Sys.Date(),".html"))
       })
 ---
 
@@ -43,10 +43,11 @@ list2env(readinData(start_yr = start_yr,
 ##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
 #...............................................................................
 
-mod<-"LB_fit_5pH_infPr"
-#mod<-"LB_fit_5pH"
-res <- "HR_fitLBR_2bias_hierbeta2_5pH_infPr_thru2023_1e+05_7kn_2025-01-09"
-#res <- "HR_fitLBR_2bias_hierbeta2_5pH_thru2023_6e+05_7kn_2025-01-09"
+#mod<-"LB_hyb_5pH_infPr"
+mod<-"LB_fit_5pH"
+#res <- "HR_hybLBR_2bias_hierPcomp_5pH_infPr_thru2023_1e+06_7kn_2025-01-12"
+res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_uniB3_thru2023_6e+05_7kn_2025-01-14"
+#res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -340,11 +341,7 @@ The true number of released rockfish $R_{ayu}$ were based on the proportion of t
 R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}
 \end{equation} 
 
-with total releases calculated from the sum of the user group releases. The proportion of total rockfish harvested by user group, $pH_{ayu}$, was assumed to be the mean of $pH_{(pelagic)ayu}$, $pH_{(yelloweye)ayu}$ and $pH_{(nonpel-nonYE)ayu}$ weighted by the relative harvest $H_{(comp)ayu}$ such that
-
-\begin{equation}
-R_{ayu}~=~ \frac{\sum ({H_{(comp)ayu} * pH_{(comp)ayu})}}{\sum {H_{(comp)ayu}}} 
-\end{equation}
+with total releases equal to the sum of the compositional releases. 
 
 The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
 
@@ -1424,73 +1421,73 @@ rbind(pG_mod, pG_obs%>% mutate(pG_lo95 = NA, pG_hi95 = NA)) %>%
 These plots show the fitted logistic line to the proportion of caught rockfish that are harvested. These estimates are used for hindcasting catch estimates based on the harvest data in early years when catch estimates are unavailable.
  
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 13.**- Annual proportion of all rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
-pHall_mod <- 
-  rbind(postH$mean$pHg %>% t(), #postH$mean$pH[,,1] %>% t(),
-        postH$mean$pHu %>% t()) %>% #postH$mean$pH[,,2] %>% t()) %>%
-  as.data.frame() %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
-         source = "model") %>%
-  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$pHg %>% t(),
-                  postH$q2.5$pHu %>% t()) %>%
-              as.data.frame() %>%
-              setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
-                     source = "model") %>%
-              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
-              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
-            by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$pHg %>% t(),
-                  postH$q97.5$pHu %>% t()) %>%
-              as.data.frame() %>%
-              setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
-                     source = "model") %>%
-              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
-              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
-            by = c("year","area","user","source"))
+#pHall_mod <- 
+#  rbind(postH$mean$pHg %>% t(), #postH$mean$pH[,,1] %>% t(),
+#        postH$mean$pHu %>% t()) %>% #postH$mean$pH[,,2] %>% t()) %>%
+#  as.data.frame() %>%
+#  setNames(nm = unique(H_ayg$area)) %>%
+#  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+#         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+#         source = "model") %>%
+#  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+#  left_join(rbind(postH$q2.5$pHg %>% t(),
+#                  postH$q2.5$pHu %>% t()) %>%
+#              as.data.frame() %>%
+#              setNames(nm = unique(H_ayg$area)) %>%
+#              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+#                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+#                     source = "model") %>%
+#              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+#              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+#            by = c("year","area","user","source")) %>%
+#  left_join(rbind(postH$q97.5$pHg %>% t(),
+#                  postH$q97.5$pHu %>% t()) %>%
+#              as.data.frame() %>%
+#              setNames(nm = unique(H_ayg$area)) %>%
+#              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+#                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+#                     source = "model") %>%
+#              pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+#              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+#            by = c("year","area","user","source"))
 
-pHall_obs <- 
-  as.data.frame(
-    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
-          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
-          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
-  setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 3),
-         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
-         source = "SWHS") %>%
-  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-         p_lo95 = NA, p_hi95 = NA)  %>% 
-  rbind(t(jags_dat$Hlb_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg)) %>%
-          data.frame() %>%
-          setNames(nm = unique(H_ayg$area)) %>%
-          mutate(year = rep(unique(Hhat_ay$year), times = 1),
-                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "logbook") %>%
-          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
-          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                 p_lo95 = NA, p_hi95 = NA))
+#pHall_obs <- 
+#  as.data.frame(
+#    rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
+#          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+#          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+#  setNames(nm = unique(H_ayg$area)) %>%
+#  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+#         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+#         source = "SWHS") %>%
+#  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+#         p_lo95 = NA, p_hi95 = NA)  %>% 
+#  rbind(t(jags_dat$Hlb_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg)) %>%
+#          data.frame() %>%
+#          setNames(nm = unique(H_ayg$area)) %>%
+#          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+#                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+#                 source = "logbook") %>%
+#          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+#          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+#                 p_lo95 = NA, p_hi95 = NA))
 
-pHall_obs %>% filter(user != "all") %>%
-  ggplot(aes(x = year, y = pH, color = user)) +
-  geom_ribbon(data = pHall_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
-              alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source)) +
-  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
-  geom_line(data = pHall_mod, aes(color = user)) +
+#pHall_obs %>% filter(user != "all") %>%
+#  ggplot(aes(x = year, y = pH, color = user)) +
+#  geom_ribbon(data = pHall_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+#              alpha = 0.2, color = NA) +
+#  geom_point(aes(shape = source)) +
+#  geom_point(data  = pHall_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+#  geom_line(data = pHall_mod, aes(color = user)) +
   #geom_line(data = pHall_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
-  coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
-  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  labs(y = "Proportion of total catches that were harvested", x = "Year")
+#  coord_cartesian(ylim = c(0, 1)) +
+#  facet_wrap(. ~ area) +
+#  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+#  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+#  labs(y = "Proportion of total catches that were harvested", x = "Year")
 
 ``` 
 <br>
@@ -1986,7 +1983,7 @@ pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO",
 Figure 14 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
  
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 14.**- Mean SWHS bias for harvests and catches. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr")) { #2 bias
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr")) { #2 bias
   exp(postH$sims.list$mu_bc_H) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -2041,7 +2038,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
 Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
  
 ```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 15.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr")){
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr")){
   mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%
@@ -2488,12 +2485,14 @@ p_yellow_obs <-
   mutate(year = comp_year + 1976,
          area = unique(H_ayg$area)[comp_area],
          user = ifelse(comp_user == 0, "charter", "private"),
-         p_yellow = comp_yellow / (comp_N - comp_pelagic),
+         p_yellow = ifelse(comp_area < 11,
+                           comp_yellow / (comp_N - comp_pelagic),
+                           comp_yellow / comp_dsr),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
-p_yellowX_obs <- compX %>%
-  mutate(p_yellow = yellow_x / (N - pelagic),
-         user = ifelse(user_n == 0, "charter", "private"))
+#p_yellowX_obs <- compX %>%
+#  mutate(p_yellow = yellow_x / (N - pelagic),
+#         user = ifelse(user_n == 0, "charter", "private"))
 
 rbind(beta0_ye <- postH$q50$beta0_yellow,
       beta1_ye <- postH$q50$beta1_yellow,
@@ -2518,6 +2517,7 @@ central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastsid
   
 rbind(p_yellow_obs) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
+  #ggplot(aes(x = year, y = use_p_ye, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_ribbon(data = p_yellow_mod,

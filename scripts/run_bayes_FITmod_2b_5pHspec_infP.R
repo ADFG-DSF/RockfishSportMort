@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 7E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 4e5 = 15 hours, 85% converged.
 
 #model to run; see /models folder
@@ -88,6 +88,66 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 })
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "sd_pH"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_pelagic"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_yellow"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_black"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_dsr"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_slope"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_pelagic"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_yellow"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_black"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_dsr"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_slope"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_pelagic"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_yellow"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_black"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_dsr"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_slope"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta3_pelagic"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta3_yellow"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta3_black"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta3_dsr"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta3_slope"]
 })
 
 for (i in 1:3){ #i <- 1
@@ -238,7 +298,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_hierbeta2_2pH_thru2023_8e+06_7kn_2024-12-29"
+results <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_1e+06_7kn_2025-01-12"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -366,17 +426,26 @@ rhat_exam %>% group_by(variable,area) %>%
   filter(str_detect(variable, "pH"))
 
 jagsUI::traceplot(postH, parameters = c("sd_comp","mu_beta0_yellow","tau_beta0_yellow",
+                                        "mu_beta1_yellow","tau_beta1_yellow",
                                         "mu_beta2_yellow","tau_beta2_yellow",
+                                        "mu_beta3_yellow","tau_beta3_yellow",
+                                        "mu_beta4_yellow","tau_beta4_yellow",
                                         "beta0_yellow","beta1_yellow",
                                         "beta2_yellow","beta3_yellow","beta4_yellow"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_dsr","tau_beta0_dsr",
+                                        "mu_beta1_dsr","tau_beta1_dsr",
                                         "mu_beta2_dsr","tau_beta2_dsr",
+                                        "mu_beta3_dsr","tau_beta3_dsr",
+                                        "mu_beta4_dsr","tau_beta4_dsr",
                                         "beta0_dsr","beta1_dsr",
                                         "beta2_dsr","beta3_dsr","beta4_dsr"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_slope","tau_beta0_slope",
+                                        "mu_beta1_slope","tau_beta1_slope",
                                         "mu_beta2_slope","tau_beta2_slope",
+                                        "mu_beta3_slope","tau_beta3_slope",
+                                        "mu_beta4_slope","tau_beta4_slope",
                                         "beta0_slope","beta1_slope",
                                         "beta2_slope","beta3_slope","beta4_slope"))
 
@@ -393,12 +462,18 @@ rhat_exam %>% group_by(variable,area) %>%
   filter(str_detect(variable, "p_yellow")) %>% print(n=50)
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
+                                        "mu_beta1_pelagic","tau_beta1_pelagic",
                                         "mu_beta2_pelagic","tau_beta2_pelagic",
+                                        "mu_beta3_pelagic","tau_beta3_pelagic",
+                                        "mu_beta4_pelagic","tau_beta4_pelagic",
                                         "beta0_pelagic","beta1_pelagic",
                                         "beta2_pelagic","beta3_pelagic","beta4_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
-                                        "mu_beta2_black","tau_beta2_blac",
+                                        "mu_beta1_black","tau_beta1_black",
+                                        "mu_beta2_black","tau_beta2_black",
+                                        "mu_beta3_black","tau_beta3_black",
+                                        "mu_beta4_black","tau_beta4_black",
                                         "beta0_black","beta1_black",
                                         "beta2_black","beta3_black","beta4_black"))
 
