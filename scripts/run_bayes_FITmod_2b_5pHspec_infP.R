@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 7E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 20E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 4e5 = 15 hours, 85% converged.
 
 #model to run; see /models folder

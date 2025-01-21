@@ -46,7 +46,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_hyb_5pH_infPr"
 mod<-"LB_fit_5pH"
 #res <- "HR_hybLBR_2bias_hierPcomp_5pH_infPr_thru2023_1e+06_7kn_2025-01-12"
-res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_uniB3_thru2023_6e+05_7kn_2025-01-14"
+res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-17"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
