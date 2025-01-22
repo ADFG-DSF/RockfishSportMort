@@ -3,7 +3,7 @@ model{
  tau_comp <- 1 / sd_comp / sd_comp
  sd_comp ~ dunif(0, 10)
  
- for (s in 1:4){
+ for (s in 1:3){
 ## for (s in 1:5){
   tau_pH[s] <- 1 / sd_pH[s] / sd_pH[s]
   sd_pH[s] ~ dunif(0, 5)
@@ -147,7 +147,7 @@ tau_beta4_slope ~ dgamma(0.1, 0.1)
 # PROPORTION HARVESTED (pH) PRIORS: -----------------------------------
 # s = 1 = pelagic/black, 2 = ye, 3 = "other", 4 = DSR, 5 = slope
 for (r in 1:3){
-  for (s in 1:5){ 
+  for (s in 1:3){ 
     tau_beta0_pH[r,s] <- 1 / sd_beta0_pH[r,s] / sd_beta0_pH[r,s]
     sd_beta0_pH[r,s] ~ dunif(0.1, 5)
     tau_beta1_pH[r,s] <- 1 / sd_beta1_pH[r,s] / sd_beta1_pH[r,s]
@@ -207,17 +207,10 @@ mu_beta1_pH[3,2] ~ dlnorm(log(6), 0.1)
 mu_beta2_pH[3,2] ~ dnorm(-3, 0.1)
 mu_beta3_pH[3,2] ~ dunif(29,Y-3) #dnorm(43, 0.01)
 
-# no pH[3,3] for SE "other" RF = slope + DSR - YE
-
-mu_beta0_pH[3,4] ~ dnorm(-1, 0.1) #dnorm(0, 0.001)
-mu_beta1_pH[3,4] ~ dlnorm(log(3), 0.1)
-mu_beta2_pH[3,4] ~ dnorm(-3, 0.1)
-mu_beta3_pH[3,4] ~ dunif(29,Y-3) #dnorm(40, 0.01)
-
-# mu_beta0_pH[3,5] ~ dnorm(-1, 0.1) #dnorm(0, 0.001)
-# mu_beta1_pH[3,5] ~ dlnorm(log(3), 0.1) #T(,50 - 100?)
-# mu_beta2_pH[3,5] ~ dnorm(-3, 0.1)
-# mu_beta3_pH[3,5] ~ dunif(29,Y-3) #dnorm(40, 0.01)
+mu_beta0_pH[3,3] ~ dnorm(-1, 0.1) #dnorm(0, 0.001)
+mu_beta1_pH[3,3] ~ dlnorm(log(3), 0.1)
+mu_beta2_pH[3,3] ~ dnorm(-3, 0.1)
+mu_beta3_pH[3,3] ~ dunif(29,Y-3) #dnorm(40, 0.01)
 
 for (a in 1:A){
   # SWHS H and R bias PRIORS: --------------------------------------------------
@@ -447,27 +440,14 @@ for (a in 11:16){
   beta3_slope[a] ~ dlnorm(log(mu_beta3_slope), tau_beta3_slope)T(28,Y-1)
   beta4_slope[a] ~ dnorm(mu_beta4_slope, tau_beta4_slope)
 
-#  for (s in 4:5){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
-#    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #T(-2.75,) #INTERCEPT
-#    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) #T(0,) # SCALING FACTOR (amplitude)
-#    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) #T(0,) # SLOPE 
-#    beta3_pH[a,s] ~ dlnorm(log(mu_beta3_pH[regions[a],s]), tau_beta3_pH[regions[a],s])T(29,Y-1)# INFLECTION POINT
-#    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s]) # USER EFFECT
-#  }
+    beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #T(-2.75,) #INTERCEPT
+    beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) #T(0,) # SCALING FACTOR (amplitude)
+    beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) #T(0,) # SLOPE 
+    beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)# INFLECTION POINT
+    beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3]) # USER EFFECT
 
-  for (s in 4:5){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
-    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],4], tau_beta0_pH[regions[a],4]) #T(-2.75,) #INTERCEPT
-    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],4]), tau_beta1_pH[regions[a],4]) #T(0,) # SCALING FACTOR (amplitude)
-    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],4], tau_beta2_pH[regions[a],4]) #T(0,) # SLOPE 
-    beta3_pH[a,s] ~ dlnorm(log(mu_beta3_pH[regions[a],4]), tau_beta3_pH[regions[a],4])T(29,Y-1)# INFLECTION POINT
-    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],4], tau_beta4_pH[regions[a],4]) # USER EFFECT
-  }
 
   for (y in 1:Y){
-##    pHg[a,y] <- (pH[a,y,1,1] * H_ayg[a,y] * p_pelagic[a, y, 1] + pH[a,y,1,2] * Hy_ayg[a,y] + pH[a,y,1,4] * (Hd_ayg[a,y]-Hy_ayg[a,y]) + pH[a,y,1,5] * Hs_ayg[a,y]) / H_ayg[a,y]
-
-##    pHu[a,y] <- (pH[a,y,2,1] * H_ayu[a,y] * p_pelagic[a, y, 2] + pH[a,y,2,2] * Hy_ayu[a,y] + pH[a,y,2,4] * (Hd_ayu[a,y]-Hy_ayg[a,y]) + pH[a,y,2,5] * Hs_ayu[a,y]) / H_ayu[a,y]
-
     Hy_ayg[a, y] <- Hd_ayg[a, y] * p_yellow[a, y, 1]
     Hy_ayu[a, y] <- Hd_ayu[a, y] * p_yellow[a, y, 2]
 
@@ -475,34 +455,39 @@ for (a in 11:16){
     Hd_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_dsr[a, y, 2]
     Hd_ay[a, y] <- Hd_ayg[a, y] + Hd_ayu[a, y]
 
-    Rd_ayg[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,1,4]) - Hd_ayg[a, y])  
-    Rd_ayu[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,2,4]) - Hd_ayg[a, y])  
+#    Rd_ayg[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,1,4]) - Hd_ayg[a, y])  
+#    Rd_ayu[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,2,4]) - Hd_ayg[a, y])  
+    Rd_ayg[a, y] <- Ro_ayg[a, y] * p_dsr[a, y, 1] - Ry_ayg[a,y]
+    Rd_ayu[a, y] <- Ro_ayu[a, y] * p_dsr[a, y, 2] - Ry_ayu[a,y]
     Rd_ay[a, y] <- Rd_ayg[a, y] + Rd_ayu[a, y]
 
     Hs_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1]
     Hs_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2]
     Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
 
-    Rs_ayg[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,1,5]) - Hs_ayg[a, y])  
-    Rs_ayu[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,2,5]) - Hs_ayg[a, y])  
+#    Rs_ayg[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,1,5]) - Hs_ayg[a, y])  
+#    Rs_ayu[a, y] <- max(0.001,(Hs_ayg[a, y] / pH[a,y,2,5]) - Hs_ayg[a, y]) 
+    Rs_ayg[a, y] <- Ro_ayg[a, y] * p_slope[a, y, 1]
+    Rs_ayu[a, y] <- Ro_ayu[a, y] * p_slope[a, y, 2] 
     Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
     Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] - Hy_ayg[a, y] 
     Ho_ayu[a, y] <- Hs_ayu[a, y] + Hd_ayu[a, y] - Hy_ayu[a, y] 
     Ho_ay[a, y] <- Ho_ayg[a, y] + Ho_ayu[a, y]
 
-    Ro_ayg[a, y] <- max(0.001,Rs_ayg[a, y] + Rd_ayg[a, y] - Ry_ayg[a, y] ) 
-    Ro_ayu[a, y] <- max(0.001,Rs_ayu[a, y] + Rd_ayu[a, y] - Ry_ayu[a, y] ) 
+#    Ro_ayg[a, y] <- max(0.001,Rs_ayg[a, y] + Rd_ayg[a, y] - Ry_ayg[a, y] ) 
+#    Ro_ayu[a, y] <- max(0.001,Rs_ayu[a, y] + Rd_ayu[a, y] - Ry_ayu[a, y] ) 
+#    Ro_ay[a, y] <- Ro_ayg[a, y] + Ro_ayu[a, y]
+
+    Ro_ayg[a, y] <- max(0.001,(Ho_ayg[a, y] / pH[a,y,1,3]) - Ho_ayg[a, y])  
+    Ro_ayu[a, y] <- max(0.001,(Ho_ayg[a, y] / pH[a,y,2,3]) - Ho_ayg[a, y] ) 
     Ro_ay[a, y] <- Ro_ayg[a, y] + Ro_ayu[a, y]
 
     for (u in 1:2){ #Proportion harvested logit slopes for DSR and slope assemblages:
-      for (s in 4:5){
-        logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + beta0_pH[a,s] + 
-                                     beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s]))) + 
-                                     beta4_pH[a,s] * (u - 1)
-##        re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
-        re_pH[a, y, u, s] ~ dnorm(0, tau_pH[4])
-      }
+      logit(pH[a, y, u, 3]) <- re_pH[a, y, u, 3] + beta0_pH[a,3] + 
+                                     beta1_pH[a,3] / (1 + exp(-beta2_pH[a,3] * (y - beta3_pH[a,3]))) + 
+                                     beta4_pH[a,3] * (u - 1)
+      re_pH[a, y, u, 3] ~ dnorm(0, tau_pH[3])
       
       logit(p_dsr[a, y, u]) <- re_dsr[a, y, u] + beta0_dsr[a] + 
                                      beta1_dsr[a] / (1 + exp(-beta2_dsr[a] * (y - beta3_dsr[a]))) + beta4_dsr[a] * (u - 1)
