@@ -328,7 +328,7 @@ for (a in 1:A){
 
    Rp_ayg[a, y] <- (Hp_ayg[a, y] / pH[a,y,1,1]) - Hp_ayg[a, y]   
    Rp_ayu[a, y] <- (Hp_ayu[a, y] / pH[a,y,2,1]) - Hp_ayu[a, y]  
-   Rp_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
+   Rp_ay[a, y] <- Rp_ayg[a, y] + Rp_ayu[a, y]
 
    #Black rockfish
    Hb_ayg[a, y] <- H_ayg[a, y] * p_pelagic[a, y, 1] * p_black[a, y, 1]
