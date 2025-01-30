@@ -54,7 +54,7 @@ model{
   tau_beta0_yellow[r] <- 1 / sd_beta0_yellow[r] / sd_beta0_yellow[r]
   sd_beta0_yellow[r] ~ dunif(0.1, 5)
 ##  tau_beta0_yellow[r] ~ dgamma(0.01, 0.01)
-  mu_beta0_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+  mu_beta0_black[r] ~ dnorm(0, 0.01) #dnorm(0, 0.001)
 ##  tau_beta0_black[r] ~ dgamma(0.01, 0.01)
   tau_beta0_black[r] <- 1 / sd_beta0_black[r] / sd_beta0_black[r]
   sd_beta0_black[r] ~ dunif(0.1, 5)
@@ -67,10 +67,10 @@ model{
   #tau_beta1_yellow[r] ~ dgamma(0.1, 0.1)
   tau_beta1_yellow[r] <- 1 / sd_beta1_yellow[r] / sd_beta1_yellow[r]
   sd_beta1_yellow[r] ~ dunif(0.1, 5)
-  mu_beta1_black[r] ~ dlnorm(log(0.0001), 0.1) 
+  mu_beta1_black[r] ~ dlnorm(log(0.0001), 0.5) 
   #tau_beta1_black[r] ~ dgamma(0.1, 0.1)
   tau_beta1_black[r] <- 1 / sd_beta1_black[r] / sd_beta1_black[r]
-  sd_beta1_black[r] ~ dunif(0.1, 5)
+  sd_beta1_black[r] ~ dunif(0.1, 10)
 
   mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta2_pelagic[r] <- 1 / sd_beta2_pelagic[r] / sd_beta2_pelagic[r]
@@ -78,9 +78,9 @@ model{
   mu_beta2_yellow[r] ~ dnorm(-0.5, 0.1) #dnorm(0, 0.001)
   tau_beta2_yellow[r] <- 1 / sd_beta2_yellow[r] / sd_beta2_yellow[r]
   sd_beta2_yellow[r] ~ dunif(0.1, 5)
-  mu_beta2_black[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+  mu_beta2_black[r] ~ dnorm(0, 0.5) #dnorm(0, 0.001)
   tau_beta2_black[r] <- 1 / sd_beta2_black[r] / sd_beta2_black[r]
-  sd_beta2_black[r] ~ dunif(0.1, 5)
+  sd_beta2_black[r] ~ dunif(0.25, 5)
 
 ##  mu_beta3_pelagic[r]; see below, region specific: 
 ##  tau_beta3_pelagic[r] ~ dgamma(0.1, 0.1) 
@@ -187,7 +187,7 @@ mu_beta2_pH[2,1] ~ dnorm(0.5, 0.1)
 mu_beta3_pH[2,1] ~ dunif(19,Y-3) #dnorm(30, 0.01)
 
 mu_beta0_pH[2,2] ~ dnorm(3, 0.1) #dnorm(0, 0.001)
-mu_beta1_pH[2,2] ~ dlnorm(log(0.001), 0.1)
+mu_beta1_pH[2,2] ~ dlnorm(log(0.001), 1) #*** dlnorm(log(0.001), 0.1)
 mu_beta2_pH[2,2] ~ dnorm(0.2, 0.1)
 mu_beta3_pH[2,2] ~ dunif(19,Y-3) #dnorm(30, 0.01)
 
@@ -280,7 +280,7 @@ for (a in 1:A){
 
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
     Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
-    Rlbp_ayg[a, y] ~ dpois(R_ayg[a, y] * p_pelagic[a, y, 1])  
+    Rlbp_ayg[a, y] ~ dpois(Rp_ayg[a, y])  
   }
   
   for(y in 30:Y){ #logbook likelihood; 

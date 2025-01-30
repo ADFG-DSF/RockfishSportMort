@@ -287,7 +287,7 @@ for (a in 1:A){
 
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
     Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
-    Rlbp_ayg[a, y] ~ dpois(R_ayg[a, y] * p_pelagic[a, y, 1])  
+    Rlbp_ayg[a, y] ~ dpois(Rp_ayg[a, y])  
   }
   
   for(y in 30:Y){ #logbook likelihood; 

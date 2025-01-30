@@ -50,32 +50,44 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
-# 4e5 = 15 hours, 85% converged.
+ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+# 15e5 = 1.6 - 1.7 days
 
 #model to run; see /models folder
-mod <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr" #pH good, p_ye yucky
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr"
+mod <- "HR_fitLBR_2bias_hierPcomp_5pH_vagPr"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierbeta2_5pH_thru2023_6e+05_7kn_2025-01-09" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
 #If you're using the last run:
+halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 2)
+
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
-  as.list(chain_data[nrow(chain_data), ])
+  #as.list(chain_data[nrow(chain_data), ])
+  second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
+  as.list(colMeans(second_half))
 })
+
+halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 2)
 
 other_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
-  as.list(chain_data[nrow(chain_data), ])
+  #as.list(chain_data[nrow(chain_data), ])
+  second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
+  as.list(colMeans(second_half))
 })
 
-#last_inits <- other_inits
+last_inits <- other_inits
 
 # Name the initial values you want to use:
 inits_to_use <- last_inits
