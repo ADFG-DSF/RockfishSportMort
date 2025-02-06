@@ -481,7 +481,9 @@ jags_params <- function(){
     "Rb_ayg", "Rb_ayu", "Rb_ay",
     "Ry_ayg", "Ry_ayu", "Ry_ay",
     "Ro_ayg", "Ro_ayu", "Ro_ay",
+    "Rdnye_ayg", "Rdnye_ayu", "Rdnye_ay",
     "Rd_ayg", "Rd_ayu", "Rd_ay",
+    "pDSR_YE_ayg","pDSR_YE_ayu","pDSR_YE_ay",
     "Rs_ayg", "Rs_ayu", "Rs_ay",
     "nonrecR_ayg")
   return(params)

@@ -445,9 +445,17 @@ for (a in 11:16){
 
 #    Rd_ayg[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,1,4]) - Hd_ayg[a, y])  
 #    Rd_ayu[a, y] <- max(0.001,(Hd_ayg[a, y] / pH[a,y,2,4]) - Hd_ayg[a, y])  
-    Rd_ayg[a, y] <- Ro_ayg[a, y] * p_dsr[a, y, 1] * (1 - p_yellow[a,y,1]) #+ Ry_ayg[a,y] #Ro = nonYE so need to add in 
-    Rd_ayu[a, y] <- Ro_ayu[a, y] * p_dsr[a, y, 2] * (1 - p_yellow[a,y,2]) #+ Ry_ayu[a,y]
+    Rdnye_ayg[a, y] <- Ro_ayg[a, y] * p_dsr[a, y, 1] * (1 - p_yellow[a,y,1]) #+ Ry_ayg[a,y] #Ro = nonYE so need to add in 
+    Rdnye_ayu[a, y] <- Ro_ayu[a, y] * p_dsr[a, y, 2] * (1 - p_yellow[a,y,2]) #+ Ry_ayu[a,y]
+    Rdnye_ay[a, y] <- Rdnye_ayg[a, y] + Rdnye_ayu[a, y]
+
+    Rd_ayg[a,y] <- Rdnye_ayg[a, y] + Ry_ayg[a,y]
+    Rd_ayu[a,y] <- Rdnye_ayu[a, y] + Ry_ayu[a,y]
     Rd_ay[a, y] <- Rd_ayg[a, y] + Rd_ayu[a, y]
+
+    pDSR_YE_ayg[a, y] <- Hy_ayg[a, y] / Hd_ayg[a, y] 
+    pDSR_YE_ayu[a, y] <- Hy_ayu[a, y] / Hd_ayu[a, y]
+    pDSR_YE_ay[a, y] <- Hy_ay[a, y] / Hd_ay[a, y]
 
     Hs_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1]
     Hs_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2]

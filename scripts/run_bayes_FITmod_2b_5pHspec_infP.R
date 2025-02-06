@@ -63,7 +63,7 @@ mod <- "HR_fitLBR_2bias_hierPcomp_5pH_vagPr"
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_1500000_7kn_2025-01-30" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-02-05" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
