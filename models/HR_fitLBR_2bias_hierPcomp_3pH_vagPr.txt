@@ -59,7 +59,7 @@ model{
   tau_beta0_black[r] <- 1 / sd_beta0_black[r] / sd_beta0_black[r]
   sd_beta0_black[r] ~ dunif(0.1, 5)
 
-  mu_beta1_pelagic[r] ~ dlnorm(log(0.0001), 0.1) 
+##  mu_beta1_pelagic[r] ~ dlnorm(log(0.0001), 0.1) 
   #tau_beta1_pelagic[r] ~ dgamma(0.1, 0.1)
   tau_beta1_pelagic[r] <- 1 / sd_beta1_pelagic[r] / sd_beta1_pelagic[r]
   sd_beta1_pelagic[r] ~ dunif(0.1, 5)
@@ -72,7 +72,7 @@ model{
   tau_beta1_black[r] <- 1 / sd_beta1_black[r] / sd_beta1_black[r]
   sd_beta1_black[r] ~ dunif(0.1, 10)
 
-  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+##  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
   tau_beta2_pelagic[r] <- 1 / sd_beta2_pelagic[r] / sd_beta2_pelagic[r]
   sd_beta2_pelagic[r] ~ dunif(0.1, 5)
   mu_beta2_yellow[r] ~ dnorm(-0.5, 0.1) #dnorm(0, 0.001)
@@ -102,15 +102,23 @@ model{
   tau_beta4_black[r] ~ dgamma(0.1, 0.1)
   }
 
-# mu_beta3 for different regions based on data availability:
+# mu_betaX for different regions based on data availability:
+mu_beta1_pelagic[1] ~ dlnorm(log(0.0001), 0.1)
+mu_beta1_pelagic[2] ~ dlnorm(log(0.0001), 5) #almost fixed at 0
+mu_beta1_pelagic[3] ~ dlnorm(log(0.0001), 0.1)
+
+mu_beta2_pelagic[1] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+mu_beta2_pelagic[2] ~ dnorm(0, 5) #dnorm(0, 0.001) #almost fixed at 0
+mu_beta2_pelagic[3] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+
 for (r in 1:2){
   mu_beta3_pelagic[r] ~ dunif(19,Y-3)
   mu_beta3_yellow[r] ~ dunif(19,Y-3)
   mu_beta3_black[r] ~ dunif(19,Y-3)
 }
 
-mu_beta3_pelagic[3] ~ dunif(29,Y-3)
-mu_beta3_yellow[3] ~ dunif(29,Y-3)
+mu_beta3_pelagic[3] ~ dunif(20,Y-3)
+mu_beta3_yellow[3] ~ dunif(35,Y-3)
 mu_beta3_black[3] ~ dunif(29,Y-3)
 
 #SE DSR and slope assemblages:
@@ -184,11 +192,11 @@ for (a in 1:A){
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #pH PRIORS: proportion of catch that is harvested---------------------------
-  for (s in 1:2){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
+  for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
     beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
     beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) # SCALING FACTOR (amplitude)
     beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
-    beta3_pH[a,s] ~ dlnorm(log(mu_beta3_pH[regions[a],s]), tau_beta3_pH[regions[a],s])T(18,Y-1) # INFLECTION POINT
+##    beta3_pH[a,s] ~ dlnorm(log(mu_beta3_pH[regions[a],s]), tau_beta3_pH[regions[a],s])T(18,Y-1) # INFLECTION POINT
     beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])  # USER EFFECT
   }
 
@@ -207,8 +215,8 @@ for (a in 1:A){
   beta4_yellow[a] ~ dnorm(mu_beta4_yellow[regions[a]], tau_beta4_yellow[regions[a]]) 
 
   beta0_black[a] ~ dnorm(mu_beta0_black[regions[a]], tau_beta0_black[regions[a]])
-  beta1_black[a] ~ dlnorm(log(mu_beta1_black[regions[a]]), tau_beta1_black[regions[a]])T(,50)
-  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_black[regions[a]]) 
+##  beta1_black[a] ~ dlnorm(log(mu_beta1_black[regions[a]]), tau_beta1_black[regions[a]])T(,50)
+##  beta2_black[a] ~ dnorm(mu_beta2_black[regions[a]], tau_beta2_black[regions[a]]) 
   beta3_black[a] ~ dlnorm(log(mu_beta3_black[regions[a]]), tau_beta3_black[regions[a]])T(18,Y-1)
   beta4_black[a] ~ dnorm(mu_beta4_black[regions[a]], tau_beta4_black[regions[a]])
 
@@ -347,14 +355,26 @@ for (a in 1:A){
 # REGION SPECIFIC PRIORS AND CALCULATIONS --------------------------------------
 
  #Kodiak and Southcentral: -----------------------------------------------------
+ # BRF specifics:
+ beta1_black[1] ~ dlnorm(log(mu_beta1_black[regions[1]]), tau_beta1_black[regions[1]])T(,50)
+ beta2_black[1] ~ dnorm(mu_beta2_black[regions[1]], tau_beta2_black[regions[1]]) 
+
+ for (a in 2:10){
+  beta1_black[a] <- 0
+  beta2_black[a] <- 0
+ }
+
  for (a in 1:10) { #Central = 1:4, Kodiak = 5:10
   beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
-  beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #T(-2.75,) #INTERCEPT
-  beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) # SCALING FACTOR 
-  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) #T(0,) # SLOPE 
+  beta3_pH[a,1] ~ dlnorm(log(mu_beta3_pH[regions[a],1]), tau_beta3_pH[regions[a],1])T(18,Y-1)
+  beta3_pH[a,2] ~ dlnorm(log(mu_beta3_pH[regions[a],2]), tau_beta3_pH[regions[a],2])T(18,Y-1)
+
+##  beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #T(-2.75,) #INTERCEPT
+##  beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) # SCALING FACTOR 
+##  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) #T(0,) # SLOPE 
   beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(18,Y-1) # INFLECTION POINT
-  beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3])               # USER EFFECT
+##  beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3])               # USER EFFECT
 
   for (y in 1:Y){
    Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]
@@ -379,6 +399,18 @@ for (a in 1:A){
  } 
 
 #Southeast: -------------------------------------------------------------------
+# BRF specifics:
+ beta1_black[13] ~ dlnorm(log(mu_beta1_black[regions[3]]), tau_beta1_black[regions[3]])T(,50)
+ beta2_black[13] ~ dnorm(mu_beta2_black[regions[3]], tau_beta2_black[regions[3]]) 
+
+ for (a in 11:12){
+  beta1_black[a] <- 0
+  beta2_black[a] <- 0
+ }
+ for (a in 14:16){
+  beta1_black[a] <- 0
+  beta2_black[a] <- 0
+ }
 for (a in 11:16){
   beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(28,Y-1)
 
@@ -394,11 +426,14 @@ for (a in 11:16){
   beta3_slope[a] ~ dlnorm(log(mu_beta3_slope), tau_beta3_slope)T(28,Y-1)
   beta4_slope[a] ~ dnorm(mu_beta4_slope, tau_beta4_slope)
 
-  beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #T(-2.75,) #INTERCEPT
-  beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) #T(0,) # SCALING FACTOR (amplitude)
-  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) #T(0,) # SLOPE 
-  beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)# INFLECTION POINT
-  beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3]) # USER EFFECT
+  beta3_pH[a,1] ~ dlnorm(log(mu_beta3_pH[regions[a],1]), tau_beta3_pH[regions[a],1])T(29,Y-1)
+  beta3_pH[a,2] ~ dlnorm(log(mu_beta3_pH[regions[a],2]), tau_beta3_pH[regions[a],2])T(29,Y-1)
+
+##    beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #T(-2.75,) #INTERCEPT
+##    beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) #T(0,) # SCALING FACTOR (amplitude)
+##    beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) #T(0,) # SLOPE 
+    beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)# INFLECTION POINT
+##    beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3]) # USER EFFECT
 
   for (y in 1:Y){
     Hy_ayg[a, y] <- Hd_ayg[a, y] * p_yellow[a, y, 1]

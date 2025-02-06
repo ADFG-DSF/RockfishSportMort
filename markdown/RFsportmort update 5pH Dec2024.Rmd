@@ -42,11 +42,14 @@ list2env(readinData(start_yr = start_yr,
 #...............................................................................
 ##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
 #...............................................................................
-
+# Notes: on p plot, make symbol size = sample size, 
+# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
+# comp_H - total_release * unkown comp proportion
+#-------------------------------------------------------------------------------8
 #mod<-"LB_hyb_5pH_infPr"
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr_thru2023_1500000_7kn_2025-01-30"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr_thru2023_2e+06_7kn_2025-02-05"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -485,7 +488,11 @@ rhat_vals %>% data.frame() %>%
 ```
 
 * **Model development notes:**
-  + NA 
+  + tau parameters not always converged, but generally just some spikeness. I would argue these are acceptable. 
+  + pH parameters almost there except for B1 for yelloweye in NG, PWSO, and Kodiak areas and "other" rf in PWSO and SOKO2SAP. Most of these look like straight lines so amplitude should be small, but chains drifing off into la-la land.
+  + p_YE parameters pretty good or getting there, except for CSEO. Looks like B3 inflection point is bimodel with one chain on lower bound. All other SE areas OK near upper bound, so further constraints will hopefull fix this. B3 for WKMA at lower bound, but is mostly a straight line so probably OK.
+  + p_Pelagic parameters close. B1 for WKMA not great but thats a low data straight line. Constraining more may help. CSEO has problems with B2 and B3, although plots of those nice. May need to loosen B3 lower end?
+  + p_brf parameters a mess. Most of these should be straight lines so I think the best approach is to reparameterize the model so that only CI and NSEI have the logistic curve while the other areas are fit to straight lines. Or, maybe more simply, fix the parameters in the straight lines so that amplitude (B1) and slope (B2) are 0. 
   
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
@@ -1546,6 +1553,34 @@ pHpel_obs <-
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
+
+#need to translate jags_dat$Rhat_ayg:
+# jags_dat$Rhat_ayg * bias_correction * species_p?
+# species_p <- p's must sum to 1 across 3 categories. p_p, p_y, p_o; schwagged from lb?
+# jags_dat$Rlbp_ayg / jags_dat$Rlb_ayg 
+
+#pHpel_obs2 <- 
+#  as.data.frame(
+#    rbind(t((jags_dat$Hhat_ayg * (comp$pelagic[comp$] / jags_dat$comp_N ))/
+#              (jags_dat$Rhat_ayg + (jags_dat$Hhat_ayg * (jags_dat$comp_pelagic / jags_dat$comp_N )))),
+#          t(jags_dat$Hhat_ayu/(jags_dat$Rhat_ayu + jags_dat$Hhat_ayu)),
+#          t(jags_dat$Hhat_ay/(jags_dat$Rhat_ay + jags_dat$Hhat_ay)))) %>%
+#  setNames(nm = unique(H_ayg$area)) %>%
+#  mutate(year = rep(unique(Hhat_ay$year), times = 3),
+#         user = rep(c("charter", "private","all"), each = length(unique(Hhat_ay$year))),
+#         source = "SWHS (all RF)") %>%
+#  pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+#         p_lo95 = NA, p_hi95 = NA)  %>% 
+#  rbind(t(jags_dat$Hlbp_ayg/(jags_dat$Rlbp_ayg + jags_dat$Hlbp_ayg)) %>%
+#          data.frame() %>%
+#          setNames(nm = unique(H_ayg$area)) %>%
+#          mutate(year = rep(unique(Hhat_ay$year), times = 1),
+#                 user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
+#                 source = "logbook") %>%
+#          pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
+#          mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+#                 p_lo95 = NA, p_hi95 = NA))
 
 rbind(beta0_pH <- postH$q50$beta0_pH[,1],
       beta1_pH <- postH$q50$beta1_pH[,1],

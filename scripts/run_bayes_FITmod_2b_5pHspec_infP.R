@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 30E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 
 #model to run; see /models folder
@@ -63,8 +63,8 @@ mod <- "HR_fitLBR_2bias_hierPcomp_5pH_vagPr"
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25" #for yelloweye betas:
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_1500000_7kn_2025-01-30" #for yelloweye betas:
+#use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
