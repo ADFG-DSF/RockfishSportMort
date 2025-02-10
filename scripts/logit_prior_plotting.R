@@ -1,3 +1,5 @@
+
+
 plot_logit <- function(Y,b0_mu,sd_b0,
                        b1_mu,sd_b1,
                        b2_mu,sd_b2,
@@ -53,6 +55,15 @@ plot_logit <- function(Y,b0_mu,sd_b0,
     ) + ylim(0,1) +
     theme_minimal()
 }
+#fixed black
+plot_logit(Y = 47, b0_mu <- 0,
+           sd_b0 <- 1,
+           b1_mu <- 0.5,
+           sd_b1 <- 0.0001,
+           b2_mu <- 1,
+           sd_b2 <- 0.0001,
+           b3_lo <- 25,
+           b3_hi <- 45)
 
 #Central pelagic pH
 plot_logit(Y = 47, b0_mu <- 1,
