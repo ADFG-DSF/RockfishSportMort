@@ -50,20 +50,23 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 25E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 10E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
+# 25e5 = 2.9 days
 
 #model to run; see /models folder
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 mod <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr" #pH good, p_ye yucky
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr"
 mod <- "HR_fitLBR_2bias_hierPcomp_5pH_vagPr"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr_thru2023_2e+06_7kn_2025-02-05" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_vagPr_thru2023_2500000_7kn_2025-02-10" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))

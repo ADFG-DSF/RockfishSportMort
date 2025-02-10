@@ -223,18 +223,18 @@ for (a in 1:A){
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
 
   #pH PRIORS: proportion of catch that is harvested---------------------------
-  for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
-    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
-    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) # SCALING FACTOR (amplitude)
-    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
+##  for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
+##    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
+##    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) # SCALING FACTOR (amplitude)
+##    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
 ##    beta3_pH[a,s] ~ dlnorm(log(mu_beta3_pH[regions[a],s]), tau_beta3_pH[regions[a],s])T(18,Y-1) # INFLECTION POINT
-    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])  # USER EFFECT
-  }
+##    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])  # USER EFFECT
+##  }
 
   # COMPOSITIONAL PRIORS --------------------------------------------------
   # logit parameters for proportion estimates defined by intercept(B0), scaleing factor(B1), slope(B2), inflection point (B3) and user effect (B4) 
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]]) 
-#  beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
+##  beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
   beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]]) 
   beta3_pelagic[a] ~ dlnorm(log(mu_beta3_pelagic[regions[a]]), tau_beta3_pelagic[regions[a]])T(18,Y-1) 
   beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic[regions[a]], tau_beta4_pelagic[regions[a]])
@@ -386,7 +386,47 @@ for (a in 1:A){
 # REGION SPECIFIC PRIORS AND CALCULATIONS --------------------------------------
 
  #Kodiak and Southcentral: -----------------------------------------------------
- # Pelagic Specifics:
+ #pH specifics:
+beta0_pH[1,1] ~ dnorm(mu_beta0_pH[regions[1],1], tau_beta0_pH[regions[1],1]) #INTERCEPT
+beta1_pH[1,1] ~ dlnorm(log(mu_beta1_pH[regions[1],1]), tau_beta1_pH[regions[1],1]) 
+beta2_pH[1,1] ~ dnorm(mu_beta2_pH[regions[1],1], tau_beta2_pH[regions[1],1]) # SLOPE
+beta4_pH[1,1] ~ dnorm(mu_beta4_pH[regions[1],1], tau_beta4_pH[regions[1],1])
+
+beta0_pH[1,2] ~ dnorm(mu_beta0_pH[regions[1],2], tau_beta0_pH[regions[1],2]) #INTERCEPT
+beta1_pH[1,2] <- 0 
+beta2_pH[1,2] <- 0 
+beta4_pH[1,2] ~ dnorm(0, 1)
+
+beta0_pH[1,3] ~ dnorm(mu_beta0_pH[regions[1],3], tau_beta0_pH[regions[1],3]) #INTERCEPT
+beta1_pH[1,3] ~ dlnorm(log(mu_beta1_pH[regions[1],3]), tau_beta1_pH[regions[1],3]) 
+beta2_pH[1,3] ~ dnorm(mu_beta2_pH[regions[1],3], tau_beta2_pH[regions[1],3]) # SLOPE
+beta4_pH[1,3] ~ dnorm(mu_beta4_pH[regions[1],3], tau_beta4_pH[regions[1],3])
+
+for (a in 2:9) {
+   for (s in 1:3) { #s = 1= pelagic, s = 2 = yelloweye, s = 3 = non-pel, non-ye,  
+    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
+    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) 
+    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
+    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])
+  }
+ }
+
+beta0_pH[10,1] ~ dnorm(mu_beta0_pH[regions[2],1], tau_beta0_pH[regions[2],1]) #INTERCEPT
+beta1_pH[10,1] ~ dlnorm(log(mu_beta1_pH[regions[2],1]), tau_beta1_pH[regions[2],1]) 
+beta2_pH[10,1] ~ dnorm(mu_beta2_pH[regions[2],1], tau_beta2_pH[regions[2],1]) # SLOPE
+beta4_pH[10,1] ~ dnorm(mu_beta4_pH[regions[2],1], tau_beta4_pH[regions[2],1])
+
+beta0_pH[10,2] ~ dnorm(mu_beta0_pH[regions[2],2], tau_beta0_pH[regions[2],2]) #INTERCEPT
+beta1_pH[10,2] <- 0  
+beta2_pH[10,2] <- 0 
+beta4_pH[10,2] ~ dnorm(0, 1)
+
+beta0_pH[10,3] ~ dnorm(mu_beta0_pH[regions[2],3], tau_beta0_pH[regions[2],3]) #INTERCEPT
+beta1_pH[10,3] ~ dlnorm(log(mu_beta1_pH[regions[2],3]), tau_beta1_pH[regions[2],3]) 
+beta2_pH[10,3] ~ dnorm(mu_beta2_pH[regions[2],3], tau_beta2_pH[regions[2],3]) # SLOPE
+beta4_pH[10,3] ~ dnorm(mu_beta4_pH[regions[2],3], tau_beta4_pH[regions[2],3])
+
+# Pelagic Specifics:
  for (a in 1:4){
   beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
  }
@@ -436,6 +476,16 @@ for (a in 1:A){
  } 
 
 #Southeast: -------------------------------------------------------------------
+#pH specifics:
+ for (a in 11:16){
+   for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
+    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
+    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) 
+    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
+    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])
+  }
+ }
+
 # Pelagic Specifics:
  for (a in 11:16){
   beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
