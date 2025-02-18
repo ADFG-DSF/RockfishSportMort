@@ -485,6 +485,7 @@ jags_params <- function(){
     "Rd_ayg", "Rd_ayu", "Rd_ay",
     "pDSR_YE_ayg","pDSR_YE_ayu","pDSR_YE_ay",
     "Rs_ayg", "Rs_ayu", "Rs_ay",
+    "pR_dsr","pR_slope",
     "nonrecR_ayg")
   return(params)
 }

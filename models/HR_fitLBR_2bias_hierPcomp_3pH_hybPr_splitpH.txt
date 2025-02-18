@@ -71,7 +71,7 @@ model{
 ##  mu_beta2_pelagic[r] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
 ##  tau_beta2_pelagic[r] <- 1 / sd_beta2_pelagic[r] / sd_beta2_pelagic[r]
 ##  sd_beta2_pelagic[r] ~ dunif(0.1, 15)
-  mu_beta2_yellow[r] ~ dnorm(-0.5, 0.1) #dnorm(0, 0.001)
+  mu_beta2_yellow[r] ~ dunif(-10,0) #dnorm(-0.5, 0.05) #dnorm(0, 0.001)
   tau_beta2_yellow[r] <- 1 / sd_beta2_yellow[r] / sd_beta2_yellow[r]
   sd_beta2_yellow[r] ~ dunif(0.1, 5)
 ##  mu_beta2_black[r] ~ dnorm(0, 0.5) #dnorm(0, 0.001)
@@ -99,11 +99,11 @@ model{
   }
 
 # mu_betaX for different regions based on data availability:
-mu_beta1_pelagic[1] ~ dlnorm(log(0.0001), 0.01)
+mu_beta1_pelagic[1] ~ dlnorm(log(0.0001), 0.1)
 mu_beta1_pelagic[2] <- 0 #~ dlnorm(log(0.0001), 5) #almost fixed at 0
 mu_beta1_pelagic[3] ~ dlnorm(log(1), 0.01)
 
-mu_beta2_pelagic[1] ~ dnorm(0, 0.1) #dnorm(0, 0.001)
+mu_beta2_pelagic[1] ~ dlnorm(log(0.0001), 0.1) #dnorm(0, 0.001)
 mu_beta2_pelagic[2] <- 0 #~ dnorm(0, 5) #dnorm(0, 0.001) #almost fixed at 0
 mu_beta2_pelagic[3] ~ dlnorm(log(1), 0.05) #dnorm(1, 0.01) #dnorm(0, 0.001)#dlnorm? 
 
@@ -120,7 +120,7 @@ mu_beta2_black[3] ~ dnorm(-1, 1)
 
 for (r in 1:2){
   mu_beta3_pelagic[r] ~ dunif(19,Y-3)
-  mu_beta3_yellow[r] ~ dunif(19,Y-3)
+  mu_beta3_yellow[r] ~ dunif(19,Y-2)
   mu_beta3_black[r] ~ dunif(19,Y-3)
 }
 
@@ -162,6 +162,21 @@ tau_beta4_slope ~ dgamma(0.1, 0.1)
 # PROPORTION HARVESTED (pH) PRIORS: -----------------------------------
 # s = 1 = pelagic/black, 2 = ye, 3 = "other", 4 = DSR, 5 = slope
 for (r in 1:3){
+  tau_beta1_pH[r,1] <- 1 / sd_beta1_pH[r,1] / sd_beta1_pH[r,1]
+  sd_beta1_pH[r,1] ~ dunif(0.1, 4)
+  tau_beta2_pH[r,1] <- 1 / sd_beta2_pH[r,1] / sd_beta2_pH[r,1]
+  sd_beta2_pH[r,1] ~ dunif(0.1, 5)
+
+  tau_beta1_pH[r,2] <- 1 / sd_beta1_pH[r,2] / sd_beta1_pH[r,2]
+  sd_beta1_pH[r,2] ~ dunif(0.1, 4)
+  tau_beta2_pH[r,2] <- 1 / sd_beta2_pH[r,2] / sd_beta2_pH[r,2]
+  sd_beta2_pH[r,2] ~ dunif(0.1, 4)
+
+  tau_beta1_pH[r,3] <- 1 / sd_beta1_pH[r,3] / sd_beta1_pH[r,3]
+  sd_beta1_pH[r,3] ~ dunif(0.1, 5)
+  tau_beta2_pH[r,3] <- 1 / sd_beta2_pH[r,3] / sd_beta2_pH[r,3]
+  sd_beta2_pH[r,3] ~ dunif(0.1, 5)
+
   for (s in 1:3){ 
     mu_beta0_pH[r,s] ~ dnorm(0, 0.01) #dnorm(0, 0.001)
 #    mu_beta1_pH[r,s] ~ dlnorm(log(0.00001), 0.01)
@@ -170,10 +185,10 @@ for (r in 1:3){
 
     tau_beta0_pH[r,s] <- 1 / sd_beta0_pH[r,s] / sd_beta0_pH[r,s]
     sd_beta0_pH[r,s] ~ dunif(0.1, 5)
-    tau_beta1_pH[r,s] <- 1 / sd_beta1_pH[r,s] / sd_beta1_pH[r,s]
-    sd_beta1_pH[r,s] ~ dunif(0.1, 5)
-    tau_beta2_pH[r,s] <- 1 / sd_beta2_pH[r,s] / sd_beta2_pH[r,s]
-    sd_beta2_pH[r,s] ~ dunif(0.1, 5)
+##    tau_beta1_pH[r,s] <- 1 / sd_beta1_pH[r,s] / sd_beta1_pH[r,s]
+##    sd_beta1_pH[r,s] ~ dunif(0.1, 5)
+##    tau_beta2_pH[r,s] <- 1 / sd_beta2_pH[r,s] / sd_beta2_pH[r,s]
+##    sd_beta2_pH[r,s] ~ dunif(0.1, 5)
     tau_beta3_pH[r,s] <- 1 / sd_beta3_pH[r,s] / sd_beta3_pH[r,s]
     sd_beta3_pH[r,s] ~ dunif(0.1, 5)
 
@@ -185,8 +200,8 @@ for (r in 1:3){
 }
 
 mu_beta1_pH[1,1] ~ dlnorm(log(0.00001), 0.01)
-mu_beta1_pH[1,2] ~ dlnorm(log(0.00001), 0.5)
-mu_beta1_pH[1,3] ~ dlnorm(log(0.00001), 0.1)
+mu_beta1_pH[1,2] ~ dlnorm(log(0.00001), 0.75)
+mu_beta1_pH[1,3] ~ dlnorm(log(0.00001), 0.5)
 
 mu_beta1_pH[2,1] ~ dlnorm(log(0.00001), 0.01)
 mu_beta1_pH[2,2] ~ dlnorm(log(0.00001), 0.5)
@@ -241,7 +256,7 @@ for (a in 1:A){
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow[regions[a]], tau_beta0_yellow[regions[a]])
   beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]]) 
+  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25) 
 ##  beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)  
   beta4_yellow[a] ~ dnorm(mu_beta4_yellow[regions[a]], tau_beta4_yellow[regions[a]]) 
 
@@ -402,29 +417,90 @@ beta1_pH[1,3] ~ dlnorm(log(mu_beta1_pH[regions[1],3]), tau_beta1_pH[regions[1],3
 beta2_pH[1,3] ~ dnorm(mu_beta2_pH[regions[1],3], tau_beta2_pH[regions[1],3]) # SLOPE
 beta4_pH[1,3] ~ dnorm(mu_beta4_pH[regions[1],3], tau_beta4_pH[regions[1],3])
 
-for (a in 2:9) {
-   for (s in 1:3) { #s = 1= pelagic, s = 2 = yelloweye, s = 3 = non-pel, non-ye,  
-    beta0_pH[a,s] ~ dnorm(mu_beta0_pH[regions[a],s], tau_beta0_pH[regions[a],s]) #INTERCEPT
-    beta1_pH[a,s] ~ dlnorm(log(mu_beta1_pH[regions[a],s]), tau_beta1_pH[regions[a],s]) 
-    beta2_pH[a,s] ~ dnorm(mu_beta2_pH[regions[a],s], tau_beta2_pH[regions[a],s]) # SLOPE 
-    beta4_pH[a,s] ~ dnorm(mu_beta4_pH[regions[a],s], tau_beta4_pH[regions[a],s])
-  }
+beta0_pH[2,1] ~ dnorm(mu_beta0_pH[regions[2],1], tau_beta0_pH[regions[2],1]) #INTERCEPT
+beta1_pH[2,1] ~ dlnorm(log(mu_beta1_pH[regions[2],1]), tau_beta1_pH[regions[2],1]) 
+beta2_pH[2,1] ~ dnorm(mu_beta2_pH[regions[2],1], tau_beta2_pH[regions[2],1]) # SLOPE
+beta4_pH[2,1] ~ dnorm(mu_beta4_pH[regions[2],1], tau_beta4_pH[regions[2],1])
+
+beta0_pH[2,2] ~ dnorm(mu_beta0_pH[regions[2],2], tau_beta0_pH[regions[2],2]) #INTERCEPT
+beta1_pH[2,2] <- 0 
+beta2_pH[2,2] <- 0 
+beta4_pH[2,2] ~ dnorm(0, 1)
+
+beta0_pH[2,3] ~ dnorm(mu_beta0_pH[regions[2],3], tau_beta0_pH[regions[2],3]) #INTERCEPT
+beta1_pH[2,3] <- 0
+beta2_pH[2,3] <- 0
+beta4_pH[2,3] ~ dnorm(mu_beta4_pH[regions[2],3], tau_beta4_pH[regions[2],3])
+
+for (a in 3:4){
+  beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1]) #INTERCEPT
+  beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1]) 
+  beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1]) # SLOPE
+  beta4_pH[a,1] ~ dnorm(mu_beta4_pH[regions[a],1], tau_beta4_pH[regions[a],1])
+
+  beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
+  beta1_pH[a,2] ~ dlnorm(log(mu_beta1_pH[regions[a],2]), tau_beta1_pH[regions[a],2]) 
+  beta2_pH[a,2] ~ dnorm(mu_beta2_pH[regions[a],2], tau_beta2_pH[regions[a],2]) # SLOPE
+  beta4_pH[a,2] ~ dnorm(mu_beta4_pH[regions[a],2], tau_beta4_pH[regions[a],2])
+
+  beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
+  beta1_pH[a,3] <- 0 #~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) 
+  beta2_pH[a,3] <- 0 #~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) # SLOPE
+  beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3])
+}
+
+for (a in 5:6) {
+##   for (s in 1:3) { #s = 1= pelagic, s = 2 = yelloweye, s = 3 = non-pel, non-ye,  
+    beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1]) #INTERCEPT
+    beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1]) 
+    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1]) # SLOPE 
+    beta4_pH[a,1] ~ dnorm(mu_beta4_pH[regions[a],1], tau_beta4_pH[regions[a],1])
+
+    beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
+    beta1_pH[a,2] <- 0
+    beta2_pH[a,2] <- 0 
+    beta4_pH[a,2] ~ dnorm(mu_beta4_pH[regions[a],2], tau_beta4_pH[regions[a],2])
+
+    beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
+    beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) 
+    beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) # SLOPE 
+    beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3])
+##  }
  }
 
-beta0_pH[10,1] ~ dnorm(mu_beta0_pH[regions[2],1], tau_beta0_pH[regions[2],1]) #INTERCEPT
-beta1_pH[10,1] ~ dlnorm(log(mu_beta1_pH[regions[2],1]), tau_beta1_pH[regions[2],1]) 
-beta2_pH[10,1] ~ dnorm(mu_beta2_pH[regions[2],1], tau_beta2_pH[regions[2],1]) # SLOPE
-beta4_pH[10,1] ~ dnorm(mu_beta4_pH[regions[2],1], tau_beta4_pH[regions[2],1])
+beta0_pH[7,1] ~ dnorm(mu_beta0_pH[regions[7],1], tau_beta0_pH[regions[7],1]) #INTERCEPT
+beta1_pH[7,1] ~ dlnorm(log(mu_beta1_pH[regions[7],1]), tau_beta1_pH[regions[7],1]) 
+beta2_pH[7,1] ~ dlnorm(log(mu_beta2_pH[regions[7],1]), 0.5 * (tau_beta2_pH[regions[7],1]))
+beta4_pH[7,1] ~ dnorm(mu_beta4_pH[regions[7],1], tau_beta4_pH[regions[7],1])
 
-beta0_pH[10,2] ~ dnorm(mu_beta0_pH[regions[2],2], tau_beta0_pH[regions[2],2]) #INTERCEPT
-beta1_pH[10,2] <- 0  
-beta2_pH[10,2] <- 0 
-beta4_pH[10,2] ~ dnorm(0, 1)
+beta0_pH[7,2] ~ dnorm(mu_beta0_pH[regions[7],2], tau_beta0_pH[regions[7],2]) #INTERCEPT
+beta1_pH[7,2] <- 0  
+beta2_pH[7,2] <- 0 
+beta4_pH[7,2] ~ dnorm(0, 1)
 
-beta0_pH[10,3] ~ dnorm(mu_beta0_pH[regions[2],3], tau_beta0_pH[regions[2],3]) #INTERCEPT
-beta1_pH[10,3] ~ dlnorm(log(mu_beta1_pH[regions[2],3]), tau_beta1_pH[regions[2],3]) 
-beta2_pH[10,3] ~ dnorm(mu_beta2_pH[regions[2],3], tau_beta2_pH[regions[2],3]) # SLOPE
-beta4_pH[10,3] ~ dnorm(mu_beta4_pH[regions[2],3], tau_beta4_pH[regions[2],3])
+beta0_pH[7,3] ~ dnorm(mu_beta0_pH[regions[7],3], tau_beta0_pH[regions[7],3]) #INTERCEPT
+beta1_pH[7,3] ~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
+beta2_pH[7,3] ~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
+beta4_pH[7,3] ~ dnorm(mu_beta4_pH[regions[7],3], tau_beta4_pH[regions[7],3])
+
+for (a in 8:10) {
+   ##   for (s in 1:3) { #s = 1= pelagic, s = 2 = yelloweye, s = 3 = non-pel, non-ye,  
+    beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1]) #INTERCEPT
+    beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1]) 
+    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1]) # SLOPE 
+    beta4_pH[a,1] ~ dnorm(mu_beta4_pH[regions[a],1], tau_beta4_pH[regions[a],1])
+
+    beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
+    beta1_pH[a,2] <- 0
+    beta2_pH[a,2] <- 0 
+    beta4_pH[a,2] ~ dnorm(mu_beta4_pH[regions[a],2], tau_beta4_pH[regions[a],2])
+
+    beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
+    beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) 
+    beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3]) # SLOPE 
+    beta4_pH[a,3] ~ dnorm(mu_beta4_pH[regions[a],3], tau_beta4_pH[regions[a],3])
+##  }
+ } 
 
 # Pelagic Specifics:
  for (a in 1:2){
@@ -433,7 +509,7 @@ beta4_pH[10,3] ~ dnorm(mu_beta4_pH[regions[2],3], tau_beta4_pH[regions[2],3])
  }
  for (a in 3:4){
   beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
-  beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])
+  beta2_pelagic[a] ~ dlnorm(log(mu_beta2_pelagic[regions[a]]), tau_beta2_pelagic[regions[a]])
  }
  for (a in 5:10){
   beta1_pelagic[a] ~ dnorm(mu_beta1_pelagic[regions[a]], 10)
@@ -514,7 +590,7 @@ beta4_pH[10,3] ~ dnorm(mu_beta4_pH[regions[2],3], tau_beta4_pH[regions[2],3])
   beta3_black[a] <- 25
  }
 for (a in 11:16){
-  beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(28,Y-1)
+  beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(33,Y-1)
 
   beta0_dsr[a] ~ dnorm(mu_beta0_dsr, tau_beta0_dsr) #T(-5,)
   beta1_dsr[a] ~ dlnorm(log(mu_beta1_dsr), tau_beta1_dsr)
