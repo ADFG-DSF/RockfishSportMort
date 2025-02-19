@@ -28,12 +28,14 @@ model{
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
+  comp_slope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
  for (n in SEn3:N){
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
+  comp_slope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
 # PRIORS ----------------------------------------------------------------------------------
@@ -621,8 +623,8 @@ for (a in 11:16){
     #pR_dsr[a,y,1] ~ dnorm(p_dsr[a,y,1], 0.5)T(0,1)
     #pR_dsr[a,y,2] ~ dnorm(p_dsr[a,y,2], 0.5)T(0,1)
 
-    pR_slope[a,y,1] ~ dnorm(p_slope[a,y,1], 0.1)T(0,1)
-    pR_slope[a,y,2] ~ dnorm(p_slope[a,y,2], 0.1)T(0,1)
+    pr_slope[a,y,1] ~ dnorm(pR_slope[a,y,1], 0.1)T(0,1)
+    pr_slope[a,y,2] ~ dnorm(pR_slope[a,y,2], 0.1)T(0,1)
 
     Rdnye_ayg[a, y] <- max(0.001, Ro_ayg[a, y] - Rs_ayg[a, y]) 
     Rdnye_ayu[a, y] <- max(0.001, Ro_ayu[a, y] - Rs_ayu[a, y]) 
@@ -640,8 +642,8 @@ for (a in 11:16){
     Hs_ayu[a, y] <- max(0.001, H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2])
     Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
 
-    Rs_ayg[a, y] <- max(0.001, Ro_ayg[a, y] * pR_slope[a,y,1]) #(1 - pR_dsr[a,y,1] * (1 - p_yellow[a,y,1])) 
-    Rs_ayu[a, y] <- max(0.001, Ro_ayu[a, y] * pR_slope[a,y,2])#p_slope[a, y, 2] 
+    Rs_ayg[a, y] <- max(0.001, Ro_ayg[a, y] * pr_slope[a,y,1]) #(1 - pR_dsr[a,y,1] * (1 - p_yellow[a,y,1])) 
+    Rs_ayu[a, y] <- max(0.001, Ro_ayu[a, y] * pr_slope[a,y,2])#p_slope[a, y, 2] 
     Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
     Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] - Hy_ayg[a, y] 
