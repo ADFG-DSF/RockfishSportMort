@@ -27,7 +27,7 @@ In development...
    1. *rf_byMgmtUnit_sentDATE.xlsx*
    2. *IPHC_YEAR_guipri_all_sentYEAR.xlsx* (NOTE: This is currently in Southcentral port sample data folder and needs to be moved) 
 3. **eLogbookdata**: *YEARLogbookDataDATE.csv* or *statewide_YEAR_DATA.csv* depending on what they are calling from Kyla Buster (kayla.buster@alaska.gov) and saved to [`data/raw_dat/YEAR/`] folder. 
-4. **Southcentral port sampling data** from Clay Mckean (clay.mckean@alaska.gov) saved to [`data/raw_dat/Species_comp_SC/`]:
+4. **Southcentral port sampling data** from Clay Mckean (clay.mckean@alaska.gov, [git repository](https://github.com/ADFG-DSF/GOAB)) saved to [`data/raw_dat/Species_comp_SC/`]:
    1. *Spcomp_guided_SENTDATE*
    2. *Spcomp_unguided_SENTDATE*
 6. **Southeast port sampling data** from Diana Tersteeg (diana.tersteeg@alaska.gov) and Chris Hinds (chris.hinds@alaska.gov) and saved to [`data/raw_dat/Species_comp_SE/`]:
@@ -47,7 +47,8 @@ In development...
 5. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
    * Note that the southeast group has developed code for apportionments in Region 1.
 6. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
-   * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2. 
+   * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2.
+7. Howard estimates get sent to Chris and Clay to generate release mortality estimates and biomass estimates. That is also being done in the Bayes model. 
 7. Prepare the data for the Bayesian model using [`scripts/bayes_data_prep.R`]. 
 8. Generate Bayesian Reimer estimates in [`scripts/bayes_est.R`].
 
