@@ -28,14 +28,14 @@ model{
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
-  comp_Rslope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
+  comp_rslope[n] ~ dbin(pr_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
  for (n in SEn3:N){
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
-  comp_Rslope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
+  comp_rslope[n] ~ dbin(pr_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
 # PRIORS ----------------------------------------------------------------------------------
@@ -239,8 +239,8 @@ for (a in 1:A){
   b1_pG[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
   
-  b1_pRslope[a] ~ dunif(1, 50)                 # beta1 for proportion or Ro releases slope (Puser)
-  b2_pRslope[a] ~ dunif(1, 50)                 # beta2 for proportion or Ro releases slope (Puser)
+##  b1_pRslope[a] ~ dunif(1, 50)                 # beta1 for proportion or Ro releases slope (Puser)
+##  b2_pRslope[a] ~ dunif(1, 50)                 # beta2 for proportion or Ro releases slope (Puser)
 
   #pH PRIORS: proportion of catch that is harvested---------------------------
 ##  for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
@@ -608,6 +608,9 @@ for (a in 11:16){
   beta2_slope[a] ~ dnorm(mu_beta2_slope, tau_beta2_slope)
   beta3_slope[a] ~ dlnorm(log(mu_beta3_slope), tau_beta3_slope)T(28,Y-1)
   beta4_slope[a] ~ dnorm(mu_beta4_slope, tau_beta4_slope)
+  
+  #for released slopes adjusted for dropping yelloweye...
+  beta5_rslope[a] ~ dnorm(0.1, 0.01)
 
   beta3_pH[a,1] ~ dlnorm(log(mu_beta3_pH[regions[a],1]), tau_beta3_pH[regions[a],1])T(29,Y-1)
   beta3_pH[a,2] ~ dlnorm(log(mu_beta3_pH[regions[a],2]), tau_beta3_pH[regions[a],2])T(29,Y-1)
@@ -623,15 +626,6 @@ for (a in 11:16){
     Hd_ay[a, y] <- Hd_ayg[a, y] + Hd_ayu[a, y]
 
     #Ro release break down:
-    #pR_dsr[a,y,1] ~ dnorm(p_dsr[a,y,1], 0.5)T(0,1)
-    #pR_dsr[a,y,2] ~ dnorm(p_dsr[a,y,2], 0.5)T(0,1)
-	
-	pR_slope[a,y,1] ~ dbeta(b1_pRslope[a],b2_pRslope[a]) #could be fit to another p_ curve?
-	pR_slope[a,y,2] ~ dbeta(b1_pRslope[a],b2_pRslope[a])
-
-    pr_slope[a,y,1] ~ dnorm(pR_slope[a,y,1], 0.1)T(0,1)
-    pr_slope[a,y,2] ~ dnorm(pR_slope[a,y,2], 0.1)T(0,1)
-
     Rdnye_ayg[a, y] <- max(0.001, Ro_ayg[a, y] - Rs_ayg[a, y]) 
     Rdnye_ayu[a, y] <- max(0.001, Ro_ayu[a, y] - Rs_ayu[a, y]) 
     Rdnye_ay[a, y] <- Rdnye_ayg[a, y] + Rdnye_ayu[a, y]
@@ -672,6 +666,10 @@ for (a in 11:16){
       logit(p_slope[a, y, u]) <- re_slope[a, y, u] + beta0_slope[a] + 
                                      beta1_slope[a] / (1 + exp(-beta2_slope[a] * (y - beta3_slope[a]))) + 
                                      beta4_slope[a] * (u - 1)
+									 
+	  logit(pr_slope[a, y, u]) <- re_slope[a, y, u] + beta0_slope[a] + 
+                                     beta1_slope[a] / (1 + exp(-beta2_slope[a] * (y - beta3_slope[a]))) + 
+                                     beta4_slope[a] * (u - 1) + beta5_rslope[a]
 
       re_dsr[a, y, u] ~ dnorm(0, tau_comp)    # random effects
       re_slope[a, y, u] ~ dnorm(0, tau_comp)

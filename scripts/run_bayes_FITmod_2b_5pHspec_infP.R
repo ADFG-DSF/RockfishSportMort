@@ -10,7 +10,7 @@
 # 
 # Current Author: Phil Joy (philip.joy@alaska.gov)
 #
-# Lats updated: November 2024
+# Lats updated: February 2025
 #
 ################################################################################
 library(readxl)
@@ -62,10 +62,11 @@ mod <- "HR_fitLBR_2bias_hierPcomp_5pH_vagPr"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v2"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_thru2023_2500000_7kn_2025-02-18" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"

@@ -366,6 +366,7 @@ readinData <- function(spl_knts = 7,
       comp_other = comp$other,
       comp_dsr = comp$dsr,
       comp_slope = comp$slope,
+      comp_rslope = comp$slope,
       N = dim(comp)[1],
       
       SEn1 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
@@ -485,7 +486,7 @@ jags_params <- function(){
     "Rd_ayg", "Rd_ayu", "Rd_ay",
     "pDSR_YE_ayg","pDSR_YE_ayu","pDSR_YE_ay",
     "Rs_ayg", "Rs_ayu", "Rs_ay",
-    "pR_dsr","pR_slope",
+    "pR_dsr","pR_slope","pr_slope", "b1_pRslope","b2_pRslope",
     "nonrecR_ayg")
   return(params)
 }

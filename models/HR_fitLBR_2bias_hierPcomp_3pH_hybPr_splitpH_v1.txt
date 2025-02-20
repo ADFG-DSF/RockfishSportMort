@@ -28,14 +28,14 @@ model{
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
-  comp_Rslope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
+  comp_rslope[n] ~ dbin(pr_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
  for (n in SEn3:N){
   comp_yellow[n] ~ dbin(p_yellow[comp_area[n], comp_year[n], comp_user[n] + 1], comp_dsr[n])
   comp_dsr[n] ~ dbin(p_dsr[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
   comp_slope[n] ~ dbin(p_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n])
-  comp_Rslope[n] ~ dbin(pR_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
+  comp_rslope[n] ~ dbin(pr_slope[comp_area[n], comp_year[n], comp_user[n] + 1], comp_N[n] - comp_pelagic[n] - comp_yellow[n])
  }
 
 # PRIORS ----------------------------------------------------------------------------------
@@ -121,14 +121,14 @@ mu_beta2_black[2] <- 0
 mu_beta2_black[3] ~ dnorm(-1, 1)
 
 for (r in 1:2){
-  mu_beta3_pelagic[r] ~ dunif(19,Y-2)
+  mu_beta3_pelagic[r] ~ dunif(19,Y-3)
   mu_beta3_yellow[r] ~ dunif(19,Y-2)
-  mu_beta3_black[r] ~ dunif(19,Y-2)
+  mu_beta3_black[r] ~ dunif(19,Y-3)
 }
 
-mu_beta3_pelagic[3] ~ dunif(20,Y-2)
-mu_beta3_yellow[3] ~ dunif(35,Y-2)
-mu_beta3_black[3] ~ dunif(29,Y-2)
+mu_beta3_pelagic[3] ~ dunif(20,Y-3)
+mu_beta3_yellow[3] ~ dunif(35,Y-3)
+mu_beta3_black[3] ~ dunif(29,Y-3)
 
 #SE DSR and slope assemblages:
 mu_beta0_dsr ~ dnorm(0, 0.1) #dnorm(0, 0.001)
@@ -238,9 +238,6 @@ for (a in 1:A){
   #User proportions PRIORS: ---------------------------------------------------- 
   b1_pG[a] ~ dunif(1, 50)                 # beta1 for user proportion (Puser)
   b2_pG[a] ~ dunif(1, 50)                 # beta2 for user proportion (Puser)
-  
-  b1_pRslope[a] ~ dunif(1, 50)                 # beta1 for proportion or Ro releases slope (Puser)
-  b2_pRslope[a] ~ dunif(1, 50)                 # beta2 for proportion or Ro releases slope (Puser)
 
   #pH PRIORS: proportion of catch that is harvested---------------------------
 ##  for (s in 1:3){ #s = 1= pelagic, s = 2 = yelloweye, , s = 3 = non-pel, non-ye,  4 = dsr, 5 = slope
@@ -475,7 +472,7 @@ for (a in 5:6) {
 
 beta0_pH[7,1] ~ dnorm(mu_beta0_pH[regions[7],1], tau_beta0_pH[regions[7],1]) #INTERCEPT
 beta1_pH[7,1] ~ dlnorm(log(mu_beta1_pH[regions[7],1]), tau_beta1_pH[regions[7],1]) 
-beta2_pH[7,1] ~ dlnorm(log(mu_beta2_pH[regions[7],1]), 0.5 * (tau_beta2_pH[regions[7],1])) # SLOPE
+beta2_pH[7,1] ~ dlnorm(log(mu_beta2_pH[regions[7],1]), 0.5 * (tau_beta2_pH[regions[7],1]))
 beta4_pH[7,1] ~ dnorm(mu_beta4_pH[regions[7],1], tau_beta4_pH[regions[7],1])
 
 beta0_pH[7,2] ~ dnorm(mu_beta0_pH[regions[7],2], tau_beta0_pH[regions[7],2]) #INTERCEPT
@@ -623,18 +620,14 @@ for (a in 11:16){
     Hd_ay[a, y] <- Hd_ayg[a, y] + Hd_ayu[a, y]
 
     #Ro release break down:
-    #pR_dsr[a,y,1] ~ dnorm(p_dsr[a,y,1], 0.5)T(0,1)
-    #pR_dsr[a,y,2] ~ dnorm(p_dsr[a,y,2], 0.5)T(0,1)
-	
-	pR_slope[a,y,1] ~ dbeta(b1_pRslope[a],b2_pRslope[a]) #could be fit to another p_ curve?
-	pR_slope[a,y,2] ~ dbeta(b1_pRslope[a],b2_pRslope[a])
-
-    pr_slope[a,y,1] ~ dnorm(pR_slope[a,y,1], 0.1)T(0,1)
-    pr_slope[a,y,2] ~ dnorm(pR_slope[a,y,2], 0.1)T(0,1)
 
     Rdnye_ayg[a, y] <- max(0.001, Ro_ayg[a, y] - Rs_ayg[a, y]) 
     Rdnye_ayu[a, y] <- max(0.001, Ro_ayu[a, y] - Rs_ayu[a, y]) 
     Rdnye_ay[a, y] <- Rdnye_ayg[a, y] + Rdnye_ayu[a, y]
+
+  ##  Rdnye_ayg[a, y] <- Ro_ayg[a, y] * p_dsr[a, y, 1] * (1 - p_yellow[a,y,1]) #+ Ry_ayg[a,y] #Ro = nonYE so need to add in 
+  ##  Rdnye_ayu[a, y] <- Ro_ayu[a, y] * p_dsr[a, y, 2] * (1 - p_yellow[a,y,2]) #+ Ry_ayu[a,y]
+  ##  Rdnye_ay[a, y] <- Rdnye_ayg[a, y] + Rdnye_ayu[a, y]
 
     Rd_ayg[a,y] <- Rdnye_ayg[a, y] + Ry_ayg[a,y]
     Rd_ayu[a,y] <- Rdnye_ayu[a, y] + Ry_ayu[a,y]
@@ -644,13 +637,17 @@ for (a in 11:16){
     pDSR_YE_ayu[a, y] <- Hy_ayu[a, y] / Hd_ayu[a, y]
     pDSR_YE_ay[a, y] <- Hy_ay[a, y] / Hd_ay[a, y]
 
-    Hs_ayg[a, y] <- max(0.001, H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1])
-    Hs_ayu[a, y] <- max(0.001, H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2])
+    Hs_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_slope[a, y, 1]
+    Hs_ayu[a, y] <- H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2]
     Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
 
     Rs_ayg[a, y] <- max(0.001, Ro_ayg[a, y] * pr_slope[a,y,1]) #(1 - pR_dsr[a,y,1] * (1 - p_yellow[a,y,1])) 
     Rs_ayu[a, y] <- max(0.001, Ro_ayu[a, y] * pr_slope[a,y,2])#p_slope[a, y, 2] 
     Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
+
+  ##  Rs_ayg[a, y] <- Ro_ayg[a, y] * (1 - p_dsr[a, y, 1] * (1 - p_yellow[a,y,1])) #p_slope[a, y, 1]
+  ##  Rs_ayu[a, y] <- Ro_ayu[a, y] * (1 - p_dsr[a, y, 2] * (1 - p_yellow[a,y,2]))#p_slope[a, y, 2] 
+  ##  Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
     Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] - Hy_ayg[a, y] 
     Ho_ayu[a, y] <- Hs_ayu[a, y] + Hd_ayu[a, y] - Hy_ayu[a, y] 
