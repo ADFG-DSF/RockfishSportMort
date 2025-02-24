@@ -66,7 +66,7 @@ mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "no"
+use_inits = "yes"
 
 use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_thru2023_2500000_7kn_2025-02-18" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
@@ -315,7 +315,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
+results <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3_thru2023_2500000_7kn_2025-02-23"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -436,6 +436,9 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))
 
+jagsUI::traceplot(postH, parameters = c("beta0_pH[10,2]","beta1_pH[10,2]",
+                                        "beta2_pH[10,2]","beta3_pH[10,2]","beta4_pH[10,2]"))
+
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
@@ -463,8 +466,12 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_slope","tau_beta0_slope",
                                         "mu_beta2_slope","tau_beta2_slope",
                                         "mu_beta3_slope","tau_beta3_slope",
                                         "mu_beta4_slope","tau_beta4_slope",
+                                        "mu_beta5_slope","tau_beta5_slope",
                                         "beta0_slope","beta1_slope",
-                                        "beta2_slope","beta3_slope","beta4_slope"))
+                                        "beta2_slope","beta3_slope",
+                                        "beta4_slope","beta5_slope"))
+
+
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
