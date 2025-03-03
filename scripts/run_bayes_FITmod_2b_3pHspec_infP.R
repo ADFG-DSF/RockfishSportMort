@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 25E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 50E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -69,13 +69,13 @@ mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_thru2023_2500000_7kn_2025-02-18" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_2500000_7kn_2025-03-01" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
 #If you're using the last run:
-halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 2)
+halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 4)
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
@@ -84,7 +84,7 @@ last_inits <- lapply(1:nc, function(chain) {
   as.list(colMeans(second_half))
 })
 
-halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 2)
+halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 4)
 
 other_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])

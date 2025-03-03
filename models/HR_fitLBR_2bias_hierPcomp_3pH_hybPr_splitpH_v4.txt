@@ -540,14 +540,14 @@ for (a in 8:10) {
   beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
   beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
  }
- for (a in 5:7){
+ for (a in 5:10){
   beta1_yellow[a] <- 0 #~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
   beta2_yellow[a] <- 0 #~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
  }
- for (a in 8:10){
-  beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
- }
+## for (a in 8:10){
+##  beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
+##  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
+## }
 
  for (a in 1:10) { #Central = 1:4, Kodiak = 5:10
   beta3_yellow[a] ~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
