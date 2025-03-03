@@ -448,8 +448,8 @@ jags_params <- function(){
     "mu_beta1_dsr", "tau_beta1_dsr",
     "mu_beta2_dsr", "tau_beta2_dsr",
     "mu_beta3_dsr", "tau_beta3_dsr",
-    "mu_beta4_dsr", "tau_beta4_dsrk",
-    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", "beta4_slope","beta5_slope",
+    "mu_beta4_dsr", "tau_beta4_dsr",
+    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", "beta4_slope","beta5_rslope",
     "mu_beta0_slope", "tau_beta0_slope",
     "mu_beta1_slope", "tau_beta1_slope",
     "mu_beta2_slope", "tau_beta2_slope",
@@ -457,7 +457,7 @@ jags_params <- function(){
     "mu_beta4_slope", "tau_beta4_slope",
     "mu_beta5_slope", "tau_beta5_slope",
     #random effects on species
-    "re_pelagic", "re_black","re_yellow",
+    "re_pelagic", "re_black","re_yellow","re_dsr","re_slope","re_rslope",
     "sd_comp", "tau_comp",
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
@@ -487,7 +487,7 @@ jags_params <- function(){
     "Rd_ayg", "Rd_ayu", "Rd_ay",
     "pDSR_YE_ayg","pDSR_YE_ayu","pDSR_YE_ay",
     "Rs_ayg", "Rs_ayu", "Rs_ay",
-    "pR_dsr","pR_slope","pr_slope", "b1_pRslope","b2_pRslope",
+    "pR_dsr","pr_slope", "b1_pRslope","b2_pRslope",
     "nonrecR_ayg")
   return(params)
 }

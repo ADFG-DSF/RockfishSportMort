@@ -49,7 +49,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_hyb_5pH_infPr"
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_thru2023_2500000_7kn_2025-02-18"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3_thru2023_2500000_2025-02-27"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
