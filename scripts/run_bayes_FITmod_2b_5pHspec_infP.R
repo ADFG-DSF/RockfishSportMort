@@ -315,7 +315,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3_thru2023_2500000_7kn_2025-02-23"
+results <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-10"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -439,6 +439,9 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
 jagsUI::traceplot(postH, parameters = c("beta0_pH[10,2]","beta1_pH[10,2]",
                                         "beta2_pH[10,2]","beta3_pH[10,2]","beta4_pH[10,2]"))
 
+jagsUI::traceplot(postH, parameters = c("beta0_pH[7,]","beta1_pH[7,]",
+                                        "beta2_pH[7,]","beta3_pH[7,]","beta4_pH[7,]"))
+
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
@@ -466,10 +469,10 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_slope","tau_beta0_slope",
                                         "mu_beta2_slope","tau_beta2_slope",
                                         "mu_beta3_slope","tau_beta3_slope",
                                         "mu_beta4_slope","tau_beta4_slope",
-                                        "mu_beta5_slope","tau_beta5_slope",
+                                        "mu_beta5_rslope","tau_beta5_rslope",
                                         "beta0_slope","beta1_slope",
                                         "beta2_slope","beta3_slope",
-                                        "beta4_slope","beta5_slope"))
+                                        "beta4_slope","beta5_rslope"))
 
 
 
