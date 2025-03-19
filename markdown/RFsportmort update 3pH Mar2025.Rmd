@@ -30,6 +30,8 @@ library(htmltools)
 library(coda)
 library(jagsUI)
 library(stringr)
+library(readxl)
+library(openxlsx2)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 start_yr <- 1977
@@ -137,24 +139,28 @@ summary_table <- postH$summary %>%
 </style>
 
 ## Summary
-This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest, catches and releases of rockfish in Alaska waters. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and thus does not rely on the decision tree approach in the original Howard methods. The Howard methods also assume that the species composition of the harvests are equal to the species composition of released fish, which may not be true and is evident in the logbook data. Furthermore, the Bayesian approach should provide sport fish harvest, catch and mortality estimates back to 1978 when the SWHS was implemented. Harvest estimates should be mostly consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. Furthermore, the Howard methods are wholly reliant on logbook release estimates and ignore the release estimates from the SWHS data (inferred from the catch and harvest estimates). Here we explore several models that attempt to balance all of the data in estimating releases. Key advantages of the Bayesian approach are highlighted in table 1. 
+This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest and releases of rockfish in Alaska waters and expand the time series back to 1977 when the statewide harvest survey (SWHS) was first implemented. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and replaces the Howard decision tree approach to low sample sizes with a hierarchical model. The methods and results for generating harvest estimates are generally consistent between the Bayesian model and the Howard methods. Harvest estimates are consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. 
+
+The Bayesian methods depart from the Howard method in how releases are estimated. The Howard methods assume that the species composition of the harvests are equal to the species composition of released fish, which is clearly contraindicated in the logbook data. For instance, logbook data demonstrates that yelloweye have been retained at high levels up until restrictions were enacted in recent years, whereas pelagic rockfish were released in significant numbers in the past with retention increasing in recent years as they have become more prized by anglers. Recent prohibition on retaining yelloweye in Southeast Alaska highlights the the shortcomings of the original Howard methods as the species composition of the harvest would indicate that no yelloweye were caught and released during the closure. 
+
+The Howard method for estimating releases for private anglers also relied on an expansion of the logbook release estimates based on the ratio of private:guided releases of all rockfish in the SWHS. In addition to the faulty assumptions about species composition, this method ignores potential bias in SWHS estimates of harvests and releases. As demonstrated below, the bias in those two quantities appears to be quite different based on the logbook data. The Bayesian model thus attempts to estimate release probabilities based on the logbook data coupled with bias corrected estimates from the SWHS.
+
+Lastly, the Howard methods were only used on data beginning in 1999 with the advent of the logbook program and estimates of harvests and releases prior to that have been based on linear ramps from 1999 back to the perceived start of the fishery. The Bayesian methods allow us to expand the time series back to 1977 when the SWHS was implemented by leveraging regional data trends in species composition and the proportion of caught rockfish harvested by species and/or species complex. Key advantages of the Bayesian approach are highlighted in table 1. 
 
 ```{r, echo=FALSE}
 library(knitr)
 
 # Create a data frame for the table
 my_table <- data.frame(
-  Issue = c("Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propogation","Time series"),
-  Howard = c("Not explicitly dealt with. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
-              "Assumes that species composition of releases is equal to that of the harvest",
-             "Uses sample size threshholds that when not met, values are borrowed from nearby areas",
-             "Error is propogated when variance estimates are available, but there is no uncertainty generated from uncertainty in the assmptions made such as species composition of the releases or when borrowing values from one area to another.",
-             "1999 - present"),
-  Bayes = c("Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
+  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propogation"),
+  Howard = c("1999 - present","Not explicitly dealt with. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
+              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook data.",
+             "Uses sample size threshholds such that when areas fall below those threshholds values are borrowed from nearby areas.",
+             "Error is propogated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases, are not dealt with."),
+  Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
               "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data and bias corrected SWHS data",
             "Uses a hierarchichacal modelling approach that shares information between areas in the same region. Thus all data is used, even with small sample sizes. This is a more sound method that avoids assumptions and uses all of the data. ",
-            "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.",
-            "1977 - present")
+            "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.")
 )
 
 # Print the table
@@ -169,7 +175,7 @@ kable(my_table, caption = "**Table 1.** Summary of key improvements in reconstru
 Harvest data was available for 22 commercial fishing management areas in Southcentral and Southeast Alaska. Areas with negligible rockfish harvest were pooled with adjacent areas for analysis. Specifically the Aleutian and Bering areas were pooled into an area labeled BSAI; the IBS and EKYT were pooled into an area labeled EKYKT; the Southeast, Southwest, SAKPEN and Chignik areas were pooled into an area labeled SOKO2PEN and the Westside and Mainland areas were pooled into an area labeled WKMA.
 
 ### Stateside Harvest Survey (SWHS)
-Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure 0). Additionally, there are estimates from 1977- 1995 that required some partitioning work to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied. 
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure 0). Additionally, there are overall harvest estimates from 1977- 1995 and release estimates from 1990-1995 that required some partitioning to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied to the pre-1996 values. 
 
 ```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 0.**- Data sources for estimating rockfish harvests and releases in ADF&G commercial fisheries management units."}
 
@@ -237,9 +243,9 @@ rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
 ```
 <br>
 
-SWHS estimates are believed to be biased to some degree. These modelling efforts aim to estimate and correct for that bias with the assumption that logbook harvests are a census of guided harvests.
+SWHS estimates are believed to be biased to some degree. These modelling efforts aim to estimate and correct for that bias with the assumption that logbook records are a census of guided harvests and releases.
 
-Rockfish release estimates are inferred from the difference between catch and harvest estimates. 
+SWHS Rockfish release estimates are inferred from the difference between catch and harvest estimates. 
 
 Adam noted that the first 5 years (23 years counting the historical data) in the SWHS data set for PWSO seem unreasonable (close to zero and not corroborated with logbook estimates). Adam recommended setting these harvests to unknown, but current model development has included the data. Once a satisfactory model has been identified we will exam the effects of censoring the PWSO data. 
 
@@ -247,14 +253,14 @@ Adam noted that the first 5 years (23 years counting the historical data) in the
 NA  
 
 ### Guide Logbooks
-Sport fishing guides were required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and "other" (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006. 
+Sport fishing guides have been required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and "other" (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006. 
 
 Logbooks also record the number of rockfish released for the same categories. However, the reliability of the release data is somewhat questionable as reported releases are generally far lower than that estimated by the SWHS. As such several treatments of the data are considered.  
 
 ### Logbook versus SWHS estimates
 Estimates of guided harvests and releases from the SWHS do not align with the census from charter logbooks. Logbook harvest reports are generally considered reliable and are used to assess the bias in SWHS reports. However, there is even greater disparity between release estimates in the two sources and it is debatable whether logbook releases should be treated as a census. The Howard et al. (2020) methods do treat the logbook release data as "true" and thus are considerably less than would be estimated from the SWHS data. 
 
-```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 1.**- SWHS harvest estimates from guided trips (Hhat) versus repoted harvests from charter logbooks (H_lb)."}
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 1.**- SWHS harvest (left) and release (right) estimates from guided trips (x-axis) versus repoted harvests from charter logbooks (y-axis)."}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous", n = 16)
 
 left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
@@ -294,14 +300,12 @@ ggarrange(Hcomp,Ccomp,
 ```
 <br>
 
-The Howard methods treat the logbook release data as a census and then use the ratio of guided:unguided releases in the SWHS to expand the logbook release estimates to generate total and unguided estimates. 
+#### *A note on model development*
 
-To evaluate this discrepancy, several models were used to estimate releases in this exploration. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treats the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development to date has revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases.
+To evaluate the discrepancy in apparent bias in harvest and release data, several models were explored to estimate releases during model development. One method ($LB_{fit}$) considers the logbook release data to be reliable and a second method ($LB_{cens}$) treated the logbook release data as estimates of the minimum released, thus giving more weight to SWHS release estimates. A third method ($LB_{hyb}$) is a hybrid approach that treats reported releases of yelloweye as reliable but total rockfish and pelagic rockfish releases as minimums. Model development revealed a tension between the total and pelagic logbook releases and the yelloweye logbook releases. This tensions eventually highlighted the different release/retention probabilities between yelloweye and pelagics in the logbook data and prompted the current approach whereby that probability was calculated for the three main species complexes covered in the data: pelagics, yelloweye, and "other". The methods described here follow the ($LB_{fit}$) formulation. Based on model behavior it is unlikely that the ($LB_{cens}$) model would work as there would not be enough data to estimate release probabilities. However, it may be worth running the ($LB_{hyb}$) approach as a sensitivity test at the very least. 
 
 ### Composition data
-Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish.
-
-A current challenge at this juncture is how to accommodate the prohibition on retaining yelloweye in Southeast from 2020 through 2024. Because it is closed to retention the port sampling data is not reflective of releases while remaining an accurate description of the harvest. Current modelling efforts revolve around developing a separate yelloweye curve that censors the missing data. 
+Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska, the number of Demersal Shelf Rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
 
 ## Process equations
 The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
@@ -360,12 +364,12 @@ H_{(yelloweye)ayu}~=~H_{(DSR)ayu}P_{(yelloweye|DSR)ayu}
 The composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve that would allow hindcasting without extrapolating beyond the limit of observed values such that:
 
 \begin{equation}
-\textrm{logit}(P_{(comp)ayu})~=~\beta1_{(comp)ayu} + \frac{\beta2_{(comp)ayu}}{(1 + exp(\beta3_{(comp)ayu}*(y - \beta4_{(comp)ayu})))} + \beta5_{(comp)ayu}*I(u=private)+re_{(comp)ayu}
+\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)ayu} + \frac{\beta1_{(comp)ayu}}{(1 + exp(\beta2_{(comp)ayu}*(y - \beta3_{(comp)ayu})))} + \beta4_{(comp)ayu}*I(u=private)+re_{(comp)ayu}
 \end{equation}
 
-where the $\beta$ parameters define the intercept, scaling factor, slope, inflection point and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior.
+where the $\beta$ parameters define the intercept, scaling factor, slope, inflection point and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior. $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernible change in composition over the observed time period. $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting. 
 
-The true number of released rockfish $R_{ayu}$ were based on the proportion of the total catch harvested by area, year, user group and species grouping , $pH_{(comp)ayu}$. Because release data from the SWHS is for all rockfish and the release data from logbooks is only subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye), we only estimated $pH_{(comp)ayu}$ for those categories. Thus, converting $H_{(comp)ayu}$ to total catches by user group, $C_{(comp)ayu}$, with $pH_{(comp)ayu}$ results in estimates of total releases such that
+The true number of released rockfish $R_{ayu}$ were based on the proportion of the total catch harvested, $pH_{(comp)ayu}$, by area, year, user group and species grouping. Because release data from the SWHS is for all rockfish and the release data from logbooks is only subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye), we only estimated $pH_{(comp)ayu}$ for those categories. Thus, converting $H_{(comp)ayu}$ to total catches by user group, $C_{(comp)ayu}$, with $pH_{(comp)ayu}$ results in estimates of total releases such that
 
 \begin{equation}
 R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}
@@ -376,10 +380,10 @@ with total releases equal to the sum of the compositional releases. For non-yell
 The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
 
 \begin{equation}
-\textrm{logit}(pH_{(pH)ayuc})~=~\beta1_{(pH)ayu} + \frac{\beta2_{(pH)ayuc}}{(1 + exp(\beta3_{(pH)ayuc}*(y - \beta4_{(pH)ayuc})))} + \beta5_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc}
+\textrm{logit}(pH_{(pH)ayuc})~=~\beta0_{(pH)ayu} + \frac{\beta1_{(pH)ayuc}}{(1 + exp(\beta2_{(pH)ayuc}*(y - \beta3_{(pH)ayuc})))} + \beta4_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc}
 \end{equation}
 
-A random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990.
+A random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. As with the compositional trends, $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
 
 
 ## Observation equations
@@ -423,7 +427,7 @@ SWHS estimates of annual rockfish **releases** $\widehat{SWHS}_R{ay}$ were assum
 \widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
 \end{equation}
 
-Because logbook release data is more questionable and demonstrates greater disagreement with SWHS estimates (Figure 1), a second approaches was explored that loosened the assumption that logbook releases were a census. In a hybrid approach yelloweye and non-pelagic releases are regarded as a reliable census (given the emphasis and ease of recording these fish) but censors the pelagic and total rockfish release estimates such that
+Because logbook release data is more questionable and demonstrates greater disagreement with SWHS estimates (Figure 1), a second approaches was considered that loosened the assumption that logbook releases were a census. Results for this approach are not included in this document, but the methods are listed here for future reference and consideration. In a hybrid approach yelloweye and non-pelagic releases are regarded as a reliable census (given the emphasis and ease of recording these fish) but censors the pelagic and total rockfish release estimates such that
 
 \begin{equation}
 \text{censored} \widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), 1\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right) \\
@@ -454,21 +458,62 @@ The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic
 x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})
 \end{equation}
 
-where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs and the number of yellow rockfish sampled modeled analogously with an appropriately substituted $N$.
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs was thus a proportion of the pelagic harvests
+
+\begin{equation}
+x_{(black)ayu}~\sim~\textrm{Binomial}(P_{(black)ayu}, N_{ayu}^{pel})
+\end{equation}
+
+Yelloweye rockfish in Southcentral and Kodiak were modeled similarly as a proportion of the total number of non-pelagics such that 
+
+\begin{equation}
+x_{(yellow_{R2})ayu}~\sim~\textrm{Binomial}(P_{(yellow_{R2})ayu}, N_{ayu}^{nonpel})
+\end{equation}
+
+Southeast areas have several other non-pelagic groupings such that DSR and slope rockfish are a proportion of non-pelagics
+
+\begin{equation}
+x_{(DSR)ayu}~\sim~\textrm{Binomial}(P_{(DSR)ayu}, N_{ayu}^{nonpel})
+\end{equation}
+
+and
+
+\begin{equation}
+x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})
+\end{equation}
+
+with yelloweye in southeast a proportion of the DSR harvest
+
+\begin{equation}
+x_{(yellow_{R1})ayu}~\sim~\textrm{Binomial}(P_{(yellow_{R1})ayu}, N_{ayu}^{DSR})
+\end{equation}.
+
 
 ### Priors.
-Priors range from uninformative to very informative or fixed. These will be covered once a satisfactorilly convergerd model is achieved. 
+Priors range from uninformative to very informative or fixed. Priors for compositional logistic parameters are in Table 2 and proportion harvest logistic parameters are in Table 3. *Until I figure out how to make a nice table in Rmarkdown, please refer to the attached spreadsheet and comp and harvp tabs.*
+
+```{r, echo=FALSE}
+#comp_priors <- read_xlsx("model_priors.xlsx", sheet = "comp_mdwn", guess_types = FALSE) %>% data.frame()
+#comp_priors <- comp_priors %>% fill(Species_Complex, .direction = "down") %>%
+#  fill(Parameter, .direction = "down") %>% fill(Definition, .direction = "down") %>%
+#  mutate(Species_Complex = ifelse(duplicated(Species_Complex) & !is.na(Species_Complex), NA, Species_Complex))
+  
+
+#knitr::kable(comp_priors, format = "html")  %>%
+#  kable_styling() %>%
+#  row_spec(1:nrow(comp_priors), extra_css = "text-align: center;") %>%
+  #column_spec(2, width = "3em", background = "lightblue") %>%
+#  collapse_rows(columns = 1, valign = "middle")
+```
  
 ### Unresolved issues and outstanding questions: 
-Models detailed in this markdown represent the next step in the modelling process whereby the pH parameters are separated out by species. This approach separates the compositional data that is germaine to the harvests from the release estimates and releases are now based on pH. Additionally, this approach allows the pH parameters to differ between pelagic and yelloweye which is appropriate given regulatory changes as well as fisherman and industry behavior and is born out in the results. The approach results in great uncertainty around unguided release estimates, but that uncertainty is appropriate given the data. These models handle the yelloweye closures in southeast  much more appropriately given that the compositional data is no longer directly applied to the release estimates. 
 
-Other issues include:  
+1. *Reliability of unguided release estimates:* These estimates have the least information feeding them and rely on the bias-corrected SWHS release estimates of all rockfish and the trends in release probability evident in the logbook data. The \beta4$ term that estimates the guided/unguided effect was given a very informative prior that tied the release probability of private anglers tightly to that of the charter fleet. The model is then trying to balance the three species complex estimates (pelagic, yelloweye and other) so that they sum to the total unguided releases estimated from the bias corrected SWHS data. For the most part this seems reasonable and appears to work, but there are certain areas where the estimates are "wonky". Yelloweye releases in the Kodiak Northeast area in particular are significantly lower than for guided anglers with the same pattern evident in Cook Inlet to a lesser extent. Cook Inlet yelloweye numbers are very small, so this is a sample size issue with little consequence. The cause of the Kodiak northeast estimates is not clear to me at this point, but it must be a product of the bias corrected SWHS release estimates and how the model is divying up that estimate into the 3 species complexes. The results are also substantially different from the Howard methods and are *much* lower for black rockfish while disagreements for yelloweye are in both directions. Total rockfish releases more or less align with the total releases estimated with the Howard methods. Presumably, much of the discrepancy results from the substantial bias in release estimates from the SWHS. Interestingly, the logbook data indicates that the SWHS underestimates harvests but overestimates releases. 
 
-1. *Complete convergence* has not been achieved and the logistic curve parameters for p_pelagic and p_yellow remain the last sticking point. I think that p_pelagic will resolve with longer chains.
-2. *Estimate precision:* These models are producing more precise harvest estimates that in Adam's original model. I am not sure why at this juncture. sigma_H on the spline was switched from a fixed value to a prior centered around that fixed value, but the model estimates are in the same range as the fixed value. Would the number of knots in the spline explain this? 7 knots was settled on during early model fitting when it clearly performed better than fewer or more knots.  
+2. *Proportion guided estimates:* There is not much data on this proportion prior to 2011 and it is not modeled with any sort of trend as was done for species composition and harvest proportions. With the exception of Cook Inlet and North Gulf Coast areas, there is little, if any, trend apparent in the data and perhaps this approach is the best available given the data available. However, if there are data sources somewhere that could inform this part of the model they could be incorporated. 
+
 3. *Prior choices* in general need to be vetted. The priors on the logistic curves are fairly informed in an effort to achieve the desired shapes for hindcasting. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
-4. *Random effects on pH:* These are currently used in the model but because pH isn't linked to data as the p_comp data is I am not sure what to make of them or if they are appropriate.
-5. *Model comparisons:* I need to write code for comparing models side by side as well as quantifying the differences between these methods and the Howard methods. 
+
  
 # Results
 * **Model:** *`r mod`* 
@@ -492,11 +537,7 @@ rhat_vals %>% data.frame() %>%
 ```
 
 * **Model development notes:**
-  + tau parameters not always converged, but generally just some spikeness. I would argue these are acceptable. 
-  + pH parameters almost there except for B1 for yelloweye in NG, PWSO, and Kodiak areas and "other" rf in PWSO and SOKO2SAP. Most of these look like straight lines so amplitude should be small, but chains drifing off into la-la land.
-  + p_YE parameters pretty good or getting there, except for CSEO. Looks like B3 inflection point is bimodel with one chain on lower bound. All other SE areas OK near upper bound, so further constraints will hopefull fix this. B3 for WKMA at lower bound, but is mostly a straight line so probably OK.
-  + p_Pelagic parameters close. B1 for WKMA not great but thats a low data straight line. Constraining more may help. CSEO has problems with B2 and B3, although plots of those nice. May need to loosen B3 lower end?
-  + p_brf parameters a mess. Most of these should be straight lines so I think the best approach is to reparameterize the model so that only CI and NSEI have the logistic curve while the other areas are fit to straight lines. Or, maybe more simply, fix the parameters in the straight lines so that amplitude (B1) and slope (B2) are 0. 
+  + NA
   
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
@@ -780,12 +821,13 @@ as.data.frame(
   #geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) +
+  #geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) +
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   geom_line() + 
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  ylim(0,max(brf_howR$R_how)) +
   labs(y = "Black Rockfish Releases", x = "Year")
 
 ```
@@ -938,8 +980,8 @@ as.data.frame(
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 16) +
@@ -1334,7 +1376,7 @@ swhs_Rres %>%
   geom_hline(aes(yintercept = 0)) +
   facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  labs(y = "SWHS catch residuals", x = "Year")
+  labs(y = "SWHS release residuals", x = "Year")
 } else {
   as.data.frame(
   #t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
@@ -1380,7 +1422,7 @@ pG %>%
 ```
 <br>
 
-When considered annually we see the percent of rockfish harvested by the charter fleet follows our data fairly well although we just do not have much information about this ratio. Prior to 2011 the percent charter is confounded with SWHS bias and should be mostly discounted. 
+When considered annually we see the percent of rockfish harvested by the charter fleet follows our data fairly well although the model smooths out the changes and we just do not have much information about this ratio. Prior to 2011 the percent charter is confounded with SWHS bias and should be mostly discounted. 
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 16.**- Annual estimates of the percent of harvest by charter anglers for 16 commerical fishing manamgent areas, 1996-2023."}
 pG_mod <- 
@@ -2022,7 +2064,7 @@ pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO",
 ``` 
 ### SWHS bias
  
-Figure 14 shows the mean estimate for SWHS bias. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. 
+Figure 23 shows the mean estimate for SWHS bias in harvests and releases. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. Bias in release estimates is substantial and whereas the SWHS appears to underestimate harvests, it appears to greatly overestimates releases by a factor of 2 or more in most areas as derived from logbook reported releases. 
  
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 23.**- Mean SWHS bias for harvests and catches. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
 if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH")) { #2 bias
@@ -2076,8 +2118,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
 }
 ```
 <br>
- 
-Our estimates of SWHS bias track observations fairly well when he have guided harvest estimates. There are some disturbing trends/patterns seen in the earlier time periods. Often the patterns represent periods where SWHS estimates and guide logbook estimates do not follow the recent relationship. I'm not sure what drives the trends but it seems plausible to me that long-term changes in the ratio of charter and private anglers may be a factor. If Charter/Private ratio information is available in the historical creel data it my be helpful here (particularly for North Southeast Inside and South Southeast outside). 
+Our estimates of SWHS harvest bias track observations fairly well when he have guided harvest estimates. The estimates of release bias in the SWHS data track observed patterns to an extent, but appear to smooth these more volatile disagreements with the logbook data. Adam postulated in his initial start on this that some of this could be the result of the estimates of the proportion guided. This value was not modelled with a trend and thus applies a constant estimate when hindcasting. Data on these relationships could greatly improve this model. 
  
 ```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 24.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
 if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH")){
@@ -2269,7 +2310,7 @@ ggarrange(Hbias,Cbias,
  
 ### P(pelagic)
  
-We model the percentage of pelagic rockfish in the harvest because we have the information for charter anglers (via logbooks) starting in 1998. Other than looking at the model estimates you can use Figure 8 to compare the two data streams for pelagic rockfish harvest. In general they are in agreement with major exceptions in Price William Sound inside, Prince William Sound outside (early in the time series) and South Southeast inside.
+We model the percentage of pelagic rockfish in the harvest because we have the information for charter anglers (via logbooks) starting in 1998. Other than looking at the model estimates you can use Figure 25 to compare the two data streams for pelagic rockfish harvest. In general they are in agreement with major exceptions in Price William Sound inside, Prince William Sound outside (early in the time series) and South Southeast inside.
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 25.**- Annual estimates of the percent of the sport harvest that was pelagic rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
 pal <- wes_palette(name = "Moonrise2", n=3)
@@ -2355,7 +2396,7 @@ p_pelagic_obs %>%
  
 ### P(black|pelagic)
  
-Note that in Southeast Alaska we only have composition data starting in 2006. Tania dug up old SE data, but it did not provide any useful data for species apportionment.
+Note that in Southeast Alaska we only have composition data starting in 2006. Tania dug up old SE data, but it did not provide any useful data for species apportionment. For the most part, P(black|pelagic) is relatively constant across areas, with the exception of Cook Inlet and NSEI in Southeast AK. It may be worth discussing whether the shifts in those areas is a result of improved or changing species identification rather than actual shift in the species composition of the catch.  
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 26.**- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
 pal <- wes_palette(name = "IsleofDogs1", n=3) 
