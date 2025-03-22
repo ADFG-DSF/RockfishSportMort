@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 50E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 20E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -65,6 +65,7 @@ mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v2"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v5"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
