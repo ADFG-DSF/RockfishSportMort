@@ -50,8 +50,9 @@ list2env(readinData(start_yr = start_yr,
 #-------------------------------------------------------------------------------8
 #mod<-"LB_hyb_5pH_infPr"
 #mod<-"LB_fit_5pH"
-mod<-"LB_fit_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_2500000_7kn_2025-03-22"
+#mod<-"LB_fit_3pH"
+mod<-"LB_hyb_3pH"
+res <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-23"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -1354,7 +1355,7 @@ swhs_Hres %>% ggplot(aes(x = year, y = H_res)) +
 ```{r, fig.width = 10, fig.height = 6, fig.cap = "**Figure 14.**- Residual of SWHS releases"}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
 
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_3pH")){
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_3pH","LB_hyb_3pH")){
   as.data.frame(
   #t(log(postH$mean$C_ay) + postH$mean$logbc_C) - t(log(jags_dat$Chat_ay_pH))) %>%
   t(log(postH$mean$R_ay) + postH$mean$logbc_R) - t(log(jags_dat$Rhat_ay))) %>%
@@ -1864,7 +1865,7 @@ pHnpny_obs %>% filter(user != "all") %>%
 pal <- wes_palette(name = "AsteroidCity1", n=5)#[c(2,5)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
 
-if (mod == "LB_fit_3pH"){} else {
+if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
 pHdsr_mod <- 
   rbind(postH$mean$pH[,,1,4] %>% t(),
         postH$mean$pH[,,2,4] %>% t()) %>%
@@ -1967,7 +1968,7 @@ pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
 ```{r, fig.width = 10, fig.height = 5, fig.cap = "**Figure 22.**- Annual proportion of Slope rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available. Note that the observed logbook data is for all non-pelagic, non-yelloweye fish."}
 pal <- wes_palette(name = "Rushmore1", n=5)[c(3,4)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
-if (mod == "LB_fit_3pH"){} else {
+if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
 pHslope_mod <- 
   rbind(postH$mean$pH[,,1,5] %>% t(),
         postH$mean$pH[,,2,5] %>% t()) %>%
@@ -2067,7 +2068,7 @@ pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO",
 Figure 23 shows the mean estimate for SWHS bias in harvests and releases. Cook Inlet, North Gulf Coast and North Southeast Inside all look pretty good while most other areas have substantial bias. Prince William Sound Inside has the largest bias. Bias in release estimates is substantial and whereas the SWHS appears to underestimate harvests, it appears to greatly overestimates releases by a factor of 2 or more in most areas as derived from logbook reported releases. 
  
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 23.**- Mean SWHS bias for harvests and catches. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH")) { #2 bias
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH","LB_hyb_3pH")) { #2 bias
   exp(postH$sims.list$mu_bc_H) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -2121,7 +2122,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
 Our estimates of SWHS harvest bias track observations fairly well when he have guided harvest estimates. The estimates of release bias in the SWHS data track observed patterns to an extent, but appear to smooth these more volatile disagreements with the logbook data. Adam postulated in his initial start on this that some of this could be the result of the estimates of the proportion guided. This value was not modelled with a trend and thus applies a constant estimate when hindcasting. Data on these relationships could greatly improve this model. 
  
 ```{r, fig.width = 10, fig.height = 7, fig.cap = "**Figure 24.**- Annual estimates of SWHS bias in harvests and releases for 16 commerical fishing manamgent areas, 1996-2023. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value."}
-if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH")){
+if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH","LB_hyb_3pH")){
   mu_bc_H <- data.frame(area = unique(H_ayg$area), mu_bc = apply(exp(postH$sims.list$mu_bc_H), 2, mean))
 bc_mod <- 
   apply(exp(postH$sims.list$logbc_H), c(2, 3), mean) %>%

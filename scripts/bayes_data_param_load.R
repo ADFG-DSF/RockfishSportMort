@@ -303,11 +303,15 @@ readinData <- function(spl_knts = 7,
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlb_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                      matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      #Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlbp_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlbp_ayg_bound = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
+                       matrix(R_ayg$Rp, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+      #Rlbp_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook ye rf harvested by guides
       Rlby_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(R_ayg$year))),
                        matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
@@ -417,6 +421,7 @@ jags_params <- function(){
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
+    "sdR",
     #"re_pH","sd_pH",
     #proportions same for catch and harvest? thinking on it?
     "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 

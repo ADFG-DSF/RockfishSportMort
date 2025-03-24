@@ -50,7 +50,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 50E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -66,6 +66,10 @@ mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v5"
+
+if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
+  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
+}
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -318,7 +322,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v3_thru2023_2500000_2025-02-27"
+results <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-23"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged

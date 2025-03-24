@@ -306,10 +306,12 @@ for (a in 1:A){
   } 
 
   for (y in 23:Y) { #logbook likelihood; guided release by area and year
+      sdR[a,y] ~ dunif(0.1,50)
+      tauR[a,y] <- 1/sdR[a,y]/sdR[a,y]
       logR[a, y] <- log(R_ayg[a, y])
-      Rlb_ayg_cens[a, y] ~ dlnorm(logR[a, y],1)T(Rlb_ayg[a, y],)
+      Rlb_ayg[a, y] ~ dlnorm(logR[a, y],tauR[a,y])T(Rlb_ayg_bound[a, y],)
       logRp[a, y] <- log(R_ayg[a, y] * p_pelagic[a, y, 1])
-      Rlbp_ayg_cens[a, y] ~ dlnorm(logRp[a, y],1)T(Rlbp_ayg[a, y],)  
+      Rlbp_ayg[a, y] ~ dlnorm(logRp[a, y],tauR[a,y])T(Rlbp_ayg_bound[a, y],)  
 ##    Rlb_ayg[a, y] ~ dpois(R_ayg[a,y])  
 ##    Rlbp_ayg[a, y] ~ dpois(Rp_ayg[a, y])  
   }
@@ -499,8 +501,8 @@ beta2_pH[7,2] <- 0
 beta4_pH[7,2] ~ dnorm(0, 1)
 
 beta0_pH[7,3] ~ dnorm(mu_beta0_pH[regions[7],3], tau_beta0_pH[regions[7],3]) #INTERCEPT
-beta1_pH[7,3] ~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
-beta2_pH[7,3] ~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
+beta1_pH[7,3] <- 0 #~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
+beta2_pH[7,3] <- 0 #~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
 beta4_pH[7,3] ~ dnorm(mu_beta4_pH[regions[7],3], tau_beta4_pH[regions[7],3])
 
 for (a in 8:10) {

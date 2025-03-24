@@ -1629,7 +1629,12 @@ ggplot(pr_sim) +
                  alpha = 0.2, bins = 100, position="identity") +
   facet_wrap(~model)
 
+#############################################################################
+## Tau term for hybrid model fit
+Rest <- 500
+tau <- 100
 
-
-
+r <- rlnorm(10000,log(Rest),sqrt(1/tau))
+hist(r, breaks = 100)
+?rlnorm
 
