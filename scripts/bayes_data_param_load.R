@@ -421,7 +421,7 @@ jags_params <- function(){
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
-    "sdR",
+    "sdR","mu_sdR","tau_sdR",
     #"re_pH","sd_pH",
     #proportions same for catch and harvest? thinking on it?
     "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
