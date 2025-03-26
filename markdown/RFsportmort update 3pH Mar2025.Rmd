@@ -50,9 +50,9 @@ list2env(readinData(start_yr = start_yr,
 #-------------------------------------------------------------------------------8
 #mod<-"LB_hyb_5pH_infPr"
 #mod<-"LB_fit_5pH"
-#mod<-"LB_fit_3pH"
-mod<-"LB_hyb_3pH"
-res <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-23"
+mod<-"LB_fit_3pH"
+#mod<-"LB_hyb_3pH"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-10"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -143,7 +143,6 @@ summary_table <- postH$summary %>%
 This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest and releases of rockfish in Alaska waters and expand the time series back to 1977 when the statewide harvest survey (SWHS) was first implemented. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and replaces the Howard decision tree approach to low sample sizes with a hierarchical model. The methods and results for generating harvest estimates are generally consistent between the Bayesian model and the Howard methods. Harvest estimates are consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. 
 
 The Bayesian methods depart from the Howard method in how releases are estimated. The Howard methods assume that the species composition of the harvests are equal to the species composition of released fish, which is clearly contraindicated in the logbook data. For instance, logbook data demonstrates that yelloweye have been retained at high levels up until restrictions were enacted in recent years, whereas pelagic rockfish were released in significant numbers in the past with retention increasing in recent years as they have become more prized by anglers. Recent prohibition on retaining yelloweye in Southeast Alaska highlights the the shortcomings of the original Howard methods as the species composition of the harvest would indicate that no yelloweye were caught and released during the closure. 
-
 The Howard method for estimating releases for private anglers also relied on an expansion of the logbook release estimates based on the ratio of private:guided releases of all rockfish in the SWHS. In addition to the faulty assumptions about species composition, this method ignores potential bias in SWHS estimates of harvests and releases. As demonstrated below, the bias in those two quantities appears to be quite different based on the logbook data. The Bayesian model thus attempts to estimate release probabilities based on the logbook data coupled with bias corrected estimates from the SWHS.
 
 Lastly, the Howard methods were only used on data beginning in 1999 with the advent of the logbook program and estimates of harvests and releases prior to that have been based on linear ramps from 1999 back to the perceived start of the fishery. The Bayesian methods allow us to expand the time series back to 1977 when the SWHS was implemented by leveraging regional data trends in species composition and the proportion of caught rockfish harvested by species and/or species complex. Key advantages of the Bayesian approach are highlighted in table 1. 
@@ -428,14 +427,7 @@ SWHS estimates of annual rockfish **releases** $\widehat{SWHS}_R{ay}$ were assum
 \widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
 \end{equation}
 
-Because logbook release data is more questionable and demonstrates greater disagreement with SWHS estimates (Figure 1), a second approaches was considered that loosened the assumption that logbook releases were a census. Results for this approach are not included in this document, but the methods are listed here for future reference and consideration. In a hybrid approach yelloweye and non-pelagic releases are regarded as a reliable census (given the emphasis and ease of recording these fish) but censors the pelagic and total rockfish release estimates such that
-
-\begin{equation}
-\text{censored} \widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), 1\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right) \\
-\text{censored} \widehat{LB}_R{(pelagic)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(pelagic)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(pelagic)ay}, \infty\right) \\
-\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})\\
-\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
-\end{equation}
+Because logbook release data is more questionable and demonstrates greater disagreement with SWHS estimates (Figure 1), a second approaches was considered that loosened the assumption that logbook releases were a census. Methods explored to develope $LB_{hyb}$ and $LB_{cens}$ models are detailed at the end of this section. 
 
 SWHS estimates of guided angler release $\widehat{SWHS}_R{ay1}$ is modeled the same as harvests. 
 
@@ -489,6 +481,27 @@ with yelloweye in southeast a proportion of the DSR harvest
 x_{(yellow_{R1})ayu}~\sim~\textrm{Binomial}(P_{(yellow_{R1})ayu}, N_{ayu}^{DSR})
 \end{equation}.
 
+#### Alternative likelihoods for release estimates
+
+To loosen the assumption that logbook release data are an effective census of true releases I explored models that treated logbook release estimates as a lower bound on the estimate of true releases. In a hybrid approach yelloweye and non-pelagic releases are regarded as a reliable census (given the emphasis and ease of recording these fish) but censors the pelagic and total rockfish release estimates (where censoring implies NA values) such that
+
+\begin{equation}
+\text{censored} \widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), 1\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right) \\
+\text{censored} \widehat{LB}_R{(pelagic)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(pelagic)ay}), 1\right)\text{T}\left(\widehat{LB}_R{(pelagic)ay}, \infty\right) \\
+\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})\\
+\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
+\end{equation}
+
+This model formulation failed such that there was not enough data to inform pelagic releases and the values did not seem valid. A second approach is being explored that fits the censored data using a lognormal distribution centered around the logbook release value, but also with a lower bound equal to the number of recorded releases such that
+
+\begin{equation}
+\widehat{LB}_R{ay}~\sim~\textrm{LogNormal}\left(\log(R_{ay}), \sigma_{Ray1}^2\right)\text{T}\left(\widehat{LB}_R{ay}, \infty\right) \\
+\widehat{LB}_R{(pelagic)ay}~\sim~\textrm{LogNormal}\left(\log(R_{(pelagic)ay}), \sigma_{Ray1}^2\right)\text{T}\left(\widehat{LB}_R{(pelagic)ay}, \infty\right) \\
+\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})\\
+\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})\\
+\end{equation}
+
+Logbook data is assumed to be a census and as such there is no estimate of uncertainty. As of this writing, several methods are being examined for how to treat $\sigma_{Ray1}^2$. Models are being run that attempt to allow the model to estimate $\sigma_{Ray1}^2$ with priors. A simple model applies a uniform prior (0.1,50) to $\sigma_{Ray1}^2$. A hierarchichal approach based on regions is also being examined whereby $\sigma_{Ray1}^2$ is lognormally distributed around hyper priors $\mu_{\sigma_R}$ and $\sigma_{\sigma_R}$. Initial efforts have applied a uniform prior on $\mu_{\sigma_R}$ between 1 and 50 and on $\sigma_{\sigma_R}$ between 0 and 10.  
 
 ### Priors.
 Priors range from uninformative to very informative or fixed. Priors for compositional logistic parameters are in Table 2 and proportion harvest logistic parameters are in Table 3. *Until I figure out how to make a nice table in Rmarkdown, please refer to the attached spreadsheet and comp and harvp tabs.*
@@ -509,11 +522,16 @@ Priors range from uninformative to very informative or fixed. Priors for composi
  
 ### Unresolved issues and outstanding questions: 
 
-1. *Reliability of unguided release estimates:* These estimates have the least information feeding them and rely on the bias-corrected SWHS release estimates of all rockfish and the trends in release probability evident in the logbook data. The \beta4$ term that estimates the guided/unguided effect was given a very informative prior that tied the release probability of private anglers tightly to that of the charter fleet. The model is then trying to balance the three species complex estimates (pelagic, yelloweye and other) so that they sum to the total unguided releases estimated from the bias corrected SWHS data. For the most part this seems reasonable and appears to work, but there are certain areas where the estimates are "wonky". Yelloweye releases in the Kodiak Northeast area in particular are significantly lower than for guided anglers with the same pattern evident in Cook Inlet to a lesser extent. Cook Inlet yelloweye numbers are very small, so this is a sample size issue with little consequence. The cause of the Kodiak northeast estimates is not clear to me at this point, but it must be a product of the bias corrected SWHS release estimates and how the model is divying up that estimate into the 3 species complexes. The results are also substantially different from the Howard methods and are *much* lower for black rockfish while disagreements for yelloweye are in both directions. Total rockfish releases more or less align with the total releases estimated with the Howard methods. Presumably, much of the discrepancy results from the substantial bias in release estimates from the SWHS. Interestingly, the logbook data indicates that the SWHS underestimates harvests but overestimates releases. 
+1. *Reliability of unguided release estimates:* These estimates have the least information feeding them and rely on the bias-corrected SWHS release estimates of all rockfish and the trends in release probability evident in the logbook data. The $\beta4$ term that estimates the guided/unguided effect was given a very informative prior that tied the release probability of private anglers tightly to that of the charter fleet. The model is then trying to balance the three species complex estimates (pelagic, yelloweye and other) so that they sum to the total unguided releases estimated from the bias corrected SWHS data. For the most part this seems reasonable and appears to work, but there are certain areas where the estimates are "wonky":
+    1. Total rockfish releases more or less align with the total releases estimated with the Howard methods. Presumably, much of the discrepancy results from the substantial bias in release estimates from the SWHS. Interestingly, the logbook data indicates that the SWHS underestimates harvests but overestimates releases by a significant factor (Figure 23 and 24 below).
+    2. In general, release estimates of black rockfish are substantially lower than those calculated using the Howard methods. Presumably, much of this derives from the bias correction of the SWHS release estimates. 
+    3. Yelloweye release estimates also differ considerably from the Howard estimates, but unlike black rockfish are sometimes lower and sometimes higher. Two areas in particular are a little head scratching. Yelloweye releases in the Kodiak Northeast area in particular are significantly lower than for guided anglers with the same pattern evident in Cook Inlet to a lesser extent. Cook Inlet yelloweye numbers are very small, so this is a sample size issue with little consequence. The cause of the Kodiak northeast estimates is not clear to me at this point, but the model estimates the proportion harvested by unguided anglers to be much lower than that of guided anglers, even with the informative prior on $\beta4$. This must be a product of the bias corrected SWHS release estimates and how the model is partitioning that estimate into the 3 species complexes, but itis a bit a of head scratcher. 
 
 2. *Proportion guided estimates:* There is not much data on this proportion prior to 2011 and it is not modeled with any sort of trend as was done for species composition and harvest proportions. With the exception of Cook Inlet and North Gulf Coast areas, there is little, if any, trend apparent in the data and perhaps this approach is the best available given the data available. However, if there are data sources somewhere that could inform this part of the model they could be incorporated. 
 
 3. *Prior choices* in general need to be vetted. The priors on the logistic curves are fairly informed in an effort to achieve the desired shapes for hindcasting. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
+
+4. *Proportion harvest estimates for non-pelagic, non-yelloweye in Kodiak WKMA:* I need to adjust the prior on the inflection point, $\beta3$, so that it is forced to occur after 2006. Right now the model is estimating inflection in two Kodiak areas before that point where there is no data to justify a shift. The current inflection is a result of the hierachichal model.  
 
  
 # Results

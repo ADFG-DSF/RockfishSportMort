@@ -227,7 +227,7 @@ for (a in 1:A){
   tau_beta1_pelagic[1] <- 1 / sd_beta1_pelagic[1] / sd_beta1_pelagic[1]
   sd_beta1_pelagic[1] ~ dunif(0.1, 5)
   mu_beta1_yellow[1] ~ dlnorm(log(0.25), 0.1)
-  tau_beta1_yellow[1] <- 1 / sd_beta1_yellow[1] / sd_beta1_yellow[r]
+  tau_beta1_yellow[1] <- 1 / sd_beta1_yellow[1] / sd_beta1_yellow[1]
   sd_beta1_yellow[1] ~ dunif(0.1, 5)
   mu_beta1_black[1] ~ dlnorm(log(0.0001), 0.5) 
   tau_beta1_black[1] <- 1 / sd_beta1_black[1] / sd_beta1_black[1]
@@ -472,7 +472,7 @@ for (a in 3:4){
 
   for (s in 1:3){ 
     mu_beta0_pH[2,s] ~ dnorm(0, 0.01) #dnorm(0, 0.001)
-    mu_beta3_pH[2,s] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+##    mu_beta3_pH[2,s] ~ dunif(19,Y-3) #dnorm(30, 0.01)
 
     tau_beta0_pH[2,s] <- 1 / sd_beta0_pH[2,s] / sd_beta0_pH[2,s]
     sd_beta0_pH[2,s] ~ dunif(0.1, 5)
@@ -492,6 +492,10 @@ for (a in 3:4){
   mu_beta2_pH[2,1] ~ dlnorm(log(0.00001), 0.01)
   mu_beta2_pH[2,2] ~ dnorm(0, 0.01)
   mu_beta2_pH[2,3] ~ dnorm(0, 0.01)
+
+  mu_beta3_pH[2,1] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+  mu_beta3_pH[2,2] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+  mu_beta3_pH[2,3] ~ dunif(28,Y-3) #dnorm(30, 0.01)
 
   for (a in 5:6) {# s = 1= pelagic, s = 2 = yelloweye, s = 3 = non-pel, non-ye,  
     beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1]) #INTERCEPT
@@ -521,8 +525,8 @@ for (a in 3:4){
   beta4_pH[7,2] ~ dnorm(0, 1)
 
   beta0_pH[7,3] ~ dnorm(mu_beta0_pH[regions[7],3], tau_beta0_pH[regions[7],3]) #INTERCEPT
-  beta1_pH[7,3] <- 0 #~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
-  beta2_pH[7,3] <- 0 #~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
+  beta1_pH[7,3] ~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
+  beta2_pH[7,3] ~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
   beta4_pH[7,3] ~ dnorm(mu_beta4_pH[regions[7],3], tau_beta4_pH[regions[7],3])
 
   for (a in 8:10) {
@@ -559,7 +563,7 @@ for (a in 3:4){
     beta3_pH[a,1] ~ dlnorm(log(mu_beta3_pH[regions[a],1]), tau_beta3_pH[regions[a],1])T(18,Y-1)
     beta3_pH[a,2] ~ dlnorm(log(mu_beta3_pH[regions[a],2]), tau_beta3_pH[regions[a],2])T(18,Y-1)
 
-    beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(18,Y-1) # INFLECTION POINT
+    beta3_pH[a,3] ~ dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(27,Y-1) # INFLECTION POINT
 
     for (y in 1:Y){
       Hy_ayg[a, y] <- H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1]

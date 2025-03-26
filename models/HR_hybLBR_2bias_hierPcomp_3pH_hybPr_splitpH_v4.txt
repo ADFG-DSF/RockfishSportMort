@@ -194,7 +194,7 @@ for (r in 1:3){
     mu_beta0_pH[r,s] ~ dnorm(0, 0.01) #dnorm(0, 0.001)
 #    mu_beta1_pH[r,s] ~ dlnorm(log(0.00001), 0.01)
 #    mu_beta2_pH[r,s] ~ dnorm(0, 0.01)
-    mu_beta3_pH[r,s] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+#    mu_beta3_pH[r,s] ~ dunif(19,Y-3) #dnorm(30, 0.01)
 
     tau_beta0_pH[r,s] <- 1 / sd_beta0_pH[r,s] / sd_beta0_pH[r,s]
     sd_beta0_pH[r,s] ~ dunif(0.1, 5)
@@ -235,6 +235,18 @@ mu_beta2_pH[2,3] ~ dnorm(0, 0.01)
 mu_beta2_pH[3,1] ~ dnorm(0, 0.01)
 mu_beta2_pH[3,2] ~ dnorm(-5, 0.01)
 mu_beta2_pH[3,3] ~ dnorm(0, 0.01)
+
+mu_beta3_pH[1,1] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[1,2] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[1,3] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+
+mu_beta3_pH[2,1] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[2,2] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[2,3] ~ dunif(28,Y-3) #dnorm(30, 0.01)
+
+mu_beta3_pH[3,1] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[3,2] ~ dunif(19,Y-3) #dnorm(30, 0.01)
+mu_beta3_pH[3,3] ~ dunif(19,Y-3) #dnorm(30, 0.01)
 
 for (a in 1:A){
   # SWHS H and R bias PRIORS: --------------------------------------------------
@@ -501,8 +513,8 @@ beta2_pH[7,2] <- 0
 beta4_pH[7,2] ~ dnorm(0, 1)
 
 beta0_pH[7,3] ~ dnorm(mu_beta0_pH[regions[7],3], tau_beta0_pH[regions[7],3]) #INTERCEPT
-beta1_pH[7,3] <- 0 #~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
-beta2_pH[7,3] <- 0 #~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
+beta1_pH[7,3] ~ dlnorm(log(mu_beta1_pH[regions[7],3]), tau_beta1_pH[regions[7],3]) 
+beta2_pH[7,3] ~ dnorm(mu_beta2_pH[regions[7],3], tau_beta2_pH[regions[7],3]) # SLOPE
 beta4_pH[7,3] ~ dnorm(mu_beta4_pH[regions[7],3], tau_beta4_pH[regions[7],3])
 
 for (a in 8:10) {
