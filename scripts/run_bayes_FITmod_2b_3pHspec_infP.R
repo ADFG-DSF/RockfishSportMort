@@ -69,6 +69,7 @@ mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4"
 mod <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v5"
 mod <- "HR_hybLBR_2bias_hierPcomp_3pH_CLEAN"
+mod <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN"
 
 if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
   jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
