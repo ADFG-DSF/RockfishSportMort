@@ -52,7 +52,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4_thru2023_5e+06_7kn_2025-03-10"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_2025-03-30"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -531,7 +531,15 @@ Priors range from uninformative to very informative or fixed. Priors for composi
 
 3. *Prior choices* in general need to be vetted. The priors on the logistic curves are fairly informed in an effort to achieve the desired shapes for hindcasting. Ideally, sensitivity testing would occur but the model is very slow to converge. The beta parameters on the logistic curves have required a lot of work on the priors to reach convergence. 
 
-4. *Proportion harvest estimates for non-pelagic, non-yelloweye in Kodiak WKMA:* I need to adjust the prior on the inflection point, $\beta3$, so that it is forced to occur after 2006. Right now the model is estimating inflection in two Kodiak areas before that point where there is no data to justify a shift. The current inflection is a result of the hierachichal model.  
+4. *Proportion harvest estimates for non-pelagic, non-yelloweye in Kodiak WKMA:* I need to adjust the prior on the inflection point, $\beta3$, so that it is forced to occur after 2006. Right now the model is estimating inflection in two Kodiak areas before that point where there is no data to justify a shift. The current inflection is a result of the hierachichal model. 
+
+5. *Proportion pelagic in PWS and CSEO:* The parameters for these particular proportions are very slow to converge. For the CSEO, the estimates of the $\beta$ parameters are similar to the other Southeast areas, but the mixing is poor over the length of the chains. In this case I think they will ultimately converge with a very long model run and the shape of the curve in the model output looks acceptable. For the two PWS areas the model seems to struggle with the disparate proportional data from the logbook and the port sampling. There is some wandering in the chains of the $\beta0$ and $\beta1$ terms and spikiness in the $\beta2$ terms. I've been working on constraining the hyperpriors for PWS $beta2$. Similar to CSEO, it may just entail a very long model run to reach convergence, but the shape of the curves looks reasonable.
+
+### Next steps:
+
+Once the model is finalized, harvest and release numbers need to be converted into biomass removals. This is a two step process where release mortality estimates are applied to the release estimates to estimate the number of released rockfish that do not survive. This is based on studies and will reflect the values that the department has been using with the Howard methods. Region 2 (both Southcentral and Kodiak) have release-at-depth estimates from a number of years that they apply across all years and then calculate mortality rates based on those estiates. Southease does not have release-at-depth data and simply applies an assumed rate based on research.
+
+Once release mortality is calculated average weight data is applied to convert numbers to biomass. The plan is to incorporate all of this into the model to propogate uncertainty into the posteriors. However, the model already takes a long time to run and I may explore a simpler approach using the posteriors from the numbers model to speed up processing. 
 
  
 # Results
@@ -554,9 +562,6 @@ rhat_vals %>% data.frame() %>%
   geom_histogram(binwidth=0.1, colour="black", fill="white") +
   geom_vline(aes(xintercept = 1)) 
 ```
-
-* **Model development notes:**
-  + NA
   
 ## Estimate comparison
 Since previous estimates of rockfish harvest have been produced these first 3 graphs will be used to show how the modeled estimates compare to the estimates produced earlier. For total rockfish the estimates are in general agreement although differences are noted. These estimates should be more reliable because they include both SWHS and guide logbook data, handle variance more appropriately, use hierarchical distributions when data is missing, directly consider observation error and are produced using reproducible research. 
