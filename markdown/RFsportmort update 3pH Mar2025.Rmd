@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_fit_3pH_vagPr_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "LB_HYB_3pH_vagPr_",Sys.Date(),".html"))
       })
 ---
 
@@ -52,7 +52,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_7kn_2025-04-11"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_2025-04-14"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -240,6 +240,8 @@ rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
     breaks = seq(start_yr, end_yr, by = 2) # Adjust for every other year
   ) +
   labs(y = "Data Sources", x = "Year")
+  
+ggsave("../figures/bayes_model/data_plot.png")  
 ```
 <br>
 
@@ -297,6 +299,8 @@ left_join(Chat_ayu %>% filter(user == "guided"),
 ggarrange(Hcomp,Ccomp,
           labels = c("Harvests","Releases"),
           ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
+
+ggsave("../figures/bayes_model/raw_bias.png") 
 ```
 <br>
 
@@ -628,6 +632,8 @@ rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Total Rockfish Harvests", x = "Year")#+
   #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
   #              position=position_dodge(0.05))
+
+ggsave("../figures/bayes_model/rf_harvests.png") 
 ```
 <br><br>
  
@@ -693,6 +699,8 @@ rf_plotdat2 %>% mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered 
   labs(y = "Total Rockfish Releases", x = "Year")#+
   #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
   #              position=position_dodge(0.05))
+
+ggsave("../figures/bayes_model/rf_releases.png") 
 ```
 <br>
 
@@ -771,6 +779,8 @@ brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Black Rockfish Harvests", x = "Year")
+
+ggsave("../figures/bayes_model/black_harvests.png") 
 ```
 <br>
 
@@ -854,6 +864,8 @@ as.data.frame(
   ylim(0,max(brf_howR$R_how)) +
   labs(y = "Black Rockfish Releases", x = "Year")
 
+ggsave("../figures/bayes_model/black_releases.png") 
+
 ```
 <br><br>
 
@@ -930,6 +942,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Yelloweye Rockfish Harvests", x = "Year")
+
+ggsave("../figures/bayes_model/ye_harvests.png") 
 ```
 <br><br>
 
@@ -1011,6 +1025,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Yelloweye Rockfish Releases", x = "Year")
+
+ggsave("../figures/bayes_model/ye_releases.png") 
 ```
 
 <br><br>
@@ -1089,6 +1105,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "DSR Rockfish Harvests", x = "Year") 
+
+ggsave("../figures/bayes_model/dsr_harvests.png") 
 
 ```
 <br><br>
@@ -1171,6 +1189,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "DSR Rockfish Releases", x = "Year")
+
+ggsave("../figures/bayes_model/dsr_releases.png") 
 ```
 <br><br>
 
@@ -1248,6 +1268,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Slope Rockfish Harvests", x = "Year")
+
+ggsave("../figures/bayes_model/slope_harvests.png") 
 ```
 <br><br>
 
@@ -1329,6 +1351,8 @@ as.data.frame(
   theme_bw(base_size = 16) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Slope Rockfish Releases", x = "Year")
+
+ggsave("../figures/bayes_model/slope_releases.png") 
 ```
 
 
@@ -1347,6 +1371,8 @@ as.data.frame(
   facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Logbook residuals", x = "Year")
+
+ggsave("../figures/bayes_model/lb_resids.png") 
 ```
 <br>
 
@@ -1372,6 +1398,8 @@ swhs_Hres %>% ggplot(aes(x = year, y = H_res)) +
   facet_wrap(. ~ area, scales = "free_y") + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "SWHS harvest residuals", x = "Year")
+
+ggsave("../figures/bayes_model/swhs_harvest_resids.png") 
 ```
 <br><br>
 
@@ -1424,6 +1452,8 @@ swhs_Rres %>%
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "SWHS release residuals", x = "Year")
 }
+
+ggsave("../figures/bayes_model/swhs_release_resids.png") 
 ```
 
 ## Parameter estimates
@@ -1443,6 +1473,8 @@ pG %>%
   facet_wrap(.~area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Observations", x = "Proportion of harvests from guided trips")
+
+ggsave("../figures/bayes_model/p_charter_means.png") 
 ```
 <br>
 
@@ -1493,6 +1525,8 @@ rbind(pG_mod, pG_obs%>% mutate(pG_lo95 = NA, pG_hi95 = NA)) %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of harvests from guided trips", x = "Year")
+
+ggsave("../figures/bayes_model/p_charter_by_year.png") 
 
 ```
 ### P(Harvest)
@@ -1689,6 +1723,8 @@ pHpel_obs %>% filter(user != "all") %>%
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic catches that were harvested", x = "Year")
 
+ggsave("../figures/bayes_model/p_harv_pelagics.png") 
+
 ``` 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = "**Figure 19.**- Annual proportion of yelloweye rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available."}
@@ -1782,6 +1818,8 @@ pHye_obs %>% filter(user != "all") %>%
   scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of yelloweye catches that were harvested", x = "Year")
+
+ggsave("../figures/bayes_model/p_harv_ye.png") 
 
 ``` 
 <br>
@@ -1880,6 +1918,8 @@ pHnpny_obs %>% filter(user != "all") %>%
   scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagic, non-yelloweye catches that were harvested", x = "Year")
+
+ggsave("../figures/bayes_model/p_harv_nonyenonpel.png") 
 
 ``` 
 <br>
@@ -2140,6 +2180,8 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
   facet_wrap(.~area) + theme_bw(base_size = 16)+
   labs(y = "Count", x = "Bias correction")
 }
+
+ggsave("../figures/bayes_model/swhs_bias_means.png") 
 ```
 <br>
 Our estimates of SWHS harvest bias track observations fairly well when he have guided harvest estimates. The estimates of release bias in the SWHS data track observed patterns to an extent, but appear to smooth these more volatile disagreements with the logbook data. Adam postulated in his initial start on this that some of this could be the result of the estimates of the proportion guided. This value was not modelled with a trend and thus applies a constant estimate when hindcasting. Data on these relationships could greatly improve this model. 
@@ -2330,6 +2372,8 @@ ggarrange(Hbias,Cbias,
           labels = c("Harvest","Releases"),
           ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
 }
+
+ggsave("../figures/bayes_model/swhs_bias_byyear.png") 
 ```
  
 ### P(pelagic)
@@ -2416,6 +2460,8 @@ p_pelagic_obs %>%
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of rockfish that were pelagic", x = "Year") +
   scale_shape_manual(values = c(19, 2))
+
+ggsave("../figures/bayes_model/p_pelagic.png") 
 ```
  
 ### P(black|pelagic)
@@ -2522,6 +2568,8 @@ rbind(p_black_obs) %>%
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic rockfish that were black", x = "Year") +
   scale_shape_manual(values = c(1, 18))
+
+ggsave("../figures/bayes_model/p_black.png") 
 ```
  
 ### P(yelloweye|non-pelagic / yelloweye|DSR)
@@ -2640,6 +2688,8 @@ rbind(p_yellow_obs) %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagic rockfish that were yelloweye", x = "Year")
+
+ggsave("../figures/bayes_model/p_ye.png") 
 ```
 ### P(DSR|non-pelagic)
  
@@ -2750,6 +2800,8 @@ rbind(p_dsr_obs) %>% filter(area %in% southeast) %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics that were DSR", x = "Year")
+
+ggsave("../figures/bayes_model/p_dsr.png") 
 ```
 
 ### P(slope|non-pelagic)
@@ -2861,6 +2913,8 @@ rbind(p_slope_obs %>% filter(area %in% southeast)) %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics that were slope", x = "Year")
+
+ggsave("../figures/bayes_model/p_slope_harv.png") 
 ```
 <br><br>
 
@@ -2974,6 +3028,8 @@ rbind(pr_slope_obs %>% filter(area %in% southeast)) %>%
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics and non-yelloweye releases that were slope", x = "Year")
+
+ggsave("../figures/bayes_model/p_slope_rel.png") 
 ```
 <br><br>
 
