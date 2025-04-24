@@ -52,7 +52,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_3e+06_7kn_2025-04-18"
+res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_7kn_2025-04-24"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -140,10 +140,11 @@ summary_table <- postH$summary %>%
 </style>
 
 ## Summary
-This project seeks to improve on the Howard et al. (2020) methods used to estimate sport fish harvest and releases of rockfish in Alaska waters and expand the time series back to 1977 when the statewide harvest survey (SWHS) was first implemented. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and replaces the Howard decision tree approach to low sample sizes with a hierarchical model. The methods and results for generating harvest estimates are generally consistent between the Bayesian model and the Howard methods. Harvest estimates are consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. 
+This project seeks to estimate sport fish harvest and releases of rockfish in Alaska waters by improving on the Howard et al. (2020) methods and expand the time series back to 1977 when the statewide harvest survey (SWHS) was first implemented. This is essentially a Bayesian version of the Howard methods that allows for more appropriate and defensible sharing of information between areas, handles missing data in a more appropriate manor, accurately propagates uncertainty throughout the estimation procedure and replaces the Howard decision tree approach to low sample sizes with a hierarchical model. The methods and results for generating harvest estimates are generally consistent between the Bayesian model and the Howard methods. Harvest estimates are consistent with Howard estimates during contemporary times, but may differ based on more appropriate weighting of SWHS and logbook data, including estimating and correcting bias in the SWHS data. 
 
-The Bayesian methods depart from the Howard method in how releases are estimated. The Howard methods assume that the species composition of the harvests are equal to the species composition of released fish, which is clearly contraindicated in the logbook data. For instance, logbook data demonstrates that yelloweye have been retained at high levels up until restrictions were enacted in recent years, whereas pelagic rockfish were released in significant numbers in the past with retention increasing in recent years as they have become more prized by anglers. Recent prohibition on retaining yelloweye in Southeast Alaska highlights the the shortcomings of the original Howard methods as the species composition of the harvest would indicate that no yelloweye were caught and released during the closure. 
-The Howard method for estimating releases for private anglers also relied on an expansion of the logbook release estimates based on the ratio of private:guided releases of all rockfish in the SWHS. In addition to the faulty assumptions about species composition, this method ignores potential bias in SWHS estimates of harvests and releases. As demonstrated below, the bias in those two quantities appears to be quite different based on the logbook data. The Bayesian model thus attempts to estimate release probabilities based on the logbook data coupled with bias corrected estimates from the SWHS.
+The Bayesian methods depart from the Howard method in how releases are estimated. The Howard methods assume that the species composition of the harvests are equal to the species composition of released fish, which is clearly contraindicated in the logbook data. For instance, logbook data demonstrates that yelloweye have been retained at high levels up until restrictions were enacted in recent years, whereas pelagic rockfish were released in significant numbers in the past with retention increasing in recent years as they have become more prized by anglers. Recent prohibition on retaining yelloweye in Southeast Alaska highlights the shortcomings of the original Howard assumptions as the species composition of the harvest would indicate that no yelloweye were caught and released during the closure. 
+
+The Howard method for estimating releases for private anglers also relied on an expansion of the logbook release estimates based on the ratio of private:guided releases of all rockfish in the SWHS. In addition to the faulty assumptions about species composition, this method ignores potential bias in SWHS estimates of harvests and releases or at least assumes that the bias in release and harvests are the same. As demonstrated in Figure 1, the bias in those two quantities appears to be quite different based on the logbook data. The Bayesian model thus attempts to estimate release probabilities based on the logbook data coupled with bias corrected estimates from the SWHS.
 
 Lastly, the Howard methods were only used on data beginning in 1999 with the advent of the logbook program and estimates of harvests and releases prior to that have been based on linear ramps from 1999 back to the perceived start of the fishery. The Bayesian methods allow us to expand the time series back to 1977 when the SWHS was implemented by leveraging regional data trends in species composition and the proportion of caught rockfish harvested by species and/or species complex. Key advantages of the Bayesian approach are highlighted in table 1. 
 
@@ -177,17 +178,17 @@ Harvest data was available for 22 commercial fishing management areas in Southce
 ### Stateside Harvest Survey (SWHS)
 Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure 0). Additionally, there are overall harvest estimates from 1977- 1995 and release estimates from 1990-1995 that required some partitioning to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied to the pre-1996 values. 
 
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 0.**- Data sources for estimating rockfish harvests and releases in ADF&G commercial fisheries management units."}
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = "**Figure 0.**- Data sources for estimating rockfish harvests and releases in ADF&G commercial fisheries management units. Note that initial rockfish harvest estimates were not differentiated into species assemblage or species until 1998 when logbooks began differentiating by pelagic and non-pelagic. Logbooks began to collect data on yelloweye beginning in 2006. Port sampling programs to gather data on species composition of harvests began in 1996 in Southcentral and Kodiak and in 2006 in Southeast."}
 
 data_source_order <- c(
-  "SWHS total harvests",
-  "SWHS total releases",
-  "SWHS harvest by user group",
-  "SWHS releases by user group",
-  "Logbook total charter harvests",
+  "SWHS total rf harvests",
+  "SWHS total rf releases",
+  "SWHS rf harvest by user group",
+  "SWHS rf releases by user group",
+  "Logbook total rf charter harvests",
   "Logbook pelagic charter harvests",
   "Logbook yelloweye charter harvests",
-  "Logbook total charter releases",
+  "Logbook total rf charter releases",
   "Logbook pelagic charter releases",
   "Logbook yelloweye charter releases",
   "Central and Kodiak species composition data",
@@ -195,19 +196,19 @@ data_source_order <- c(
 )
 
 rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
-      data = rep("SWHS total harvests",length(unique(Hhat_ay$year)))),
+      data = rep("SWHS total rf harvests",length(unique(Hhat_ay$year)))),
       
       cbind(year = as.numeric(unique(Rhat_ay$year)),
-      data = rep("SWHS total releases",length(unique(Rhat_ay$year)))),
+      data = rep("SWHS total rf releases",length(unique(Rhat_ay$year)))),
       
       cbind(year = as.numeric(unique(Hhat_ayu$year)),
-      data = rep("SWHS harvest by user group",length(unique(Hhat_ayu$year)))),
+      data = rep("SWHS rf harvest by user group",length(unique(Hhat_ayu$year)))),
       
       cbind(year = as.numeric(unique(Rhat_ayu$year)),
-      data = rep("SWHS releases by user group",length(unique(Rhat_ayu$year)))),
+      data = rep("SWHS rf releases by user group",length(unique(Rhat_ayu$year)))),
       #Logbook
       cbind(year = as.numeric(unique(H_ayg$year)),
-      data = rep("Logbook total charter harvests",length(unique(H_ayg$year)))),
+      data = rep("Logbook total rf charter harvests",length(unique(H_ayg$year)))),
       
       cbind(year = as.numeric(unique(H_ayg$year[!is.na(H_ayg$Hp)])),
       data = rep("Logbook pelagic charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hp)])))),
@@ -216,7 +217,7 @@ rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
       data = rep("Logbook yelloweye charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hye)])))),
       
       cbind(year = as.numeric(unique(R_ayg$year)),
-      data = rep("Logbook total charter releases",length(unique(R_ayg$year)))),
+      data = rep("Logbook total rf charter releases",length(unique(R_ayg$year)))),
       
       cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rp)])),
       data = rep("Logbook pelagic charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rp)])))),
