@@ -187,8 +187,7 @@ readinData <- function(spl_knts = 7,
            seR = ifelse(seR == 0, 1, seR)) 
   
   # Survey data on catch composition
-  S_ayu0 <- 
-    readRDS(".//data//bayes_dat//S_ayu.rds") 
+  S_ayu0 <- readRDS(".//data//bayes_dat//S_ayu.rds") 
   S_ayu <- 
     S_ayu0 %>% mutate(year = as.integer(year)) %>%
     bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
@@ -206,6 +205,16 @@ readinData <- function(spl_knts = 7,
   #                         year > 2019 & year < 2025,
   #                       NA,ye_n))
   
+  # Kodiak hydroacoustic supplemental data
+  kha <- readRDS(".//data//bayes_dat//kha.rds")
+  
+  #Weigth and release mortality data 
+  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+    mutate(assemblage = factor(assemblage, 
+                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope"))) %>%
+    arrange(assemblage, user,region, area, year) 
+      
+  #---------------------------------------
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
   
@@ -223,6 +232,8 @@ readinData <- function(spl_knts = 7,
   
   Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   Rhat_ay <- Rhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
+  
+  wt_rm <- wt_rm %>% filter(year >= start_yr & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
   Y = length(unique(Hhat_ay$year))
@@ -253,16 +264,29 @@ readinData <- function(spl_knts = 7,
            N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                         NA,N)) %>%
     filter(!is.na(N_x))
-
+  
+  S_ayu %>% mutate(area_n = as.numeric(area)) %>%
+    select(area,area_n) %>% unique() %>% #-> area_ns
+    right_join(kha, by = "area") %>% filter(year >= start_yr & year <= end_yr) %>%
+    mutate(#area_n = , 
+           #user_n = ifelse(user == "charter", 0, 1), 
+           year_n = year - (start_yr - 1)) %>% 
+    select(year, year_n, area_n, #N = rf_tot, 
+           pelagic = rf_tot, black = brf_tot, 
+           pel_cv = rf_cv, black_cv = brf_cv,
+           prop_brf, prop_cv,
+           area) -> kha_dat
+  
+  kha_dat <- rbind(kha_dat %>% mutate(user_n = 0),
+                   kha_dat %>% mutate(user_n = 1))
   
   matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
-  #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
+  #matrix_Hhat_ay[4, 1:5] <- NA  #Adam had edited out PWSO data when he started out
   cvHhat_ay = matrix(Hhat_ay$seH, nrow = A, ncol = Y, byrow = TRUE) /
     matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
   cvHhat_ay[is.na(cvHhat_ay)] <- 1
   
   #with(Chat_ay, table(area,year))
-  
   matrix_Rhat_ay <- cbind(matrix(NA,nrow = A, ncol = Y - length(unique(Rhat_ay$year))),
                           matrix(Rhat_ay$Rhat, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE))
   
@@ -276,8 +300,48 @@ readinData <- function(spl_knts = 7,
   dim(matrix_Hhat_ay)
   dim(matrix_Rhat_ay)
   
-  #Create JAGs data and then bundle it up
+  write.csv(wt_rm, "data/wt_rm_check.csv", row.names = F)
+
+sc_rmwt <- wt_rm %>% filter(region != "Southeast")
+se_rmwt <- wt_rm %>% filter(region == "Southeast")
+
+r1_rmort <- array(se_rmwt$r_mort, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
+                                    length(unique(se_rmwt$area)),
+                                    length(unique(se_rmwt$user)),
+                                    length(unique(se_rmwt$assemblage)))) 
   
+r2_rmort <- array(sc_rmwt$r_mort, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
+                        length(unique(sc_rmwt$area)),
+                        length(unique(sc_rmwt$user)),
+                        length(unique(sc_rmwt$assemblage)))) 
+
+r1_wt <- array(se_rmwt$wt_lbs, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
+                                    length(unique(se_rmwt$area)),
+                                    length(unique(se_rmwt$user)),
+                                    length(unique(se_rmwt$assemblage)))) 
+
+r2_wt <- array(sc_rmwt$wt_lbs, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
+                                    length(unique(sc_rmwt$area)),
+                                    length(unique(sc_rmwt$user)),
+                                    length(unique(sc_rmwt$assemblage)))) 
+
+r1_wtcv <- array(se_rmwt$wt_cv, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
+                                 length(unique(se_rmwt$area)),
+                                 length(unique(se_rmwt$user)),
+                                 length(unique(se_rmwt$assemblage)))) 
+
+r2_wtcv <- array(sc_rmwt$wt_cv, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
+                                 length(unique(sc_rmwt$area)),
+                                 length(unique(sc_rmwt$user)),
+                                 length(unique(sc_rmwt$assemblage)))) 
+
+#se_rmwt %>% filter(assemblage == "slope") ->sl
+#with(sl,table(year,user,area))
+
+#r1_rmort[,,,4]
+#r1_wt[,,,5]
+
+  #Create JAGs data and then bundle it up
   jags_dat <- 
     list(
       A = A, Y = Y, C = C,
@@ -378,7 +442,23 @@ readinData <- function(spl_knts = 7,
       SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
-      regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
+      regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
+      
+      Nkha = dim(kha_dat)[1],
+      kprop_b = kha_dat$prop_brf,
+      kprop_cv = kha_dat$prop_cv,
+      
+      kha_area = kha_dat$area_n,
+      kha_year = kha_dat$year_n,
+      kha_user = kha_dat$user_n,
+      
+      r1_mort = r1_rmort,
+      r1_wt = r1_wt,
+      r1_wtcv = r1_wtcv,
+      
+      r2_mort = r2_rmort,
+      r2_wt = r2_wt,
+      r2_wtcv = r2_wtcv
     )
   
   return(list(jags_dat = jags_dat,
@@ -398,32 +478,31 @@ readinData <- function(spl_knts = 7,
 #-------------------------------------------------------------------------------
 # function for loading parameters
 jags_params <- function(){
-  params <- c(#SWHS bias; assumed same for C and H
-    #"logbc", "mu_bc", "sd_bc",
-    #SWHS bias, separate C and H
+  params <- c(
+    #SWHS bias; assumed same for R and H
     "logbc_H", "mu_bc_H", "sd_bc_H",
-    #"logbc_C", "mu_bc_C", "sd_bc_C",
     "logbc_R", "mu_bc_R", "sd_bc_R",
-    "bc_R_offset","mu_bc_R_offset","sd_bcRoff",
+    #"bc_R_offset","mu_bc_R_offset","sd_bcRoff",
+    
     #User proportions (proportion guided); different for H and R
     "pG", "b1_pG", "b2_pG",
-    #"pG_R", "b1_pG_R", "b2_pG_R",
+    
     #proportion harvested: 
-    "pH", "tau_pH",#"pHu",
-    "pH2", "tau_pH2",#"pHu",
-    "pHg","pHu","pHnpny",
+    "pH", "tau_pH",
+    "pHg","pHu",#"pHnpny",
     "mu_beta0_pH","tau_beta0_pH",
     "mu_beta1_pH","tau_beta1_pH",
     "mu_beta2_pH","tau_beta2_pH",
     "mu_beta3_pH","tau_beta3_pH",
     "mu_beta4_pH","tau_beta4_pH",
     "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
+    
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
     "sdR","mu_sdR","tau_sdR",
-    #"re_pH","sd_pH",
-    #proportions same for catch and harvest? thinking on it?
+    
+    #Species apportionment of harvests
     "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
     "mu_beta0_pelagic", "tau_beta0_pelagic",
     "mu_beta1_pelagic", "tau_beta1_pelagic",
@@ -436,12 +515,6 @@ jags_params <- function(){
     "mu_beta2_yellow", "tau_beta2_yellow",
     "mu_beta3_yellow", "tau_beta3_yellow",
     "mu_beta4_yellow", "tau_beta4_yellow",
-    "p_yellow_x", "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
-    "mu_beta0_yellow_x", "tau_beta0_yellow_x",
-    "mu_beta1_yellow_x", "tau_beta1_yellow_x",
-    "mu_beta2_yellow_x", "tau_beta2_yellow_x",
-    "mu_beta3_yellow_x", "tau_beta3_yellow_x",
-    "mu_beta4_yellow_x", "tau_beta4_yellow_x",
     "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
     "mu_beta0_black", "tau_beta0_black",
     "mu_beta1_black", "tau_beta1_black",
@@ -461,9 +534,11 @@ jags_params <- function(){
     "mu_beta3_slope", "tau_beta3_slope",
     "mu_beta4_slope", "tau_beta4_slope",
     "mu_beta5_slope", "tau_beta5_slope",
+    
     #random effects on species
     "re_pelagic", "re_black","re_yellow","re_dsr","re_slope","re_rslope",
     "sd_comp", "tau_comp",
+    
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
     "Hp_ayg", "Hp_ayu", "Hp_ay",
@@ -475,12 +550,7 @@ jags_params <- function(){
     "logHhat_ay",
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
-    #catch estimates and spline parts
-    #"Chat_ay","C_ay", "C_ayg", "C_ayu", 
-    #"Cb_ayg", "Cb_ayu", "Cb_ay",
-    #"Cy_ayg", "Cy_ayu", "Cy_ay",
-    #with hierarchichal pline lambda
-    #"mu_lambda_C","sigma_lambda_C","beta_C","beta0_C",
+
     #releases
     "logRhat_ay","logRhat_ayg",
     "R_ay", "R_ayg", "R_ayu", 
@@ -493,7 +563,34 @@ jags_params <- function(){
     "pDSR_YE_ayg","pDSR_YE_ayu","pDSR_YE_ay",
     "Rs_ayg", "Rs_ayu", "Rs_ay",
     "pR_dsr","pr_slope", "b1_pRslope","b2_pRslope",
-    "nonrecR_ayg")
+    "nonrecR_ayg",
+    
+    #Kodiak hydroacoustic
+    "mu_kap","tau_kap","kap",
+    
+    #weight
+    "mu_wt","tau_wt","wt",
+    
+    #release mortality
+    "Rp_ayg_mort","Rp_ayu_mort",
+    "Rb_ayg_mort","Rb_ayu_mort",
+    "Ry_ayg_mort","Ry_ayu_mort",
+    "Rdnye_ayg_mort","Rdnye_ayu_mort",
+    "Rs_ayg_mort","Rs_ayu_mort",
+    
+    #total mortality
+    "Tp_ayg_mort","Tp_ayu_mort",
+    "Tb_ayg_mort","Tb_ayu_mort",
+    "Ty_ayg_mort","Ty_ayu_mort",
+    "Tdnye_ayg_mort","Tdnye_ayu_mort",
+    "Ts_ayg_mort","Ts_ayu_mort",
+    
+    #biomass conversions
+    "Bp_ayg_mort","Bp_ayu_mort",
+    "Bb_ayg_mort","Bb_ayu_mort",
+    "By_ayg_mort","By_ayu_mort",
+    "Bdnye_ayg_mort","Bdnye_ayu_mort",
+    "Bs_ayg_mort","Bs_ayu_mort")
   return(params)
 }
 

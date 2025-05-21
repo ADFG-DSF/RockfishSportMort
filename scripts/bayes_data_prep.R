@@ -13,6 +13,7 @@
 library(readxl)
 library(tidyverse)
 library(ggplot2)
+library(janitor)
 
 REP_YR <- 2023
 
@@ -620,5 +621,241 @@ S_ayu <-
   rbind(sppcompR1, sppcompR2) %>%
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
   arrange(user, area, year)
+
 table(S_ayu$region, S_ayu$area)
 saveRDS(S_ayu, ".\\data\\bayes_dat\\S_ayu.rds")
+
+#-------------------------------------------------------------------------------
+# Kodiak hydroacoustic supplemental data  ----
+#-------------------------------------------------------------------------------
+#Note no samples from SOKO2SAP (= southeast + southwest + sakpen + chignik)
+#Note no samples from BSAI (= aleutian + bering)
+#Note only westside from WKMA (= westside + mainland)
+
+kha <- read.csv("data/raw_dat/kodiak_stereocom_dat.csv") %>%
+  clean_names() %>%
+  mutate(district = tolower(district),
+         area = ifelse(district %in% c("southeast","southwest","chignik"),"SOKO2SAP",
+                       ifelse(district %in% c("westside","mainland"),"WKMA",
+                              ifelse(district == "shumagins","BSAI",district))),
+         across(where(is.character), ~ ifelse(grepl("^[0-9,]+$", .), as.numeric(gsub(",", "", .)), .)),
+         percent_brf = percent_brf/100,
+         rf_var = se_rf_abund ^ 2,
+         brf_var = se_brf_abund ^ 2)
+
+kha %>% group_by(year,area) %>%
+  summarise(rf_tot = sum(rf_abund),
+            brf_tot = sum(brf_abund),
+            n_stations = sum(n_stations),
+            rf_var = sum(rf_var),
+            brf_var = sum(brf_var),
+            rf_cv = sqrt(rf_var) / rf_tot,
+            brf_cv = sqrt(brf_var) / brf_tot,
+            cov = ifelse(is.na(cov(rf_abund,brf_abund,use = "complete.obs")),
+                         0,cov(rf_abund,brf_abund,use = "complete.obs")),
+            #cov = cov(rf_abund,brf_abund),
+            prop_brf = brf_tot / rf_tot,
+            prop_var = ((1/rf_tot)^2) * brf_var +
+              ((brf_tot/(rf_tot^2))^2) * rf_var, #- 2 * (brf_tot / (rf_tot^3)) * cov
+            prop_se = sqrt(prop_var),
+            prop_cv = prop_se / prop_brf) -> kha
+
+saveRDS(kha, ".\\data\\bayes_dat\\kha.rds")
+
+#-------------------------------------------------------------------------------
+# Release mortality and Biomass data
+#-------------------------------------------------------------------------------
+# Note that the 2 regions approach things a bit differently.
+# Southcentral factors in long term estimates of depth-at-release data to adjust
+# their mortality esimtates while southeast applies a standard rate base on year
+# when dwr mechanisms were mandated. 
+# Secondly, southeast divides their slope numbers into large and small slope rf.
+
+# Southcentral data:
+sc_wt_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc.csv") %>% clean_names() %>%
+  mutate(#cfmu = tolower(cfmu),
+         user = tolower(user),
+         assemblage = tolower(assemblage))
+
+sc_wt_rm %>% group_by(year, cfmu, assemblage, user) %>%
+  summarize(wt_kg = weighted.mean(avg_wt_kg,p_rel,na.rm=T),
+            wt_cv = ifelse(is.na(weighted.mean(se_wt_kg) / wt_kg),1,
+                           weighted.mean(se_wt_kg) / wt_kg),
+            r_mort = weighted.mean(mort_rate, p_rel, na.rm = T)) -> sc_wt_rm
+
+#Southeast data
+se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                       sheet = "Wt matrix",
+                       range = paste0("A1:G2000")) %>% clean_names() %>%
+  mutate(cfmu = rpt_area, #tolower(rpt_area),
+         user = tolower(user),
+         assemblage = tolower(assemblage)) %>%
+  select(-rpt_area) %>%
+  filter(rowSums(is.na(.)) < ncol(.))
+
+unique(se_wt$cfmu)
+
+se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                   sheet = "Mortality Rates",
+                   range = paste0("A1:E2000")) %>% clean_names() %>%
+  mutate(year = as.numeric(year),
+         cfmu = rpt_area, #tolower(rpt_area),
+         user = tolower(user),
+         assemblage = tolower(assemblage)) %>%
+  select(-rpt_area) %>%
+  filter(rowSums(is.na(.)) < ncol(.))
+
+se_rm %>% mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+                                     "slope",assemblage)) %>%
+  group_by(year,user,assemblage) %>%
+  summarize(mrate = mean(mrate, na.rm=T)) ->mrates
+
+se_slopes <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                   sheet = "MHS num Fish",
+                   range = paste0("A1:R300")) %>% clean_names() %>%
+  mutate(year = as.numeric(year),
+         cfmu = rpt_area, #tolower(rpt_area),
+         user = tolower(user)) %>%
+  select(year,cfmu,user,slope_lg_n,slope_sm_n) %>%
+  pivot_longer(cols = c(slope_lg_n,slope_sm_n),
+               values_to = "slope_n",
+               names_to = "slope_size") %>%
+  mutate(assemblage = str_remove(slope_size,"_n")) %>%
+  select(-slope_size) %>%
+  filter(rowSums(is.na(.)) < ncol(.))
+
+print(se_slopes %>% filter(year > 2010) %>%
+        arrange(year,cfmu,user),n = 50)
+
+#with(sc_wt_rm, table(year,cfmu, assemblage, user))
+full_join(se_rm,se_wt,by = c("year","user","assemblage","cfmu")) %>%
+  full_join(se_slopes,by = c("year","cfmu","user","assemblage")) %>%
+  mutate(slope_cat = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+                            assemblage,NA)) %>%
+  mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+                             "slope",assemblage),
+         mean_wt_lbs = ifelse(num_wts < 5, NA, mean_wt_lbs),
+         std_error_m_wt = ifelse(num_wts < 5, NA, std_error_m_wt),
+         wt_cv = std_error_m_wt / mean_wt_lbs) %>%
+  left_join(mrates %>% mutate(mrate2 = mrate) %>% select(-mrate),
+            by = c("year","user","assemblage")) %>%
+  mutate(mrate = ifelse(is.na(mrate),mrate2,mrate)) %>%
+  group_by(assemblage,year,user,cfmu) %>%
+  mutate(wt_lbs = ifelse(assemblage != "slope",mean_wt_lbs,
+                          weighted.mean(mean_wt_lbs,slope_n,na.rm=T)),
+         wt_cv = ifelse(assemblage != "slope",wt_cv,
+                         weighted.mean(wt_cv,slope_n,na.rm=T))) %>%
+  mutate(wt_lbs = ifelse(is.nan(wt_lbs),# & mean_wt_lbs > 0,
+                         weighted.mean(mean_wt_lbs,num_wts,na.rm=T),
+                         wt_lbs),
+         wt_cv = ifelse(is.nan(wt_cv),# & mean_wt_lbs > 0,
+                         weighted.mean(std_error_m_wt / mean_wt_lbs,num_wts,na.rm=T),
+                        wt_cv)) %>%
+  ungroup() %>% #filter(!(is.na(wt_lbs) & slope_n == 0)) -> gack #%>% 
+  select(year,cfmu,assemblage,user,wt_lbs,wt_cv,mrate) %>%
+  unique() %>% filter(!is.na(user))-> se_wt_rm
+
+print(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT") %>%
+        arrange(user,year),n=80) 
+with(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT"),
+     table(year,user))
+
+#fill in release mortalities back to 1977
+ggplot(sc_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
+  geom_line() +
+  facet_wrap(~assemblage)
+
+sc_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate = r_mort[which.min(year)]) -> sc_mrates_oldest
+
+sc_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate_dwr = r_mort[which.max(year)]) -> sc_mrates_dwr
+
+expand.grid(year = seq(1977,(max(sc_wt_rm$year)),1),
+            cfmu = unique(sc_wt_rm$cfmu),
+            assemblage = unique(sc_wt_rm$assemblage),
+            user = unique(sc_wt_rm$user)) %>%
+  left_join(sc_mrates_oldest, by = c("user","assemblage","cfmu")) %>%
+  left_join(sc_mrates_dwr, by = c("user","assemblage","cfmu")) %>%
+  full_join(sc_wt_rm, by = c("user","assemblage","cfmu","year")) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         wt_cv = ifelse(is.na(wt_cv),1,wt_cv),
+         wt_lbs = wt_kg * 2.204622476038) %>%
+  select(year,cfmu,assemblage,user,wt_lbs,wt_cv,r_mort) -> r2_wt_rm
+unique(r2_wt_rm$cfmu) 
+
+#Add in other Kodiak areas:
+r2_wt_rm <- rbind(r2_wt_rm,
+                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
+                    mutate(cfmu = "BSAI"),
+                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
+                    mutate(cfmu = "SOKO2SAP"),
+                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
+                    mutate(cfmu = "WKMA"),
+                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
+                    mutate(cfmu = "afognak"),
+                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
+                    mutate(cfmu = "eastside"))
+
+ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
+  geom_line() + geom_point() +
+  facet_wrap(~assemblage + user)
+
+
+se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate_old = mrate[which.min(year)]) -> se_mrates_oldest
+
+se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate_dwr = mrate[which.max(year)]) -> se_mrates_dwr
+
+expand.grid(year = seq(1977,max(se_wt_rm$year,na.rm=T),1),
+            cfmu = unique(se_wt_rm$cfmu),
+            assemblage = unique(se_wt_rm$assemblage),
+            user = unique(se_wt_rm$user)) %>%
+  left_join(se_mrates_oldest, by = c("user","assemblage","cfmu")) %>%
+  left_join(se_mrates_dwr, by = c("user","assemblage","cfmu")) %>%
+  full_join(se_wt_rm, by = c("user","assemblage","cfmu","year")) %>%
+  mutate(r_mort = ifelse(is.na(mrate) & year < 2013,mrate_old,
+                         ifelse(is.na(mrate) & year > 2012,mrate_dwr,mrate)),
+         wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) %>%
+  select(year,cfmu,assemblage,user,wt_lbs ,wt_cv,r_mort) -> r1_wt_rm
+
+ggplot(r1_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
+  geom_line() + geom_point() +
+  facet_wrap(~assemblage + user)
+
+rbind(r1_wt_rm,r2_wt_rm) %>%
+  mutate(area = ifelse(cfmu != "NORTHEAST",cfmu,"northeast")) %>% 
+  select(-cfmu) %>%
+  left_join(lut,by = "area") %>%
+  arrange(assemblage, region, area, year)-> wt_rm_dat
+
+with(wt_rm_dat, table(region,area))
+
+saveRDS(wt_rm_dat, ".\\data\\bayes_dat\\wt_rm_dat.rds")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
