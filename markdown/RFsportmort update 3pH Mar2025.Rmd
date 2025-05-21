@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "LB_FIT_3pH_vagPr_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "theModel_prelim_",Sys.Date(),".html"))
       })
 ---
 
@@ -34,6 +34,7 @@ library(readxl)
 library(openxlsx2)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
 start_yr <- 1977
 end_yr <- 2023
 REP_YR <- 2023 #for Howard estimates
@@ -52,7 +53,7 @@ list2env(readinData(start_yr = start_yr,
 #mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
-res <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_7kn_2025-04-24"
+res <- "rf_harvest_est_kha_rm_wt_thru2023_1e+05_7kn_2025-05-21"
 #res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
 #res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
 
@@ -2470,8 +2471,6 @@ ggsave("../figures/bayes_model/p_pelagic.png")
 Note that in Southeast Alaska we only have composition data starting in 2006. Tania dug up old SE data, but it did not provide any useful data for species apportionment. For the most part, P(black|pelagic) is relatively constant across areas, with the exception of Cook Inlet and NSEI in Southeast AK. It may be worth discussing whether the shifts in those areas is a result of improved or changing species identification rather than actual shift in the species composition of the catch.  
  
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = "**Figure 26.**- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for 16 commerical fishing manamgent areas, 1996-2023."}
-pal <- wes_palette(name = "IsleofDogs1", n=3) 
-
 p_black_mod <- 
   rbind(postH$mean$p_black[,,1] %>% t(),
         postH$mean$p_black[,,2] %>% t()) %>%
@@ -2552,22 +2551,74 @@ rbind(beta0_black <- postH$q50$beta0_black,
          year = y + 1976,
          user = ifelse(u == 1, "charter","private"))-> black_trend
 
-rbind(p_black_obs) %>%
-  ggplot(aes(x = year, y = p_black, color = user)) +
+rbind(postH$mean$kap[,1] %>% t(),
+        postH$mean$kap[,2] %>% t()) %>% t() %>%
+  as.data.frame() %>% 
+  setNames(nm = c("charter","private")) %>%
+  mutate(area = unique(H_ayg$area)[1:10]) %>%
+  pivot_longer(cols = c("charter","private"),
+               values_to = "adj",
+               names_to = "user")-> kap
+
+data.frame('ha est' = jags_dat$kprop_b,
+           area_n = jags_dat$kha_area,
+           user = jags_dat$kha_user,
+           comp_year = jags_dat$kha_year) %>%
+  full_join(data.frame(area = unique(H_ayg$area)[1:10],
+           area_n = c(1:10)), by = "area_n") %>%
+  full_join(p_black_obs %>% select(comp_year,year), by = "comp_year") %>%
+  unique() %>% 
+  mutate(user = ifelse(user == 0, "charter","private")) %>%
+  left_join(kap, by = c("area","user")) %>%
+  mutate(ha_adj = ha.est - adj) %>%
+  filter(!is.na(area)) %>%
+  #mutate(source = "HA adjusted") %>%
+  mutate(source = factor(case_when(
+    !is.na(ha_adj) ~ "p black adj.",
+    TRUE ~ "p black"
+  ))) -> ha_dat
+
+ha_dat %>% pivot_longer(cols = c("ha.est","ha_adj"),
+                        names_to = "ha",
+                        values_to = "p_black") %>%
+  mutate(user = ifelse(ha == "ha.est","ha p black",
+                       ifelse(ha == "ha_adj" & user == "charter",
+                              "ha charter adj.","ha private adj."))) -> ha_dat
+
+pal <- c(wes_palette(name = "IsleofDogs1", n=2)[1],"blue","cyan3","darkcyan",wes_palette(name = "IsleofDogs1", n=2)[2]) 
+
+rbind(p_black_obs %>% select(year,p_black,user,area),
+      ha_dat %>% select(year,p_black, user,area)) %>%
+  filter(!is.na(user)) %>%
+  #mutate(user = factor(user, levels = c("Charter", "Private", 
+  #                                      "ha p black","ha charter adj.","ha private adj."))) %>%
+  ggplot(aes(x = year, y = p_black, color = user, fill = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
-  geom_ribbon(data = p_black_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
+  #scale_color_manual(values = c("Private" = pal[1], #pal["Private"],
+  #                              "Charter" = pal[2], #["Charter"],
+  #                              "p black adj." = c("blue"),
+  #                              "p black" = "darkcyan")) +
+  geom_ribbon(data = p_black_mod , aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point() +
-  geom_line(data = p_black_mod, linetype = 2) +
-  #geom_line(data = p_black_mod, aes(x=year, y=trend,color=user)) +
-  #geom_hline(data = p_black_trend, aes(yintercept = p_black), linetype = 2) +
-  geom_line(data=black_trend) +
+  #geom_point(data = ha_dat,aes(x = year, y = ha_adj, col = "p black adj.", shape = user)) +
+  #geom_point(data = ha_dat,aes(x = year, y = ha.est, col = user), shape = 10) +
+  #geom_point(data = ha_dat, aes(x = year, y = ha_adj, color = source), shape = 1) +
+  #geom_point(data = ha_dat, aes(x = year, y = ha.est, color = source), shape = 10) +
+  geom_line(data = p_black_mod, linetype = 2, aes(color = user, fill = user)) +
+  geom_line(data=black_trend,aes(color = user, fill = user)) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) + theme_bw(base_size = 16)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic rockfish that were black", x = "Year") +
+  #     color = "Hydroacoustic data",
+  #  fill = "User") +
+  #guides(
+  #  fill = guide_legend(order = 1),
+  #  color = guide_legend(order = 2)
+  #) +
   scale_shape_manual(values = c(1, 18))
 
 ggsave("../figures/bayes_model/p_black.png") 

@@ -167,6 +167,15 @@ readinData <- function(spl_knts = 7,
   #                         year > 2019 & year < 2025,
   #                       NA,ye_n))
   
+  # Kodiak hydroacoustic supplemental data
+  kha <- readRDS("..//data//bayes_dat//kha.rds")
+  
+  #Weigth and release mortality data 
+  wt_rm <- readRDS("..//data//bayes_dat//wt_rm_dat.rds") %>%
+    mutate(assemblage = factor(assemblage, 
+                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope"))) %>%
+    arrange(assemblage, user,region, area, year) 
+  
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
   
@@ -189,6 +198,8 @@ readinData <- function(spl_knts = 7,
   Hhat_ay <- Hhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   Chat_ay <- Chat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   Rhat_ay <- Rhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
+  
+  wt_rm <- wt_rm %>% filter(year >= start_yr & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
   Y = length(unique(Hhat_ay$year))
@@ -226,7 +237,20 @@ readinData <- function(spl_knts = 7,
   #with(comp, table(area_n, area))
   #with(comp, table(user_n,area))
   #with(S_ayu, table(user,area))
+  S_ayu %>% mutate(area_n = as.numeric(area)) %>%
+    select(area,area_n) %>% unique() %>% #-> area_ns
+    right_join(kha, by = "area") %>% filter(year >= start_yr & year <= end_yr) %>%
+    mutate(#area_n = , 
+      #user_n = ifelse(user == "charter", 0, 1), 
+      year_n = year - (start_yr - 1)) %>% 
+    select(year, year_n, area_n, #N = rf_tot, 
+           pelagic = rf_tot, black = brf_tot, 
+           pel_cv = rf_cv, black_cv = brf_cv,
+           prop_brf, prop_cv,
+           area) -> kha_dat
   
+  kha_dat <- rbind(kha_dat %>% mutate(user_n = 0),
+                   kha_dat %>% mutate(user_n = 1))
   
   matrix_Hhat_ay <- matrix(Hhat_ay$Hhat, nrow = A, ncol = Y, byrow = TRUE)
   #matrix_Hhat_ay[4, 1:5] <- NA  #what's up with this? assuming bad data?
@@ -259,6 +283,14 @@ readinData <- function(spl_knts = 7,
   
   dim(matrix_Hhat_ay)
   dim(matrix_Chat_ay)
+  
+  wt_rm <- wt_rm %>%
+    mutate(across(where(is.numeric), ~ ifelse(is.nan(.), NA, .)))
+  
+  #write.csv(wt_rm, "data/wt_rm_check.csv", row.names = F)
+  
+  sc_rmwt <- wt_rm %>% filter(region != "Southeast") %>% arrange(region,area,year)
+  se_rmwt <- wt_rm %>% filter(region == "Southeast") %>% arrange(region,area,year)
   
   #Create JAGs data and then bundle it up
   
@@ -357,7 +389,105 @@ readinData <- function(spl_knts = 7,
       SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
-      regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
+      regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
+      
+      Nkha = dim(kha_dat)[1],
+      kprop_b = kha_dat$prop_brf,
+      kprop_cv = kha_dat$prop_cv,
+      
+      kha_area = kha_dat$area_n,
+      kha_year = kha_dat$year_n,
+      kha_user = kha_dat$user_n,
+      
+      r1_gwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_y = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_p = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_d = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_s = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_y = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_p = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_d = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_s = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      
+      r1_gwtcv_b = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_y = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_p = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_d = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_s = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_b = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_y = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_p = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_d = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_s = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      
+      r1_gmort_b = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_y = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_p = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_d = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_s = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_b = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_y = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_p = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_d = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_s = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      
+      r2_gwt_b = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gwt_y = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwt_b = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwt_y = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      
+      r2_gwtcv_b = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gwtcv_y = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwtcv_b = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwtcv_y = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      
+      r2_gmort_b = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gmort_y = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_umort_b = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_umort_y = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                          nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE)
     )
   
   return(list(jags_dat = jags_dat,

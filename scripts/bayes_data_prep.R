@@ -785,6 +785,8 @@ expand.grid(year = seq(1977,(max(sc_wt_rm$year)),1),
   select(year,cfmu,assemblage,user,wt_lbs,wt_cv,r_mort) -> r2_wt_rm
 unique(r2_wt_rm$cfmu) 
 
+r2_wt_rm %>% filter(wt_cv == 0)
+
 #Add in other Kodiak areas:
 r2_wt_rm <- rbind(r2_wt_rm,
                   r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
@@ -826,10 +828,13 @@ ggplot(r1_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
   facet_wrap(~assemblage + user)
 
 rbind(r1_wt_rm,r2_wt_rm) %>%
-  mutate(area = ifelse(cfmu != "NORTHEAST",cfmu,"northeast")) %>% 
+  mutate(area = ifelse(cfmu != "NORTHEAST",cfmu,"northeast"),
+         wt_cv = ifelse(wt_cv == 0,1,wt_cv)) %>% 
   select(-cfmu) %>%
   left_join(lut,by = "area") %>%
   arrange(assemblage, region, area, year)-> wt_rm_dat
+
+wt_rm_dat %>% filter(wt_cv == 0)
 
 with(wt_rm_dat, table(region,area))
 

@@ -57,7 +57,7 @@ ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_kha" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "rf_harvest_est_kha_rm_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -68,7 +68,7 @@ if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_7kn_2025-04-24" #for yelloweye betas:
+use_this_model <- "HR_fitLBR_2bias_hierPcomp_3pH_CLEAN_thru2023_5e+06_7kn_2025-04-29" #for yelloweye betas:
 #use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
@@ -418,7 +418,11 @@ rhat_exam %>% group_by(variable,area) %>%
   arrange(-badRhat_avg,-n) %>% 
   filter(str_detect(variable, "lambda"))
 
-jagsUI::traceplot(postH, parameters = c("mu_kap","tau_kap","kap"))
+jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
+
+jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt",
+                                        "mu2_wt","sd2_wt",
+                                        "mu3_wt","sd3_wt"))
 
 jagsUI::traceplot(postH, parameters = "lambda_H")
 

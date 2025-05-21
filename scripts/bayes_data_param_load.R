@@ -299,47 +299,14 @@ readinData <- function(spl_knts = 7,
   
   dim(matrix_Hhat_ay)
   dim(matrix_Rhat_ay)
+
+  wt_rm <- wt_rm %>%
+    mutate(across(where(is.numeric), ~ ifelse(is.nan(.), NA, .)))
   
   write.csv(wt_rm, "data/wt_rm_check.csv", row.names = F)
 
-sc_rmwt <- wt_rm %>% filter(region != "Southeast")
-se_rmwt <- wt_rm %>% filter(region == "Southeast")
-
-r1_rmort <- array(se_rmwt$r_mort, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
-                                    length(unique(se_rmwt$area)),
-                                    length(unique(se_rmwt$user)),
-                                    length(unique(se_rmwt$assemblage)))) 
-  
-r2_rmort <- array(sc_rmwt$r_mort, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
-                        length(unique(sc_rmwt$area)),
-                        length(unique(sc_rmwt$user)),
-                        length(unique(sc_rmwt$assemblage)))) 
-
-r1_wt <- array(se_rmwt$wt_lbs, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
-                                    length(unique(se_rmwt$area)),
-                                    length(unique(se_rmwt$user)),
-                                    length(unique(se_rmwt$assemblage)))) 
-
-r2_wt <- array(sc_rmwt$wt_lbs, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
-                                    length(unique(sc_rmwt$area)),
-                                    length(unique(sc_rmwt$user)),
-                                    length(unique(sc_rmwt$assemblage)))) 
-
-r1_wtcv <- array(se_rmwt$wt_cv, c(length(unique(se_rmwt$year)), #format[year,area,user,species]
-                                 length(unique(se_rmwt$area)),
-                                 length(unique(se_rmwt$user)),
-                                 length(unique(se_rmwt$assemblage)))) 
-
-r2_wtcv <- array(sc_rmwt$wt_cv, c(length(unique(sc_rmwt$year)), #format[year,area,user,species]
-                                 length(unique(sc_rmwt$area)),
-                                 length(unique(sc_rmwt$user)),
-                                 length(unique(sc_rmwt$assemblage)))) 
-
-#se_rmwt %>% filter(assemblage == "slope") ->sl
-#with(sl,table(year,user,area))
-
-#r1_rmort[,,,4]
-#r1_wt[,,,5]
+  sc_rmwt <- wt_rm %>% filter(region != "Southeast") %>% arrange(region,area,year)
+  se_rmwt <- wt_rm %>% filter(region == "Southeast") %>% arrange(region,area,year)
 
   #Create JAGs data and then bundle it up
   jags_dat <- 
@@ -452,13 +419,95 @@ r2_wtcv <- array(sc_rmwt$wt_cv, c(length(unique(sc_rmwt$year)), #format[year,are
       kha_year = kha_dat$year_n,
       kha_user = kha_dat$user_n,
       
-      r1_mort = r1_rmort,
-      r1_wt = r1_wt,
-      r1_wtcv = r1_wtcv,
+      r1_gwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_y = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_p = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_d = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwt_s = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_y = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_p = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_d = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwt_s = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
       
-      r2_mort = r2_rmort,
-      r2_wt = r2_wt,
-      r2_wtcv = r2_wtcv
+      r1_gwtcv_b = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_y = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_p = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                          nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_d = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gwtcv_s = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_b = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_y = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_p = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_d = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_uwtcv_s = matrix(se_rmwt$wt_cv[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      
+      r1_gmort_b = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_y = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_p = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_d = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_gmort_s = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "slope" & se_rmwt$user == "charter"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_b = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "black" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_y = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "yelloweye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_p = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "pelnbrf" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_d = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "dsrlessye" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+      r1_umort_s = matrix(se_rmwt$r_mort[se_rmwt$assemblage == "slope" & se_rmwt$user == "private"],
+                        nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
+
+      r2_gwt_b = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gwt_y = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwt_b = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwt_y = matrix(sc_rmwt$wt_lbs[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      
+      r2_gwtcv_b = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gwtcv_y = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwtcv_b = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_uwtcv_y = matrix(sc_rmwt$wt_cv[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+
+      r2_gmort_b = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "black" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_gmort_y = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "charter"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_umort_b = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "black" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE),
+      r2_umort_y = matrix(sc_rmwt$r_mort[sc_rmwt$assemblage == "yelloweye" & sc_rmwt$user == "private"],
+                        nrow = 10, ncol = length(unique(sc_rmwt$year)), byrow=TRUE)
     )
   
   return(list(jags_dat = jags_dat,
@@ -566,31 +615,34 @@ jags_params <- function(){
     "nonrecR_ayg",
     
     #Kodiak hydroacoustic
-    "mu_kap","tau_kap","kap",
+    "mu_kap","sd_kap","kap",
     
     #weight
-    "mu_wt","tau_wt","wt",
+    "mu_wt","sd_wt",
+    "mu2_wt","sd2_wt",
+    "mu3_wt","sd3_wt",
+    "wt",
     
     #release mortality
-    "Rp_ayg_mort","Rp_ayu_mort",
-    "Rb_ayg_mort","Rb_ayu_mort",
-    "Ry_ayg_mort","Ry_ayu_mort",
-    "Rdnye_ayg_mort","Rdnye_ayu_mort",
-    "Rs_ayg_mort","Rs_ayu_mort",
+    "Rp_ayg_mort","Rp_ayu_mort","Rp_ay_mort",
+    "Rb_ayg_mort","Rb_ayu_mort","Rb_ay_mort",
+    "Ry_ayg_mort","Ry_ayu_mort","Ry_ay_mort",
+    "Rdnye_ayg_mort","Rdnye_ayu_mort","Rdnye_ay_mort",
+    "Rs_ayg_mort","Rs_ayu_mort","Rs_ay_mort",
     
     #total mortality
-    "Tp_ayg_mort","Tp_ayu_mort",
-    "Tb_ayg_mort","Tb_ayu_mort",
-    "Ty_ayg_mort","Ty_ayu_mort",
-    "Tdnye_ayg_mort","Tdnye_ayu_mort",
-    "Ts_ayg_mort","Ts_ayu_mort",
+    "Tp_ayg","Tp_ayu","Tp_ay",
+    "Tb_ayg","Tb_ayu","Tb_ay",
+    "Ty_ayg","Ty_ayu","Ty_ay",
+    "Tdnye_ayg","Tdnye_ayu","Tdnye_ay",
+    "Ts_ayg","Ts_ayu","Ts_ay",
     
     #biomass conversions
-    "Bp_ayg_mort","Bp_ayu_mort",
-    "Bb_ayg_mort","Bb_ayu_mort",
-    "By_ayg_mort","By_ayu_mort",
-    "Bdnye_ayg_mort","Bdnye_ayu_mort",
-    "Bs_ayg_mort","Bs_ayu_mort")
+    "Bp_ayg","Bp_ayu","Bp_ay",
+    "Bb_ayg","Bb_ayu","Bb_ay",
+    "By_ayg","By_ayu","By_ay",
+    "Bdnye_ayg","Bdnye_ayu","Bdnye_ay",
+    "Bs_ayg","Bs_ayu","Bs_ay")
   return(params)
 }
 
