@@ -735,7 +735,7 @@ options(scipen = 999)
 rf_plotdat %>%
             mutate(region = ifelse(area %in% southeast,"Southeast",
                                    ifelse(area %in% central,"Southcentral","Kodiak")),
-                   area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
             arrange(area,user,year) %>% 
             mutate(H = round(H,0),
                    H_lo95 = round(H_lo95,0),
@@ -825,7 +825,7 @@ rf_plotdat2 %>% mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered 
 rf_plotdat2 %>% 
             mutate(region = ifelse(area %in% southeast,"Southeast",
                                    ifelse(area %in% central,"Southcentral","Kodiak")),
-                   area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
             arrange(area,user,year) %>% 
             mutate(R = round(R,0),
                    R_lo95 = round(R_lo95,0),
@@ -1453,7 +1453,7 @@ ye_releases %>% full_join(ye_rmort %>% filter(category == "Est. mortality") %>%
 
 <br><br>
 
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- DSR rockfish (including yelloweye) harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- DSR rockfish (excluding yelloweye) harvests 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
 #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
 pal <- wes_palette(name = "AsteroidCity1", n=3) 
@@ -1546,7 +1546,7 @@ DSR_harv %>%  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
   #ylim(0,) +
   labs(y = "DSR Rockfish Harvests", x = "Year") 
 
-ggsave("../figures/bayes_model/dsr_harvests.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/dsr_harvests.png", width = 7, height = 4) 
 X <- X+1
 
 DSR_harv %>% 
@@ -1565,7 +1565,7 @@ DSR_harv %>%
 ```
 <br><br>
 
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- DSR rockfish releases (including yelloweye) 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- DSR rockfish releases (including yelloweye) 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
 #pal <- wes_palette(name = "Darjeeling1", n=3)
 pal <- wes_palette(name = "AsteroidCity1", n=3)
 
@@ -1701,7 +1701,7 @@ DSR_rel %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSE
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Non-YE DSR Rockfish Releases", x = "Year")
 
-ggsave("../figures/bayes_model/dsr_releases.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/dsr_releases.png", width = 7, height = 4) 
 X <- X+1
 
 DSR_rel %>% full_join(DSR_rmort %>% #filter(category == "Est. mortality") %>%
@@ -1727,7 +1727,7 @@ DSR_rel %>% full_join(DSR_rmort %>% #filter(category == "Est. mortality") %>%
 ```
 <br><br>
 
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Slope rockfish harvests 1996-2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Slope rockfish harvests 1996-2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
 #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
 pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
@@ -1814,7 +1814,7 @@ slope_harv %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","
   scale_y_continuous(labels = comma) +
   labs(y = "Slope Rockfish Harvests", x = "Year")
 
-ggsave("../figures/bayes_model/slope_harvests.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/slope_harvests.png", width = 7, height = 4) 
 X <- X+1
 
 slope_harv %>% 
@@ -1835,7 +1835,7 @@ X <- X+1
 ```
 <br><br>
 
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Slope rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Slope rockfish releases 1996--2023. Lines and error polygons represent model estimates and points and error bars represent Howard et al estimates.")}
 #pal <- wes_palette(name = "Darjeeling1", n=3)
 pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 
@@ -1963,12 +1963,12 @@ slope_rel %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
                 position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Slope Rockfish Releases", x = "Year")
 
-ggsave("../figures/bayes_model/slope_releases.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/slope_releases.png", width = 7, height = 4) 
 
 slope_rel %>% full_join(slope_rmort %>% filter(category == "Est. mortality") %>%
                         select(year,area,user, sd_Rmort,
@@ -2067,10 +2067,9 @@ brf_removals %>%
                    M_hi95 = round(B_hi95,2),
                    sd_M = round(sd_B,3)) %>%
             select(region,area,year,user,Mort_lbs,sd_M, M_lo95,M_hi95) -> brf_m
-unique(brf_m$area)
-#rep_wb$add_worksheet("Black_Mort_Lbs")
-#rep_wb$add_data("Black_Mort_Lbs", brf_m)
+
 ```
+<br><br>
 
 ```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Yellow rockfish estimated total removals in lbs in 1996--2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
 pal <- wes_palette(name = "FantasticFox1", n=3)#[c(1,5)]
@@ -2148,7 +2147,7 @@ ye_removals %>%
 #rep_wb$add_data("YE_Mort_Lbs", ye_m)
 ```
 
-```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Pelagic rockfish estimated total removals in lbs in 1996--2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Pelagic rockfish estimated total removals in lbs in 1996--2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
 pal <- wes_palette(name = "IsleofDogs1", n=6)
 
 as.data.frame(
@@ -2202,12 +2201,12 @@ pel_removals %>% filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
   facet_wrap(. ~ area, scales = "free") +
   geom_line() + #geom_point() +
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95, fill = user), alpha = 0.25, color = NA) +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Non-Black, Pelagic Removals (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/pel_removals.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/pel_removals.png", width = 7, height = 4) 
 X <- X+1
 
 pel_removals %>% 
@@ -2387,7 +2386,7 @@ pel_rel %>% full_join(pel_rmort %>% filter(category == "Est. mortality") %>%
 ```
 <br>
 
-```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Non-yelloweye, demersal shelf rockfish estimated total removals in lbs in 1996-2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Non-yelloweye, demersal shelf rockfish estimated total removals in lbs in 1996-2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
 pal <- wes_palette(name = "Rushmore1")[c(3,4,5)] 
 
 as.data.frame(
@@ -2446,7 +2445,7 @@ dsrlessye_removals %>% filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","S
   scale_y_continuous(labels = comma) +
   labs(y = "DSR (non YE) Rockfish Removals (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/dsr_removals.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/dsr_removals.png", width = 7, height = 4) 
 X <- X+1
 
 dsrlessye_removals %>% 
@@ -2466,7 +2465,7 @@ dsrlessye_removals %>%
 
 <br>
 
-```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Slope rockfish estimated total removals in lbs in 1996-2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Slope rockfish estimated total removals in lbs in 1996-2023. Total removals are calculated from the harvests, the estimated release mortality and mean fish weights. Error polygons represent 95% confidence intervals.")}
 pal <- wes_palette(name = "Rushmore1")[c(3,4,5)] 
 
 as.data.frame(
@@ -2520,12 +2519,12 @@ slope_removals %>% filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"
   facet_wrap(. ~ area, scales = "free") +
   geom_line() + #geom_point() +
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95, fill = user), alpha = 0.25, color = NA) +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Slope Rockfish Removals (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/slope_removals.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/slope_removals.png", width = 7, height = 4) 
 X <- X+1
 
 slope_removals %>% 
@@ -2668,7 +2667,7 @@ pG %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   ggplot(aes(x = pG)) +
   geom_histogram(binwidth = 0.02) +
-  facet_wrap(.~area) + theme_bw(base_size = 16)+
+  facet_wrap(.~area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Observations", x = "Proportion of harvests from guided trips")
 
@@ -2724,7 +2723,7 @@ rbind(pG_mod, pG_obs%>% mutate(pG_lo95 = NA, pG_hi95 = NA)) %>%
   geom_point() +
   geom_line() +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of harvests from guided trips", x = "Year")
 
@@ -2820,17 +2819,17 @@ pHpel_obs %>% filter(user != "all") %>%
   geom_ribbon(data = pHpel_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source)) +
-  geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  #geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
   #geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic catches that were harvested", x = "Year")
 
-ggsave("../figures/bayes_model/p_harv_pelagics.png") 
+ggsave("../figures/bayes_model/p_harv_pelagics.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -2919,17 +2918,17 @@ pHye_obs %>% filter(user != "all") %>%
   geom_ribbon(data = pHye_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
-  geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  #geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHye_mod, aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of yelloweye catches that were harvested", x = "Year")
 
-ggsave("../figures/bayes_model/p_harv_ye.png") 
+ggsave("../figures/bayes_model/p_harv_ye.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -3022,17 +3021,17 @@ pHnpny_obs %>% filter(user != "all") %>%
   geom_ribbon(data = pHnpny_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
-  geom_point(data  = pHnpny_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  #geom_point(data  = pHnpny_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHnpny_mod, aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagic, non-yelloweye catches that were harvested", x = "Year")
 
-ggsave("../figures/bayes_model/p_harv_nonyenonpel.png") 
+ggsave("../figures/bayes_model/p_harv_nonyenonpel.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -3137,14 +3136,11 @@ pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of DSR catches harvested", x = "Year")
 }
 X <- X+1
-
-df <- t(jags_dat$r2_gmort_b)
-stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 <br>
 
@@ -3241,14 +3237,11 @@ pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO",
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of slope catches harvested", x = "Year")
 }
 X <- X+1
-
-df <- t(jags_dat$r2_gmort_b)
-stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 ### SWHS bias
  
@@ -3301,7 +3294,7 @@ bias %>% filter(bc < 6 & data != "C_offset") %>%
   geom_histogram(binwidth = .05, alpha = 0.2, position = "identity") +
   coord_cartesian(xlim = c(0, 3)) +
   geom_vline(aes(xintercept = 1)) +
-  facet_wrap(.~area) + theme_bw(base_size = 16)+
+  facet_wrap(.~area) + theme_bw(base_size = 14)+
   labs(y = "Count", x = "Bias correction")
 }
 
@@ -3476,7 +3469,7 @@ rbind(bc_mod2, bc_obs) %>%
   geom_line() +
   coord_cartesian(ylim = c(0, 5)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
@@ -3490,7 +3483,7 @@ rbind(bc_mod2, bc_obs) %>%
   geom_line() +
   #coord_cartesian(ylim = c(0, 5)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
@@ -3588,12 +3581,12 @@ p_pelagic_obs %>%
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   geom_line(data=pel_trend) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of rockfish that were pelagic", x = "Year") +
   scale_shape_manual(values = c(19, 2))
 
-ggsave("../figures/bayes_model/p_pelagic.png") 
+ggsave("../figures/bayes_model/p_pelagic.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -3745,13 +3738,13 @@ rbind(p_black_obs %>% select(year,p_black,user,area),
   geom_line(data=black_trend,aes(color = user)) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of pelagic rockfish that were black", x = "Year") +
   scale_shape_manual(values = c(18, 18,10,2,2)) +
   scale_size_manual(values = c(2,2,3,2.25,2.25))
 
-ggsave("../figures/bayes_model/p_black.png") 
+ggsave("../figures/bayes_model/p_black.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -3871,11 +3864,11 @@ rbind(p_yellow_obs) %>%
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagic rockfish that were yelloweye", x = "Year")
 
-ggsave("../figures/bayes_model/p_ye.png") 
+ggsave("../figures/bayes_model/p_ye.png", width = 10, height = 8) 
 X<-X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -3883,7 +3876,7 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 ```
 ### P(DSR|non-pelagic)
  
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were DSR rockfish for 6 Southeast commerical fishing manamgent areas, 1996-2023.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were DSR rockfish for 6 Southeast commerical fishing manamgent areas, 1996-2023.")}
 pal <- wes_palette(name = "AsteroidCity1", n=3) 
 
 p_dsr_mod <- 
@@ -3987,11 +3980,11 @@ rbind(p_dsr_obs) %>% filter(area %in% southeast) %>%
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics that were DSR", x = "Year")
 
-ggsave("../figures/bayes_model/p_dsr.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/p_dsr.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -4000,7 +3993,7 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 
 ### P(slope|non-pelagic)
  
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. Note that P(yelloweye) is the the proportion relative to non-pelagics for Central and Kodiak areas but is relative to DSR for Southeast areas.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. Note that P(yelloweye) is the the proportion relative to non-pelagics for Central and Kodiak areas but is relative to DSR for Southeast areas.")}
 pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 
 p_slope_mod <- 
@@ -4104,11 +4097,11 @@ rbind(p_slope_obs %>% filter(area %in% southeast)) %>%
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics that were slope", x = "Year")
 
-ggsave("../figures/bayes_model/p_slope_harv.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/p_slope_harv.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -4118,7 +4111,7 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 
 ### P(slope|non-pelagic & non-yellowye) *For release estimates*
  
-```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport non-pelagic, non-yelloweye releases that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. ")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport non-pelagic, non-yelloweye releases that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. ")}
 pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 
 pr_slope_mod <- 
@@ -4223,11 +4216,11 @@ rbind(pr_slope_obs %>% filter(area %in% southeast)) %>%
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 16)+
+  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of non-pelagics and non-yelloweye releases that were slope", x = "Year")
 
-ggsave("../figures/bayes_model/p_slope_rel.png", width = 8, height = 4) 
+ggsave("../figures/bayes_model/p_slope_rel.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -4319,11 +4312,11 @@ brf_wt_mod %>% #filter(user != "all") %>%
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   #coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Wt (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/brf_wts.png") 
+ggsave("../figures/bayes_model/brf_wts.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -4411,18 +4404,18 @@ ye_wt_mod %>% #filter(user != "all") %>%
   geom_line() + geom_point(alpha = 0.5) +
   geom_point(data  = ye_wt_obs) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Wt (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/ye_wts.png") 
+ggsave("../figures/bayes_model/ye_wts.png", width = 10, height = 8) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 <br>
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Mean weights of non-black, pelagic rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Mean weights of non-black, pelagic rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
 pel_wt_mod <- 
@@ -4503,18 +4496,18 @@ pel_wt_mod %>% filter(area %in% southeast) %>%
   geom_line() + geom_point(alpha = 0.5) +
   geom_point(data  = pel_wt_obs) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Wt (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/pel_wts.png") 
+ggsave("../figures/bayes_model/pel_wts.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 <br>
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Mean weights of non-yelloweye, demersal shelf rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Mean weights of non-yelloweye, demersal shelf rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
 dsr_wt_mod <- 
@@ -4595,18 +4588,18 @@ dsr_wt_mod %>% filter(area %in% southeast) %>%
   geom_line() + geom_point(alpha = 0.5) +
   geom_point(data  = dsr_wt_obs) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Wt (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/dsr_wts.png") 
+ggsave("../figures/bayes_model/dsr_wts.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 <br>
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Mean weights of slope rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Mean weights of slope rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
 slope_wt_mod <- 
@@ -4687,11 +4680,11 @@ slope_wt_mod %>% filter(area %in% southeast) %>%
   geom_line() + geom_point(alpha = 0.5) +
   geom_point(data  = slope_wt_obs) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 16)+
+  scale_shape_manual(values = c(18, 10)) + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Wt (lbs)", x = "Year")
 
-ggsave("../figures/bayes_model/slope_wts.png") 
+ggsave("../figures/bayes_model/slope_wts.png", width = 7, height = 4) 
 X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
@@ -4998,7 +4991,7 @@ full_join(pelH_wb,pelR_wb, by = c("region","area","year","user")) %>%
          area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) -> PEL_wb
 
 rep_wb$add_worksheet("Non-black Pelagics")
-rep_wb$add_data("Non-black Pelagics",PEL_wb)
+rep_wb$add_data("Non-black Pelagics",PEL_wb %>% filter(area %in% southeast))
 
 ```
 
@@ -5036,7 +5029,7 @@ full_join(dsrH_wb,dsrR_wb, by = c("region","area","year","user")) %>%
          area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))-> DSR_wb
 
 rep_wb$add_worksheet("Non-ye DSR")
-rep_wb$add_data("Non-ye DSR",DSR_wb)
+rep_wb$add_data("Non-ye DSR",DSR_wb %>% filter(area %in% southeast))
 
 ```
 
@@ -5074,10 +5067,11 @@ full_join(slopeH_wb,slopeR_wb, by = c("region","area","year","user")) %>%
          area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) -> SLOPE_wb
 
 rep_wb$add_worksheet("Slope")
-rep_wb$add_data("Slope",SLOPE_wb)
+rep_wb$add_data("Slope",SLOPE_wb %>% filter(area %in% southeast))
 
 ### Save it all!!
-wb_save(rep_wb, file = "RF_Sport_Removals.xlsx", overwrite = TRUE, path = NULL, flush = FALSE)
+#wb_save(rep_wb, file = "RF_Sport_Removals.xlsx", overwrite = TRUE, path = NULL, flush = FALSE)
+wb_save(rep_wb, file = "RF_Sport_Removals.xlsx", overwrite = TRUE, path = NULL)
 if (interactive()) rep_wb$open()
 #saveWorkbook(res_wb, paste0("SF_Rockfish_Catch_Removal_Ests_thru",end_yr,".xlsx"), overwrite = TRUE)
 ```
@@ -5092,6 +5086,11 @@ BRF_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
                names_to = "M_source") %>%
   mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> brf_m_source
 
+BRF_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> brf_m_x_source
+
 brf_m_source %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = M_prop, fill = M_source)) +
   scale_fill_manual(values = pal) +
@@ -5100,9 +5099,22 @@ brf_m_source %>% filter(user != "all") %>%
   facet_wrap(. ~ area) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  labs(y = "Proportion of total mortality", x = "Year")
+  labs(y = "Proportion of total mortality", x = "Year") -> brf_m_prop
 
-ggsave("../figures/bayes_model/brf_mort_source.png", width = 10, height = 8) 
+ggsave("../figures/bayes_model/brf_mort_props.png",brf_m_prop, width = 10, height = 8) 
+
+brf_m_x_source %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = Mortalities, fill = Source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area) +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Mortality (n)", x = "Year") -> brf_m_n
+
+ggsave("../figures/bayes_model/brf_mort_source.png",brf_m_n, width = 10, height = 8) 
 X <- X+1
 
 ``` 
@@ -5117,6 +5129,11 @@ YE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
                names_to = "M_source") %>%
   mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> ye_m_source
 
+YE_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> ye_m_x_source
+
 ye_m_source %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = M_prop, fill = M_source)) +
   scale_fill_manual(values = pal) +
@@ -5125,9 +5142,148 @@ ye_m_source %>% filter(user != "all") %>%
   facet_wrap(. ~ area) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  labs(y = "Proportion of total mortality", x = "Year")
+  labs(y = "Proportion of total mortality", x = "Year") -> ye_m_prop
 
-ggsave("../figures/bayes_model/ye_mort_source.png", width = 10, height = 8) 
+ggsave("../figures/bayes_model/ye_mort_props.png", ye_m_prop, width = 10, height = 8) 
+
+ye_m_x_source %>% filter(user != "all") %>%
+  ggplot(aes(x = year, y = Mortalities, fill = Source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area) +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Mortality (n)", x = "Year") -> ye_m_n
+
+ggsave("../figures/bayes_model/ye_mort_source.png", ye_m_n, width = 10, height = 8) 
+X <- X+1
+
+``` 
+<br>
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-black pelagic rockfish total mortality, in biomass, from harvests and releases.")}
+pal <- wes_palette(name = "Moonrise2", n=2)
+
+PEL_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
+  pivot_longer(cols = c(p_mort_H,p_mort_R),
+               values_to = "M_prop",
+               names_to = "M_source") %>%
+  mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> pel_m_source
+
+PEL_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> pel_m_x_source
+
+pel_m_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = M_prop, fill = M_source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="fill", stat="identity") +
+  facet_wrap(. ~ area) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of total mortality", x = "Year") -> pel_m_prop
+
+ggsave("../figures/bayes_model/pel_mort_props.png", pel_m_prop, width = 7, height = 4) 
+
+pel_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = Mortalities, fill = Source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area) +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Mortality (n)", x = "Year") -> pel_m_n
+
+ggsave("../figures/bayes_model/pel_mort_source.png", pel_m_n, width = 7, height = 4) 
+X <- X+1
+
+```
+<br>
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-yelloweye demersal shelf rockfish total mortality, in biomass, from harvests and releases.")}
+pal <- wes_palette(name = "Moonrise2", n=2)
+
+DSR_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
+  pivot_longer(cols = c(p_mort_H,p_mort_R),
+               values_to = "M_prop",
+               names_to = "M_source") %>%
+  mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> dsr_m_source
+
+DSR_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> dsr_m_x_source
+
+dsr_m_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = M_prop, fill = M_source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="fill", stat="identity") +
+  facet_wrap(. ~ area) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of total mortality", x = "Year") -> dsr_m_prop
+
+ggsave("../figures/bayes_model/dsr_mort_props.png", dsr_m_prop, width = 7, height = 4) 
+
+dsr_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = Mortalities, fill = Source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area) +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Mortality (n)", x = "Year") -> dsr_m_n
+
+ggsave("../figures/bayes_model/dsr_mort_source.png", dsr_m_n, width = 7, height = 4) 
+X <- X+1
+
+``` 
+<br>
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-black pelagic rockfish total mortality, in biomass, from harvests and releases.")}
+pal <- wes_palette(name = "Moonrise2", n=2)
+
+SLOPE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
+  pivot_longer(cols = c(p_mort_H,p_mort_R),
+               values_to = "M_prop",
+               names_to = "M_source") %>%
+  mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> slope_m_source
+
+SLOPE_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> slope_m_x_source
+
+slope_m_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = M_prop, fill = M_source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="fill", stat="identity") +
+  facet_wrap(. ~ area) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Proportion of total mortality", x = "Year") -> slope_m_prop
+
+ggsave("../figures/bayes_model/slope_mort_props.png", slope_m_prop, width = 7, height = 4) 
+
+slope_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
+  ggplot(aes(x = year, y = Mortalities, fill = Source)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area) +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Mortality (n)", x = "Year") -> slope_m_n
+
+ggsave("../figures/bayes_model/slope_mort_source.png", slope_m_n, width = 7, height = 4) 
 X <- X+1
 
 ``` 

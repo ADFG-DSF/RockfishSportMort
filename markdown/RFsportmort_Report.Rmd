@@ -141,6 +141,108 @@ Rockfish (*Sebastes spp*) harvests in Alaskan waters have become an increasing c
 
 Sport fishery harvests are measured through a variety of programs, primarily the Alaska Sport Fishing Survey (commonly known as the statewide harvest survey or SWHS), the saltwater guide logbook program, and sampling programs at primary ports. The SWHS was initiated in 1977 as an annual mail-out survey (Romberg et al. 2018). Response to this survey is voluntary and the survey design provides for estimates of statewide harvest and catch (since 1990) in numbers of fish for rockfish (all species combined) and effort in saltwater angler days (for all marine species combined) by unguided and guided anglers (since 2011) and by predefined geographical strata. These SWHS strata are not, however, geographically consistent with either sport rockfish fishery management areas or commercial fisheries management units (CFMUs). Because of these factors, additional data sources are necessary to estimate black and yelloweye rockfish harvests from consistent, spatially explicit areas. The guided logbook program was established in 1998 to acquire information on guided industry harvests and releases by species and effort (Powers 2015). In addition to other species such as salmon and halibut, this mandatory program provides a census of harvest and release in numbers of pelagic and nonpelagic rockfish species assemblages and, since 2006, yelloweye rockfishes. The logbook program also provides information on the statistical area where fishing occurred. Sport harvest port sampling programs provide information on biological characteristics of the harvest, including species composition (Jaenicke et al. 2019; Failor 2016). Port sampling programs vary regionally in their design, history, and information collected. The estimation of release mortalities in commercial and sport fisheries presents additional challenges for understanding total fishing mortality. The ability to estimate total removals by both sport and commercial fisheries will enable assessment of harvest rates and be useful for future stock assessments.
 
+Yelloweye and black rockfish removal estimation methods were originally developed by Howard et al. (2020; hereafter refered to as the Howard methods), which included spatial partitioning of the data, identifying bias in the SWHS survey estimates relative to the logbook census of guided anglers, and estimating unguided harvests and releases by expanding logbook catch and release data using the proportions of guided:unguided harvests and releases from SWHS data. This approach was both novel and critical in providing harvest and release estimates for managers to understand the magnitude of the catch and to allow accurate assessments of stocks. 
+
+While the Howard methods provide the baseline for understanding and reconstructing rockfish harvests in Alaska, the methods had several shortcomings and recommendations for reevaluation as more data and improved methodologies become available. The Howard methods were limited to the period since the logbook program was brought online in 1998 and thus only provides estimates since that time even though rockfish have been harvested by sport anglers since the 1960s or earlier. The methods also rely on a "decision tree" approach to deal with missing data by using long term averages or proxy values from neighboring management areas. Furthermore, while the Howard methods address bias in the SWHS data, it is not implicitly estimated or corrected and, whats more, ignores potential differences in the bias of harvest and release data. Lastly, the estimates of releases are also based on an assumption that the species composition of released fish is the same as that of the harvest, despite clear differences in the harvest and release patterns present in the logbook data. 
+
+The methods presented here build on the foundational Howard methods by applying a Bayesian approach to expand the harvest and release time series back to 1977 when the SWHS was first implemented, estimating and correcting bias in the SWHS harvest and release data, allowing release probabilities to vary by species / species assemblage, and replace the decision tree approach with a hierachichal model that more accurately and efficiently shares information between areas within regions (Table X). The Bayesian model estimates trends in species proportions and harvest/release probability to project backwards in time while explicitly estimating bias in the SWHS harvest and release data (Figure X). Furthermore, the model's hierarchichal structure allows information on these trends, as well as overall harvest trends, to be shared among management areas within the three main regions (Southeast, Southcentral and Kodiak) without having to use proxy values and more effectively propagates error throughout the process. The model incorporates fish weight and release mortality probabilities (CITATION) so that previously unpublished total removal estimates in biomass are also produced in one place. These methods provide a more streamlined and reproducible approach to deriving rockfish removal estimates.  
+
+# Objective
+
+1) Estimate annual sport harvests,releases and total removals in biomass of rockfishes in Gulf of Alaska CFMUs from 1977–2023. Southcentral and Kodiak CFMUs include estimates for black and yelloweye rockfish while Southeast CFMU's include estimates of black, yelloweye, non-black pelagic (dark *S. ciliates*, dusky *S. variabilis*, widow *entomelas*, yellowtail *S. flavidus*, and blue *S. mystinus* rockfish), non-yelloweye demersal shelf (canary *S. pinniger*, quillback *S. maliger*, china *S. nebulosus*, copper *S. caurinus*, rosethorn *S. helvomaculatus* and tiger *S. nigrocinctus* rockfish), and slope rockfish (redbanded *S. babcocki* , rougheye *S. aleutianus*, silvergray *S. brevispinis*, shortraker *S. borealis*, and vermillion *S. miniatus* rockfish). 
+
+# Study Area
+
+Reconstructions were developed for CFMUs across the Gulf of Alaska, from Kodiak Island east to Southeast Alaska (Figures XX). Small amounts of black and yelloweye rockfishes harvest also occurs in the South Alaska Peninsula, Chignik, and Bering Sea/Aleutian Island areas; however, harvests and releases in these areas are too small to be accurately estimated with current sampling programs, and no port sampling programs exist in these areas to allow for estimates of black and yelloweye rockfish specifically.
+
+# Methods
+
+## Data
+
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure X). Additionally, there are overall harvest estimates from 1977- 1995 and release estimates from 1990-1995 that required some partitioning to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied to the pre-1996 values. SWHS Rockfish release estimates are inferred from the difference between catch and harvest estimates and variances calculated accordingly.
+
+Sport fishing guides have been required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and “other” (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006.
+
+Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska, the number of Demersal Shelf Rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
+
+*WEIGHT DATA FROM WHERE?* chris and Clay
+
+*RELEASE MORTALITY DATA FROM WHERE?* Chris, Clay. Insert depth methods here
+
+*KODIAK HYDROACOUSTIC HERE* Port sampling for outlying areas in Kodiak are unavailable to inform species compositions and thus are largely reliant on the hierarchichal structure of the model to derive estimates from the sampled areas. However, ADF&G commercial fisheries division has a robust hydroacoustic survey around the island to estimate black rockfish abundance and as part of that survey estimates species compositions of the pelagic rockfish communities in this area (CITATION). This was used as supplemental data to further inform the species composition in the Kodiak CFMUs.
+
+## Process equations
+
+The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
+
+$ \textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_H}) $
+
+where $f(a,y)$ in a p-spline basis with 7 components (knots) and a second degree penalty. The variance, $\sigma_H$,  was given a normal prior with a mean and standard deviation of 0.25 and 1, respectively (Table PRIORS1). 
+
+Harvests were apportioned by user groups such that charter and private harvest $H_{ayu}$ (where *u* = 1 for charter anglers and *u* = 2 for private anglers) is a fraction of total annual harvest in each area:
+
+$ H_{ay1}~=~H_{ay}P_{(user)ay1}\\H_{ay2}~=~H_{ay}(1-P_{(user)ay1}) $
+
+where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
+
+$ P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a) $
+
+with non-informative priors on both parameters (Table PRIORS1).
+
+Annual black rockfish harvest $H_{(black)ayu}$ for each area and user group is:
+
+$ H_{(black)ayu}~=~H_{ayu}*P_{(pelagic)ayu}*P_{(black|pelagic)ayu} $
+
+where $P_{(pelagic)ayu}$ is the fraction of the annual harvest for each area and user group that was pelagic rockfish and $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.
+
+The southeast region also tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish. For the southeast region the harvest of those two assemblages is thus
+
+$ H_{(DSR)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(DSR|non-pelagic)ayu}\\H_{(slope)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(slope|non-pelagic)ayu}\\ $
+
+where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. 
+
+Annual yelloweye rockfish harvest $H_{(yelloweye)ayu}$ for each area and user group is calculated differently for central/Kodiak areas and southeast areas. For central and Kodiak areas yelloweye rockfish harvests are calculated as
+
+$ H_{(yelloweye)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(yelloweye|non-pelagic)ayu} $
+
+where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish.
+
+For southeast areas yelloweye harvests are a fraction of the DSR harvests such that
+
+$ H_{(yelloweye)ayu}~=~H_{(DSR)ayu}*P_{(yelloweye|DSR)ayu} $
+
+Species composition data is not available for the entire time series and as such it was necessary to assume some trend in the data to project backwards in time. To do so, we fit a logistic curve to the species composition data that would account for shifts in the species composition during the observed time period but would not extrapolate beyond the limits of the observed data when hindcasting. Thus, tThe composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve such that:
+
+$ \textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)ayu} + \frac{\beta1_{(comp)ayu}}{(1 + exp(\beta2_{(comp)ayu}*(y - \beta3_{(comp)ayu})))} + \beta4_{(comp)ayu}*I(u=private)+re_{(comp)ayu} $
+
+where the $\beta$ parameters define the intercept, scaling factor, slope, inflection point and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior. $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernible change in composition over the observed time period. $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Table pH_PRIORS). 
+
+The true number of released rockfish $R_{ayu}$ were based on the proportion of the total catch harvested, $pH_{(comp)ayu}$, by area, year, user group and species grouping. Because release data from the SWHS is for all rockfish and the release data from logbooks is only subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye), we only estimated $pH_{(comp)ayu}$ for those categories. Thus, converting $H_{(comp)ayu}$ to total catches by user group, $C_{(comp)ayu}$, with $pH_{(comp)ayu}$ results in estimates of total releases such that
+
+$ R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu} $
+
+with total releases equal to the sum of the compositional releases. For non-yelloweye DSR and Slope rockfish assemblages in Southeast Alaska $R_{(DSR)ayu}$ and $R_{(slope)ayu}$ were estimated from $R_{(other)ayu}$ using the species composition data from the harvest, thus assuming that slope and DSR assemblages were caught and released at the same rates.
+
+The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
+
+$ \textrm{logit}(pH_{ayuc})~=~\beta0_{(pH)ayuc} + \frac{\beta1_{(pH)ayuc}}{(1 + exp(\beta2_{(pH)ayuc}*(y - \beta3_{(pH)ayuc})))} + \beta4_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc} $
+
+A random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. As with the compositional trends, $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
+Release mortality (i.e., the number of released rockfish expected to die) was calculated assuming fixed mortality rates developed in each of the regions. Deep water release (DWR) devices were mandated for charter fleets in 2013 and rates were derived from CITATION. Southeast applies basic rates estimated in these studies while Southcentral and Kodiak rates were derived by using historical depth-of-release data to adjust the rates based on area and user group.
+
+The total number of mortalities by year, area, user and species/species assemblage in numbers was calculated by summing harvests and release mortality such that
+
+$ M_{(comp)ayu}~=~ H_{(comp)ayu} + m_{R-(comp)ayu} * R_{(comp)ayu} $
+
+where $m_{R-(comp)ayu}$ is the release mortality rate by year, area, user and species (Figure XX). 
+
+Total removals in biomass were converted using the average weight of fish **from port sampling?**. A minimum sample size per year of **X** fish was used as the cutoff for including in the data set. Weights were modeled hierarchically to estimate weights in years when data was missing. The total biomass of removals by year, area, user and species was thus
+
+$ B_{(comp)ayu}~=~ \overline{wt}_{(comp)ayu} * M_{(comp)ayu} $
+
+where $\overline{wt}_{(comp)ayu}$ is the mean weight by species, area, user and year. 
+
+
 
 $$ H_{(black)ayu}~=~H_{ayu}P_{(pelagic)ayu}P_{(black|pelagic)ayu} $$
 
