@@ -594,6 +594,7 @@ jags_params <- function(){
     "Hb_ayg", "Hb_ayu", "Hb_ay",
     "Hy_ayg", "Hy_ayu", "Hy_ay",
     "Hd_ayg", "Hd_ayu", "Hd_ay",
+    "Hdnye_ayg", "Hdnye_ayu", "Hdnye_ay",
     "Hs_ayg", "Hs_ayu", "Hs_ay",
     "Ho_ayg", "Ho_ayu", "Ho_ay",
     "logHhat_ay",

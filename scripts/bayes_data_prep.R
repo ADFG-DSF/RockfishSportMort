@@ -14,6 +14,7 @@ library(readxl)
 library(tidyverse)
 library(ggplot2)
 library(janitor)
+library(scales)
 
 REP_YR <- 2023
 
@@ -786,7 +787,7 @@ expand.grid(year = seq(1977,(max(sc_wt_rm$year)),1),
 unique(r2_wt_rm$cfmu) 
 
 r2_wt_rm %>% filter(wt_cv == 0)
-
+unique(r2_wt_rm$cfmu)
 #Add in other Kodiak areas:
 r2_wt_rm <- rbind(r2_wt_rm,
                   r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
@@ -798,7 +799,11 @@ r2_wt_rm <- rbind(r2_wt_rm,
                   r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
                     mutate(cfmu = "afognak"),
                   r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "eastside"))
+                    mutate(cfmu = "eastside")) %>%
+  mutate(wt_lbs = ifelse(cfmu %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                         NA,wt_lbs),
+         wt_cv = ifelse(cfmu %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                        1,wt_cv))
 
 ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
   geom_line() + geom_point() +
@@ -833,6 +838,26 @@ rbind(r1_wt_rm,r2_wt_rm) %>%
   select(-cfmu) %>%
   left_join(lut,by = "area") %>%
   arrange(assemblage, region, area, year)-> wt_rm_dat
+
+pal <- c("darkorange","darkgrey")
+
+wt_rm_dat %>%
+  mutate(Species = ifelse(assemblage %in% c("dsrlessye","yelloweye","slope"),"Demersal shelf (yelloweye) and slope",
+                             ifelse(assemblage %in% c("pelnbrf","black"),"Pelagics (black)",assemblage)),
+         area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  mutate(Species = str_wrap(Species, width = 21),
+         User = user) %>%
+  ggplot(aes(x = year, y = r_mort, col = Species, shape = User)) +
+  facet_wrap(~area) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_line(aes(linetype = User),size = 0.8) + #geom_point() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Release Mortality", x = "Year") +
+  guides(linetype = guide_legend(nrow = 2))
+
+ggsave("./figures/rel_mort.png", width = 10, height = 8) 
 
 wt_rm_dat %>% filter(wt_cv == 0)
 

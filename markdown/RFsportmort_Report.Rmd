@@ -1,0 +1,148 @@
+---
+title: "Rockfish Removals in Alaska Sport Fisheries 1977 through 2023"
+author: "Philip Joy"
+output:
+  word_document:
+    reference_docx: "rep_temp.docx"
+fontsize: 12pt
+date: "2025-05-23"
+
+#knit: (function(input_file, encoding) {
+#        rmarkdown::render(input_file, 
+#                          output_file = paste0("RFsportmort_update_", "theModel_prelim_",Sys.Date(),".html"))
+#      })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+#...............................................................................
+##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
+#...............................................................................
+# Notes: on p plot, make symbol size = sample size, 
+# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
+# comp_H - total_release * unkown comp proportion
+#-------------------------------------------------------------------------------8
+#mod<-"LB_hyb_5pH_infPr"
+#mod<-"LB_fit_5pH"
+mod<-"LB_fit_3pH"
+#mod<-"LB_hyb_3pH"
+res <- "rf_harvest_est_kha_rm_wt_thru2023_480000_7kn_2025-05-23"
+#res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
+#res <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_6e+05_7kn_2025-01-14"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+X <- 0
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+```
+
+# Abstract
+
+Fishery stock assessments require defensible estimates of total extractions (commercial, sport, subsistence, personal use, and bycatch) throughout the history of exploitation and at appropriate spatial scales for management. This study provides updated estimates of total sport harvest and releases for black and yelloweye rockfishes as well as demersal shelf, slope and non-black pelagic rockfish in southeast, in geographic units consistent with commercial fishery management units (CFMUs), such that total fishing mortality could be estimated. Estimates were originally produced in Howard et al. (2020) covering the period between 1999 and today and the Bayesian methods used here allow for estimations back through 1977, correct faulty assumptions in the Howard methodology, and correct for survey bias. Sport harvest and release information is available from Alaska Department of Fish and Game saltwater guide logbooks and the Alaska Sport Fishing Survey (commonly known as the statewide harvest survey or SWHS). Guide logbooks have provided a census of guided sport harvest and release by statistical reporting areas and by pelagic and nonpelagic rockfish assemblages since 1998/1999, and a census of yelloweye rockfish harvest and release since 2006. The SWHS has provided estimates of harvest and catch by guided and unguided anglers, but at a coarser geographic scale, and not by species or assemblages (e.g., pelagic–nonpelagic) of rockfish. Port sampling data provides estimates of species composition in the harvest as well as length and weight data. The bayesian model used here calculates harvests very similar to the methods used in Howard et al. (2020) but differs in how releases are estimated. Bias in the SWHS harvest and release numbers are corrected in the model and the Bayesian model does not make the Howard et al. (2020) assumption that the species composition of the harvest is equal to that of the released fish. The Bayesian model also uses a hierarchical approach such that information is more appropriately shared across areas within regions and more appropriately propogates error. Assumptions about key parameters and estimates before data collection began are made using logistic curves to estimate trends. Harvest estimates from the Bayesian model are very similar to the Howard et al. (2020) estimates but release estimates differ considerably as a result of bias correction and more informed estimates of release probability by species and species assemblage as evident in the logbook data. Sport black and yelloweye rockfishes harvests and releases provided by this methodology are recommended for use in stock assessments of these species statewide, and the methodology could be useful for other marine finfish species where stock assessment models are needed.
+
+Keywords: sport fish, harvest, release, fishing mortality, black rockfish, yelloweye rockfish, demersal shelf rockfish, slope rockfish, pelagic rockfish, Gulf of Alaska, *Sebastes*, *Sebastes melanops*, *Sebastes ruberrimus*, rockfish
+
+# Introduction
+
+Rockfish (*Sebastes spp*) harvests in Alaskan waters have become an increasing concern as restrictions on halibut and salmon has led to increased pressure on rockfish stocks. In response to this pressure, the Alaska Department of Fish and Game (ADF&G) initiated an interdivisional, inter-regional strategic plan to develop long-term management and stock assessment strategies for black rockfish (*S. melanops*) and yelloweye rockfish (*S. ruberrimus*) across the Gulf of Alaska (GOA) (Howard et al. 2019a). The first step in assessing any fish stock is to have an accurate and complete history of fishery removals from the stock. While commercial fisheries relies on a fish ticketing system that censuses the harvest, Alaska sport fisheries rely on a number of programs, phased in over time, to account for rockfish removals in the sport fishery. 
+
+Sport fishery harvests are measured through a variety of programs, primarily the Alaska Sport Fishing Survey (commonly known as the statewide harvest survey or SWHS), the saltwater guide logbook program, and sampling programs at primary ports. The SWHS was initiated in 1977 as an annual mail-out survey (Romberg et al. 2018). Response to this survey is voluntary and the survey design provides for estimates of statewide harvest and catch (since 1990) in numbers of fish for rockfish (all species combined) and effort in saltwater angler days (for all marine species combined) by unguided and guided anglers (since 2011) and by predefined geographical strata. These SWHS strata are not, however, geographically consistent with either sport rockfish fishery management areas or commercial fisheries management units (CFMUs). Because of these factors, additional data sources are necessary to estimate black and yelloweye rockfish harvests from consistent, spatially explicit areas. The guided logbook program was established in 1998 to acquire information on guided industry harvests and releases by species and effort (Powers 2015). In addition to other species such as salmon and halibut, this mandatory program provides a census of harvest and release in numbers of pelagic and nonpelagic rockfish species assemblages and, since 2006, yelloweye rockfishes. The logbook program also provides information on the statistical area where fishing occurred. Sport harvest port sampling programs provide information on biological characteristics of the harvest, including species composition (Jaenicke et al. 2019; Failor 2016). Port sampling programs vary regionally in their design, history, and information collected. The estimation of release mortalities in commercial and sport fisheries presents additional challenges for understanding total fishing mortality. The ability to estimate total removals by both sport and commercial fisheries will enable assessment of harvest rates and be useful for future stock assessments.
+
+
+$$ H_{(black)ayu}~=~H_{ayu}P_{(pelagic)ayu}P_{(black|pelagic)ayu} $$
+
+
+Why won't my equation render?
