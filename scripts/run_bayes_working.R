@@ -52,12 +52,12 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 5E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_kha_rm_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "rf_harvest_est_log_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -69,7 +69,7 @@ if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 use_inits = "yes"
 
 use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25" #for yelloweye betas:
-#use_this_model <- "HR_fitLBR_2bias_hierPcomp_5pH_infPr_thru2023_2e+06_7kn_2025-01-26"
+use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_3e+05_7kn_2025-05-30"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -285,6 +285,26 @@ for (i in 1:3){
   inits_to_use[[i]]$`beta4_pH[10,1]` <- 0
 }
 
+#or:
+for (i in 1:3){
+  inits_to_use[[i]]$`beta0_pH[1,2]` <- postH$mean$beta0_pH[2,2]
+  #inits_to_use[[i]]$`beta1_pH[1,2]` <- postH$mean$beta1_pH[2,2]
+  #inits_to_use[[i]]$`beta2_pH[1,2]` <- postH$mean$beta2_pH[2,2]
+  #inits_to_use[[i]]$`beta3_pH[1,2]` <- postH$mean$beta3_pH[2,2]
+  inits_to_use[[i]]$`beta4_pH[1,2]` <- postH$mean$beta4_pH[2,2]
+  
+  inits_to_use[[i]]$`beta4_pH[1,1]` <- postH$mean$beta4_pH[3,1]
+  
+  inits_to_use[[i]]$`beta0_pH[6,2]` <- postH$mean$beta0_pH[5,2]
+  inits_to_use[[i]]$`beta4_pH[6,2]` <- postH$mean$beta4_pH[7,2]
+  inits_to_use[[i]]$`beta4_pH[6,1]` <- postH$mean$beta4_pH[7,1]
+  
+  inits_to_use[[i]]$`beta0_pH[10,2]` <- postH$mean$beta0_pH[5,2]
+  inits_to_use[[i]]$`beta4_pH[10,2]` <- postH$mean$beta4_pH[7,2]
+  inits_to_use[[i]]$`beta4_pH[10,1]` <- postH$mean$beta4_pH[8,1]
+  
+}
+
 
 #-------------------------------------------------------------------------------
 #Run the model
@@ -318,6 +338,7 @@ if (use_inits == "yes") {
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
+other_label <- "log_wts_sd7"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
@@ -359,7 +380,12 @@ rhat_exam <- rhat$Rhat_values %>%
               add_row(area = "SOKO2SAP", area_n = 6) %>%
               add_row(area = "WKMA", area_n = 7) %>%
               mutate(area_n = as.character(area_n)),
-            by = "area_n")
+            by = "area_n") %>%
+  arrange(-Rhat); rhat_exam
+
+with(rhat_exam, table(variable,area))
+
+
 
 rhat_exam %>% group_by(variable) %>%
   filter(variable %in% c("logbc_H", "mu_bc_H", "sd_bc_H",
@@ -394,6 +420,9 @@ rhat_exam %>% group_by(variable) %>%
                          "logHhat_ay",
                          #with hierarchichal pline lambda
                          "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H")) -> rhat_exam_params
+print(rhat_exam_params, n = 50)
+
+
 rhat_exam_params %>%  summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
   arrange(-badRhat_avg,-n) %>% print(n = 100)
@@ -415,7 +444,13 @@ rhat_exam %>% group_by(variable,area) %>%
             badRhat_avg = mean(Rhat)) %>%
   arrange(-n,-badRhat_avg) %>% print(n = 100)
 
+get_Rhat <- function(post, cutoff = 1.1){
+  list(
+    data.frame("Rhat" = post$summary[, "Rhat"][post$summary[, "Rhat"] > cutoff & !is.na(post$summary[, "Rhat"])]),
+    "R^ quantiles" = quantile(post$summary[, "Rhat"], probs = seq(0.9, 1, by = .01), na.rm = TRUE))
+}
 
+rownames(postH$summary)
 
 #--- Traceplots ----------------------------------------------------------------
 area_codes
@@ -425,6 +460,42 @@ rhat_exam %>% group_by(variable,area) %>%
             badRhat_avg = mean(Rhat)) %>%
   arrange(-badRhat_avg,-n) %>% 
   filter(str_detect(variable, "lambda"))
+
+par(mfrow = c(3,3))
+for (i in 1:nrow(rhat_exam)){
+  if (is.na(rhat_exam$year[i]) & !is.na(rhat_exam$area_n[i])){
+    jagsUI::traceplot(postH, 
+                      parameters = c(paste0(rhat_exam$variable[i],"[",rhat_exam$area_n[i],"]")))
+  } 
+  if (is.na(rhat_exam$year[i]) & is.na(rhat_exam$area_n[i])){
+    jagsUI::traceplot(postH, 
+                      parameters = c(paste0(rhat_exam$variable[i])))
+  } 
+}
+
+rhat_exam %>% filter(!is.na(rhat_exam$year) & !is.na(rhat_exam$area_n)) -> more_bad
+unique(more_bad$variable)
+with(more_bad, table(variable,area)) %>% data.frame() %>%
+  pivot_wider(names_from = area, values_from = Freq) -> unconv
+
+unconv %>% 
+  filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
+
+jagsUI::traceplot(postH, 
+                  parameters = c("Ry_ayu")) 
+jagsUI::traceplot(postH, 
+                  parameters = c("Ro_ayu")) 
+jagsUI::traceplot(postH, 
+                  parameters = c("Rs_ayu")) 
+jagsUI::traceplot(postH, 
+                  parameters = c("Rb_ayu")) 
+jagsUI::traceplot(postH, 
+                  parameters = c("Rp_ayu")) 
+
+jagsUI::traceplot(postH, 
+                  parameters = c("beta1_pH"))
+jagsUI::traceplot(postH, 
+                  parameters = c("beta2_pH"))
 
 jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
 
@@ -542,6 +613,8 @@ postH$mean$sd_comp
 paste0(round(postH$mean$beta1_pelagic, 3), "(", round(postH$q2.5$beta1_pelagic, 3), ", ", round(postH$q97.5$beta1_pelagic, 3), ")")
 paste0(round(postH$mean$beta2_pelagic, 3), "(", round(postH$q2.5$beta2_pelagic, 3), ", ", round(postH$q97.5$beta2_pelagic, 3), ")")
 
+postH$mean$mu_beta4_pH
+postH$mean$beta4_pH
 # * Harvest --------------------------------------------------------
 # ** SWHS total harvest vrs. model total harvest --------------------------------------------------------
 jagsUI::traceplot(postH, parameters = c("H_ay","C_ay"))

@@ -161,13 +161,17 @@ Reconstructions were developed for CFMUs across the Gulf of Alaska, from Kodiak 
 
 Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and for 13 years (2011-2023) for guided anglers (Figure X). Additionally, there are overall harvest estimates from 1977- 1995 and release estimates from 1990-1995 that required some partitioning to ascribe to current management units. Harvests in unknown areas were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied to the pre-1996 values. SWHS Rockfish release estimates are inferred from the difference between catch and harvest estimates and variances calculated accordingly.
 
-Sport fishing guides have been required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and “other” (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006.
+SWHS estimates of harvests and releases are assumed to be biased based on the disagreement between SWHS estimates of guided trips and matching logbook totals of guided harvests and releases (Figure DATA BIAS). Additionally, the bias in harvests and releases varies considerably (Figure DATA BIAS). The model treats the logbook data as a census with minimal uncertainty and thus SWHS bias estimation is a product of the difference between the survey and the logbook data.
 
-Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006. Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska, the number of Demersal Shelf Rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
+Sport fishing guides have been required to report their harvest of rockfish for 26 years (1998-2023). Reported harvest is also available by assemblage (pelagic vs. non-pelagic). Harvest of yelloweye and “other” (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006. Logbook data is treated as a census of the true catch and release of rockfish in these categories. 
+
+Harvest sampling data exists from Gulf of Alaska areas since 1996 and from Southeast Alaska areas since 2006 (CITATIONS?). Port sampling data is comprised of the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska, the number of Demersal Shelf Rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
 
 *WEIGHT DATA FROM WHERE?* chris and Clay
 
-*RELEASE MORTALITY DATA FROM WHERE?* Chris, Clay. Insert depth methods here
+*RELEASE MORTALITY DATA FROM WHERE?* Chris, Clay. Insert depth methods here.
+
+Annual release mortality estimates in Southcentral and Kodiak were then calculated by averaging the the mortality-at-depth estimates weighted by the estimated proportion released at depth.
 
 *KODIAK HYDROACOUSTIC HERE* Port sampling for outlying areas in Kodiak are unavailable to inform species compositions and thus are largely reliant on the hierarchichal structure of the model to derive estimates from the sampled areas. However, ADF&G commercial fisheries division has a robust hydroacoustic survey around the island to estimate black rockfish abundance and as part of that survey estimates species compositions of the pelagic rockfish communities in this area (CITATION). This was used as supplemental data to further inform the species composition in the Kodiak CFMUs.
 
@@ -175,76 +179,284 @@ Harvest sampling data exists from Gulf of Alaska areas since 1996 and from South
 
 The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
 
-$ \textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_H}) $
+$\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_H})$
 
 where $f(a,y)$ in a p-spline basis with 7 components (knots) and a second degree penalty. The variance, $\sigma_H$,  was given a normal prior with a mean and standard deviation of 0.25 and 1, respectively (Table PRIORS1). 
 
 Harvests were apportioned by user groups such that charter and private harvest $H_{ayu}$ (where *u* = 1 for charter anglers and *u* = 2 for private anglers) is a fraction of total annual harvest in each area:
 
-$ H_{ay1}~=~H_{ay}P_{(user)ay1}\\H_{ay2}~=~H_{ay}(1-P_{(user)ay1}) $
+$H_{ay1}~=~H_{ay}P_{(user)ay1}$
+$H_{ay2}~=~H_{ay}(1-P_{(user)ay1})$
 
 where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
 
-$ P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a) $
+$P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a)$
 
 with non-informative priors on both parameters (Table PRIORS1).
 
 Annual black rockfish harvest $H_{(black)ayu}$ for each area and user group is:
 
-$ H_{(black)ayu}~=~H_{ayu}*P_{(pelagic)ayu}*P_{(black|pelagic)ayu} $
+$H_{(black)ayu}~=~H_{ayu}*P_{(pelagic)ayu}*P_{(black|pelagic)ayu}$
 
 where $P_{(pelagic)ayu}$ is the fraction of the annual harvest for each area and user group that was pelagic rockfish and $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.
 
 The southeast region also tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish. For the southeast region the harvest of those two assemblages is thus
 
-$ H_{(DSR)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(DSR|non-pelagic)ayu}\\H_{(slope)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(slope|non-pelagic)ayu}\\ $
+$H_{(DSR)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(DSR|non-pelagic)ayu}$
+
+$H_{(slope)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(slope|non-pelagic)ayu}$
 
 where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. 
 
 Annual yelloweye rockfish harvest $H_{(yelloweye)ayu}$ for each area and user group is calculated differently for central/Kodiak areas and southeast areas. For central and Kodiak areas yelloweye rockfish harvests are calculated as
 
-$ H_{(yelloweye)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(yelloweye|non-pelagic)ayu} $
+$H_{(yelloweye)ayu}~=~H_{ayu}(1-P_{(pelagic)ayu})P_{(yelloweye|non-pelagic)ayu}$
 
 where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish.
 
 For southeast areas yelloweye harvests are a fraction of the DSR harvests such that
 
-$ H_{(yelloweye)ayu}~=~H_{(DSR)ayu}*P_{(yelloweye|DSR)ayu} $
+$H_{(yelloweye)ayu}~=~H_{(DSR)ayu}*P_{(yelloweye|DSR)ayu}$
 
 Species composition data is not available for the entire time series and as such it was necessary to assume some trend in the data to project backwards in time. To do so, we fit a logistic curve to the species composition data that would account for shifts in the species composition during the observed time period but would not extrapolate beyond the limits of the observed data when hindcasting. Thus, tThe composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve such that:
 
-$ \textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)ayu} + \frac{\beta1_{(comp)ayu}}{(1 + exp(\beta2_{(comp)ayu}*(y - \beta3_{(comp)ayu})))} + \beta4_{(comp)ayu}*I(u=private)+re_{(comp)ayu} $
+$\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)ayu} + \frac{\beta1_{(comp)ayu}}{(1 + exp(\beta2_{(comp)ayu}*(y - \beta3_{(comp)ayu})))} + \beta4_{(comp)ayu}*I(u=private)+re_{(comp)ayu}$
 
 where the $\beta$ parameters define the intercept, scaling factor, slope, inflection point and private angler effect, respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior. $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernible change in composition over the observed time period. $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Table pH_PRIORS). 
 
 The true number of released rockfish $R_{ayu}$ were based on the proportion of the total catch harvested, $pH_{(comp)ayu}$, by area, year, user group and species grouping. Because release data from the SWHS is for all rockfish and the release data from logbooks is only subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye), we only estimated $pH_{(comp)ayu}$ for those categories. Thus, converting $H_{(comp)ayu}$ to total catches by user group, $C_{(comp)ayu}$, with $pH_{(comp)ayu}$ results in estimates of total releases such that
 
-$ R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu} $
+$R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}$
 
 with total releases equal to the sum of the compositional releases. For non-yelloweye DSR and Slope rockfish assemblages in Southeast Alaska $R_{(DSR)ayu}$ and $R_{(slope)ayu}$ were estimated from $R_{(other)ayu}$ using the species composition data from the harvest, thus assuming that slope and DSR assemblages were caught and released at the same rates.
 
 The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
 
-$ \textrm{logit}(pH_{ayuc})~=~\beta0_{(pH)ayuc} + \frac{\beta1_{(pH)ayuc}}{(1 + exp(\beta2_{(pH)ayuc}*(y - \beta3_{(pH)ayuc})))} + \beta4_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc} $
+$\textrm{logit}(pH_{ayuc})~=~\beta0_{(pH)ayuc} + \frac{\beta1_{(pH)ayuc}}{(1 + exp(\beta2_{(pH)ayuc}*(y - \beta3_{(pH)ayuc})))} + \beta4_{(pH)ayuc}*I(u=private)+re_{(pH)ayuc}$
 
 A random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. As with the compositional trends, $\beta$ parameters were modeled hierarchically by region. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
-Release mortality (i.e., the number of released rockfish expected to die) was calculated assuming fixed mortality rates developed in each of the regions. Deep water release (DWR) devices were mandated for charter fleets in 2013 and rates were derived from CITATION. Southeast applies basic rates estimated in these studies while Southcentral and Kodiak rates were derived by using historical depth-of-release data to adjust the rates based on area and user group.
+
+It was assumed that $pH_{(black)ayu}$ was equal to $pH_{(pelagic)ayu}$ given the dominance of that species within the assemblage. For southeast Alaska, there was no way to estimate $pH_{(DSR)ayu}$ or $pH_{(slope)ayu}$ and so $P_{(DSR)ayu}$ and $P_{(slope)ayu}$ were applied to the $R_{(other)ayu}$ estimates to generate estimates of $R_{(DSR)ayu}$ and $R_{(slope)ayu}$. The assumption that DSR and slope rockfish would be released in similar proportions was deemed reasonable given that these species tend to be caught fishing similar habitat and methods and these species are regarded similarly by anglers.
+
+Estimating the proportion of slope rockfish in the releases required adding a fifth $\beta$ term to equation LOGITSPECIESCOMP to account for yelloweye being included separately. This term offset the overall $P_{(slope)ayu}$ logit curve to differentiate $P_{(slope)ayu}$ in the harvests and releases.    
+
+Release mortality (i.e., the number of released rockfish expected to die) was calculated assuming fixed mortality rates developed in each of the regions. Deep water release (DWR) devices were mandated for charter fleets in 2013 and rates were derived from CITATION. Southeast applies basic rates estimated in these studies while Southcentral and Kodiak rates were derived by using historical depth-of-release data to adjust the rates based on area and user group (FIGURE DWR).
 
 The total number of mortalities by year, area, user and species/species assemblage in numbers was calculated by summing harvests and release mortality such that
 
-$ M_{(comp)ayu}~=~ H_{(comp)ayu} + m_{R-(comp)ayu} * R_{(comp)ayu} $
+$M_{(comp)ayu}~=~ H_{(comp)ayu} + m_{R-(comp)ayu} * R_{(comp)ayu}$
 
 where $m_{R-(comp)ayu}$ is the release mortality rate by year, area, user and species (Figure XX). 
 
 Total removals in biomass were converted using the average weight of fish **from port sampling?**. A minimum sample size per year of **X** fish was used as the cutoff for including in the data set. Weights were modeled hierarchically to estimate weights in years when data was missing. The total biomass of removals by year, area, user and species was thus
 
-$ B_{(comp)ayu}~=~ \overline{wt}_{(comp)ayu} * M_{(comp)ayu} $
+$B_{(comp)ayu}~=~ \overline{wt}_{(comp)ayu} * M_{(comp)ayu}$
 
 where $\overline{wt}_{(comp)ayu}$ is the mean weight by species, area, user and year. 
 
+## Observation equations
+
+The process model was fit to the SWHS, logbook and port sampling data using the following equations. SWHS estimates of annual rockfish **harvest** $\widehat{SWHS}_H{ay}$ were assumed to index true harvest:
+
+$\widehat{SWHS}_H{ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_{ay}), \sigma_{SWHSHay}^2\right)$
+
+where bias in the SWHS harvest estimates $b_H{ay}$ is modeled hierarchically across years as:
+
+$b_H{ay}~\sim~\textrm{Normal}(\mu_H{(b)a}, \sigma_H{(b)a})$
+
+with non-informative priors on both parameters (Table PRIORS). SWHS estimates of guided angler harvest $\widehat{SWHS}_H{ay1}$ are thus related to total harvest by:
+
+$\widehat{SWHS}_H{ay1}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)$
+
+Reported guide logbook harvest $\widehat{LB}_H{ay}$ are considered a census of the true harvest and is related to true harvest as:
+
+$\widehat{LB}_H{ay}~\sim~\textrm{Poisson}(H_{ay1})$
+
+$\widehat{LB}_H{(pelagic)ay}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})$
+
+$\widehat{LB}_H{(yelloweye)ay}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})$
+
+$\widehat{LB}_H{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(H_{(nonpel,nonye)ay1})$
+
+Note that for central and Kodiak areas $H_{(nonpel,nonye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For southeast areas $H_{(nonpel,nonye)ay1}$ is equal to the sum of the DSR and slope harvests *minus* yelloweye harvests.
+
+SWHS estimates of annual rockfish **releases** $\widehat{SWHS}_R{ay}$ were assumed to index true releases similarly to harvests and were modeled such that:
+
+$\widehat{LB}_R{ay}~\sim~\textrm{Poisson}(R_{ay1})$
+
+$\widehat{LB}_R{(pelagic)ay}~\sim~\textrm{Poisson}(R_{ay1}P_{(pelagic)ay1})$
+
+$\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
+
+$\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})$
+
+SWHS estimates of guided angler release $\widehat{SWHS}_R{ay1}$ is modeled the same as harvests, but assumed a different bias such that
+
+$b_R{ay}~\sim~\textrm{Normal}(\mu_R{(b)a}, \sigma_R{(b)a})$
+
+where bias in the SWHS release estimates $b_R{ay}$ is modeled hierarchically across years as:
+
+$b_R{ay}~\sim~\textrm{Normal}(\mu_R{(b)a}, \sigma_R{(b)a})$
+
+with non-informative priors on both parameters.
+
+The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
+
+$x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})$
+
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ form user group $u$. The number of black rockfish sampled in harvest sampling programs was thus a proportion of the pelagic harvests
+
+$x_{(black)ayu}~\sim~\textrm{Binomial}(P_{(black)ayu}, N_{ayu}^{pel})$
+
+Yelloweye rockfish in Southcentral and Kodiak were modeled similarly as a proportion of the total number of non-pelagics such that 
+
+$x_{(yellow_{R2})ayu}~\sim~\textrm{Binomial}(P_{(yellow_{R2})ayu}, N_{ayu}^{nonpel})$
+
+Southeast areas have several other non-pelagic groupings such that DSR and slope rockfish are a proportion of non-pelagics
+
+$x_{(DSR)ayu}~\sim~\textrm{Binomial}(P_{(DSR)ayu}, N_{ayu}^{nonpel})$
+
+and
+
+$x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
+
+with yelloweye in southeast a proportion of the DSR harvest
+
+$x_{(yellow_{R1})ayu}~\sim~\textrm{Binomial}(P_{(yellow_{R1})ayu}, N_{ayu}^{DSR}).$
+
+Kodiak has limited port sampling beyond the main harbors but has a robust hydroacoustic survey that is used to quantify black rockfish abundance across the management area and uses  stereocameras to derive species compositions of the hydroacoustic data. This data was used as supplementary data to further inform the model to the proportion of pelagic rockfish that are black in Kodiak areas. Where angler landing data is available, they demonstrate a higher proportion of black rockfish relative to the hydroacoustic survey and thus the proportion of black rockfish in the hydroacoustic sample related to the true proportion such that 
+
+$P_{(black|pelagic)ayu}^{HA} ~\sim~ P_{(black|pelagic)ayu} + ae_{au}$
+
+where $ae_{au}$ is the angler effect for each area and user group modeled hierarchically around a mean of 0. Predicted $P_{(black|pelagic)ayu}^{HA}$ assumed a beta distribution such that
+
+$P_{(black|pelagic)ayu}^{HA} ~\sim~ beta(\alpha_{HA},\beta_{HA})$
+
+where
+
+$\alpha_{HA} ~=~ (P_{(black|pelagic)ayu}^{HA})^2 * \frac{1 - P_{(black|pelagic)ayu}^{HA}}{\frac{var_{P_{HA}}-1}{P_{(black|pelagic)ayu}^{HA}}},$
+
+$\beta_{HA} ~=~ (\alpha_{HA}) * \frac{1}{P_{(black|pelagic)ayu}^{HA} - 1},$
+
+$var_{P_{HA}} ~=~ (P_{(black|pelagic)ayu}^{HA} * cvP_{(black|pelagic)ayu}^{HA})^2$
+
+where $cvP_{(black|pelagic)ayu}^{HA}$ is the coefficient of variation for the hydroacoustic proportions 
+
+$cvP_{(black|pelagic)ayu}^{HA} ~=~ \frac{\sqrt{varP_{(black|pelagic)ayu}^{HA}}}{P_{(black|pelagic)ayu}^{HA}}$
+
+and the variance is approximated using the delta method (CITATION) as 
+
+$varP_{(black|pelagic)ayu}^{HA} ~=~ (\frac{1}{n_{pel}})^2 * varN_{black} + (\frac{n_{black}}{n_{pel}^2}) * varN_{pel}$
+
+where $varN_{black}$ and $varN_{black}$ are the variance of the estimated number of black and pelagic rockfish in the hydroacoustic survey, respectively (CITATION). 
+
+The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that
+
+$wt_{(comp)ayu} ~\sim~ Lognormal(wt_{(comp)au},\sigma_{wt_{(comp)au}}) ~\sim~ Logormal(wt_{(comp)a},\sigma_{wt_{(comp)a}}) ~\sim~ Logormal(wt_{(comp)region},\sigma_{wt_{(comp)region}})$
+
+where *region* refers to Kodiak, Southcentral and Southeast. Mean weights and variance were calculated as **XXX**.
+
+## Priors
+
+Priors used in this model ranged from uninformative to very informative. We chose loose priors whereever possible, but the logistic curves used to hindcast the $pH_{(comp)ayu}$ and $P_{(comp)ayu}$ required fairly informative priors to achieve convergence in the model (Table PRIORs, PRIORs, PRIORs). Prior development began with the most uninformative options and were tightened during model development to achieve convergence and the produce reasonable logistic curves based on the data. 
+
+Many of the parameters and priors are modeled hierarchically across regions and / or years. The penalized spline used to fit the overall harvest models the lambda terms hierarchically by region while the model assumes a single standard deviation for the random effects of the species composition logistic curve. The standard deviation of the random effect of the proportion harvested was modeled hierarchically by species. The beta terms in the $P_{(comp)ayu}$ and $P_{(comp)ayu}$ curves were also modeled hierarchically by region such that all CFMU's within the same region share the same hyperprior for those terms. 
+
+It is also work noting a particularly restrictive prior used on the $\beta4_{(pH)ayuc}$ terms that describe the offset of the pH logistic curve for unguided anglers (Table pH_PRIOR). The only information on unguided releases is the biases and inprecise estimate for all rockfish from the SWHS. To generate an estimate for unguided anglers required an assumption that harvest patterns of unguided anglers generally followed those of guided anglers fairly closely and as such the prior for the $\beta4_{(pH)ayuc}$ terms is very informative to maintain reasonable estimates of unguided releases with manageable credibility intervals.
+
+## Model platform and diagnostics
+
+The model was run using JAGS version 4.3.1 using the jagsUI and rjags packages (Plummer et al. 2006, Lunn et al. 2009, Plummer 2024) on the statistical R Statistical Software (v4.4.3;R Core Team 2021). Model convergence was judged by examining traceplots and ensuring that Rhat values were below 1.1 (Gelman and Rubin 1992).
+
+# Results
+
+The estimation model was able to estimate harvests, releases and total removals (harvests plus release mortalities) with near complete convergence of model parameters. Harvest estimates were very similar to Howard et al. (2020) estimates, but differed more in areas where private anglers were the dominant user group. Release estimates were also very similar to guided estimates from the Howard estimates which is not surprising given that both methods rely on the census derived from the logbook program. Estimate of unguided releases for black rockfish were generally substantially lower than the Howard methods, although the Bayesian credibility intervals frequently overlapped with the Howard estimates. The large change is to be expected given the bias correction undertaken in the Bayesian model and the more appropriate use of the proportion harvested data from the logbook program. Yelloweye release estimates also differed from the Howard estimates for private anglers although the direction of the difference varied by CFMU. 
+
+Explanation of unconverged parameters: 
+
+1) Spikyness and parameters near 0 / bounds.
+2) BSAI and SOKO2SAPs
+3) beta terms when difficult to fit logistic curves. 
+
+## Model Fit
+
+## Bias Estimation
+
+Model predicted bias in SWHS harvest data tracked the observed bias well across years and CFMUs (Figure YEARAREA_BIAS) and demonstrated that SWHS estimates were generally biased low (Figure MEAN_BIAS). The model tracked release bias well across years and CFMUs but generally smoothed the more variable observed SWHS bias (Figure YEARAREA_BIAS). This is likely the result of far less precision in the SWHS release estimates. The overall bias in SWHS release estimates showed much more variability and in contrast to harvest estimates, generally showed the SWHS to overestimate releases (Figure MEAN_BIAS).  
+
+## Proportion Harvested
+
+Estimates of the proportion harvested (pH) for guided pelagic rockfish accurately tracked the logbook data and the logistic curve fit to that data demonstrated reasonable patterns and uncertainty for hindcasting in the model (Figure pH_PEL). All CFMUs demonstrated a similar pattern where retention of pelagic rockfish has increased since the logbook program began in 1998, with very few black rockfish being released in recent years. 
+
+The proportion harvested for unguided anglers was assumed to track the same patterns as guided anglers, which the model captures satisfactorily. Given the lack of data specific to unguided releases other than the SWHS estimates for all rockfish the confidence intervals around unguided pH of unguided anglers were appropriatelly large. Instances where pH of guided and unguided anglers diverge were the result of the model's balancing of all the data such that the sum of rockfish releases in each area match the bias corrected SWHS estimates of total releases.
+
+The proportion harvested of yelloweye rockfish demonstrated a very different pattern from pelagics whereby guided anglers have retained almost all landed fish until recent years when management restrictions came into effect (Figure pH_YE). This is most obvious in the Southeast CFMU's where yelloweye retention was prohibited beginning in 2020 and to a lesser degree in Prince William Sound (CFMU PWSI and PWSO) where restrictions also came into effect.The model tracked this data well and the hindcasting logistic curve tracks the high retention probablitiy back in time.
+
+The proportion harvested of unguided yelloweye rockfish was generally estimated to be lower than for guided anglers across CFMUs, but captures the same dynamic as guided anglers and reflects management restrictions that have come into play in recent years. As expected, credibility intervals for unguided anglers were significantly larger and usually included guided angler estimates. 
+
+For non-pelagic / non-yelloweye rockfish ($pH_{other}$) the proportion harvested demonstrated variable patterns across regions (Figure pH_OTHER). Central regions demonstrated a static pattern with the exception of Cook Inlet where retention probabilities increased over the course of observed time periods. Kodiak demonstrated increasing retention probabilities with the exception of the WKMA CFMUs which were static. In contrast, Southeat CFMU's show a pattern similar to that of yelloweye rockfish with very high retention until management restrictions came into effect in recent years. As with the pelagic and yelloweye categories, unguided proportion harvested tracked the guided estimates as model design intended. 
+
+## Species Composition
+
+The species composition of the harvests tracked the observated data well and produced reasonable logistic curves for hindcasting. The Pelagic proportion demonstrated either an increasing trend in the harvests (Southeast and Prince William Sound) or a static trend (Kodiak, Cook Inlet and North Gulf)(Figure P_PEL). Model estimates tracked the observed data well and fell towards the trend line when sample sizes were small or absent. The logistic hindcasting curve appeared to match the trends in the data and encompass the uncertainty derived from the random effect estimates. The $\beta4_{(P)ayuc}$ term had a much less informative prior than applied to $\beta4_{(pH)ayuc}$ terms but nevertheless resulted in fairly minor differences between guided and unguided anglers with the exception of PWSI and, to a lesser extent, SSEI. 
+
+The proportion of pelagic rockfish that were black proved to be static, with the exception Cook Inlet, which showed an increase) and NSEI, which showed a descrease (Figre P_BLACK). The model tracked observed values well and applied the uncertainty derived from the random effects in the hindcast values. Applying the hydroacoustic survey data to Kodiak $P_{(black)ayu}$ proved to be both informative and useful in estimating those values. Without that data the estimates tended toward the hyperprior values as informed by the Northeast data and resulted in credibility intervals that stretched from 0 to 1. The hydroacoustic data clearly demonstrates higher black rockfish proportions in these other areas and the model was able to generate far more precise and more realistic estimates of these parameters. 
+
+The yelloweye proportion demonstrated a static portion of the harvest in Kodiak and subtle decline in Southcentral areas and a precipitous drop in Southeast where management restrictions were in place in recent years (Fiugre P_YE). Southcentral data is noisy but the fitted logistic curve appeared to capture the change in species composition during the observed time period and provided acceptable values for hindcasting with the appropriate level of uncertainty. Kodiak yelloweye trends were poorly informed due to a lack of data associated with historically low harvests of yelloweye in this region. Southeast yelloweye proportions (relative to the DSR assemblage) were also somewhat noisy, but the trandes in the data were adequately captured by the fitted logistic curve. 
+
+The proportion of the Southeast harvest that were DSR and slope rockfish also appeared to track the data well and provide reasonable predictions for hindcasting (Figure P_DSR, P_SLOPE, P_SLOPE_REL). The trends in these two assemblages indicate that prior to restrictions being placed on yelloweye and DSR, the vast bulk of the non-pelagic harvests in Southeast were DSR species with slope species comprising only a minor proportion. However, with the closure of yelloweye and restrictions on DSR the proportion of the harvest that were slope rose dramatically. 
+
+## Proportion Guided
+
+Data on the proportion of total rockfish catches that were guided is lacking and there was no trend estimated for hindcasting these parameters. The model captured the observed estimates within the credibility intervals, but tended to smooth the observed estimates to some degree (Figure pG). Without a modeled trend, the model essentially uses a long-term average as described by the estimated beta distribution of the pG parameters to hindcast and appears to capture the uncertainty occurring in observed periods. 
+
+## Weight 
+
+The model estimated weights matched the observations as would be expected and tended to the hyperprior means when data was absent or sample sizes were small (Appendix A). 
+
+## Harvest, Release and Total Removal Estimates
+
+Describe the good stuff... 
+
+# Discussion
 
 
-$$ H_{(black)ayu}~=~H_{ayu}P_{(pelagic)ayu}P_{(black|pelagic)ayu} $$
+# Literature Cited
+
+A. Gelman. Prior distributions for variance parameters in hierarchical models. Bayesian
+Analysis, 1:515–533, 2006.
+
+A. Gelman and D. Rubin. Inference from iterative simulation using multiple sequences.
+Statistical Science, 7:457–511, 1992.
+
+Lunn D, Spiegelhalter D, Thomas A, Best N. (2009) The BUGS project: Evolution, critique and future directions. Statistics in Medicine, 28:3049-67.
+
+Plummer M (2024). _rjags: Bayesian Graphical Models using MCMC_. R package version 4-16,
+  <https://CRAN.R-project.org/package=rjags>.
+
+Plummer M, Best N, Cowles K, Vines K (2006). CODA: Convergence Diagnosis and Output Analysis for MCMC, R News, 6:7-11.
+
+R Core Team (2021). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
 
 
-Why won't my equation render?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
