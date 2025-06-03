@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 12E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -69,7 +69,7 @@ if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 use_inits = "yes"
 
 use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25" #for yelloweye betas:
-use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_3e+05_7kn_2025-05-30"
+use_this_model <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -338,13 +338,13 @@ if (use_inits == "yes") {
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "log_wts_sd7"
+other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
+results <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -499,9 +499,9 @@ jagsUI::traceplot(postH,
 
 jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
 
-jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt",
-                                        "mu2_wt","sd2_wt",
-                                        "mu3_wt","sd3_wt"))
+jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt"))
+jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt"))
+jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt"))
 
 jagsUI::traceplot(postH, parameters = "lambda_H")
 

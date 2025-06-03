@@ -861,7 +861,7 @@ for (n in 1:Nkha){
     for (s in 1:5){
       mu3_wt[r,s] ~ dlnorm(log(swt[s]),0.01)T(0,15) #dunif(0,30)
       tau3_wt[r,s] <- 1 / sd3_wt[r,s] / sd3_wt[r,s]    # transformed sigma in mean log bias 
-      sd3_wt[r,s] ~ dunif(0.00001,5) 
+      sd3_wt[r,s] ~ dgamma(1, 1)T(0.0000001,5) #dunif(0.00001,5) 
     }
   }
 
@@ -869,12 +869,12 @@ for (n in 1:Nkha){
       for (s in 1:5){
         mu2_wt[a,s] ~ dlnorm(log(mu3_wt[regions[a],s]),tau3_wt[regions[a],s])T(0,20)
         tau2_wt[a,s] <- 1 / sd2_wt[a,s] / sd2_wt[a,s]    # transformed sigma in mean log bias 
-        sd2_wt[a,s] ~ dgamma(2, 2)T(0.0000001,5) #dunif(0.00001,5) 
+        sd2_wt[a,s] ~ dgamma(1, 1)T(0.0000001,5) #dunif(0.00001,5) 
 
         for (u in 1:2){
           mu_wt[a,u,s] ~ dlnorm(log(mu2_wt[a,s]),tau2_wt[a,s])T(0,20) #dunif(0.0001,10)
           tau_wt[a,u,s] <- 1 / sd_wt[a,u,s] / sd_wt[a,u,s]    # transformed sigma in mean log bias 
-          sd_wt[a,u,s] ~ dgamma(0.25, 1)T(0.0000001,3) #dunif(0.00001,2) #dgamma(2, 2) max 1?
+          sd_wt[a,u,s] ~ dgamma(1, 1)T(0.0000001,5) #dunif(0.00001,2) #dgamma(2, 2) max 1?
           for (y in 1:Y){
             wt[a,y,u,s] ~ dlnorm(log(mu_wt[a,u,s]),tau_wt[a,u,s])#T(0,20)
           }
@@ -884,6 +884,7 @@ for (n in 1:Nkha){
 
     for (a in 1:10){
       for (y in 1:Y){
+      # Weight likelihoods
         tau_r2gwt_b[a,y] <- 1/log(r2_gwtcv_b[a,y] * r2_gwtcv_b[a,y] + 1)
         tau_r2gwt_y[a,y] <- 1/log(r2_gwtcv_y[a,y] * r2_gwtcv_y[a,y] + 1)
 
@@ -936,6 +937,7 @@ for (n in 1:Nkha){
 
     for (a in 11:16){
       for (y in 1:Y){
+      # Weight likelihoods
         tau_r1gwt_b[a,y] <- 1/log(r1_gwtcv_b[a-10,y] * r1_gwtcv_b[a-10,y] + 1)
         tau_r1gwt_y[a,y] <- 1/log(r1_gwtcv_y[a-10,y] * r1_gwtcv_y[a-10,y] + 1)
         tau_r1gwt_p[a,y] <- 1/log(r1_gwtcv_p[a-10,y] * r1_gwtcv_p[a-10,y] + 1)

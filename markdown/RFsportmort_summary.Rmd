@@ -61,7 +61,7 @@ mod<-"LB_fit_3pH"
 res <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
 #trying
 res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
-res <- "rf_harvest_est_nm_wt_thru2023_5e+05_nm_wts_sd7_2025-05-31"
+res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -3717,7 +3717,7 @@ ha_dat %>% pivot_longer(cols = c("ha.est","ha_adj"),
                               "ha charter adj.","ha private adj."))) %>%
   filter(!is.na(p_black))-> ha_dat
 
-pal <- c(wes_palette(name = "IsleofDogs1", n=2),"red","blue","darkcyan") 
+pal <- c(wes_palette(name = "IsleofDogs1", n=2),"navyblue","blue","darkcyan") 
 
 #halines <- ha_dat %>% select(year,p_black, user,area) %>%
 
@@ -5126,7 +5126,7 @@ if (interactive()) rep_wb$open()
 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of black rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=2)
+pal <- wes_palette(name = "Moonrise2", n=4)
 
 BRF_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5151,12 +5151,13 @@ brf_m_source %>% filter(user != "all") %>%
 
 ggsave("../figures/bayes_model/brf_mort_props.png",brf_m_prop, width = 10, height = 8) 
 
-brf_m_x_source %>% filter(user != "all") %>%
+brf_m_x_source %>% filter(user != "All") %>%
+  mutate(Source = paste0(Source," by ",user)) %>%
   ggplot(aes(x = year, y = Mortalities, fill = Source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_bar(position="stack", stat="identity") +
-  facet_wrap(. ~ area) +
+  facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
@@ -5165,11 +5166,46 @@ brf_m_x_source %>% filter(user != "all") %>%
 ggsave("../figures/bayes_model/brf_mort_source.png",brf_m_n, width = 10, height = 8) 
 X <- X+1
 
+brf_removals %>% 
+  left_join(brf_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->brf_rem_x_source
+
+brf_rem_x_source %>% filter(user != "All") %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 15))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") -> brf_rem_x_source_lbs
+
+ggsave("../figures/bayes_model/brf_mort_source_lbs.png",brf_rem_x_source_lbs, width = 10, height = 8) 
+
 ``` 
 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of yelloweye rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=2)
+pal <- wes_palette(name = "Moonrise2", n=4)
 
 YE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5194,12 +5230,13 @@ ye_m_source %>% filter(user != "all") %>%
 
 ggsave("../figures/bayes_model/ye_mort_props.png", ye_m_prop, width = 10, height = 8) 
 
-ye_m_x_source %>% filter(user != "all") %>%
+ye_m_x_source %>% filter(user != "all" & user != "All") %>%
+  mutate(Source = paste0(Source," by ",user)) %>%
   ggplot(aes(x = year, y = Mortalities, fill = Source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_bar(position="stack", stat="identity") +
-  facet_wrap(. ~ area) +
+  facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
@@ -5208,10 +5245,45 @@ ye_m_x_source %>% filter(user != "all") %>%
 ggsave("../figures/bayes_model/ye_mort_source.png", ye_m_n, width = 10, height = 8) 
 X <- X+1
 
+ye_removals %>% 
+  left_join(ye_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->ye_rem_x_source
+
+ye_rem_x_source %>% filter(user != "All" & user != "all") %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 15))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") -> ye_rem_x_source_lbs
+
+ggsave("../figures/bayes_model/ye_mort_source_lbs.png",ye_rem_x_source_lbs, width = 10, height = 8) 
+
 ``` 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-black pelagic rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=2)
+pal <- wes_palette(name = "Moonrise2", n=4)
 
 PEL_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5224,7 +5296,7 @@ PEL_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts)
                values_to = "Mortalities",
                names_to = "Source")  -> pel_m_x_source
 
-pel_m_source %>% filter(user != "all" & area %in% southeast) %>%
+pel_m_source %>% filter(user != "all" & area %in% southeast & user != "All") %>%
   ggplot(aes(x = year, y = M_prop, fill = M_source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -5236,12 +5308,13 @@ pel_m_source %>% filter(user != "all" & area %in% southeast) %>%
 
 ggsave("../figures/bayes_model/pel_mort_props.png", pel_m_prop, width = 7, height = 4) 
 
-pel_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
+pel_m_x_source %>% filter(user != "all" & area %in% southeast & user != "All") %>%
+  mutate(Source = paste0(Source," by ",user)) %>%
   ggplot(aes(x = year, y = Mortalities, fill = Source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_bar(position="stack", stat="identity") +
-  facet_wrap(. ~ area) +
+  facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
@@ -5250,10 +5323,45 @@ pel_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
 ggsave("../figures/bayes_model/pel_mort_source.png", pel_m_n, width = 7, height = 4) 
 X <- X+1
 
+pel_removals %>% 
+  left_join(pel_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->pel_rem_x_source
+
+pel_rem_x_source %>% filter(user != "All"  & area %in% southeast ) %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 15))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") -> pel_rem_x_source_lbs
+
+ggsave("../figures/bayes_model/pel_mort_source_lbs.png",pel_rem_x_source_lbs, width = 7, height = 4)
+
 ```
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-yelloweye demersal shelf rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=2)
+pal <- wes_palette(name = "Moonrise2", n=4)
 
 DSR_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5278,12 +5386,13 @@ dsr_m_source %>% filter(user != "all" & area %in% southeast) %>%
 
 ggsave("../figures/bayes_model/dsr_mort_props.png", dsr_m_prop, width = 7, height = 4) 
 
-dsr_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
+dsr_m_x_source %>% filter(user != "all" & area %in% southeast & user != "All") %>%
+  mutate(Source = paste0(Source," by ",user)) %>%
   ggplot(aes(x = year, y = Mortalities, fill = Source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_bar(position="stack", stat="identity") +
-  facet_wrap(. ~ area) +
+  facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
@@ -5292,10 +5401,45 @@ dsr_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
 ggsave("../figures/bayes_model/dsr_mort_source.png", dsr_m_n, width = 7, height = 4) 
 X <- X+1
 
+dsrlessye_removals %>% 
+  left_join(dsr_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->dsr_rem_x_source
+
+dsr_rem_x_source %>% filter(user != "All"  & area %in% southeast) %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 15))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") -> dsr_rem_x_source_lbs
+
+ggsave("../figures/bayes_model/dsr_mort_source_lbs.png",dsr_rem_x_source_lbs, width = 7, height = 4)
+
 ``` 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of non-black pelagic rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=2)
+pal <- wes_palette(name = "Moonrise2", n=4)
 
 SLOPE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5308,7 +5452,7 @@ SLOPE_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_mort
                values_to = "Mortalities",
                names_to = "Source")  -> slope_m_x_source
 
-slope_m_source %>% filter(user != "all" & area %in% southeast) %>%
+slope_m_source %>% filter(user != "all" & area %in% southeast & user != "All") %>%
   ggplot(aes(x = year, y = M_prop, fill = M_source)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -5333,5 +5477,40 @@ slope_m_x_source %>% filter(user != "all" & area %in% southeast) %>%
 
 ggsave("../figures/bayes_model/slope_mort_source.png", slope_m_n, width = 7, height = 4) 
 X <- X+1
+
+slope_removals %>% 
+  left_join(slope_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->slope_rem_x_source
+
+slope_rem_x_source %>% filter(user != "All"  & area %in% southeast) %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = 14)+
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 15))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") -> slope_rem_x_source_lbs
+
+ggsave("../figures/bayes_model/slope_mort_source_lbs.png",slope_rem_x_source_lbs, width = 7, height = 4)
 
 ``` 
