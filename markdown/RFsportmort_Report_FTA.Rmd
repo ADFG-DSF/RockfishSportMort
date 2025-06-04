@@ -1,0 +1,1848 @@
+---
+title: "Rockfish Removals in Alaska Sport Fisheries 1977 - 2023"
+author: "Philip Joy"
+output:
+  word_document:
+    reference_docx: "rep_temp.docx"
+fontsize: 12pt
+date: "2025-05-23"
+
+#knit: (function(input_file, encoding) {
+#        rmarkdown::render(input_file, 
+#                          output_file = paste0("RFsportmort_update_", "theModel_prelim_",Sys.Date(),".html"))
+#      })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+#...............................................................................
+##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
+#...............................................................................
+# Notes: on p plot, make symbol size = sample size, 
+# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
+# comp_H - total_release * unkown comp proportion
+#-------------------------------------------------------------------------------8
+#mod<-"LB_hyb_5pH_infPr"
+#mod<-"LB_fit_5pH"
+mod<-"LB_fit_3pH"
+#mod<-"LB_hyb_3pH"
+res <- "rf_harvest_est_kha_rm_wt_thru2023_480000_7kn_2025-05-23"
+#res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
+res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+Fig_N <- 0
+Tab_N <- 0
+App_N <- 0
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+
+# Separate out everything for plotting:
+
+# All rockfish Harvests --------------------------------------------------------:
+tot_how <- readxl::read_excel(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".xlsx"),
+                              sheet = "BRF harvest",
+                              range = "A1:N400") %>%
+  #read.csv(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>% filter(year <= end_yr) %>%
+  mutate(tot_rf = log_rfharv + priv_rfharv) %>%
+  select(region,year,area = rpt_area, gui_tot = log_rfharv,pri_tot=priv_rfharv,var = var_priv_rfharv, tot_rf) 
+
+tot_how %>% select(-var) %>%
+  pivot_longer(cols = c("gui_tot","pri_tot","tot_rf"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_tot","guided",
+                       ifelse(user == "pri_tot","unguided","All"))) %>%
+  filter(!is.na(area)) -> tot_how
+
+as.data.frame(
+  rbind(t(postH$q50$H_ayg),
+        t(postH$q50$H_ayu),
+        t(postH$q50$H_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$H_ayg),
+          t(postH$q2.5$H_ayu),
+          t(postH$q2.5$H_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$H_ayg),
+          t(postH$q97.5$H_ayu),
+          t(postH$q97.5$H_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$H_ayg),
+          t(postH$sd$H_ayu),
+          t(postH$sd$H_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(tot_how, by = c("year","user","area")) -> rf_plotdat
+
+options(scipen = 999)
+
+rf_plotdat %>%
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>% 
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvest = H, sd_H, H_lo95,H_hi95) -> TotH_wb
+
+#-------------------------------------------------------------------------------
+# All rockfish releases: 
+
+tot_howR <- readxl::read_excel(paste0("..\\output\\release_estimates_Howard_thru",REP_YR,".xlsx"),
+                              sheet = "BRF release",
+                              range = "A1:N400") %>%
+  #read.csv(paste0("..\\output\\harvest_estimates_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>% filter(year <= end_yr) %>%
+  mutate(tot_rf = log_rfrel + priv_rfrel) %>%
+  select(region,year,area = rpt_area, gui_tot = log_rfrel,pri_tot=priv_rfrel,var = var_priv_rfrel, tot_rf) 
+
+tot_howR %>% select(-var) %>%
+  pivot_longer(cols = c("gui_tot","pri_tot","tot_rf"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_tot","guided",
+                       ifelse(user == "pri_tot","unguided","All"))) %>%
+  filter(!is.na(area)) -> tot_howR
+
+as.data.frame(
+  rbind(t(postH$q50$R_ayg),
+        t(postH$q50$R_ayu),
+        t(postH$q50$R_ay))) %>%
+  setNames(nm = unique(R_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$R_ayg),
+          t(postH$q2.5$R_ayu),
+          t(postH$q2.5$R_ay))) %>%
+      setNames(nm = unique(R_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$R_ayg),
+          t(postH$q97.5$R_ayu),
+          t(postH$q97.5$R_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$R_ayg),
+          t(postH$sd$R_ayu),
+          t(postH$sd$R_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+#  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(tot_howR, by = c("year","user","area")) -> rf_plotdat2
+
+rf_plotdat2 %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>% 
+            mutate(R = round(R,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95),
+                   sd_R = round(sd_R,3)) %>%
+            select(region,area,year,user,Releases = R, sd_R,R_lo95,R_hi95) -> TotR_wb
+
+#-------------------------------------------------------------------------------
+# Black Rockfish Harvests:
+brf_how <- read.csv(paste0("..\\output\\BRF_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_brf, var_gui_brf, priv_brf, var_priv_brf,
+         tot_brf = total_br_fharv, var_tot_brf = var_total_br_fharv) 
+
+brf_how %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
+  pivot_longer(cols = c("gui_brf","priv_brf","tot_brf"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_brf","guided",
+                       ifelse(user == "priv_brf","unguided","All"))) %>%
+  left_join(brf_how %>% select(-c("gui_brf","priv_brf","tot_brf")) %>%
+              pivot_longer(cols = c("var_gui_brf","var_priv_brf","var_tot_brf"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_brf","guided",
+                                   ifelse(user == "var_priv_brf","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> brf_how
+
+
+as.data.frame(
+  rbind(t(postH$q50$Hb_ayg),
+        t(postH$q50$Hb_ayu),
+        t(postH$q50$Hb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hb_ayg),
+          t(postH$q2.5$Hb_ayu),
+          t(postH$q2.5$Hb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hb_ayg),
+          t(postH$q97.5$Hb_ayu),
+          t(postH$q97.5$Hb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Hb_ayg),
+          t(postH$sd$Hb_ayu),
+          t(postH$sd$Hb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(brf_how, by = c("year","user","area")) -> brf_plotdat
+
+brf_plotdat %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvests = H, sd_H,H_lo95,H_hi95) ->brfH_wb
+
+#-------------------------------------------------------------------------------
+# Black rockfish releases: 
+
+brf_howR <- read.csv(paste0("..\\output\\BRF_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_brf, var_gui_brf, priv_brf, var_priv_brf,
+         tot_brf = total_br_frel, var_tot_brf = var_total_br_frel) %>% unique() #note some duplicate BSAI and SOKO2SAPs
+
+brf_howR %>% select(-c("var_gui_brf","var_priv_brf","var_tot_brf")) %>%
+  pivot_longer(cols = c("gui_brf","priv_brf","tot_brf"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_brf","guided",
+                       ifelse(user == "priv_brf","unguided","All"))) %>%
+  left_join(brf_howR %>% select(-c("gui_brf","priv_brf","tot_brf")) %>%
+              pivot_longer(cols = c("var_gui_brf","var_priv_brf","var_tot_brf"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_brf","guided",
+                                   ifelse(user == "var_priv_brf","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> brf_howR
+
+as.data.frame(
+  rbind(t(postH$q50$Rb_ayg),
+        t(postH$q50$Rb_ayu),
+        t(postH$q50$Rb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rb_ayg),
+          t(postH$q2.5$Rb_ayu),
+          t(postH$q2.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rb_ayg),
+          t(postH$q97.5$Rb_ayu),
+          t(postH$q97.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rb_ayg),
+          t(postH$sd$Rb_ayu),
+          t(postH$sd$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(brf_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(R_ayg$area)), ordered = TRUE)) -> brf_rel
+
+as.data.frame(
+  rbind(t(postH$q50$Rb_ayg),
+        t(postH$q50$Rb_ayu),
+        t(postH$q50$Rb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rb_ayg),
+          t(postH$q2.5$Rb_ayu),
+          t(postH$q2.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rb_ayg),
+          t(postH$q97.5$Rb_ayu),
+          t(postH$q97.5$Rb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(category = "Total released") -> brf_releases
+  
+as.data.frame(
+  rbind(t(postH$q50$Rb_ayg_mort),
+        t(postH$q50$Rb_ayu_mort),
+        t(postH$q50$Rb_ay_mort))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rb_ayg_mort),
+          t(postH$q2.5$Rb_ayu_mort),
+          t(postH$q2.5$Rb_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rb_ayg_mort),
+          t(postH$q97.5$Rb_ayu_mort),
+          t(postH$q97.5$Rb_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rb_ayg_mort),
+          t(postH$sd$Rb_ayu_mort),
+          t(postH$sd$Rb_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_Rmort") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(category = "Est. mortality") -> brf_r_mort
+
+brf_rel %>% full_join(brf_r_mort %>% filter(category == "Est. mortality") %>%
+                        select(year,area,user,
+                               Release_morts = R, sd_Rmort, RM_lo95 = R_lo95, RM_hi95 = R_hi95),
+                      by = c("year","user","area")) %>%
+  mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  arrange(area,user,year) %>%
+            mutate(R = round(R,0),
+                   Release_morts = round(Release_morts,0),
+                   RM_lo95 = round(RM_lo95,0),
+                   RM_hi95 = round(RM_hi95,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95),
+                   sd_R = round(sd_R,3),
+                   sd_RM = round(sd_Rmort,3)) %>%
+            select(region,area,year,user,Releases = R, sd_R, R_lo95,R_hi95,Release_morts, sd_RM, RM_lo95,RM_hi95) -> brfR_wb
+
+#-------------------------------------------------------------------------------
+# Yelloweye Harvests:
+
+ye_how <- read.csv(paste0("..\\output\\YE_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_ye, var_gui_ye, priv_ye, var_priv_ye,
+         tot_ye = total_y_eharv, var_tot_ye = var_total_y_eharv) 
+
+ye_how %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
+  pivot_longer(cols = c("gui_ye","priv_ye","tot_ye"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_ye","guided",
+                       ifelse(user == "priv_ye","unguided","All"))) %>%
+  left_join(ye_how %>% select(-c("gui_ye","priv_ye","tot_ye")) %>%
+              pivot_longer(cols = c("var_gui_ye","var_priv_ye","var_tot_ye"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_ye","guided",
+                                   ifelse(user == "var_priv_ye","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> ye_how
+
+as.data.frame(
+  rbind(t(postH$q50$Hy_ayg),
+        t(postH$q50$Hy_ayu),
+        t(postH$q50$Hy_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hy_ayg),
+          t(postH$q2.5$Hy_ayu),
+          t(postH$q2.5$Hy_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hy_ayg),
+          t(postH$q97.5$Hy_ayu),
+          t(postH$q97.5$Hy_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Hy_ayg),
+          t(postH$sd$Hy_ayu),
+          t(postH$sd$Hy_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(ye_how, by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) -> YE_harv
+  
+YE_harv %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvests = H, sd_H, H_lo95,H_hi95) -> yeH_wb
+
+#-------------------------------------------------------------------------------
+# Yelloweye releases: 
+ye_howR <- read.csv(paste0("..\\output\\YE_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_ye, var_gui_ye, priv_ye, var_priv_ye,
+         tot_ye = total_y_erel, var_tot_ye = var_total_y_erel) %>% unique()
+
+ye_howR %>% select(-c("var_gui_ye","var_priv_ye","var_tot_ye")) %>%
+  pivot_longer(cols = c("gui_ye","priv_ye","tot_ye"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_ye","guided",
+                       ifelse(user == "priv_ye","unguided","All"))) %>%
+  left_join(ye_howR %>% select(-c("gui_ye","priv_ye","tot_ye")) %>%
+              pivot_longer(cols = c("var_gui_ye","var_priv_ye","var_tot_ye"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_ye","guided",
+                                   ifelse(user == "var_priv_ye","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> ye_howR
+
+as.data.frame(
+  rbind(t(postH$q50$Ry_ayg),
+        t(postH$q50$Ry_ayu),
+        t(postH$q50$Ry_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Ry_ayg),
+          t(postH$q2.5$Ry_ayu),
+          t(postH$q2.5$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Ry_ayg),
+          t(postH$q97.5$Ry_ayu),
+          t(postH$q97.5$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Ry_ayg),
+          t(postH$sd$Ry_ayu),
+          t(postH$sd$Ry_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(ye_how, by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") ->ye_releases
+
+as.data.frame(
+  rbind(t(postH$q50$Ry_ayg_mort),
+        t(postH$q50$Ry_ayu_mort),
+        t(postH$q50$Ry_ay_mort))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Ry_ayg_mort),
+          t(postH$q2.5$Ry_ayu_mort),
+          t(postH$q2.5$Ry_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Ry_ayg_mort),
+          t(postH$q97.5$Ry_ayu_mort),
+          t(postH$q97.5$Ry_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Ry_ayg_mort),
+          t(postH$sd$Ry_ayu_mort),
+          t(postH$sd$Ry_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_Rmort") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(ye_how, by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Est. mortality") ->ye_rmort
+  
+ye_releases %>% full_join(ye_rmort %>% filter(category == "Est. mortality") %>%
+                        select(year,area,user,sd_Rmort,
+                               Release_morts = R, RM_lo95 = R_lo95, RM_hi95 = R_hi95),
+                      by = c("year","user","area")) %>%
+  mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  arrange(area,user,year) %>%
+            mutate(R = round(R,0),
+                   Release_morts = round(Release_morts,0),
+                   RM_lo95 = round(RM_lo95,0),
+                   RM_hi95 = round(RM_hi95,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95,0),
+                   sd_R = round(sd_R,3),
+                   sd_RM = round(sd_Rmort,3)) %>%
+            select(region,area,year,user,Releases = R, sd_R, R_lo95,R_hi95,Release_morts, sd_RM, RM_lo95,RM_hi95) -> yeR_wb
+
+#-------------------------------------------------------------------------------
+# DSR Harvests!
+dsr_how <- read.csv(paste0("..\\output\\DSR_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_dsr, var_gui_dsr, priv_dsr, var_priv_dsr,
+         tot_dsr = total_ds_rharv, var_tot_dsr = var_total_ds_rharv) 
+
+dsr_how %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
+  pivot_longer(cols = c("gui_dsr","priv_dsr","tot_dsr"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_dsr","guided",
+                       ifelse(user == "priv_dsr","unguided","All"))) %>%
+  left_join(dsr_how %>% select(-c("gui_dsr","priv_dsr","tot_dsr")) %>%
+              pivot_longer(cols = c("var_gui_dsr","var_priv_dsr","var_tot_dsr"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_dsr","guided",
+                                   ifelse(user == "var_priv_dsr","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) %>%
+  left_join(ye_how %>% select(region,area,year,user,ye_how = H_how),
+            by = c("region","area","user","year")) %>%
+  mutate(H_how = H_how - ye_how)-> dsr_how
+
+as.data.frame(
+  rbind(t(postH$q50$Hdnye_ayg),
+        t(postH$q50$Hdnye_ayu),
+        t(postH$q50$Hdnye_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hdnye_ayg),
+          t(postH$q2.5$Hdnye_ayu),
+          t(postH$q2.5$Hdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hdnye_ayg),
+          t(postH$q97.5$Hdnye_ayu),
+          t(postH$q97.5$Hdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Hdnye_ayg),
+          t(postH$sd$Hdnye_ayu),
+          t(postH$sd$Hdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(dsr_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast) ->DSR_harv
+  
+DSR_harv %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvests = H, sd_H, H_lo95,H_hi95)-> dsrH_wb
+
+#-------------------------------------------------------------------------------
+# DSR Releases: 
+dsr_howR <- read.csv(paste0("..\\output\\DSR_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_dsr, var_gui_dsr, priv_dsr, var_priv_dsr,
+         tot_dsr = total_ds_rrel, var_tot_dsr = var_total_ds_rrel) %>% unique()
+
+dsr_howR %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
+  pivot_longer(cols = c("gui_dsr","priv_dsr","tot_dsr"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_dsr","guided",
+                       ifelse(user == "priv_dsr","unguided","All"))) %>%
+  left_join(dsr_howR %>% select(-c("gui_dsr","priv_dsr","tot_dsr")) %>%
+              pivot_longer(cols = c("var_gui_dsr","var_priv_dsr","var_tot_dsr"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_dsr","guided",
+                                   ifelse(user == "var_priv_dsr","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) %>%
+  left_join(ye_howR %>% select(region,area,year,user,ye_how = R_how),
+            by = c("region","area","user","year")) %>%
+  mutate(R_how = R_how - ye_how)-> dsr_howR
+
+#ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
+
+as.data.frame(
+  rbind(t(postH$q50$Rdnye_ayg),
+        t(postH$q50$Rdnye_ayu),
+        t(postH$q50$Rdnye_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rdnye_ayg),
+          t(postH$q2.5$Rdnye_ayu),
+          t(postH$q2.5$Rdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rdnye_ayg),
+          t(postH$q97.5$Rdnye_ayu),
+          t(postH$q97.5$Rdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rdnye_ayg),
+          t(postH$sd$Rdnye_ayu),
+          t(postH$sd$Rdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(dsr_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast) -> DSR_rel
+
+as.data.frame(
+  rbind(t(postH$q50$Rdnye_ayg_mort),
+        t(postH$q50$Rdnye_ayu_mort),
+        t(postH$q50$Rdnye_ay_mort))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rdnye_ayg_mort),
+          t(postH$q2.5$Rdnye_ayu_mort),
+          t(postH$q2.5$Rdnye_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rdnye_ayg_mort),
+          t(postH$q97.5$Rdnye_ayu_mort),
+          t(postH$q97.5$Rdnye_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rdnye_ayg_mort),
+          t(postH$sd$Rdnye_ayu_mort),
+          t(postH$sd$Rdnye_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_Rmort") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(dsr_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast) -> DSR_rmort
+  
+DSR_rel %>% full_join(DSR_rmort %>% #filter(category == "Est. mortality") %>%
+                        select(year,area,user, sd_Rmort,
+                               Release_morts = R, RM_lo95 = R_lo95, RM_hi95 = R_hi95),
+                      by = c("year","user","area")) %>%
+  mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  arrange(area,user,year) %>%
+            mutate(R = round(R,0),
+                   Release_morts = round(Release_morts,0),
+                   RM_lo95 = round(RM_lo95,0),
+                   RM_hi95 = round(RM_hi95,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95),
+                   sd_R = round(sd_R,3),
+                   sd_RM = round(sd_Rmort,3)) %>%
+            select(region,area,year,user,Releases = R, sd_R, R_lo95,R_hi95,Release_morts, sd_RM, RM_lo95,RM_hi95) -> dsrR_wb
+
+#------------------------------------------------------------------------------
+# Slope Harvests: 
+slope_how <- read.csv(paste0("..\\output\\SLO_harv_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_slope, var_gui_slope, priv_slope, var_priv_slope,
+         tot_slope = total_slopeharv, var_tot_slope = var_total_slopeharv) 
+
+slope_how %>% select(-c("var_gui_slope","var_priv_slope","var_tot_slope")) %>%
+  pivot_longer(cols = c("gui_slope","priv_slope","tot_slope"),
+               names_to = "user",
+               values_to = "H_how") %>%
+  mutate(user = ifelse(user == "gui_slope","guided",
+                       ifelse(user == "priv_slope","unguided","All"))) %>%
+  left_join(slope_how %>% select(-c("gui_slope","priv_slope","tot_slope")) %>%
+              pivot_longer(cols = c("var_gui_slope","var_priv_slope","var_tot_slope"),
+                           names_to = "user",
+                           values_to = "var_H_how") %>%
+              mutate(user = ifelse(user == "var_gui_slope","guided",
+                                   ifelse(user == "var_priv_slope","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_H_how = sqrt(var_H_how),
+         lo95_H_how = ifelse(H_how - 1.96 * se_H_how < 0,0,
+                             H_how - 1.96 * se_H_how),
+         hi95_H_how = H_how + 1.96 * se_H_how) -> slope_how
+
+as.data.frame(
+  rbind(t(postH$q50$Hs_ayg),
+        t(postH$q50$Hs_ayu),
+        t(postH$q50$Hs_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hs_ayg),
+          t(postH$q2.5$Hs_ayu),
+          t(postH$q2.5$Hs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hs_ayg),
+          t(postH$q97.5$Hs_ayu),
+          t(postH$q97.5$Hs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Hs_ayg),
+          t(postH$sd$Hs_ayu),
+          t(postH$sd$Hs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(slope_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast)-> slope_harv
+  
+slope_harv %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvests = H, sd_H, H_lo95,H_hi95) -> slopeH_wb
+
+#-------------------------------------------------------------------------------
+# Slope releases
+slope_howR <- read.csv(paste0("..\\output\\SLO_rel_Howard_thru",REP_YR,".csv")) %>%
+  clean_names() %>%
+  select(region,year,area = rpt_area, gui_slope, var_gui_slope, priv_slope, var_priv_slope,
+         tot_slope = total_sloperel, var_tot_slope = var_total_sloperel) %>% unique()
+
+slope_howR %>% select(-c("var_gui_slope","var_priv_slope","var_tot_slope")) %>%
+  pivot_longer(cols = c("gui_slope","priv_slope","tot_slope"),
+               names_to = "user",
+               values_to = "R_how") %>%
+  mutate(user = ifelse(user == "gui_slope","guided",
+                       ifelse(user == "priv_slope","unguided","All"))) %>%
+  left_join(slope_howR %>% select(-c("gui_slope","priv_slope","tot_slope")) %>%
+              pivot_longer(cols = c("var_gui_slope","var_priv_slope","var_tot_slope"),
+                           names_to = "user",
+                           values_to = "var_R_how") %>%
+              mutate(user = ifelse(user == "var_gui_slope","guided",
+                                   ifelse(user == "var_priv_slope","unguided","All"))),
+            by = c("region","year","area","user")) %>%
+  mutate(se_R_how = sqrt(var_R_how),
+         lo95_R_how = ifelse(R_how - 1.96 * se_R_how < 0,0,
+                             R_how - 1.96 * se_R_how),
+         hi95_R_how = R_how + 1.96 * se_R_how) -> slope_howR
+
+as.data.frame(
+  rbind(t(postH$q50$Rs_ayg),
+        t(postH$q50$Rs_ayu),
+        t(postH$q50$Rs_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rs_ayg),
+          t(postH$q2.5$Rs_ayu),
+          t(postH$q2.5$Rs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rs_ayg),
+          t(postH$q97.5$Rs_ayu),
+          t(postH$q97.5$Rs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rs_ayg),
+          t(postH$sd$Rs_ayu),
+          t(postH$sd$Rs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(slope_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast) -> slope_rel
+
+as.data.frame(
+  rbind(t(postH$q50$Rs_ayg_mort),
+        t(postH$q50$Rs_ayu_mort),
+        t(postH$q50$Rs_ay_mort))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rs_ayg_mort),
+          t(postH$q2.5$Rs_ayu_mort),
+          t(postH$q2.5$Rs_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rs_ayg_mort),
+          t(postH$q97.5$Rs_ayu_mort),
+          t(postH$q97.5$Rs_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rs_ayg_mort),
+          t(postH$sd$Rs_ayu_mort),
+          t(postH$sd$Rs_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_Rmort") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  left_join(slope_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Est. mortality") %>%
+  filter(area %in% southeast) -> slope_rmort
+  
+slope_rel %>% full_join(slope_rmort %>% filter(category == "Est. mortality") %>%
+                        select(year,area,user, sd_Rmort,
+                               Release_morts = R, RM_lo95 = R_lo95, RM_hi95 = R_hi95),
+                      by = c("year","user","area")) %>%
+  mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  arrange(area,user,year) %>%
+            mutate(R = round(R,0),
+                   Release_morts = round(Release_morts,0),
+                   RM_lo95 = round(RM_lo95,0),
+                   RM_hi95 = round(RM_hi95,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95),
+                   sd_R = round(sd_R,3),
+                   sd_RM = round(sd_Rmort,3)) %>%
+            select(region,area,year,user,Releases = R,sd_R, R_lo95,R_hi95,Release_morts, sd_RM,RM_lo95,RM_hi95) -> slopeR_wb
+
+#-------------------------------------------------------------------------------
+# Biomass and mortality conversions:
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Black rockfish removals:
+as.data.frame(
+  rbind(t(postH$q50$Bb_ayg),
+        t(postH$q50$Bb_ayu),
+        t(postH$q50$Bb_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "B") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Bb_ayg),
+          t(postH$q2.5$Bb_ayu),
+          t(postH$q2.5$Bb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Bb_ayg),
+          t(postH$q97.5$Bb_ayu),
+          t(postH$q97.5$Bb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Bb_ayg),
+          t(postH$sd$Bb_ayu),
+          t(postH$sd$Bb_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_B") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") ->brf_removals
+
+brf_removals %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(Mort_lbs = round(B,2),
+                   M_lo95 = round(B_lo95,2),
+                   M_hi95 = round(B_hi95,2),
+                   sd_M = round(sd_B,3)) %>%
+            select(region,area,year,user,Mort_lbs,sd_M, M_lo95,M_hi95) -> brf_m
+
+#-------------------------------------------------------------------------------
+# Yelloweye: 
+
+as.data.frame(
+  rbind(t(postH$q50$By_ayg),
+        t(postH$q50$By_ayu),
+        t(postH$q50$By_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "B") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$By_ayg),
+          t(postH$q2.5$By_ayu),
+          t(postH$q2.5$By_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$By_ayg),
+          t(postH$q97.5$By_ayu),
+          t(postH$q97.5$By_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$By_ayg),
+          t(postH$sd$By_ayu),
+          t(postH$sd$By_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_B") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") ->ye_removals
+
+ye_removals %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(Mort_lbs = round(B,2),
+                   M_lo95 = round(B_lo95,2),
+                   M_hi95 = round(B_hi95,2),
+                   sd_M = round(sd_B,3)) %>%
+            select(region,area,year,user,Mort_lbs, sd_M, M_lo95,M_hi95) -> ye_m
+
+#-------------------------------------------------------------------------------
+# Pelagics: 
+as.data.frame(
+  rbind(t(postH$q50$Bp_ayg),
+        t(postH$q50$Bp_ayu),
+        t(postH$q50$Bp_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "B") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Bp_ayg),
+          t(postH$q2.5$Bp_ayu),
+          t(postH$q2.5$Bp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Bp_ayg),
+          t(postH$q97.5$Bp_ayu),
+          t(postH$q97.5$Bp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Bp_ayg),
+          t(postH$sd$Bp_ayu),
+          t(postH$sd$Bp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_B") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") %>%
+  filter(area %in% southeast) ->pel_removals
+
+pel_removals %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(Mort_lbs = round(B,2),
+                   M_lo95 = round(B_lo95,2),
+                   M_hi95 = round(B_hi95,2),
+                   sd_M = round(sd_B,3)) %>%
+            select(region,area,year,user,Mort_lbs,sd_M, M_lo95,M_hi95) -> pel_m
+
+#Also need to get pelagic harvests and releases to be complete:
+as.data.frame(
+  rbind(t(postH$mean$Hp_ayg),
+        t(postH$mean$Hp_ayu),
+        t(postH$mean$Hp_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Hp_ayg),
+          t(postH$q2.5$Hp_ayu),
+          t(postH$q2.5$Hp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Hp_ayg),
+          t(postH$q97.5$Hp_ayu),
+          t(postH$q97.5$Hp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Hp_ayg),
+          t(postH$sd$Hp_ayu),
+          t(postH$sd$Hp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  #left_join(slope_how, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast)-> pel_harv
+  
+pel_harv %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(H = round(H,0),
+                   H_lo95 = round(H_lo95,0),
+                   H_hi95 = round(H_hi95),
+                   sd_H = round(sd_H,3)) %>%
+            select(region,area,year,user,Harvests = H, H_lo95,H_hi95) -> pelH_wb
+
+as.data.frame(
+  rbind(t(postH$q50$Rp_ayg),
+        t(postH$q50$Rp_ayu),
+        t(postH$q50$Rp_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rp_ayg),
+          t(postH$q2.5$Rp_ayu),
+          t(postH$q2.5$Rp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rp_ayg),
+          t(postH$q97.5$Rp_ayu),
+          t(postH$q97.5$Rp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rp_ayg),
+          t(postH$sd$Rp_ayu),
+          t(postH$sd$Rp_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  #left_join(slope_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(area %in% southeast) -> pel_rel
+
+as.data.frame(
+  rbind(t(postH$q50$Rp_ayg_mort),
+        t(postH$q50$Rp_ayu_mort),
+        t(postH$q50$Rp_ay_mort))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Rp_ayg_mort),
+          t(postH$q2.5$Rp_ayu_mort),
+          t(postH$q2.5$Rp_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Rp_ayg_mort),
+          t(postH$q97.5$Rp_ayu_mort),
+          t(postH$q97.5$Rp_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Rp_ayg_mort),
+          t(postH$sd$Rp_ayu_mort),
+          t(postH$sd$Rp_ay_mort))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_RM") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+ #left_join(p_howR, by = c("year","user","area")) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Est. mortality") %>%
+  filter(area %in% southeast) -> pel_rmort
+  
+pel_rel %>% full_join(pel_rmort %>% filter(category == "Est. mortality") %>%
+                        select(year,area,user,sd_RM,
+                               Release_morts = R, RM_lo95 = R_lo95, RM_hi95 = R_hi95),
+                      by = c("year","user","area")) %>%
+  mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  arrange(area,user,year) %>%
+            mutate(R = round(R,0),
+                   Release_morts = round(Release_morts,0),
+                   RM_lo95 = round(RM_lo95,0),
+                   RM_hi95 = round(RM_hi95,0),
+                   R_lo95 = round(R_lo95,0),
+                   R_hi95 = round(R_hi95),
+                   sd_R = round(sd_R,3),
+                   sd_RM = round(sd_RM,3)) %>%
+            select(region,area,year,user,Releases = R, sd_R, R_lo95,R_hi95,Release_morts, sd_RM, RM_lo95,RM_hi95) -> pelR_wb
+
+#-------------------------------------------------------------------------------
+# DSR removals: 
+
+as.data.frame(
+  rbind(t(postH$q50$Bdnye_ayg),
+        t(postH$q50$Bdnye_ayu),
+        t(postH$q50$Bdnye_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "B") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Bdnye_ayg),
+          t(postH$q2.5$Bdnye_ayu),
+          t(postH$q2.5$Bdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Bdnye_ayg),
+          t(postH$q97.5$Bdnye_ayu),
+          t(postH$q97.5$Bdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Bdnye_ayg),
+          t(postH$sd$Bdnye_ayu),
+          t(postH$sd$Bdnye_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_B") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") %>%
+  filter(area %in% southeast) ->dsrlessye_removals
+
+dsrlessye_removals %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(Mort_lbs = round(B,2),
+                   M_lo95 = round(B_lo95,2),
+                   M_hi95 = round(B_hi95,2),
+                   sd_M = round(sd_B,3)) %>%
+            select(region,area,year,user,Mort_lbs, sd_M, M_lo95,M_hi95) -> dsr_m
+
+#-------------------------------------------------------------------------------
+# Slope morts
+
+as.data.frame(
+  rbind(t(postH$q50$Bs_ayg),
+        t(postH$q50$Bs_ayu),
+        t(postH$q50$Bs_ay))) %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(start_yr:end_yr, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  pivot_longer(!c(year,user), names_to = "area", values_to = "B") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q2.5$Bs_ayg),
+          t(postH$q2.5$Bs_ayu),
+          t(postH$q2.5$Bs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_lo95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$q97.5$Bs_ayg),
+          t(postH$q97.5$Bs_ayu),
+          t(postH$q97.5$Bs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "B_hi95") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  left_join(as.data.frame(
+    rbind(t(postH$sd$Bs_ayg),
+          t(postH$sd$Bs_ayu),
+          t(postH$sd$Bs_ay))) %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = rep(start_yr:end_yr, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      pivot_longer(!c(year,user), names_to = "area", values_to = "sd_B") %>%
+      mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+    by = c("year","user","area")) %>%
+  mutate(area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         category = "Total released") %>%
+  filter(area %in% southeast) -> slope_removals
+
+slope_removals %>% 
+            mutate(region = ifelse(area %in% southeast,"Southeast",
+                                   ifelse(area %in% central,"Southcentral","Kodiak")),
+                   area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+            arrange(area,user,year) %>%
+            mutate(Mort_lbs = round(B,2),
+                   M_lo95 = round(B_lo95,2),
+                   M_hi95 = round(B_hi95,2),
+                   sd_M = round(sd_B,3)) %>%
+            select(region,area,year,user,Mort_lbs, sd_M, M_lo95,M_hi95) -> slope_m
+
+```
+
+# Tables
+
+/newpage
+
+```{r, echo=FALSE}
+library(knitr)
+
+# Create a data frame for the table
+my_table <- data.frame(
+  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propogation"),
+  Howard = c("1999 - present","Not explicitly dealt with. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
+              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook data.",
+             "Uses sample size threshholds such that when areas fall below those threshholds values are borrowed from nearby areas.",
+             "Error is propogated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases, are not dealt with."),
+  Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
+              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data and bias corrected SWHS data",
+            "Uses a hierarchichacal modelling approach that shares information between areas in the same region. Thus all data is used, even with small sample sizes. This is a more sound method that avoids assumptions and uses all of the data. ",
+            "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.")
+)
+
+# Print the table
+kable(my_table, caption = paste0("**Table ",Tab_N,".** Summary of key improvements in reconstructiing sport fish removals of rockfish using the Bayesian model as compared to the Howard et al. (2020) methods.")) %>%
+  kable_styling(full_width = FALSE) %>%
+  column_spec(1, width = "3cm") %>%
+  column_spec(2, width = "6cm") %>%  # Set width for Column 2
+  column_spec(3, width = "6cm")      # Set width for Column 3
+
+Tab_N <- Tab_N + 1
+```
+/newpage
+
+**Table {r Tab_N}.**  
+```{r, echo=FALSE}
+
+
+# Print the table
+kable(my_table, caption = paste0("**Table ",Tab_N,".** Summary of key improvements in reconstructiing sport fish removals of rockfish using the Bayesian model as compared to the Howard et al. (2020) methods.")) %>%
+  kable_styling(full_width = FALSE) %>%
+  column_spec(1, width = "3cm") %>%
+  column_spec(2, width = "6cm") %>%  # Set width for Column 2
+  column_spec(3, width = "6cm")      # Set width for Column 3
+
+Tab_N <- Tab_N + 1
+```
+
+# Figures
+
+/newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Cook Inlet rockfish commercial fishery management units: North Gulf District (NG) and Cook Inlet District (CI)."), echo = FALSE}
+knitr::include_graphics("../figures/CING_CFMUs.png")
+Fig_N <- Fig_N+1
+```
+/newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Prince William Sound rockfish commercial fishery management units: Prince William Sound Inside District (PWSI) and Prince William Sound Outside District (PWSO)."), echo = FALSE}
+knitr::include_graphics("../figures/PWS_CFMUs.jpeg")
+Fig_N <- Fig_N+1
+```
+/newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Southeast Alaska rockfish commercial fishery management units: Icy Bay Subdistrict (IBS), East Yakutat Section (EYKT), Northern Southeast Outside Section (NSEO), Central Southeast Outside Section (CSEO), Southern Southeast Outside Section (SSEO), Northern Southeast Inside Subdistrict (NSEI), and Southern Southeast Inside Subdistrict (SSEI)."), echo = FALSE}
+knitr::include_graphics("../figures/SE_CFMUs.png")
+Fig_N <- Fig_N+1
+```
+
+/newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Kodiak, Chignik, and the South Alaska Peninsula (SAKPEN) rockfish commercial fishery management units. The Bering Sea–Aleutian Islands Area includes all waters west of the South Alaska Peninsula Area border at Scotch Cap Light, and north into the Bering Sea. Kodiak management units include Afognak, Northeast, Eastside, Southeast, Southwest, Westside, and Mainland Districts."), echo = FALSE}
+knitr::include_graphics("../figures/KOD_CFMUs.png")
+Fig_N <- Fig_N+1
+```
+/newpage
+
+```{r, fig.width = 11.5, fig.height = 5, fig.cap = paste0("**Figure ",Fig_N,".**- Data sources for estimating rockfish harvests and releases in ADF&G commercial fisheries management units. Note that initial rockfish harvest estimates were not differentiated into species assemblage or species until 1998 when logbooks began differentiating by pelagic and non-pelagic. Logbooks began to collect data on yelloweye beginning in 2006. Port sampling programs to gather data on species composition of harvests began in 1996 in Southcentral and Kodiak and in 2006 in Southeast.")}
+
+data_source_order <- c(
+  "SWHS total rf harvests",
+  "SWHS total rf releases",
+  "SWHS rf harvest by user group",
+  "SWHS rf releases by user group",
+  "Logbook total rf charter harvests",
+  "Logbook pelagic charter harvests",
+  "Logbook yelloweye charter harvests",
+  "Logbook total rf charter releases",
+  "Logbook pelagic charter releases",
+  "Logbook yelloweye charter releases",
+  "Central and Kodiak species composition data",
+  "Southeast species composition data"
+)
+
+rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
+      data = rep("SWHS total rf harvests",length(unique(Hhat_ay$year)))),
+      
+      cbind(year = as.numeric(unique(Rhat_ay$year)),
+      data = rep("SWHS total rf releases",length(unique(Rhat_ay$year)))),
+      
+      cbind(year = as.numeric(unique(Hhat_ayu$year)),
+      data = rep("SWHS rf harvest by user group",length(unique(Hhat_ayu$year)))),
+      
+      cbind(year = as.numeric(unique(Rhat_ayu$year)),
+      data = rep("SWHS rf releases by user group",length(unique(Rhat_ayu$year)))),
+      #Logbook
+      cbind(year = as.numeric(unique(H_ayg$year)),
+      data = rep("Logbook total rf charter harvests",length(unique(H_ayg$year)))),
+      
+      cbind(year = as.numeric(unique(H_ayg$year[!is.na(H_ayg$Hp)])),
+      data = rep("Logbook pelagic charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hp)])))),
+      
+      cbind(year = as.numeric(unique(H_ayg$year[!is.na(H_ayg$Hye)])),
+      data = rep("Logbook yelloweye charter harvests",length(unique(H_ayg$year[!is.na(H_ayg$Hye)])))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year)),
+      data = rep("Logbook total rf charter releases",length(unique(R_ayg$year)))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rp)])),
+      data = rep("Logbook pelagic charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rp)])))),
+      
+      cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rye)])),
+      data = rep("Logbook yelloweye charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rye)])))),
+      #comp
+      cbind(year = as.numeric(unique(comp$year[comp$region != "Southeast"])),
+      data = rep("Central and Kodiak species composition data",length(unique(comp$year[comp$region != "Southeast"])))),
+      
+      cbind(year = as.numeric(unique(comp$year[comp$region == "Southeast"])),
+      data = rep("Southeast species composition data",length(unique(comp$year[comp$region == "Southeast"]))))) %>% data.frame() -> data_available
+  
+  ggplot(data = data_available,
+         aes(x = as.numeric(year), y = factor(data, levels = rev(data_source_order)))) + 
+  geom_point(size = 4, shape = 21, fill = "darkgrey") + 
+  theme_bw(base_size = 16) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+    axis.text.y = element_text(size = 12)) +
+  scale_x_continuous(
+    breaks = seq(start_yr, end_yr, by = 2) # Adjust for every other year
+  ) +
+  labs(y = "Data Sources", x = "Year")
+  
+ggsave("../figures/bayes_model/data_plot.png")  
+
+Fig_N <- Fig_N+1
+```
+\newpage
+
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".**- SWHS harvest (left) and release (right) estimates from guided trips (x-axis) versus repoted harvests from charter logbooks (y-axis).")}
+pal <- wes_palette(name = "Zissou1Continuous", type = "continuous", n = 16)
+
+left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
+  mutate(area = toupper(area),
+         area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  ggplot(aes(H_lb, Hhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  scale_color_manual(values = pal) +
+  facet_grid(region ~ ., scales = "free") + theme_bw(base_size = 16) +
+  theme(plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(x="Logbook harvests", y = "SWHS estimates") -> Hcomp
+
+left_join(Chat_ayu %>% filter(user == "guided"), 
+          Hhat_ayu %>% filter(user == "guided"),
+          by = c("area", "year", "region")) %>%
+  select(year, area, region, gChat = Chat, gHhat = Hhat) %>%
+  mutate(gRhat = gChat -gHhat) %>%
+  select(year,area,region,Rhat = gRhat) %>%
+  left_join(R_ayg %>% select(year,area,region,R),
+            by = c('area',"year","region")) %>%
+  mutate(area = toupper(area),,
+         area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  ggplot(aes(R, Rhat, color = area)) +
+  geom_abline() +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  scale_color_manual(values = pal) +
+  facet_grid(region ~ ., scales = "free") + theme_bw(base_size = 16) +
+  theme(plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
+  labs(x="Logbook releases", y = "") -> Ccomp
+
+ggarrange(Hcomp,Ccomp,
+          labels = c("Harvests","Releases"),
+          ncol=2, common.legend = TRUE, label.y = 1.01, legend = "bottom")
+
+ggsave("../figures/bayes_model/raw_bias.png") 
+Fig_N <- Fig_N+1
+```
+
+/newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Release mortality rates used to calculate the number of released rockfish assumed to have died. The change in mortality rates in 2013 reflect the deep water release (DWR) requirements that were adopted in that year."), echo = FALSE}
+knitr::include_graphics("../figures/rel_mort.png")
+Fig_N <- Fig_N+1
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

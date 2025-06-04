@@ -52,17 +52,17 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 4.5E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_log_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "rf_harvest_est_nm_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
-if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
-  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
-}
+#if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
+#  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
+#}
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -499,6 +499,7 @@ jagsUI::traceplot(postH,
 
 jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
 
+jagsUI::traceplot(postH, parameters = c("swt"))
 jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt"))
 jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt"))
 jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt"))

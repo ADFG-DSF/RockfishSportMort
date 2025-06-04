@@ -623,6 +623,7 @@ jags_params <- function(){
     "mu2_wt","sd2_wt",
     "mu3_wt","sd3_wt",
     "wt",
+    "swt",
     
     #release mortality
     "Rp_ayg_mort","Rp_ayu_mort","Rp_ay_mort",

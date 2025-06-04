@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "theModel_nmWtry3_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "theModel_nmW_tst_",Sys.Date(),".html"))
       })
 ---
 
@@ -61,7 +61,7 @@ mod<-"LB_fit_3pH"
 res <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
 #trying
 res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
-res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+res <- "rf_harvest_est_nm_wt_thru2023_1e+05__2025-06-03"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -921,8 +921,8 @@ brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -1224,8 +1224,8 @@ YE_harv %>% filter(user != "All") %>%
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -1537,10 +1537,10 @@ DSR_harv %>%  filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, 
-                    ymin=ifelse(lo95_H_how-ye_how<0,0,lo95_H_how-ye_how), #ymin=max(0,lo95_H_how-ye_how,na.rm=T), 
-                    ymax=(hi95_H_how-ye_how), color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, 
+  #                  ymin=ifelse(lo95_H_how-ye_how<0,0,lo95_H_how-ye_how), #ymin=max(0,lo95_H_how-ye_how,na.rm=T), 
+  #                  ymax=(hi95_H_how-ye_how), color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -1694,10 +1694,10 @@ DSR_rel %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSE
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, 
-                    ymin=ifelse(lo95_R_how-ye_how<0,0,lo95_R_how-ye_how), 
-                    ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, 
+  #                  ymin=ifelse(lo95_R_how-ye_how<0,0,lo95_R_how-ye_how), 
+  #                  ymax=hi95_R_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -1808,8 +1808,8 @@ slope_harv %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = H_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, ymin=lo95_H_how, ymax=hi95_H_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -1962,8 +1962,8 @@ slope_rel %>% filter(user != "All" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point(aes(x = year, y = R_how, color = user, shape = user)) +
-  geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
-                position=position_dodge(0.05), alpha = 0.3) + 
+  #geom_errorbar(aes(x = year, ymin=lo95_R_how, ymax=hi95_R_how, color = user), width=.2,
+  #              position=position_dodge(0.05), alpha = 0.3) + 
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = R_lo95, ymax = R_hi95, fill = user), alpha = 0.25, color = NA) +
   theme_bw(base_size = 14) +
@@ -5126,7 +5126,7 @@ if (interactive()) rep_wb$open()
 
 <br>
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",X,".**- Proportion of black rockfish total mortality, in biomass, from harvests and releases.")}
-pal <- wes_palette(name = "Moonrise2", n=4)
+pal <- c(wes_palette(name = "Moonrise2", n=4),"black")
 
 BRF_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -5187,14 +5187,20 @@ brf_rem_x_source %>% filter(user != "All") %>%
   scale_fill_manual(values = pal,
                     labels = function(x) str_wrap(x, width = 15)) +
   scale_color_manual(values = pal) +
-  geom_bar(position="stack", stat="identity") +
+  #geom_line(data = brf_removals %>% filter(user == "All") %>% mutate(Source = "Total"),
+  #          aes(x = year, y = B), col = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_ribbon(data = brf_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
   facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     legend.spacing.y = unit(2, "cm"),
-    legend.text = element_text(margin = margin(b = 15))
+    legend.text = element_text(margin = margin(b = 13))
   ) +
   guides(fill = guide_legend(byrow = TRUE)) +
   labs(y = "Mortality (lbs)", x = "Year") -> brf_rem_x_source_lbs
@@ -5266,14 +5272,18 @@ ye_rem_x_source %>% filter(user != "All" & user != "all") %>%
   scale_fill_manual(values = pal,
                     labels = function(x) str_wrap(x, width = 15)) +
   scale_color_manual(values = pal) +
-  geom_bar(position="stack", stat="identity") +
+  geom_ribbon(data = ye_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
   facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     legend.spacing.y = unit(2, "cm"),
-    legend.text = element_text(margin = margin(b = 15))
+    legend.text = element_text(margin = margin(b = 13))
   ) +
   guides(fill = guide_legend(byrow = TRUE)) +
   labs(y = "Mortality (lbs)", x = "Year") -> ye_rem_x_source_lbs
@@ -5344,14 +5354,18 @@ pel_rem_x_source %>% filter(user != "All"  & area %in% southeast ) %>%
   scale_fill_manual(values = pal,
                     labels = function(x) str_wrap(x, width = 15)) +
   scale_color_manual(values = pal) +
-  geom_bar(position="stack", stat="identity") +
+  geom_ribbon(data = pel_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
   facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     legend.spacing.y = unit(2, "cm"),
-    legend.text = element_text(margin = margin(b = 15))
+    legend.text = element_text(margin = margin(b = 13))
   ) +
   guides(fill = guide_legend(byrow = TRUE)) +
   labs(y = "Mortality (lbs)", x = "Year") -> pel_rem_x_source_lbs
@@ -5422,14 +5436,18 @@ dsr_rem_x_source %>% filter(user != "All"  & area %in% southeast) %>%
   scale_fill_manual(values = pal,
                     labels = function(x) str_wrap(x, width = 15)) +
   scale_color_manual(values = pal) +
-  geom_bar(position="stack", stat="identity") +
+  geom_ribbon(data = dsrlessye_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
   facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     legend.spacing.y = unit(2, "cm"),
-    legend.text = element_text(margin = margin(b = 15))
+    legend.text = element_text(margin = margin(b = 13))
   ) +
   guides(fill = guide_legend(byrow = TRUE)) +
   labs(y = "Mortality (lbs)", x = "Year") -> dsr_rem_x_source_lbs
@@ -5499,7 +5517,11 @@ slope_rem_x_source %>% filter(user != "All"  & area %in% southeast) %>%
   scale_fill_manual(values = pal,
                     labels = function(x) str_wrap(x, width = 15)) +
   scale_color_manual(values = pal) +
-  geom_bar(position="stack", stat="identity") +
+  geom_ribbon(data = slope_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
   facet_wrap(. ~ area, scales = "free") +
   scale_y_continuous(labels = comma) +
   theme_bw(base_size = 14)+
