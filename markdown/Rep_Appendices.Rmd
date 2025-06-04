@@ -1,0 +1,201 @@
+---
+#title: "Appendices"
+#author: "Philip Joy"
+output:
+  word_document:
+    reference_docx: "rep_temp.docx"
+fontsize: 12pt
+#date: "2025-05-23"
+#always_allow_html: true
+
+#knit: (function(input_file, encoding) {
+#        rmarkdown::render(input_file, 
+#                          output_file = paste0("RFsportmort_update_", "theModel_prelim_",Sys.Date(),".html"))
+#      })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+#...............................................................................
+##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
+#...............................................................................
+# Notes: on p plot, make symbol size = sample size, 
+# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
+# comp_H - total_release * unkown comp proportion
+#-------------------------------------------------------------------------------8
+#mod<-"LB_hyb_5pH_infPr"
+#mod<-"LB_fit_5pH"
+mod<-"LB_fit_3pH"
+#mod<-"LB_hyb_3pH"
+res <- "rf_harvest_est_kha_rm_wt_thru2023_480000_7kn_2025-05-23"
+#res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
+res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+Fig_N <- 0
+Tab_N <- 0
+App_N <- 0
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+
+# Separate out everything for plotting:
+
+
+# MAking greek characters:
+library(officer)
+library(flextable)
+
+make_param_label <- function(code) {
+  greek_map <- list("m" = "μ", "s" = "σ", "b" = "β", "l" = "λ")
+
+  greek <- greek_map[[substr(code, 1, 1)]]
+  subscript <- substr(code, 2, nchar(code))
+
+  if (is.null(greek)) {
+    # fallback: just return code as-is
+    return(as_paragraph(as_chunk(code)))
+  }
+
+  as_paragraph(
+    as_chunk(greek),
+    as_chunk(subscript, props = fp_text(vertical.align = "subscript"))
+  )
+}
+
+
+```
+
+# Appendices
+
+
+**Appendix A: Spline fomulae:** The following formulas were used to fit the penalized spline to the harvest trend in the model. In region *R* parameters $\alpha_{\lambda_R}$ and $\beta_{\lambda_R}$ were calculated as
+
+$\alpha_{\lambda_R}~=~\frac{\mu_{\lambda_R}^2}{\sigma_{\lambda_R}^2}$
+
+$\beta_{\lambda_R}~=~\frac{\mu_{\lambda_R}}{\sigma_{\lambda_R}^2}$
+
+where $\mu_{\lambda_R}$ and $\sigma_{\lambda_R}$ were derived from priors (Table PRIORS1). 
+
+The harvest trend spline by area, *a*, was modeled such that $\lambda_a$ was derived from the regional $\alpha_{\lambda_R}$ and $\beta_{\lambda_R}$ parameters based on a gamma distribution such that
+
+$\lambda_a~\sim~gamma(\alpha_{\lambda_R}, \beta_{\lambda_R})$
+
+Area specific $\beta_a$ matrices with *a* by *C* dimensions where *C* is equal to the  number of knots in the spline were derived from a multivariate normal distribution such that
+
+$\beta_{a,1:C}~\sim~mnorm(zero_{1:C} + \beta0_a, \lambda_a * Q_{1:C,1:C})$
+
+where $beta0_a$ was derived from a prior (Table PRIORS1), $zero_{1:C}$ is a vector of zeros and $Q_{1:C,1:C}$ is a matrix derived from the number of knots (see https://bragqut.github.io/2016/05/24/samclifford-splines/ for original formulation and the model code in https://github.com/ADFG-DSF/RockfishSportMort/tree/main/models). 
+
+The true harvest in area *a* and year *y*, $H_{ay}$, was fit to the spline trend line such that
+
+$log(H_{ay}) ~\sim~ norm(H_{ay}^{trend}, \tau_a)$ 
+
+where
+
+$\tau_a ~=~ \frac{1}{\sigma_{Ha}}$
+
+and $\sigma_{Ha}$ was derived from a prior distribution (Table PRIORS1). The spine trend $H_{ay}^{trend}$ was calculated as 
+
+$H_{ay}^{trend} ~=~ Z_y * \beta_{a,1:C}$
+
+where $Z_y$ is a matrix derived from the number of knots and the number of years in the time series (see https://bragqut.github.io/2016/05/24/samclifford-splines/ for original formulation and the model code in https://github.com/ADFG-DSF/RockfishSportMort/tree/main/models).
+
+<br>
+
+**Appendix B: Model fit to weight data.**
+<br>
+
+

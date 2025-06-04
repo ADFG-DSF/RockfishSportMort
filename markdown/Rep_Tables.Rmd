@@ -1,0 +1,290 @@
+---
+#title: "Rockfish Removals in Alaska Sport Fisheries 1977 - 2023"
+#author: "Philip Joy"
+output:
+  word_document:
+    reference_docx: "rep_temp.docx"
+fontsize: 12pt
+#date: "2025-05-23"
+#always_allow_html: true
+
+knit: (function(input_file, encoding) {
+  rmarkdown::render(input_file,
+    output_file = "report.docx",
+    encoding = encoding
+  )
+  # Post-process to insert the Word table
+  source("insert_custom_table.R")
+})
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+#...............................................................................
+##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
+#...............................................................................
+# Notes: on p plot, make symbol size = sample size, 
+# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
+# comp_H - total_release * unkown comp proportion
+#-------------------------------------------------------------------------------8
+#mod<-"LB_hyb_5pH_infPr"
+#mod<-"LB_fit_5pH"
+mod<-"LB_fit_3pH"
+#mod<-"LB_hyb_3pH"
+res <- "rf_harvest_est_kha_rm_wt_thru2023_480000_7kn_2025-05-23"
+#res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
+res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+Fig_N <- 0
+Tab_N <- 0
+App_N <- 0
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+
+# Separate out everything for plotting:
+
+
+# MAking greek characters:
+library(officer)
+library(flextable)
+
+make_param_label <- function(code) {
+  greek_map <- list("m" = "μ", "s" = "σ", "b" = "β", "l" = "λ")
+
+  greek <- greek_map[[substr(code, 1, 1)]]
+  subscript <- substr(code, 2, nchar(code))
+
+  if (is.null(greek)) {
+    # fallback: just return code as-is
+    return(as_paragraph(as_chunk(code)))
+  }
+
+  as_paragraph(
+    as_chunk(greek),
+    as_chunk(subscript, props = fp_text(vertical.align = "subscript"))
+  )
+}
+
+
+```
+
+# Tables
+
+**Table `r Tab_N`.**  Summary of key improvements in reconstructing sport fish removals of rockfish using the Bayesian model as compared to the Howard et al. (2020) methods.
+
+```{r, echo=FALSE}
+library(knitr)
+
+# Create a data frame for the table
+my_table <- data.frame(
+  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propogation"),
+  Howard = c("1999 - present","Not explicitly dealt with. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
+              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook data.",
+             "Uses sample size threshholds such that when areas fall below those threshholds values are borrowed from nearby areas.",
+             "Error is propogated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases, are not dealt with."),
+  Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
+              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data and bias corrected SWHS data",
+            "Uses a hierarchichacal modelling approach that shares information between areas in the same region. Thus all data is used, even with small sample sizes. This is a more sound method that avoids assumptions and uses all of the data. ",
+            "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.")
+)
+
+flextable(my_table) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Model priors for parameters associated with species composition, retention probability, the harvest trend spline, SWHS bias and proportion guided.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion pelagic in all rockfish, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion black in pelagic rockfish, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion yelloweye rockfish in non-pelagic (Southcentral and Kodiak) or demersal shelf rockfish (Southeast region) including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.$\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion demersal shelf and slope rockfish in non-pelagic rockfish in Southeast region, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for pelagic rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for yelloweye rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for “other” (non-pelagic, non-yelloweye)  rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
+
+***PASTE TABLEs HERE FROM Prior_Tab.docx***
+
+```{r, echo=FALSE}
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+
+
+
+
+
+
+
+
+
+
+
+

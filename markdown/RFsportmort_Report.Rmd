@@ -3,9 +3,11 @@ title: "Rockfish Removals in Alaska Sport Fisheries 1977 - 2023"
 author: "Philip Joy"
 output:
   word_document:
-    reference_docx: "rep_temp.docx"
+    reference_docx: "rep_temp_wtc.docx"
+    toc: true
+    toc_depth: 2
 fontsize: 12pt
-date: "2025-05-23"
+#date: "2025-05-23"
 
 #knit: (function(input_file, encoding) {
 #        rmarkdown::render(input_file, 
@@ -153,7 +155,7 @@ The methods presented here build on the foundational Howard methods by applying 
 
 # Study Area
 
-Reconstructions were developed for CFMUs across the Gulf of Alaska, from Kodiak Island east to Southeast Alaska (Figures XX). CFMUs were divided into 3 overall regions such that the Southcentral region contained Cook Inlet (CI), the North Gulf Coast (NG) (Figure CING_CFMUs) and Prince William Sound Inside (PWSI) and Outside (PWSO) CFMU's (Figure PWS_CFMUs) and Southeast region was comprised of the Central Southeast Outside (CSEO), North Southeast Outside (NSEO), South Southeast Outside (SSEO), North Southeast Inside (NSEI), South Southeast Inside (SSEI) and a sixth area that pooled the Icy Bay subdistrict (IBS) and East Yakutat section (EYKT) to comprise the East–West Yakutat management area (EWYKT) (Figure SE_CFMUs). 
+Reconstructions were developed for CFMUs across the Gulf of Alaska, from Kodiak Island east to Southeast Alaska. CFMUs were divided into 3 overall regions such that the Southcentral region contained Cook Inlet (CI), the North Gulf Coast (NG) (Figure CING_CFMUs) and Prince William Sound Inside (PWSI) and Outside (PWSO) CFMU's (Figure PWS_CFMUs) and Southeast region was comprised of the Central Southeast Outside (CSEO), North Southeast Outside (NSEO), South Southeast Outside (SSEO), North Southeast Inside (NSEI), South Southeast Inside (SSEI) and a sixth area that pooled the Icy Bay subdistrict (IBS) and East Yakutat section (EYKT) to comprise the East–West Yakutat management area (EWYKT) (Figure SE_CFMUs). 
 
 Several of the westward and Kodiak subdistricts have little data and necessitated pooling for this analysis (Figure KOD_CFMUs). In addition to the Afognak, Eastside and Northeast CFMUs which contained adequate data, the Westside and Mainland districts were pooled ni the the Western Kodiak management area (WKMA) while the Southeast, Southwest, Chignik and South Alaska Peninsula (SAKPEN) districts were pooled into a CFMU called SOKO2PEN. Lastly the Aleatian and Bering Sea CFMUs were pooled into the BSAI CFMU and included in the Kodiak region.
 
@@ -185,13 +187,14 @@ Annual release mortality estimates in Southcentral and Kodiak were then calculat
 
 The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
 
-$\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_H})$
+$\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_{Ha}})$
 
-where $f(a,y)$ in a p-spline basis with 7 components (knots) and a second degree penalty (Eiler and Marx 1996; Ruppert et al. 2003; Lang and Brezger 2004; see https://bragqut.github.io/2016/05/24/samclifford-splines/ for formulation). The variance, $\sigma_H$,  was given a normal prior with a mean and standard deviation of 0.25 and 1, respectively (Table PRIORS1).  
+where $f(a,y)$ in a p-spline basis with 7 components (knots) and a second degree penalty (Eiler and Marx 1996; Ruppert et al. 2003; Lang and Brezger 2004; Appendix A) and $\sigma_{Ha}$ is the variance (Table PRIORS1). The spline was modeled hierarchically within regions (Table PRIORS1, Appendix A).  
 
 Harvests were apportioned by user groups such that charter and private harvest $H_{ayu}$ (where *u* = 1 for charter anglers and *u* = 2 for private anglers) is a fraction of total annual harvest in each area:
 
 $H_{ay1}~=~H_{ay}P_{(user)ay1}$
+
 $H_{ay2}~=~H_{ay}(1-P_{(user)ay1})$
 
 where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
@@ -384,6 +387,14 @@ Explanation of unconverged parameters:
 2) BSAI and SOKO2SAPs
 3) beta terms when difficult to fit logistic curves. 
 
+## Residual Patterns
+
+Residual patterns of the fit of the data to the SWHS data were generally satisfactory, with a few exceptions. Large harvest residuals (Figure SWHS_H_RESIDS) were often associated with poor precision in the SWHS estimates in all regions. PWSO demonstrated odd residual patterns associated with large uncertainty prior to 2000 with the model predicting higher harvests than demonstrated in the SWHS. Kodiak areas demonstrated some strange residual patterns in the WKMA and eastside CFMU's, but were generally associated with poor precision in the estimates. Southeast harvests showed generally satisfactory residual patterns, although SSEO model results were consistently higher than survey estimates prior to 1992. 
+
+Residual patterns for the SWHS release data showed much larger residuals as would be expected from the much less precise release estimates (Figure SWHS_R_RESIDS). Overall, the release residuals tended to be more positive than negative. PWSO releases demonstrated the same pattern as that of the harvests. 
+
+Residual patterns of the fit to the logbook data show some patterns but are minor with respect to the overall number of fish being estimated (Figure LB_RESIDS). Logbook data is fit with a poisson distribution which assumes a very small error. 
+
 ## Bias Estimation
 
 Model predicted bias in SWHS harvest data tracked the observed bias well across years and CFMUs (Figure YEARAREA_BIAS) and demonstrated that SWHS estimates were generally biased low (Figure MEAN_BIAS). The model also tracked release bias well across years and CFMUs but generally smoothed the more variable observed SWHS bias (Figure YEARAREA_BIAS). This is likely the result of far less precision in the SWHS release estimates. The overall bias in SWHS release estimates showed much more variability and in contrast to harvest estimates, showed the SWHS to be biased high with regard to releases (Figure MEAN_BIAS).  
@@ -416,39 +427,33 @@ Data on the proportion of total rockfish catches that were guided is lacking and
 
 ## Weight 
 
-The model estimated weights matched the observations as would be expected and tended to the hyperprior means when data was absent or sample sizes were small (Appendix A). 
-
-## Residual Patterns
-
-Residual patterns of the fit of the data to the SWHS data were generally satisfactory, with a few exceptions. Large harvest residuals (Figure SWHS_H_RESIDS) were often associated with poor precision in the SWHS estimates in all regions. PWSO demonstrated odd residual patterns associated with large uncertainty prior to 2000 with the model predicting higher harvests than demonstrated in the SWHS. Kodiak areas demonstrated some strange residual patterns in the WKMA and eastside CFMU's, but were generally associated with poor precision in the estimates. Southeast harvests showed generally satisfactory residual patterns, although SSEO model results were consistently higher than survey estimates prior to 1992. 
-
-Residual patterns for the SWHS release data showd much larger residuals as would be expected from the much less precise release estimates (Figure SWHS_R_RESIDS). OVerall, the release residuals tended to be more positive than negative. PWSO releases demonstrated the same pattern as that of the harvests. 
+The model estimated weights matched the observations as would be expected and tended to the hyperprior means when data was absent or sample sizes were small (Appendix B). 
 
 ## Harvest, Release and Total Removal Estimates
 
 ### Harvests 
 
-Total rockfish harvests demonstrate a generally increasing trend across the time series with some plateauing in recent years as a result of management restrictions (Figure H_ALL; Appendix B1). Prior to 1998 when the logbook program went into effect, there is greater uncertainty in estimates and harvests were generally low. Some areas such as Cook Inlet (CI), North Gulf (NG), Northeast Kodiak and many of the Southeast CFMUs demonstrate consistent harvests during that time period. Harvest estimates from the Bayesian model are very consistent with Howard method estimates with some exceptions. There are some difference in the 1998-2001 time period when the Howard methods made assumptions to deal with data limitations that were more appropriately handled with the hierarchical model in the Bayesian model. There are also differences in some of the Kodiak areas where the Howard methods simply borrowed values from the most data rich Kodiak CFMUs whereas the Bayes model uses a hierarchical approach.  
+Total rockfish harvests demonstrate a generally increasing trend across the time series with some plateauing in recent years as a result of management restrictions (Figure H_ALL; Appendix C1). Prior to 1998 when the logbook program went into effect, there is greater uncertainty in estimates and harvests were generally low. Some areas such as Cook Inlet (CI), North Gulf (NG), Northeast Kodiak and many of the Southeast CFMUs demonstrate consistent harvests during that time period. Harvest estimates from the Bayesian model are very consistent with Howard method estimates with some exceptions. There are some difference in the 1998-2001 time period when the Howard methods made assumptions to deal with data limitations that were more appropriately handled with the hierarchical model in the Bayesian model. There are also differences in some of the Kodiak areas where the Howard methods simply borrowed values from the most data rich Kodiak CFMUs whereas the Bayes model uses a hierarchical approach.  
 
-Black rockfish harvests demonstrate an increasing trend over the time series that is dominated by guided anglers with the exception of PWSI and Northeast Kodiak (Figure H_BLACK, Appendix B2). Harvests prior to 1998 are generally low, but the North Gulf (NG), Northeast Kodiak, and the SSEI, NSEI and CSEO CFMU's in Southeast had significant harvests during that time period. Guided estimates are very precise since the logbook program went into effect and port sampling programs provide robust samples for understanding the black rockfish proportion of the pelagic harvest. Unguided harvests are more uncertain as would be expected given their reliance on the SWHS estimates. Unguided estimates are very similar to the Howard estimates. Unguided harvest estimates differ from the Howard estimates but the credibility intervals of the Bayesian estimates include Howard estimates in most cases. They differ significantly in the PWSI where unguided harvests are the same magnitude as guided harvests and thus bias corrections made in the Bayes model would be expected o have a larger effect on those estimates.  
+Black rockfish harvests demonstrate an increasing trend over the time series that is dominated by guided anglers with the exception of PWSI and Northeast Kodiak (Figure H_BLACK, Appendix C2). Harvests prior to 1998 are generally low, but the North Gulf (NG), Northeast Kodiak, and the SSEI, NSEI and CSEO CFMU's in Southeast had significant harvests during that time period. Guided estimates are very precise since the logbook program went into effect and port sampling programs provide robust samples for understanding the black rockfish proportion of the pelagic harvest. Unguided harvests are more uncertain as would be expected given their reliance on the SWHS estimates. Unguided estimates are very similar to the Howard estimates. Unguided harvest estimates differ from the Howard estimates but the credibility intervals of the Bayesian estimates include Howard estimates in most cases. They differ significantly in the PWSI where unguided harvests are the same magnitude as guided harvests and thus bias corrections made in the Bayes model would be expected o have a larger effect on those estimates.  
 
-Yelloweye rockfish harvest also demonstrate increasing harvests but with reductions in recent years that reflect management actions taken by the department. The Bayesian model estimates consistent and steady harvests in many CFMU's prior to 1998 and with the SSEI and CSEO demonstrating appreciable harvests. As with black rockfish, yelloweye rockfish guided harvests estimates agree with Howard estimates. Unguided yelloweye harvests were also similar to Howard estimates with the exception of the PWSI CFMU. This is the only area where private harvests significantly out number guided harvests and thus the effect of bias correction in the model has a more pronounced effect. 
+Yelloweye rockfish harvest also demonstrate increasing harvests but with reductions in recent years that reflect management actions taken by the department (Figure H_YE, Appendix C3). The Bayesian model estimates consistent and steady harvests in many CFMU's prior to 1998 and with the SSEI and CSEO demonstrating appreciable harvests. As with black rockfish, yelloweye rockfish guided harvests estimates agree with Howard estimates. Unguided yelloweye harvests were also similar to Howard estimates with the exception of the PWSI CFMU. This is the only area where private harvests significantly out number guided harvests and thus the effect of bias correction in the model has a more pronounced effect. 
  
-Non-yelloweye DSR harvests show very similar patterns to yelloweye and strong agreement with Hoard estimates (Figure H_DSR and Appendix B4) and slope rockfish harvests show in increasing trend that is less pronounced than the other species and complexes (Figure H_SLOPE and Appendix B5). Although slope *pH* increased dramatically in recent years, overall harvests did not as non-pelagic harvests overall fell during recent years in Southeast. The slope estimates show some differences from Howard estimates in EWKT CFMU because the Howard methods borrowed values from other areas whereas the Bayesian model uses hierarchical modelling to deal with low or absent samples. 
+Non-yelloweye DSR harvests show very similar patterns to yelloweye and strong agreement with Hoard estimates (Figure H_DSR and Appendix C4) and slope rockfish harvests show in increasing trend that is less pronounced than the other species and complexes (Figure H_SLOPE and Appendix C5). Although slope *pH* increased dramatically in recent years, overall harvests did not as non-pelagic harvests overall fell during recent years in Southeast. The slope estimates show some differences from Howard estimates in EWKT CFMU because the Howard methods borrowed values from other areas whereas the Bayesian model uses hierarchical modelling to deal with low or absent samples. 
 
 ### Releases
 
-The release estimates for all rockfish are substantially less than harvests and demonstrate variable trends over the course of the time series with substantial uncertainty in the estimates (Figure R_ALL and Appendix B1). Estimates from the pre-1998 period were sometimes similar to the low end of the post-1998 peroid or demonstrate an increase as the fishery in that CFMU developed. The trends in the Bayesian model follow the trends in the Howard estimates, but are generally lower and exhibit less variability. In particular, the Bayes estimates are significantly lower in the early 2000s when the Howard methods relied on assumptions and long term averages to compensate for the lack of logbook data on yelloweye releases (Figure DATA).  
+The release estimates for all rockfish are substantially less than harvests and demonstrate variable trends over the course of the time series with substantial uncertainty in the estimates (Figure R_ALL and Appendix C1). Estimates from the pre-1998 period were sometimes similar to the low end of the post-1998 peroid or demonstrate an increase as the fishery in that CFMU developed. The trends in the Bayesian model follow the trends in the Howard estimates, but are generally lower and exhibit less variability. In particular, the Bayes estimates are significantly lower in the early 2000s when the Howard methods relied on assumptions and long term averages to compensate for the lack of logbook data on yelloweye releases (Figure DATA).  
 
-Releases of black rockfish demonstrate a relatively steady trend with an increase in the early 2000s as anglers began to target the species and then a decline as angler retention in increased (Figure R_BLACK, Figure BRF_pH, Appendix B2). Estimates of guided releases are very precise since 1998 owing to logbook records of pelagic releases and the port sampling program's estimate of black rockfish proportions in the pelagic species complex. Prior to 1998, guided release estimates demonstrate significant uncertainty. Estimates of unguided releases have substantial uncertainty as a result of data specific to unguided release numbers and the reliance on the *pH* demonstrated by guided anglers. Unguided black rockfish release estimates were substantially lower than the Howard estimates, although the upper credibility of the Bayes estimates often included the Howard estimates. 
+Releases of black rockfish demonstrate a relatively steady trend with an increase in the early 2000s as anglers began to target the species and then a decline as angler retention in increased (Figure R_BLACK, Figure BRF_pH, Appendix C2). Estimates of guided releases are very precise since 1998 owing to logbook records of pelagic releases and the port sampling program's estimate of black rockfish proportions in the pelagic species complex. Prior to 1998, guided release estimates demonstrate significant uncertainty. Estimates of unguided releases have substantial uncertainty as a result of data specific to unguided release numbers and the reliance on the *pH* demonstrated by guided anglers. Unguided black rockfish release estimates were substantially lower than the Howard estimates, although the upper credibility of the Bayes estimates often included the Howard estimates. 
 
-Yelloweye release estimates demonstrate fairly steady trends with pronounced uncertainty around the unguided estimates (Figure R_YE and Appendix B3). The lack of unguided angler specific release estimates coupled with large variances in the SWHS total rockfish release estimates and relatively small release numbers result in the large variances. However, retention of yelloweye rockfish has been historically high (Figure YE_pH) and the overall release estimates are generally low. Unguided release estimates also differ substantially from the Howard estimates but, unlike black rockfish, are sometime higher. In almost all cases the credibility intervals from the Bayes model include the Howard estimates. 
+Yelloweye release estimates demonstrate fairly steady trends with pronounced uncertainty around the unguided estimates (Figure R_YE and Appendix C3). The lack of unguided angler specific release estimates coupled with large variances in the SWHS total rockfish release estimates and relatively small release numbers result in the large variances. However, retention of yelloweye rockfish has been historically high (Figure YE_pH) and the overall release estimates are generally low. Unguided release estimates also differ substantially from the Howard estimates but, unlike black rockfish, are sometime higher. In almost all cases the credibility intervals from the Bayes model include the Howard estimates. 
 
-Non-yelloweye DSR demonstrate similar release patterns to yelloweye rockfish and lower unguided estimates than Howard (Figure R_DSR and Appendix B4) while slope rockfish show very low release numbers for most of the time seris and a large, uptick in recent years with substantial uncertainty (R_SLOPE and Appendix B5). 
+Non-yelloweye DSR demonstrate similar release patterns to yelloweye rockfish and lower unguided estimates than Howard (Figure R_DSR and Appendix C4) while slope rockfish show very low release numbers for most of the time seris and a large, uptick in recent years with substantial uncertainty (R_SLOPE and Appendix C5). 
  
 ### Total Removals in Biomass
 
-After factoring in release mortalities and converting to biomass total removals of rockfish in sport fisheries were calculated. Pelagic and black rockfish release mortality is relatively low even before the introduction of DWRs and with high retention in recent years when harvest have increased, release mortalities represent a minor component of overall fishery removals (Figure BRF_M, PEL_M, Appendix B1 and B6). DSR (including yelloweye) and slope rockfish assemblages experienced high release mortality prior to DwR requirements and even with DWR experience appreciable mortality rates (Figure REL_M). As such, release mortalities comprised a modest but appreciable contribution to overall mortalities (Figure YE_M, DRS_M and SLOPE_M, Appendix B3, B4 and B5). 
+After factoring in release mortalities and converting to biomass total removals of rockfish in sport fisheries were calculated. Pelagic and black rockfish release mortality is relatively low even before the introduction of DWRs and with high retention in recent years when harvest have increased, release mortalities represent a minor component of overall fishery removals (Figure BRF_M, PEL_M, Appendix B1 and B6). DSR (including yelloweye) and slope rockfish assemblages experienced high release mortality prior to DwR requirements and even with DWR experience appreciable mortality rates (Figure REL_M). As such, release mortalities comprised a modest but appreciable contribution to overall mortalities (Figure YE_M, DRS_M and SLOPE_M, Appendix C3, C4 and C5). 
 
 ## Retrospective patterns
 
@@ -489,10 +494,10 @@ Sport harvest reconstructions provided in this document were made possible by th
 
 Eilers, Paul H. C., and Brian D. Marx. 1996. “Flexible Smoothing with B-Splines and Penalties.” Statistical Science 11: 89–121.
 
-A. Gelman. Prior distributions for variance parameters in hierarchical models. Bayesian
+Gelman, A.. Prior distributions for variance parameters in hierarchical models. Bayesian
 Analysis, 1:515–533, 2006.
 
-A. Gelman and D. Rubin. Inference from iterative simulation using multiple sequences.
+Gelman, A. and D. Rubin. Inference from iterative simulation using multiple sequences.
 Statistical Science, 7:457–511, 1992.
 
 Howard, K. G., S. Campen, F. R. Bowers, R. E. Chadwick, J. W. Erickson, J. J. Hasbrouck, T. R. McKinley, J. Nichols, N. Nichols, A. Olson, J. Rumble, T. T. Taube, and B. Williams. 2019a. ADF&G Statewide Rockfish Initiative: Strategic plan 2017–2020. Alaska Department of Fish and Game, Division of Commercial Fisheries, Regional Information Report 5J19-05, Anchorage.
