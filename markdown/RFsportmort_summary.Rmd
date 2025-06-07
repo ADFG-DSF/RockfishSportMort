@@ -61,7 +61,7 @@ mod<-"LB_fit_3pH"
 res <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
 #trying
 res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
-res <- "rf_harvest_est_nm_wt_thru2023_1e+05__2025-06-03"
+res <- "rf_harvest_est_nm_wt_thru2023_3e+05__2025-06-04"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

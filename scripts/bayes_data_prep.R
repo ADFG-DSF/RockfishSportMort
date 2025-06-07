@@ -652,14 +652,22 @@ kha %>% group_by(year,area) %>%
             brf_var = sum(brf_var),
             rf_cv = sqrt(rf_var) / rf_tot,
             brf_cv = sqrt(brf_var) / brf_tot,
-            cov = ifelse(is.na(cov(rf_abund,brf_abund,use = "complete.obs")),
-                         0,cov(rf_abund,brf_abund,use = "complete.obs")),
+            cov = ifelse(is.na(cov(rf_abund, brf_abund, use = "complete.obs")),
+                         0, cov(rf_abund, brf_abund, use = "complete.obs")),
             #cov = cov(rf_abund,brf_abund),
             prop_brf = brf_tot / rf_tot,
             prop_var = ((1/rf_tot)^2) * brf_var +
               ((brf_tot/(rf_tot^2))^2) * rf_var, #- 2 * (brf_tot / (rf_tot^3)) * cov
+            prop_var2 = pmax(
+              (1 / rf_tot^2) * brf_var +
+                (brf_tot^2 / rf_tot^4) * rf_var -
+                2 * (brf_tot / rf_tot^3) * cov,
+              0
+            ),
             prop_se = sqrt(prop_var),
             prop_cv = prop_se / prop_brf) -> kha
+
+print(kha,n=70)
 
 saveRDS(kha, ".\\data\\bayes_dat\\kha.rds")
 

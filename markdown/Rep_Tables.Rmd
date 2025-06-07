@@ -51,19 +51,8 @@ list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
 
-#...............................................................................
-##!!!FLAG: CHANGE THIS IN THE KNIT FUNCTION ABOVE TO PROPERLY LABEL HTML FILE!!!!!!
-#...............................................................................
-# Notes: on p plot, make symbol size = sample size, 
-# Figure out how to show pH "data" for private? swhs bias and how species comps add up to match total releases. pH_pri_comp = pH_pri_all (bias corrected) ~ pH_gui_comp w offset parameter. Calculate pH_pri_all and show range based on species apportionment that illustrates model keeping sum of species = all release estimates
-# comp_H - total_release * unkown comp proportion
-#-------------------------------------------------------------------------------8
-#mod<-"LB_hyb_5pH_infPr"
-#mod<-"LB_fit_5pH"
 mod<-"LB_fit_3pH"
-#mod<-"LB_hyb_3pH"
-res <- "rf_harvest_est_kha_rm_wt_thru2023_480000_7kn_2025-05-23"
-#res <- "HR_fitLBR_2bias_hierPcomp_3pH_infPr_thru2023_2e+06_7kn_2025-01-25"
+
 res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -134,9 +123,6 @@ App_N <- 0
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO")
 kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
-
-# Separate out everything for plotting:
-
 
 # MAking greek characters:
 library(officer)
