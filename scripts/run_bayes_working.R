@@ -344,7 +344,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+results <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -482,6 +482,9 @@ unconv %>%
   filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
 
 jagsUI::traceplot(postH, 
+                  parameters = c("R_ayu")) 
+
+jagsUI::traceplot(postH, 
                   parameters = c("Ry_ayu")) 
 jagsUI::traceplot(postH, 
                   parameters = c("Ro_ayu")) 
@@ -498,6 +501,8 @@ jagsUI::traceplot(postH,
                   parameters = c("beta2_pH"))
 
 jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
+
+# main parameters
 
 jagsUI::traceplot(postH, parameters = c("swt"))
 jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt"))
@@ -522,6 +527,8 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))
 
+jagsUI::traceplot(postH, parameters = "pH")
+
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
@@ -543,6 +550,8 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_dsr","tau_beta0_dsr",
                                         "mu_beta4_dsr","tau_beta4_dsr",
                                         "beta0_dsr","beta1_dsr",
                                         "beta2_dsr","beta3_dsr","beta4_dsr"))
+
+jagsUI::traceplot(postH, parameters = c("p_dsr"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_slope","tau_beta0_slope",
                                         "mu_beta1_slope","tau_beta1_slope",

@@ -35,6 +35,7 @@ library(openxlsx2)
 library(scales)
 library(xlsx)
 library(writexl)
+library(flextable)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
@@ -61,7 +62,7 @@ mod<-"LB_fit_3pH"
 res <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
 #trying
 res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
-res <- "rf_harvest_est_nm_wt_thru2023_3e+05__2025-06-04"
+res <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -95,6 +96,7 @@ summary_table <- postH$summary %>%
            str_detect(Parameter, "^beta1_pH\\[")|
            str_detect(Parameter, "^beta2_pH\\[")|
            str_detect(Parameter, "^beta3_pH\\[")|
+            str_detect(Parameter, "^beta4_pH\\[")|
            str_detect(Parameter, "^beta0_pelagic\\[")|
            str_detect(Parameter, "^beta1_pelagic\\[")|
            str_detect(Parameter, "^beta2_pelagic\\[")|
@@ -117,6 +119,7 @@ summary_table <- postH$summary %>%
            str_detect(Parameter, "^beta2_slope\\[")|
            str_detect(Parameter, "^beta3_slope\\[")|
            str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^beta5_slope\\[")|
            str_detect(Parameter, "^sigma_H\\[")|
            str_detect(Parameter, "^beta_H\\[")|
            str_detect(Parameter, "^beta0_H\\[")|
@@ -650,7 +653,7 @@ prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4)
 ```{r, fig.width = 6, fig.height = 2, fig.cap = "**Figure X.**- Rhat values and proportion of parameters that converged (Rhat < 1.1.)"}
 rhat_vals %>% data.frame() %>%
   ggplot(aes(Rhat)) + 
-  geom_histogram(binwidth=0.1, colour="black", fill="white") +
+  geom_histogram(binwidth=0.01, colour="black", fill="white") +
   geom_vline(aes(xintercept = 1)) 
 ```
   
@@ -4698,99 +4701,135 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 <br>
 ### Summary of unconverged parameters:
 
+**Table X.** Unconverged parameters.
+
 ```{r}  
-names(rhat)[1] <- "Rhat_values"
+#names(rhat)[1] <- "Rhat_values"
 
 rhat_exam <- rhat$Rhat_values %>%
   rownames_to_column(var = "Parameter") %>%
   separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>%
+  mutate(index = str_replace(index, "\\]", ""),
+         index_n = str_count(index, ","))
+  
+rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", fill = "right") %>%
+  mutate(year = ifelse(!str_detect(variable, "beta"),
+                       i2,NA),
+         user = ifelse(!str_detect(variable, "beta") & index_n %in% c(2,3),
+                       i3, NA),
+         species = ifelse(str_detect(variable, "beta"),i2,
+                          ifelse(index_n == 3, i4, NA))) %>%
   left_join(comp %>% select(area,area_n) %>% unique() %>%
               add_row(area = "BSAI", area_n = 5) %>%
               add_row(area = "SOKO2SAP", area_n = 6) %>%
               add_row(area = "WKMA", area_n = 7) %>%
               mutate(area_n = as.character(area_n)),
             by = "area_n") %>%
-  mutate(parameter = variable) %>% select(-variable) %>%
-  filter(parameter %in% c("mu_bc_H", "sd_bc_H",
-                        #"logbc_C", "mu_bc_C", "sd_bc_C",
-                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
-                        #User proportions (proportion guided); different for H and C
-                        "b1_pG_H", "b2_pG_H",
-                        "b1_pG_C", "b2_pG_C",
-                        #proportion harvested: 
-                        #polynomial
-                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
-                        #"re_pH","sd_pH",
-                        #proportions same for catch and harvest? thinking on it?
-                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
-                        "mu_beta0_pelagic", "tau_beta0_pelagic",
-                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
-                        "mu_beta0_yellow", "tau_beta0_yellow",
-                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
-                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
-                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
-                        "mu_beta0_black", "tau_beta0_black",
-                        #random effects on species
-                        #"re_pelagic", "re_black","re_yellow",
-                        "sd_comp", 
-                        #
-                        "mu_lambda_H","sigma_lambda_H","beta_H",
-                        #catch estimates and spline parts
-                        #with hierarchichal pline lambda
-                        "mu_lambda_C","sigma_lambda_C","beta_C")) 
+  select(area, variable, year, user, species, Rhat) %>%
+  filter(!str_detect(variable, "Bb|By|Bs|_mort|Tb|Tp|Ty")) %>%
+  arrange(area, -Rhat, variable) -> unconverged
 
-rhat_exam %>% group_by(parameter) %>%
-  summarise(n = n(),
-            badRhat_avg = mean(Rhat)) %>%
-  arrange(-badRhat_avg,-n) ->param_conv
+flextable(unconverged) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+    
+    
+    
+#  mutate(across(starts_with("index"), as.numeric)) %>%
+#  left_join(comp %>% select(area,area_n) %>% unique() %>%
+#              add_row(area = "BSAI", area_n = 5) %>%
+#              add_row(area = "SOKO2SAP", area_n = 6) %>%
+#              add_row(area = "WKMA", area_n = 7) %>%
+#              mutate(area_n = as.character(area_n)),
+#            by = "area_n") %>%
+#  mutate(parameter = variable) %>% select(-variable) #%>%
 
-tabl <- nrow(param_conv)
+```
 
-round_up_even <- function(x) {
-  rounded <- ceiling(x)
-  if (rounded %% 2 != 0) {
-    rounded <- rounded + 1
-  }
-  return(rounded)
-}
+```{r}
+  
+#  filter(parameter %in% c("mu_bc_H", "sd_bc_H",
+#                        #"logbc_C", "mu_bc_C", "sd_bc_C",
+#                        "bc_C_offset","mu_bc_C_offset","sd_bcCoff",
+#                        #User proportions (proportion guided); different for H and C
+#                        "b1_pG_H", "b2_pG_H",
+#                        "b1_pG_C", "b2_pG_C",
+#                        #proportion harvested: 
+#                        #polynomial
+#                        "mu_beta0_pH","tau_beta0_pH","beta0_pH","beta1_pH","beta2_pH","beta3_pH",
+#                        #"re_pH","sd_pH",
+#                        #proportions same for catch and harvest? thinking on it?
+#                        "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+#                        "mu_beta0_pelagic", "tau_beta0_pelagic",
+#                        "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+#                        "mu_beta0_yellow", "tau_beta0_yellow",
+#                        "beta0_yellow_x", "beta1_yellow_x", "beta2_yellow_x", "beta3_yellow_x", "beta4_yellow_x",
+#                        "mu_beta0_yellow_x", "tau_beta0_yellow_x",
+#                        "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+#                        "mu_beta0_black", "tau_beta0_black",
+#                        #random effects on species
+#                        #"re_pelagic", "re_black","re_yellow",
+#                        "sd_comp", 
+#                        #
+#                        "mu_lambda_H","sigma_lambda_H","beta_H",
+#                        #catch estimates and spline parts
+#                        #with hierarchichal pline lambda
+#                        "mu_lambda_C","sigma_lambda_C","beta_C")) 
 
-sapply(tabl, round_up_even) ->col1
+#rhat_exam %>% group_by(parameter) %>%
+#  summarise(n = n(),
+#            badRhat_avg = mean(Rhat)) %>%
+#  arrange(-badRhat_avg,-n) ->param_conv
 
-rhat_exam %>% group_by(parameter,area) %>%
-  summarise(n = n(),
-            badRhat_avg = mean(Rhat)) %>%
-  arrange(-badRhat_avg,-n) -> par_x_area
+#tabl <- nrow(param_conv)
 
-with(par_x_area, table(parameter,area)) -> par_x_area_tbl
+#round_up_even <- function(x) {
+#  rounded <- ceiling(x)
+#  if (rounded %% 2 != 0) {
+#    rounded <- rounded + 1
+#  }
+#  return(rounded)
+#}
 
-t1 <- param_conv %>% slice(1:(col1*0.5))
-t2 <- param_conv %>% slice(((col1*0.5)+1):tabl)
+#sapply(tabl, round_up_even) ->col1
 
-kable1 <- t1 %>% 
-  kable(format = "html") %>% 
-  kable_styling(full_width = FALSE)
+#rhat_exam %>% group_by(parameter,area) %>%
+#  summarise(n = n(),
+#            badRhat_avg = mean(Rhat)) %>%
+#  arrange(-badRhat_avg,-n) -> par_x_area
 
-kable2 <- t2 %>% 
-  kable(format = "html") %>% 
-  kable_styling(full_width = FALSE)
+#with(par_x_area, table(parameter,area)) -> par_x_area_tbl
+
+#t1 <- param_conv %>% slice(1:(col1*0.5))
+#t2 <- param_conv %>% slice(((col1*0.5)+1):tabl)
+
+#kable1 <- t1 %>% 
+#  kable(format = "html") %>% 
+#  kable_styling(full_width = FALSE)
+
+#kable2 <- t2 %>% 
+#  kable(format = "html") %>% 
+#  kable_styling(full_width = FALSE)
 
 # Display side-by-side using a table layout
-div <- tags$table(
-  style = "width: 100%;",
-  tags$tr(
-    tags$td(style = "width: 50%;", HTML(kable1)),
-    tags$td(style = "width: 50%;", HTML(kable2))
-  )
-)
+#div <- tags$table(
+#  style = "width: 100%;",
+#  tags$tr(
+#    tags$td(style = "width: 50%;", HTML(kable1)),
+#    tags$td(style = "width: 50%;", HTML(kable2))
+#  )
+#)
 
-caption <- tags$caption(
-  style = "text-align: center; font-weight: bold; margin-bottom: 10px;",
-  tags$strong("Table 1. "),
-  "Summary of unconverged parameters including the number (n) and the average Rhat from the unconverged parameters."
-)
+#caption <- tags$caption(
+#  style = "text-align: center; font-weight: bold; margin-bottom: 10px;",
+#  tags$strong("Table 1. "),
+#  "Summary of unconverged parameters including the number (n) and the average Rhat from the unconverged parameters."
+#)
 
 #kable(par_x_area_tbl, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
 #      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
@@ -4798,58 +4837,58 @@ caption <- tags$caption(
 
 ```
 ```{r}
-rhat_exam2 <- rhat$Rhat_values %>%
-  rownames_to_column(var = "Parameter") %>%
-  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>%
-  left_join(comp %>% select(area,area_n) %>% unique() %>%
-              add_row(area = "BSAI", area_n = 5) %>%
-              add_row(area = "SOKO2SAP", area_n = 6) %>%
-              add_row(area = "WKMA", area_n = 7) %>%
-              mutate(area_n = as.character(area_n)),
-            by = "area_n") %>%
-  arrange(-Rhat)
+#rhat_exam2 <- rhat$Rhat_values %>%
+#  rownames_to_column(var = "Parameter") %>%
+#  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+#  mutate(index = str_replace(index, "\\]", "")) %>%
+#  separate(index, into = c("area_n", "year", "user"), sep = ",", fill = "right") %>%
+#  mutate(across(starts_with("index"), as.numeric)) %>%
+#  left_join(comp %>% select(area,area_n) %>% unique() %>%
+#              add_row(area = "BSAI", area_n = 5) %>%
+#              add_row(area = "SOKO2SAP", area_n = 6) %>%
+#              add_row(area = "WKMA", area_n = 7) %>%
+#              mutate(area_n = as.character(area_n)),
+#            by = "area_n") %>%
+#  arrange(-Rhat)
 
-rhat_exam2 %>% filter(!is.na(rhat_exam2$year) & !is.na(rhat_exam2$area_n)) -> more_bad
-unique(more_bad$variable)
-with(more_bad, table(variable,area)) %>% data.frame() %>%
-  pivot_wider(names_from = area, values_from = Freq) -> unconv
+#rhat_exam2 %>% filter(!is.na(rhat_exam2$year) & !is.na(rhat_exam2$area_n)) -> more_bad
+#unique(more_bad$variable)
+#with(more_bad, table(variable,area)) %>% data.frame() %>%
+#  pivot_wider(names_from = area, values_from = Freq) -> unconv
 
-unconv %>% 
-  filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
+#unconv %>% 
+#  filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
 
-par_x_area_tbl %>%
-  data.frame() %>%
-  pivot_wider(names_from = area, 
-              values_from = Freq) -> unconv2
+#par_x_area_tbl %>%
+#  data.frame() %>%
+#  pivot_wider(names_from = area, 
+#              values_from = Freq) -> unconv2
 
-for (i in factor(unique(H_ayg$area), ordered = TRUE)){ #i <- factor(unique(H_ayg$area), ordered = TRUE)[2]
-  col_name <- as.character(i)
-  if (i %in% c(colnames(unconv))) {} else 
-    {unconv$new = 0
-    unconv <- unconv %>% rename(!!col_name := new)}
-  if (i %in% c(colnames(unconv2))) {} else 
-    {unconv2$new = 0
-    unconv2 <- unconv2 %>% rename(!!col_name := new)}
-}
+#for (i in factor(unique(H_ayg$area), ordered = TRUE)){ #i <- factor(unique(H_ayg$area), ordered = TRUE)[2]
+#  col_name <- as.character(i)
+#  if (i %in% c(colnames(unconv))) {} else 
+#    {unconv$new = 0
+#    unconv <- unconv %>% rename(!!col_name := new)}
+#  if (i %in% c(colnames(unconv2))) {} else 
+#    {unconv2$new = 0
+#    unconv2 <- unconv2 %>% rename(!!col_name := new)}
+#}
 
-rbind(unconv %>% rename(parameter = variable),
-      unconv2) %>%
-  select(Parameter = parameter, CI,NG,PWSI,PWSO,BSAI,SOKO2SAP,WKMA,afognak,eastside,northeast,
-         CSEO,EWYKT,NSEI,NSEO,SSEI,SSEO) %>%
-  arrange(Parameter) -> unconverged
+#rbind(unconv %>% rename(parameter = variable),
+#      unconv2) %>%
+#  select(Parameter = parameter, CI,NG,PWSI,PWSO,BSAI,SOKO2SAP,WKMA,afognak,eastside,northeast,
+#         CSEO,EWYKT,NSEI,NSEO,SSEI,SSEO) %>%
+#  arrange(Parameter) -> unconverged
 
 # Display the caption and the tables
-tags$div(
-  caption,
-  div
-)
+#tags$div(
+#  caption,
+#  div
+#)
 
-kable(unconverged, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
-      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
-      caption = "**Table 2.** Summary of unconverged major parameters by area") %>% kable_styling(full_width = F)
+#kable(unconverged, booktabs = TRUE, longtable = FALSE,  #format = "latex", 
+#      escape = FALSE, #align = c("l",rep("c",ncol(tab1)-1)),
+#      caption = "**Table 2.** Summary of unconverged major parameters by area") %>% kable_styling(full_width = F)
 
 
 ```

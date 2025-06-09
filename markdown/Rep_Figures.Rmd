@@ -44,7 +44,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+res <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
