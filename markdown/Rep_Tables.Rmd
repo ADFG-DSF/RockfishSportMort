@@ -8,14 +8,14 @@ fontsize: 12pt
 #date: "2025-05-23"
 #always_allow_html: true
 
-knit: (function(input_file, encoding) {
-  rmarkdown::render(input_file,
-    output_file = "report.docx",
-    encoding = encoding
-  )
+#knit: (function(input_file, encoding) {
+#  rmarkdown::render(input_file,
+#    output_file = "report.docx",
+#    encoding = encoding
+#  )
   # Post-process to insert the Word table
-  source("insert_custom_table.R")
-})
+#  source("insert_custom_table.R")
+#})
 ---
 
 ```{r setup, include=FALSE}
@@ -53,7 +53,7 @@ list2env(readinData(start_yr = start_yr,
 
 mod<-"LB_fit_3pH"
 
-res <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+res <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -117,7 +117,7 @@ summary_table <- postH$summary %>%
            str_detect(Parameter, "^sigma_lambda_H\\["))
 
 Fig_N <- 0
-Tab_N <- 0
+Tab_N <- 1
 App_N <- 0
 
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
@@ -191,6 +191,8 @@ Tab_N <- Tab_N + 1
 ```
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
+
+
 
 **Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion pelagic in all rockfish, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
 

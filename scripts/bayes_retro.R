@@ -61,8 +61,7 @@ mod <- "rf_harvest_est_nm_wt" #at 15e5, second half of trace plots look converge
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25" #for yelloweye betas:
-use_this_model <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+use_this_model <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -157,10 +156,15 @@ for (i in 1:3){
   inits_to_use[[i]]$`beta4_pH[10,1]` <- 0
 }
 
+for (i in 1:3){
+  inits_to_use[[i]]$`re_slope[14,44,2]` <- 0
+}
+
+inits_to_use[[i]]$`re_slope[14,44,2]`
 ###############################################################################
 retro <- 10
 
-for (i in 1:retro){ #i <- 5
+for (i in 6:retro){ #i <- 5
   start_yr <- 1977
   retro_yr <- end_yr - i
   
@@ -169,6 +173,12 @@ for (i in 1:retro){ #i <- 5
                       start_yr = start_yr,
                       end_yr = retro_yr),
            .GlobalEnv)
+  
+  if (i > 5){
+    inits_to_use <- lapply(inits_to_use, function(chain_list) {
+      chain_list[names(chain_list) != "mu_beta3_slope"]
+    })
+  }
   
   tstart <- Sys.time()
   postH <- jagsUI::jags(
@@ -185,7 +195,7 @@ for (i in 1:retro){ #i <- 5
   other_label <- paste0("retro-",i)
   
   saveRDS(postH, paste0(".\\output\\bayes_posts\\retros\\",mod,"_thru",retro_yr,"_",ni,"_",other_label,".rds"))
-  saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\retros\\",mod,"_thru",retro_yr,"_",ni,"_",other_label,".rds"))
+  #saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\retros\\",mod,"_thru",retro_yr,"_",ni,"_",other_label,".rds"))
 }
 
 ################################################################################
