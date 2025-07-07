@@ -55,7 +55,7 @@ ni <- 15E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_nm_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "rf_harvest_est_nm_wt_retro" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -162,9 +162,9 @@ for (i in 1:3){
 
 inits_to_use[[i]]$`re_slope[14,44,2]`
 ###############################################################################
-retro <- 10
+retro <- 2
 
-for (i in 6:retro){ #i <- 5
+for (i in 1:retro){ #i <- 10
   start_yr <- 1977
   retro_yr <- end_yr - i
   
@@ -174,10 +174,31 @@ for (i in 6:retro){ #i <- 5
                       end_yr = retro_yr),
            .GlobalEnv)
   
+  if (i %in% c(1:2)){
+#    inits_to_use <- lapply(inits_to_use, function(chain_list) {
+#      chain_list[names(chain_list) != "re_slope"]
+#      #chain_list[names(chain_list) != "mu_beta3_dsr"]
+#      #chain_list[names(chain_list) != "mu_beta3_yellow"]
+#    })
+    inits_to_use <- function() {
+      re_slope_array <- array(NA, dim = c(16, Y, 2))  # Full expected size
+      
+      # Fill only for a = 11:16
+      re_slope_array[11:16, , ] <- 0
+      
+      list(re_slope = re_slope_array)
+    }
+  }
+  
   if (i > 5){
     inits_to_use <- lapply(inits_to_use, function(chain_list) {
       chain_list[names(chain_list) != "mu_beta3_slope"]
+      chain_list[names(chain_list) != "mu_beta3_dsr"]
+      chain_list[names(chain_list) != "mu_beta3_yellow"]
     })
+    for (i in 1:3){
+      inits_to_use[[i]]$`mu_beta3_slope` <- 35
+    }
   }
   
   tstart <- Sys.time()

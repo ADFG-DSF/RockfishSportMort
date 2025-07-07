@@ -295,7 +295,7 @@ for (a in 1:A){
     tau_beta3_pH[1,s] <- 1 / sd_beta3_pH[1,s] / sd_beta3_pH[1,s]
     sd_beta3_pH[1,s] ~ dunif(0.1, 5)
 
-    mu_beta4_pH[1,s] ~ dnorm(0,1) #dnorm(0,0.1)
+    mu_beta4_pH[1,s] ~ dnorm(0,0.01) #dnorm(0,0.1)
     #tau_beta4_pH[1,s] ~ dgamma(0.1, 0.1)
     tau_beta4_pH[1,s] <- 1 / sd_beta4_pH[1,s] / sd_beta4_pH[1,s]
     sd_beta4_pH[1,s] ~ dunif(0.1, 4)
@@ -480,7 +480,7 @@ for (a in 3:4){
     tau_beta3_pH[2,s] <- 1 / sd_beta3_pH[2,s] / sd_beta3_pH[2,s]
     sd_beta3_pH[2,s] ~ dunif(0.1, 5)
 
-    mu_beta4_pH[2,s] ~ dnorm(0,1) #dnorm(0,0.1)
+    mu_beta4_pH[2,s] ~ dnorm(0,0.01) #dnorm(0,0.1)
     #tau_beta4_pH[2,s] ~ dgamma(0.1, 0.1)
     tau_beta4_pH[2,s] <- 1 / sd_beta4_pH[2,s] / sd_beta4_pH[2,s]
     sd_beta4_pH[2,s] ~ dunif(0.1, 4)
@@ -723,7 +723,7 @@ for (n in 1:Nkha){
     tau_beta3_pH[3,s] <- 1 / sd_beta3_pH[3,s] / sd_beta3_pH[3,s]
     sd_beta3_pH[3,s] ~ dunif(0.1, 5)
 
-    mu_beta4_pH[3,s] ~ dnorm(0,1) #dnorm(0,0.1)
+    mu_beta4_pH[3,s] ~ dnorm(0,0.01) #dnorm(0,0.1)
     tau_beta4_pH[3,s] <- 1 / sd_beta4_pH[3,s] / sd_beta4_pH[3,s]
     sd_beta4_pH[3,s] ~ dunif(0.1, 4)
   }  

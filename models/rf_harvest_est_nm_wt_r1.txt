@@ -691,7 +691,7 @@ for (n in 1:Nkha){
   mu_beta2_slope ~ dnorm(0.1, 0.1) #dnorm(0, 0.001)
   tau_beta2_slope <- 1 / sd_beta2_slope / sd_beta2_slope
   sd_beta2_slope ~ dunif(0.01, 4)
-  mu_beta3_slope ~ dunif(29,Y-3) 
+  mu_beta3_slope ~ dunif(29,Y-1) 
   tau_beta3_slope <- 1 / sd_beta3_slope / sd_beta3_slope
   sd_beta3_slope ~ dunif(0.1, 4) 
   mu_beta4_slope ~ dnorm(0, 0.1)
@@ -826,7 +826,7 @@ for (n in 1:Nkha){
                                      beta4_slope[a] * (u - 1) + beta5_rslope[a]
 
         re_dsr[a, y, u] ~ dnorm(0, tau_comp)    # random effects
-        re_slope[a, y, u] ~ dnorm(0, tau_comp)T(-2,2)
+        re_slope[a, y, u] ~ dnorm(0, tau_comp)T(-3,3)
         re_rslope[a, y, u] ~ dnorm(0, tau_comp)T(-3,3)
       } #u
     } #y

@@ -694,7 +694,7 @@ for (n in 1:Nkha){
   mu_beta3_slope ~ dunif(29,Y-3) 
   tau_beta3_slope <- 1 / sd_beta3_slope / sd_beta3_slope
   sd_beta3_slope ~ dunif(0.1, 4) 
-  mu_beta4_slope ~ dnorm(0, 0.1)
+  mu_beta4_slope ~ dnorm(0, 0.01)
   tau_beta4_slope ~ dgamma(0.1, 0.1)
 
 # PROPORTION HARVESTED (pH) PRIORS: -----------------------------------
@@ -817,13 +817,15 @@ for (n in 1:Nkha){
         logit(p_dsr[a, y, u]) <- re_dsr[a, y, u] + beta0_dsr[a] + 
                                      beta1_dsr[a] / (1 + exp(-beta2_dsr[a] * (y - beta3_dsr[a]))) + beta4_dsr[a] * (u - 1)
 
-        logit(p_slope[a, y, u]) <- re_slope[a, y, u] + beta0_slope[a] + 
+        logit_p_slope_raw[a,y,u] <- re_slope[a, y, u] + beta0_slope[a] + 
                                      beta1_slope[a] / (1 + exp(-beta2_slope[a] * (y - beta3_slope[a]))) + 
                                      beta4_slope[a] * (u - 1)
                    
         logit(pr_slope[a, y, u]) <- re_rslope[a, y, u] + beta0_slope[a] + 
                                      beta1_slope[a] / (1 + exp(-beta2_slope[a] * (y - beta3_slope[a]))) + 
                                      beta4_slope[a] * (u - 1) + beta5_rslope[a]
+        logit_p_slope[a,y,u] <- max(-20, min(20, logit_p_slope_raw[a,y,u]))
+        logit(p_slope[a,y,u]) <- logit_p_slope[a,y,u]
 
         re_dsr[a, y, u] ~ dnorm(0, tau_comp)    # random effects
         re_slope[a, y, u] ~ dnorm(0, tau_comp)T(-2,2)
