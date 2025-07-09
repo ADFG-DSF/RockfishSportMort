@@ -52,12 +52,12 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 25E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_nm_wt" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "rf_harvest_est_nm_wt_loose_b4pH" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -68,8 +68,7 @@ mod <- "rf_harvest_est_nm_wt" #at 15e5, second half of trace plots look converge
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25" #for yelloweye betas:
-use_this_model <- "rf_harvest_est_nm_wt_thru2023_1500000_nm_wts_sd7_2025-06-02"
+use_this_model <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -355,14 +354,20 @@ postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
 #-------------------------------------------------------------------------------
 # Examine results!
+library(shinystan)
 
-rhat <- get_Rhat(postH, cutoff = 1.11)
+mcmc_list <- mcmc.list(postH$samples)
+
+sso <- as.shinystan(mcmc_list)
+launch_shinystan(sso)
+
+rhat <- get_Rhat(postH, cutoff = 1.01)
 names(rhat)[1] <- "Rhat_values"
 
 all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
-prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.115))/nrow(rhat_vals),4); prop_conv
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.0115))/nrow(rhat_vals),4); prop_conv
 
 rhat
 
@@ -384,7 +389,7 @@ rhat_exam <- rhat$Rhat_values %>%
   arrange(-Rhat); rhat_exam
 
 with(rhat_exam, table(variable,area))
-
+range(rhat_exam$Rhat)
 
 
 rhat_exam %>% group_by(variable) %>%
@@ -450,7 +455,6 @@ get_Rhat <- function(post, cutoff = 1.1){
     "R^ quantiles" = quantile(post$summary[, "Rhat"], probs = seq(0.9, 1, by = .01), na.rm = TRUE))
 }
 
-rownames(postH$summary)
 
 #--- Traceplots ----------------------------------------------------------------
 area_codes
@@ -481,11 +485,14 @@ unique(more_bad$variable)
 with(more_bad, table(variable,area)) %>% data.frame() %>%
   pivot_wider(names_from = area, values_from = Freq) -> unconv
 
+rhat_exam %>% filter(is.na(year)) -> check
+
 unconv %>% 
   filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
 
 jagsUI::traceplot(postH, 
-                  parameters = c("R_ayu")) 
+                  parameters = c("beta3_pelagic")) 
+
 
 jagsUI::traceplot(postH, 
                   parameters = c("Ry_ayu")) 

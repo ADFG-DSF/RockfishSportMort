@@ -56,12 +56,12 @@ ni <- 15E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 
 #model to run; see /models folder
 mod <- "rf_harvest_est_nm_wt_retro" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
-
+mod <- "rf_harvest_est_nm_wt"
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
+use_this_model <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -221,7 +221,8 @@ for (i in 1:retro){ #i <- 10
 
 ################################################################################
 # Examine results
-#retro <- 4
+retro <- 9
+ni <- 1500000
 for (i in 0:retro){ #i <- 1
   retro_yr <- end_yr - i
   
@@ -233,7 +234,7 @@ for (i in 0:retro){ #i <- 1
   if (i == 0){
     postH <- initspost
   } else {
-    postH <- readRDS(paste0(".\\output\\bayes_posts\\retros\\",mod,"_thru",retro_yr,"_",ni,".rds"))
+    postH <- readRDS(paste0(".\\output\\bayes_posts\\retros\\",mod,"_thru",retro_yr,"_",ni,"_retro-",i,".rds"))
   }
   
   all_rhat <- get_Rhat(postH,cutoff = 0.01)
@@ -517,6 +518,251 @@ for (i in 0:retro){ #i <- 1
            retro_name = paste0("retro-",i),
            prop_conv = prop_conv) ->ye_harvests
   
+  #pH
+  pHpel <- 
+    rbind(postH$mean$pH[,,1,1] %>% t(),
+          postH$mean$pH[,,2,1] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+           source = "model") %>%
+    pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$pH[,,1,1] %>% t(),
+                    postH$q2.5$pH[,,2,1] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    left_join(rbind(postH$q97.5$pH[,,1,1] %>% t(),
+                    postH$q97.5$pH[,,2,1] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  pHye <- 
+    rbind(postH$mean$pH[,,1,2] %>% t(),
+          postH$mean$pH[,,2,2] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+           source = "model") %>%
+    pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$pH[,,1,2] %>% t(),
+                    postH$q2.5$pH[,,2,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    left_join(rbind(postH$q97.5$pH[,,1,2] %>% t(),
+                    postH$q97.5$pH[,,2,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  pHnpny <- 
+    rbind(postH$mean$pH[,,1,3] %>% t(),
+          postH$mean$pH[,,2,3] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+           source = "model") %>%
+    pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$pH[,,1,3] %>% t(),
+                    postH$q2.5$pH[,,2,3] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    left_join(rbind(postH$q97.5$pH[,,1,3] %>% t(),
+                    postH$q97.5$pH[,,2,3] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                       source = "model") %>%
+                pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user","source")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  #Species Comp
+  p_pel <- 
+    rbind(postH$mean$p_pelagic[,,1] %>% t(),
+          postH$mean$p_pelagic[,,2] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+    pivot_longer(-c(year, user), names_to = "area", values_to = "p_pelagic")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$p_pelagic[,,1] %>% t(),
+                    postH$q2.5$p_pelagic[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q97.5$p_pelagic[,,1] %>% t(),
+                    postH$q97.5$p_pelagic[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  p_black <- 
+    rbind(postH$mean$p_black[,,1] %>% t(),
+          postH$mean$p_black[,,2] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+           source = "model") %>%
+    pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_black")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$p_black[,,1] %>% t(),
+                    postH$q2.5$p_black[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q97.5$p_black[,,1] %>% t(),
+                    postH$q97.5$p_black[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  p_yellow <- 
+    rbind(postH$mean$p_yellow[,,1] %>% t(),
+          postH$mean$p_yellow[,,2] %>% t()) %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(unique(Hhat_ay$year), times = 2),
+           user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+           source = "model") %>%
+    pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(rbind(postH$q2.5$p_yellow[,,1] %>% t(),
+                    postH$q2.5$p_yellow[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q97.5$p_yellow[,,1] %>% t(),
+                    postH$q97.5$p_yellow[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q25$p_yellow[,,1] %>% t(),
+                    postH$q25$p_yellow[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo50")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q75$p_yellow[,,1] %>% t(),
+                    postH$q75$p_yellow[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi50")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    left_join(rbind(postH$q50$p_yellow[,,1] %>% t(),
+                    postH$q50$p_yellow[,,2] %>% t()) %>%
+                as.data.frame() %>%
+                setNames(nm = unique(H_ayg$area)) %>%
+                mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                       user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+                pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
+                mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+              by = c("year","area","user")) %>%
+    mutate(area = toupper(area)) %>%
+    mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+           category = "Pelagic prop. harvested",
+           retro = i,
+           retro_name = paste0("retro-",i),
+           prop_conv = prop_conv)
+  
+  
   if (i == 0){
     retro_brf_removals <- brf_removals
     retro_brf_releases <- brf_releases
@@ -525,6 +771,15 @@ for (i in 0:retro){ #i <- 1
     retro_ye_removals <- ye_removals
     retro_ye_releases <- ye_releases
     retro_ye_harvests <- ye_harvests
+    
+    retro_pHpel <- pHpel
+    retro_pHye <- pHye
+    retro_pHnpny <- pHnpny
+    
+    retro_p_pel <- p_pel
+    retro_p_black <- p_black
+    retro_p_yellow <- p_yellow
+    
   } else {
     retro_brf_removals <- rbind(retro_brf_removals,brf_removals)
     retro_brf_releases <- rbind(retro_brf_releases,brf_releases)
@@ -533,10 +788,18 @@ for (i in 0:retro){ #i <- 1
     retro_ye_removals <- rbind(retro_ye_removals,ye_removals)
     retro_ye_releases <- rbind(retro_ye_releases,ye_releases)
     retro_ye_harvests <- rbind(retro_ye_harvests,ye_harvests)
+    
+    retro_pHpel <- rbind(retro_pHpel,pHpel)
+    retro_pHye <- rbind(retro_pHye,pHye)
+    retro_pHnpny <- rbind(retro_pHnpny,pHnpny)
+    
+    retro_p_pel <- rbind(retro_p_pel,p_pel)
+    retro_p_black <- rbind(retro_p_black,p_black)
+    retro_p_yellow <- rbind(retro_p_yellow,p_yellow)
   }
 }
 
-pal = wes_palette("Zissou1", 11, type = "continuous")[11:1]
+pal = wes_palette("Zissou1", 10, type = "continuous")[10:1]
 
 retro_brf_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
   filter(user == "guided") %>%
@@ -544,8 +807,8 @@ retro_brf_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), o
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
-  geom_line() + 
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_line() + geom_point(type = 1) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
@@ -617,26 +880,28 @@ retro_brf_harvests %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), o
   labs(y = "Black Rockfish Harvests (n)", x = "Year")
 
 retro_ye_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #filter(area == "PWSI") %>%
   filter(user == "guided") %>%
   ggplot(aes(x = year, y = B, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
-  geom_line() + 
-  geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.1, color = NA) +
+  geom_line(size = 1) + #geom_point(alpha = 0.2) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Yelloweye Rockfish Removals (lbs)", x = "Year")
 
 retro_ye_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(area == "CSEO") %>%
   filter(user == "unguided") %>%
   ggplot(aes(x = year, y = B, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
-  geom_line() + 
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_line() + geom_point(alpha = 0.5, type = 1) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
@@ -693,6 +958,90 @@ retro_ye_harvests %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), or
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Yelloweye Rockfish Harvests (n)", x = "Year")
+
+retro_pHpel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+#  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion pelagics harvested", x = "Year")
+
+retro_pHye %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion yelloweye harvested", x = "Year")
+
+retro_pHnpny %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion *other* rockfish harvested", x = "Year")
+
+retro_p_pel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = p_pelagic, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion pelagic in harvests", x = "Year")
+
+retro_p_black %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = p_black, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion black in harvests", x = "Year")
+
+retro_p_yellow %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  #  filter(user == "charter") %>%
+  filter(user == "private") %>%
+  ggplot(aes(x = year, y = p_yellow, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion yeloweye in harvests", x = "Year")
 
 # summarization of retro patterns
 retro_exams <- list(retro_brf_harvests,
@@ -732,12 +1081,27 @@ for (i in 1:6){ #i <- 2
            retro2_pdif = (retro_0 - retro_2) / retro_0,
            retro3_pdif = (retro_0 - retro_3) / retro_0,
            retro4_pdif = (retro_0 - retro_4) / retro_0,
+           retro5_pdif = (retro_0 - retro_5) / retro_0,
+           retro6_pdif = (retro_0 - retro_6) / retro_0,
+           retro7_pdif = (retro_0 - retro_7) / retro_0,
+           retro8_pdif = (retro_0 - retro_8) / retro_0,
+           retro9_pdif = (retro_0 - retro_9) / retro_0,
            retro1_dif = (retro_0 - retro_1) ,
            retro2_dif = (retro_0 - retro_2) ,
            retro3_dif = (retro_0 - retro_3) ,
-           retro4_dif = (retro_0 - retro_4) ) %>%
+           retro4_dif = (retro_0 - retro_4),
+           retro5_dif = (retro_0 - retro_5),
+           retro6_dif = (retro_0 - retro_6),
+           retro7_dif = (retro_0 - retro_7),
+           retro8_dif = (retro_0 - retro_8),
+           retro9_dif = (retro_0 - retro_9)) %>%
     #dplyr::rowwise() %>%
-    mutate(mean_dif = (retro1_dif+retro2_dif+retro3_dif+retro4_dif)/4) -> re
+    mutate(mean_dif = (retro1_dif+retro2_dif+retro3_dif+retro4_dif +
+                         retro5_dif+retro6_dif+retro7_dif+retro8_dif+retro9_dif)/9 #%>%
+    #rowwise() %>%
+    #mutate(mean_pdif = sum(retro1_pdif,retro2_pdif,retro3_pdif,retro4_pdif,retro5_pdif,
+    #                       retro6_pdif,retro7_pdif,retro8_pdif,retro9_pdif,na.rm=TRUE)
+  ) -> re
   if (i == 1){
     retro_res <- re
   } else {
@@ -746,6 +1110,8 @@ for (i in 1:6){ #i <- 2
 }
 
 pal <- c("blue","darkcyan")
+
+str(retro_res)
 
 retro_res %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
   filter(user != "All", species == "black") %>%
@@ -766,7 +1132,18 @@ View(retro_res %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), order
 
 
 
-
+retro_res %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(user != "All", species == "black") %>%
+  ggplot(aes(x = year, y = retro1_dif, color = user, linetype = cat)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_line() + 
+  geom_hline(yintercept = 0, color = "black") +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Black Rockfish Deviations from Terminal Estimate (%)", x = "Year")
 
 
 
