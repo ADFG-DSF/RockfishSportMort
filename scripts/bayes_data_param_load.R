@@ -142,6 +142,18 @@ readinData <- function(spl_knts = 7,
            seR = ifelse(seR == 0, 1, seR)) %>%
     arrange(area, user, year)
   
+  #get priors from pri:gui release ratio
+  pri_rel_pr <- Rhat_ayu %>%
+    select(year,area,user,Rhat,Hhat) %>% #not interested in bias
+    mutate(pH = Hhat / (Rhat + Hhat)) %>%
+    select(-c(Rhat,Hhat)) %>%
+    pivot_wider(names_from = user,
+                values_from = pH) %>%
+    mutate(prigui_ratio = private/guided)
+  
+#  ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) + geom_line() +
+#    facet_wrap(~area, scale = "free")
+  
   # SWHS harvests by area, year
   Hhat_ay <- 
     readRDS(".//data//bayes_dat//Hhat_ay.rds") %>% 

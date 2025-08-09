@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "theModel_nmW_tst_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "_Base_",Sys.Date(),".html"))
       })
 ---
 
@@ -59,10 +59,10 @@ mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
 #bestish
-res <- "rf_harvest_est_kha_rm_wt_thru2023_1500000_7kn_2025-05-25"
+res <- "rf_harvest_est_nm_wt_thru2023_8e+06__2025-07-16"
 #trying
-res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
-res <- "rf_harvest_est_nm_wt_thru2023_3e+06__2025-06-08"
+#res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
+#res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

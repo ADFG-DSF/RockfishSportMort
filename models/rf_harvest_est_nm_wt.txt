@@ -227,7 +227,7 @@ for (a in 1:A){
   mu_beta1_pelagic[1] ~ dlnorm(log(0.5), 0.1)T(,50)
   tau_beta1_pelagic[1] <- 1 / sd_beta1_pelagic[1] / sd_beta1_pelagic[1]
   sd_beta1_pelagic[1] ~ dunif(0.1, 5)
-  mu_beta1_yellow[1] ~ dlnorm(log(0.25), 0.1)
+  mu_beta1_yellow[1] ~ dlnorm(log(0.25), 0.1)T(,20)
   tau_beta1_yellow[1] <- 1 / sd_beta1_yellow[1] / sd_beta1_yellow[1]
   sd_beta1_yellow[1] ~ dunif(0.1, 5)
   mu_beta1_black[1] ~ dlnorm(log(0.0001), 0.5) 
@@ -826,8 +826,8 @@ for (n in 1:Nkha){
                                      beta4_slope[a] * (u - 1) + beta5_rslope[a]
 
         re_dsr[a, y, u] ~ dnorm(0, tau_comp)    # random effects
-        re_slope[a, y, u] ~ dnorm(0, tau_comp)T(-2,2)
-        re_rslope[a, y, u] ~ dnorm(0, tau_comp)T(-3,3)
+        re_slope[a, y, u] ~ dnorm(0, tau_comp)#T(-2,2)
+        re_rslope[a, y, u] ~ dnorm(0, tau_comp)#T(-3,3)
       } #u
     } #y
   } #a

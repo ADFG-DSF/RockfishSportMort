@@ -1,24 +1,27 @@
 
 
-plot_logit <- function(Y,b0_mu,sd_b0,
+plot_logit <- function(n = 5000,
+                       Y,b0_mu,sd_b0,
                        b1_mu,sd_b1,
                        b2_mu,sd_b2,
-                       b3_lo,b3_hi){
-  n <- 5000
+                       b3_lo,b3_hi,
+                       b4_mu,sd_b4){
+  #n <- 5000
   
   b0 <- rnorm(n,b0_mu,sd_b0)
   b1 <- rlnorm(n,log(b1_mu),sd_b1)
   b2 <- rnorm(n,b2_mu,sd_b2)
   b3 <- runif(n,b3_lo,b3_hi)
+  b4 <- rnorm(n,b4_mu,sd_b4)
   
-  cbind(b0,b1,b2,b3) %>% data.frame -> pr_sim
+  cbind(b0,b1,b2,b3,b4) %>% data.frame -> pr_sim
   props <- data.frame(matrix(nrow = n, ncol=Y)) 
   colnames(props) <- seq(1,Y,1)
   
   for (i in 1:n) { #i <- 1
     for (y in 1:Y){
       props[i,y] <- logit_to_prob(pr_sim$b0[i] +
-                                    pr_sim$b1[i] / (1 + exp(-pr_sim$b2[i] * (y - pr_sim$b3[i]))))
+                                    pr_sim$b1[i] / (1 + exp(-pr_sim$b2[i] * (y - pr_sim$b3[i])))) * pr_sim$b4[i]
     }
   }
   
@@ -55,6 +58,22 @@ plot_logit <- function(Y,b0_mu,sd_b0,
     ) + ylim(0,1) +
     theme_minimal()
 }
+
+#test with no uncertainty:
+plot_logit(n = 10,
+           Y = 47, b0_mu <- -0.75,
+           sd_b0 <- 0,
+           b1_mu <- 0.5,
+           sd_b1 <- 0.0001,
+           b2_mu <- 1,
+           sd_b2 <- 0.0001,
+           b3_lo <- 25,
+           b3_hi <- 26,
+           b4_mu <- 1
+           ,
+           sd_b4 <- 0)
+
+
 #fixed black
 plot_logit(Y = 47, b0_mu <- 0,
            sd_b0 <- 1,
@@ -63,7 +82,9 @@ plot_logit(Y = 47, b0_mu <- 0,
            b2_mu <- 1,
            sd_b2 <- 0.0001,
            b3_lo <- 25,
-           b3_hi <- 45)
+           b3_hi <- 45,
+           b4_mu <- 0.5,
+           sd_b4 <- 0)
 
 #Central pelagic pH
 plot_logit(Y = 47, b0_mu <- 1,

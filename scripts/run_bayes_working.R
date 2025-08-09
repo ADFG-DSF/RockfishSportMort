@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 25E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 50E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -343,7 +343,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
+results <- "rf_harvest_est_nm_wt_thru2023_8e+06__2025-07-16"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -537,7 +537,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH","beta4_pH"))
 
-jagsUI::traceplot(postH, parameters = "pH")
+jagsUI::traceplot(postH, parameters = "mu_beta4_pH")
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
