@@ -808,7 +808,7 @@ retro_brf_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), o
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
-  geom_line() + geom_point(type = 1) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
@@ -820,8 +820,8 @@ retro_brf_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), o
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
-  geom_line() + 
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
@@ -887,21 +887,21 @@ retro_ye_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), or
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.1, color = NA) +
-  geom_line(size = 1) + #geom_point(alpha = 0.2) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
   labs(y = "Yelloweye Rockfish Removals (lbs)", x = "Year")
 
 retro_ye_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
-  filter(area == "CSEO") %>%
+#  filter(area == "CSEO") %>%
   filter(user == "unguided") %>%
   ggplot(aes(x = year, y = B, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   facet_wrap(. ~ area, scales = "free") +
   geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
-  geom_line() + geom_point(alpha = 0.5, type = 1) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
   theme_bw(base_size = 14) +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous(labels = comma) +
@@ -974,8 +974,8 @@ retro_pHpel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   labs(y = "Proportion pelagics harvested", x = "Year")
 
 retro_pHye %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
-  #  filter(user == "charter") %>%
-  filter(user == "private") %>%
+    filter(user == "charter") %>%
+#  filter(user == "private") %>%
   ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -1002,8 +1002,8 @@ retro_pHnpny %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered
   labs(y = "Proportion *other* rockfish harvested", x = "Year")
 
 retro_p_pel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
-  #  filter(user == "charter") %>%
-  filter(user == "private") %>%
+    filter(user == "charter") %>%
+#  filter(user == "private") %>%
   ggplot(aes(x = year, y = p_pelagic, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -1029,13 +1029,21 @@ retro_p_black %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordere
   scale_y_continuous(labels = comma) +
   labs(y = "Proportion black in harvests", x = "Year")
 
+library(ggh4x)
+
 retro_p_yellow %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
-  #  filter(user == "charter") %>%
-  filter(user == "private") %>%
+#    filter(user == "charter") %>%
+#  filter(user == "private") %>%
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
   ggplot(aes(x = year, y = p_yellow, color = retro_name, type = user, fill = retro_name)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
-  facet_wrap(. ~ area, scales = "free") +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+#  facet_nested(rows = vars(user), cols = vars(area), scales = "free_x") +
+#  facet_wrap(area~user, scales = "free", ncol = 6) +
+#  facet_grid2(vars(user),vars(area), axes = "all", remove_labels = "y") +
   geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
   geom_line() +
   theme_bw(base_size = 14) +
@@ -1146,7 +1154,140 @@ retro_res %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = 
   labs(y = "Black Rockfish Deviations from Terminal Estimate (%)", x = "Year")
 
 
+#-------------------------------------------------------------------------------
+# Pub Plots
 
+#pH x 3
+retro_pHpel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion pelagics harvested", x = "Year")
+
+retro_pHye %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion yelloweye harvested", x = "Year")
+
+retro_pHnpny %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = pH, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion *other* harvested", x = "Year")
+
+#comp * 3
+
+retro_p_pel %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = p_pelagic, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion pelagics in harvests", x = "Year")
+
+retro_p_black %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = p_black, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion black in harvests", x = "Year")
+
+retro_p_yellow %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI")) %>%
+  ggplot(aes(x = year, y = p_yellow, color = retro_name, type = user, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "fixed", ncol = 6,
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.05, color = NA) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Proportion yelloweye in harvests", x = "Year")
+
+#Black removals
+
+retro_brf_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI"),
+         user != "All") %>%
+  ggplot(aes(x = year, y = B, color = retro_name, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "free_y", ncol = 6, #scales = "free_y" "fixed
+                    axes = "margins",
+                    remove_labels = "all",
+                    strip.position = c("top")) +
+  geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         axis.text.y = element_text(angle = 45, vjust = 0, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Black Rockfish Removals (lbs)", x = "Year")
+
+#YE removals
+retro_ye_removals %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>% 
+  filter(!area %in% c("BSAI","SOKO2SAP",
+                      "EWYKT","NSEI"),
+         user != "All") %>%
+  ggplot(aes(x = year, y = B, color = retro_name, fill = retro_name)) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  facet_nested_wrap(vars(area,user), scales = "free_y", ncol = 6, #scales = "free_y"
+                    axes = "margins") +
+  geom_ribbon(aes(x=year,ymin = B_lo95, ymax = B_hi95), alpha = 0.05, color = NA) +
+  geom_line() + geom_point(type = 1, size = 0.75) +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         axis.text.y = element_text(angle = 45, vjust = 0, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Yelloweye Rockfish Removals (lbs)", x = "Year")
 
 
 
