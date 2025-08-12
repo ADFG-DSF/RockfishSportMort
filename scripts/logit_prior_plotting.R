@@ -61,15 +61,15 @@ plot_logit <- function(n = 5000,
 
 #test with no uncertainty:
 plot_logit(n = 10,
-           Y = 47, b0_mu <- -0.75,
+           Y = 47, b0_mu <- -0,
            sd_b0 <- 0,
-           b1_mu <- 0.5,
+           b1_mu <- 0.,
            sd_b1 <- 0.0001,
-           b2_mu <- 1,
+           b2_mu <- 0,
            sd_b2 <- 0.0001,
            b3_lo <- 25,
            b3_hi <- 26,
-           b4_mu <- 1
+           b4_mu <- 0.5
            ,
            sd_b4 <- 0)
 

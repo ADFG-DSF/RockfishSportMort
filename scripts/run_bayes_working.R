@@ -52,12 +52,12 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 50E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "rf_harvest_est_nm_wt_loose_b4pH" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "Gen3" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -66,7 +66,7 @@ mod <- "rf_harvest_est_nm_wt_loose_b4pH" #at 15e5, second half of trace plots lo
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
 
@@ -334,6 +334,8 @@ if (use_inits == "yes") {
   runtime <- Sys.time() - tstart; runtime
 }
 
+str(jags_dat)
+jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")

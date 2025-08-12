@@ -143,16 +143,7 @@ readinData <- function(spl_knts = 7,
     arrange(area, user, year)
   
   #get priors from pri:gui release ratio
-  pri_rel_pr <- Rhat_ayu %>%
-    select(year,area,user,Rhat,Hhat) %>% #not interested in bias
-    mutate(pH = Hhat / (Rhat + Hhat)) %>%
-    select(-c(Rhat,Hhat)) %>%
-    pivot_wider(names_from = user,
-                values_from = pH) %>%
-    mutate(prigui_ratio = private/guided)
-  
-#  ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) + geom_line() +
-#    facet_wrap(~area, scale = "free")
+  pri_rel_pr <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
   
   # SWHS harvests by area, year
   Hhat_ay <- 
@@ -246,6 +237,8 @@ readinData <- function(spl_knts = 7,
   Rhat_ay <- Rhat_ay %>% filter(area != "UNKNOWN" & year >= start_yr & year <= end_yr)
   
   wt_rm <- wt_rm %>% filter(year >= start_yr & year <= end_yr)
+  
+  pri_rel_pr <- pri_rel_pr %>% filter(year >= start_yr & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
   Y = length(unique(Hhat_ay$year))
@@ -383,7 +376,7 @@ readinData <- function(spl_knts = 7,
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Hhat_ayp$year))),
               matrix(Hhat_ayp$Hhat, nrow = A, ncol = length(unique(Hhat_ayp$year)), byrow = TRUE)),
       
-      # SWHS estimates of rockfish Catches
+      # SWHS estimates of rockfish releases
       Rhat_ayg = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayg$year))),
                        matrix(Rhat_ayg$Rhat, nrow = A, ncol = length(unique(Rhat_ayg$year)), byrow = TRUE)),
       # cv of SWHS estimates
@@ -398,6 +391,13 @@ readinData <- function(spl_knts = 7,
                          matrix(Rhat_ayp$seC, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)) / 
         cbind(matrix(NA, nrow = A, ncol = Y - length(unique(Rhat_ayp$year))),
               matrix(Rhat_ayp$Rhat, nrow = A, ncol = length(unique(Rhat_ayp$year)), byrow = TRUE)),
+      
+      # pH private to guided ratio and cv
+      prigui_ay = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(pri_rel_pr$year))),
+                        matrix(pri_rel_pr$prigui_ratio, nrow = A, ncol = length(unique(pri_rel_pr$year)), byrow = TRUE)),
+      cv_prigui_ay = cbind(matrix(NA, nrow = A, ncol = Y - length(unique(pri_rel_pr$year))),
+                           matrix(pri_rel_pr$ratio_cv, nrow = A, ncol = length(unique(pri_rel_pr$year)), byrow = TRUE)),
+      
       #Spline:
       Z = Z, #spline, same for C and H
       Q = makeQ(2, C), #spline stuff; same for C and H
@@ -430,6 +430,8 @@ readinData <- function(spl_knts = 7,
       kha_area = kha_dat$area_n,
       kha_year = kha_dat$year_n,
       kha_user = kha_dat$user_n,
+      
+      
       
       r1_gwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
                         nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),
@@ -556,39 +558,52 @@ jags_params <- function(){
     "mu_beta2_pH","tau_beta2_pH",
     "mu_beta3_pH","tau_beta3_pH",
     "mu_beta4_pH","tau_beta4_pH",
-    "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH",
+    "mu_beta5_pH","tau_beta5_pH",
+    "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH","beta5_pH","beta6_pH",
     
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
     "sdR","mu_sdR","tau_sdR",
     
+    #private:guided release ratio prior beta4 yadda yadda
+    "mu_prigui","tau_prigui_pre","tau_prigui",
+    
     #Species apportionment of harvests
-    "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", "beta4_pelagic", 
+    "p_pelagic", "beta0_pelagic", "beta1_pelagic", "beta2_pelagic", "beta3_pelagic", 
+    "beta4_pelagic", "beta5_pelagic", "beta6_pelagic", 
     "mu_beta0_pelagic", "tau_beta0_pelagic",
     "mu_beta1_pelagic", "tau_beta1_pelagic",
     "mu_beta2_pelagic", "tau_beta2_pelagic",
     "mu_beta3_pelagic", "tau_beta3_pelagic",
     "mu_beta4_pelagic", "tau_beta4_pelagic",
-    "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", "beta4_yellow",
+    "mu_beta5_pelagic", "tau_beta5_pelagic",
+    "p_yellow", "beta0_yellow", "beta1_yellow", "beta2_yellow", "beta3_yellow", 
+    "beta4_yellow","beta5_yellow","beta6_yellow",
     "mu_beta0_yellow", "tau_beta0_yellow",
     "mu_beta1_yellow", "tau_beta1_yellow",
     "mu_beta2_yellow", "tau_beta2_yellow",
     "mu_beta3_yellow", "tau_beta3_yellow",
     "mu_beta4_yellow", "tau_beta4_yellow",
-    "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", "beta4_black",
+    "mu_beta5_yellow", "tau_beta5_yellow",
+    "p_black", "beta0_black", "beta1_black", "beta2_black",  "beta3_black", 
+    "beta4_black","beta5_black","beta6_black",
     "mu_beta0_black", "tau_beta0_black",
     "mu_beta1_black", "tau_beta1_black",
     "mu_beta2_black", "tau_beta2_black",
     "mu_beta3_black", "tau_beta3_black",
     "mu_beta4_black", "tau_beta4_black",
+    "mu_beta5_black", "tau_beta5_black",
     "p_dsr", "beta0_dsr", "beta1_dsr", "beta2_dsr",  "beta3_dsr", "beta4_dsr",
+    "beta5_dsr","beta6_dsr",
     "mu_beta0_dsr", "tau_beta0_dsr",
     "mu_beta1_dsr", "tau_beta1_dsr",
     "mu_beta2_dsr", "tau_beta2_dsr",
     "mu_beta3_dsr", "tau_beta3_dsr",
     "mu_beta4_dsr", "tau_beta4_dsr",
-    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", "beta4_slope","beta5_rslope",
+    "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", 
+    "beta4_slope","beta5_slope","beta6_slope",
+    "beta5_rslope","beta6_rslope",
     "mu_beta0_slope", "tau_beta0_slope",
     "mu_beta1_slope", "tau_beta1_slope",
     "mu_beta2_slope", "tau_beta2_slope",
