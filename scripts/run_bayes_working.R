@@ -57,7 +57,7 @@ ni <- 8E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "Gen3z" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "Gen3aa" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -66,7 +66,7 @@ mod <- "Gen3z" #at 15e5, second half of trace plots look converged, pH_1 may nee
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "yes"
+use_inits = "no"
 
 use_this_model <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
 
