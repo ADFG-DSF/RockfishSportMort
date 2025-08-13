@@ -78,13 +78,18 @@ pri_rel_pr %>%
          ratio_se = sqrt(ratio_var),
          ratio_cv = ratio_se / prigui_ratio,
          se_log = sqrt(log(1 + ratio_cv^2)),
-         log_mean = log(prigui_ratio),
-         lower = exp(log_mean - 1.96 * se_log),
-         upper = exp(log_mean + 1.96 * se_log)) -> pri_rel_pr
+         log_ratio = log(prigui_ratio),
+         lower = exp(log_ratio - 1.96 * se_log),
+         upper = exp(log_ratio + 1.96 * se_log),
+         lower2 = exp(log_ratio -  se_log),
+         upper2 = exp(log_ratio +  se_log)) -> pri_rel_pr
 
 ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) + 
   geom_ribbon(aes(ymin = lower,
                   ymax = upper),
+              alpha = 0.25) +
+  geom_ribbon(aes(ymin = lower2,
+                  ymax = upper2),
               alpha = 0.25) +
   geom_line() + 
   geom_hline(aes(yintercept = 1), col = "blue", linetype = 2) +
@@ -94,10 +99,11 @@ ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) +
   theme_bw() +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_x_continuous(breaks=seq(2012,2024,2)) +
-  labs(y = "Prop harvested by private:guided ratio", x = "Year") 
+  labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
 
 ggsave("figures/bayes_model/pH_prigui_ratio.png")
 
+pri_rel_pr %>% data.frame()
 
 saveRDS(pri_rel_pr, ".\\data\\bayes_dat\\pri_rel_pr.rds")
 

@@ -52,12 +52,12 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 6E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "Gen3" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "Gen3x" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -66,7 +66,7 @@ mod <- "Gen3" #at 15e5, second half of trace plots look converged, pH_1 may need
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
-use_inits = "no"
+use_inits = "yes"
 
 use_this_model <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
 
@@ -164,6 +164,9 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 })
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_beta3_slope"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta5_slope"]
 })
 
 for (i in 1:3){ #i <- 1
@@ -534,12 +537,14 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "mu_beta1_pH","tau_beta1_pH",
                                         "mu_beta2_pH","tau_beta2_pH",
                                         "mu_beta3_pH","tau_beta3_pH",
-                                        "mu_beta4_pH","tau_beta4_pH"))
+                                        "mu_beta4_pH","tau_beta4_pH",
+                                        "mu_beta5_pH","tau_beta5_pH"))
 
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
-                                        "beta2_pH","beta3_pH","beta4_pH"))
+                                        "beta2_pH","beta3_pH","beta4_pH",
+                                        "beta5_pH","beta6_pH"))
 
-jagsUI::traceplot(postH, parameters = "mu_beta4_pH")
+jagsUI::traceplot(postH, parameters = "beta6_pH")
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
@@ -552,16 +557,20 @@ jagsUI::traceplot(postH, parameters = c("sd_comp","mu_beta0_yellow","tau_beta0_y
                                         "mu_beta2_yellow","tau_beta2_yellow",
                                         "mu_beta3_yellow","tau_beta3_yellow",
                                         "mu_beta4_yellow","tau_beta4_yellow",
+                                        "mu_beta5_yellow","tau_beta5_yellow",
                                         "beta0_yellow","beta1_yellow",
-                                        "beta2_yellow","beta3_yellow","beta4_yellow"))
+                                        "beta2_yellow","beta3_yellow","beta4_yellow",
+                                        "beta5_yellow","beta6_yellow"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_dsr","tau_beta0_dsr",
                                         "mu_beta1_dsr","tau_beta1_dsr",
                                         "mu_beta2_dsr","tau_beta2_dsr",
                                         "mu_beta3_dsr","tau_beta3_dsr",
                                         "mu_beta4_dsr","tau_beta4_dsr",
+                                        "mu_beta5_dsr","tau_beta5_dsr",
                                         "beta0_dsr","beta1_dsr",
-                                        "beta2_dsr","beta3_dsr","beta4_dsr"))
+                                        "beta2_dsr","beta3_dsr","beta4_dsr",
+                                        "beta5_dsr","beta6_dsr"))
 
 jagsUI::traceplot(postH, parameters = c("p_dsr"))
 
@@ -572,7 +581,8 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_slope","tau_beta0_slope",
                                         "mu_beta4_slope","tau_beta4_slope",
                                         "mu_beta5_slope","tau_beta5_slope",
                                         "beta0_slope","beta1_slope",
-                                        "beta2_slope","beta3_slope","beta4_slope", "beta5_rslope"))
+                                        "beta2_slope","beta3_slope","beta4_slope", 
+                                        "beta5_rslope","beta6_rslope"))
 
 jagsUI::traceplot(postH, parameters = c("pr_slope"))
 jagsUI::traceplot(postH, parameters = c("p_slope"))
@@ -594,16 +604,20 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic","tau_beta0_pelagic",
                                         "mu_beta2_pelagic","tau_beta2_pelagic",
                                         "mu_beta3_pelagic","tau_beta3_pelagic",
                                         "mu_beta4_pelagic","tau_beta4_pelagic",
+                                        "mu_beta5_pelagic","tau_beta5_pelagic",
                                         "beta0_pelagic","beta1_pelagic",
-                                        "beta2_pelagic","beta3_pelagic","beta4_pelagic"))
+                                        "beta2_pelagic","beta3_pelagic","beta4_pelagic",
+                                        "beta5_pelagic","beta6_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
                                         "mu_beta1_black","tau_beta1_black",
                                         "mu_beta2_black","tau_beta2_black",
                                         "mu_beta3_black","tau_beta3_black",
                                         "mu_beta4_black","tau_beta4_black",
+                                        "mu_beta5_black","tau_beta5_black",
                                         "beta0_black","beta1_black",
-                                        "beta2_black","beta3_black","beta4_black"))
+                                        "beta2_black","beta3_black","beta4_black",
+                                        "beta5_black","beta6_black"))
 
 jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
 jagsUI::traceplot(postH, parameters = "logbc_H")
