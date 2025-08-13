@@ -84,6 +84,14 @@ pri_rel_pr %>%
          lower2 = exp(log_ratio -  se_log),
          upper2 = exp(log_ratio +  se_log)) -> pri_rel_pr
 
+meds <- pri_rel_pr %>% group_by(area) %>%
+  summarise(med_ratio = median(prigui_ratio),
+            mean_ratio = mean(prigui_ratio),
+            var_med_ratio = sum(ratio_var)/(n()^2),
+            se_med_ratio = sqrt(var_med_ratio),
+            cv_med_ratio = se_med_ratio / mean_ratio,
+            max_cv = max(ratio_cv))
+
 ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) + 
   geom_ribbon(aes(ymin = lower,
                   ymax = upper),
@@ -93,6 +101,7 @@ ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) +
               alpha = 0.25) +
   geom_line() + 
   geom_hline(aes(yintercept = 1), col = "blue", linetype = 2) +
+  geom_hline(data = meds,aes(yintercept = mean_ratio), col ="black", linetype = 3) +
 #  ylim(0,10) +
   facet_wrap(~area, scale = "free") +
 #  facet_wrap(~area) +
@@ -105,9 +114,40 @@ ggsave("figures/bayes_model/pH_prigui_ratio.png")
 
 pri_rel_pr %>% data.frame()
 
+expand_grid(year = seq(1977,2010,1),
+            area = unique(pri_rel_pr$area)) %>%
+  full_join(meds, by = "area") %>%
+  select(year,area,mean_ratio,max_cv) %>%
+  rename(prigui_ratio = mean_ratio,
+         ratio_cv = max_cv) %>% 
+    arrange(area,year) %>%
+  rbind(pri_rel_pr %>% 
+          select(year,area,prigui_ratio,ratio_cv)) %>%
+  arrange(area,year) -> prigui_priors
+View(prigui_priors)
+
+ggplot(prigui_priors,aes(x=year,y=prigui_ratio)) + 
+  geom_ribbon(aes(ymin = lower,
+                  ymax = upper),
+              alpha = 0.25) +
+  geom_ribbon(aes(ymin = lower2,
+                  ymax = upper2),
+              alpha = 0.25) +
+  geom_line() + 
+  geom_hline(aes(yintercept = 1), col = "blue", linetype = 2) +
+  geom_hline(data = meds,aes(yintercept = mean_ratio), col ="black", linetype = 3) +
+  #  ylim(0,10) +
+  facet_wrap(~area, scale = "free") +
+  #  facet_wrap(~area) +
+  theme_bw() +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_x_continuous(breaks=seq(1978,2024,2)) +
+  labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
+
 saveRDS(pri_rel_pr, ".\\data\\bayes_dat\\pri_rel_pr.rds")
+saveRDS(prigui_priors, ".\\data\\bayes_dat\\pri_rel_pr.rds")
 
-
+pri_rel_pr <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
 
 
 
