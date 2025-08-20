@@ -243,7 +243,7 @@ for (a in 1:A){
   
   # COMPOSITIONAL PRIORS --------------------------------------------------
   # logit parameters for proportion estimates defined by intercept(B0), scaleing factor(B1), slope(B2), inflection point (B3) and user effect (B4) 
-  beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]]) 
+  beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic[regions[a]], tau_beta0_pelagic[regions[a]])T(-1.75,) 
   beta3_pelagic[a] ~ dunif(18,Y-7) #dlnorm(log(mu_beta3_pelagic[regions[a]]), tau_beta3_pelagic[regions[a]])T(18,Y-1) 
   beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic[regions[a]], tau_beta4_pelagic[regions[a]])
   beta5_pelagic[a] ~ dnorm(mu_beta5_pelagic[regions[a]], tau_beta5_pelagic[regions[a]])
@@ -291,7 +291,7 @@ for (a in 1:2){ #CI and NG
   beta2_black[a] <- 0 #~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])
   beta3_black[a] <- 25
   beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(-30,0.25)
+  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(-30,-0.01)
   beta3_yellow[a] ~ dunif(18,Y-5) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
   beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[1],1], tau_beta0_pH[regions[1],1]) #INTERCEPT
@@ -318,13 +318,13 @@ beta1_pH[2,3] <- 0
 beta2_pH[2,3] <- 0 
 
 for (a in 3:4){ #PWSI and PWSO
-  beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])T(0.01,6)
+  beta1_pelagic[a] ~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])T(0.01,2)
   beta2_pelagic[a] ~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])T(0.01,25)
   beta1_black[a] <- 0 #~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
   beta2_black[a] <- 0 #~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])
   beta3_black[a] <- 25
-  beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
-  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
+  beta1_yellow[a] ~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])T(,5)
+  beta2_yellow[a] ~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(-30,-0.01)
   beta3_yellow[a] ~ dunif(18,Y-5) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
   beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[1],1], tau_beta0_pH[regions[1],1]) #INTERCEPT

@@ -57,7 +57,7 @@ ni <- 25E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "Gen3aa_indcomp" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
+mod <- "Gen3aa_pH33B2share" #at 15e5, second half of trace plots look converged, pH_1 may need tightening; p_black may need rethinking on hyper priors to align with inside/outside rather than regions?
 
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
@@ -68,7 +68,7 @@ mod <- "Gen3aa_indcomp" #at 15e5, second half of trace plots look converged, pH_
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "Gen3aa_indcomp_thru2023_7e+05__2025-08-15"
+use_this_model <- "Gen3aa_thru2023_9e+05_2025-08-16"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -352,11 +352,11 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen3aa_thru2023_8e+05_2025-08-14"
+results <- "Gen3aa_no_swhs_rel_like_thru2023_4200000_2025-08-17"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -548,7 +548,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "mu_beta4_pH","tau_beta4_pH",
                                         "mu_beta5_pH","tau_beta5_pH"))
 
-jagsUI::densityplot(postH, parameters = c("beta4_pH"))
+jagsUI::traceplot(postH, parameters = c("beta4_pH"))
 
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH",

@@ -442,7 +442,7 @@ for (a in 11:16){
 
   beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
   beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3])T(0.01,) 
-  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(,-0.01) # SLOPE 
+  beta2_pH[a,3] <- mu_beta2_pH[regions[a],3] #~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(,-0.01) # SLOPE 
   beta3_pH[a,3] ~ dunif(29,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 }
 

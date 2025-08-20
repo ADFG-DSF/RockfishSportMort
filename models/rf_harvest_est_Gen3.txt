@@ -1,23 +1,22 @@
 # Next Gen Notes
 for (a in 1:16){
-  mu_prigui[a] <- mean(prigui[a,])
+  mu_prigui[a] <- mean(prigui_ay[a,])
   tau_prigui[a] ~ dgamma(0.1,0.1)
 }
-
 
 for (y in 1:2010){
   beta4_pH[a,s,y] ~ dnorm(mu_prigui[a], tau_prigui[a])[0,]
 }
 
 for (y in 2011:end){
-  beta4_pH[a,s,y] ~ dnorm(prigui[a,y],tau_prigui[a])[0,]
+  tau_prigui[a, y] <- 1 / log(cv_prigui_ay[a, y] * cv_prigui_ay[a, y] + 1)
+  beta4_pH[a,s,y] ~ dnorm(prigui_ay[a,y],tau_prigui[a,y])[0,]
 }
 
  logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + beta0_pH[a,s] + 
                                      beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s]))) * #Note change to multiplicative
                                      (1 + (u - 1) * (beta4_pH[a,s,y] - 1))  #u=1 = same, u=2 = b4 effect
       re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
-
 
 
 ###########################################################################################################################
