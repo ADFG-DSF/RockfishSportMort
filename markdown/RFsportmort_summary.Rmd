@@ -59,7 +59,7 @@ mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
 #bestish
-res <- "Gen3aa_thru2023_8e+05_2025-08-14"
+res <- "Gen3aa_indcomp_thru2023_7e+05__2025-08-15"
 #trying
 #res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"

@@ -126,7 +126,7 @@ for (r in 1:3){
 	for (s in 1:3){
 		mu_beta0_pH[r,s] ~ dnorm(0, 0.01) #dnorm(0, 0.1)
 		mu_beta1_pH[r,s] ~ dlnorm(log(0.00001), 0.01)T(,20)
-		##mu_beta2_pH[r,s] ~ dnorm(0, 0.01)
+		mu_beta2_pH[r,s] ~ dnorm(0, 0.01)
 		mu_beta5_pH[r,s] ~ dnorm(0, 0.001)
 		#no more mu_beta_3 or 4
 
@@ -140,16 +140,6 @@ for (r in 1:3){
     sd_beta5_pH[r,s] ~ dunif(0.1, 5)
 	}
 }
-
-for (r in 1:3){
-  for (s in 1:2){
-    mu_beta2_pH[r,s] ~ dnorm(0, 0.01)
-  }
-}
-
-mu_beta2_pH[1,3] ~ dnorm(0, 0.01)
-mu_beta2_pH[2,3] ~ dnorm(0, 0.01)
-mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
 
 #HYPER PRIORS FOR SPECIES COMPOSITION PARAMTERS:
   mu_beta0_pelagic_kod ~ dnorm(0, 0.01)
@@ -304,7 +294,7 @@ beta1_yellow[1] <- 0
 beta2_yellow[1] <- 0
 beta3_yellow[1] <- 25
 
-beta1_yellow[2] ~ dlnorm(log(0.01), 0.01)T(0.01,50)
+beta1_yellow[2] ~ dlnorm(log(0.01), 0.01)T(0.01,5)
 beta2_yellow[2] ~ dnorm(0,0.01)T(-30,-0.01)
 beta3_yellow[2] ~ dunif(18,Y-5) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
@@ -456,7 +446,7 @@ for (a in 11:16){
 
   beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
   beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) 
-  beta2_pH[a,3] <- mu_beta2_pH[regions[a],3] #~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-25,-0.01) # SLOPE 
+  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-25,-0.01) # SLOPE 
   beta3_pH[a,3] ~ dunif(29,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 }
 
