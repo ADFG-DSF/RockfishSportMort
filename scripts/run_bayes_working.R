@@ -359,7 +359,7 @@ saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSpor
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_thru2023_2500000_2025-08-22"
+results <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_5e+06__2025-08-26"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
