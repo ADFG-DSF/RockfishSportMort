@@ -59,7 +59,7 @@ mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
 #bestish
-res <- "Gen3aa_indcomp_pH33flat_no_swhs_rel_FULL_thru2023_5e+06__2025-08-25"
+res <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06_2025-08-26"
 #trying
 #res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
@@ -4711,6 +4711,9 @@ rhat_exam <- rhat$Rhat_values %>%
   separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", ""),
          index_n = str_count(index, ","))
+
+with(rhat_exam, table(variable)) %>% data.frame() %>%
+  filter(!str_detect(variable, "Bb|By|Bs|Bd|Bs|_mort|Tb|Tp|Ty|Td|Ts")) -> unconverged1
   
 rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", fill = "right") %>%
   mutate(year = ifelse(!str_detect(variable, "beta"),
@@ -4729,7 +4732,7 @@ rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", f
   filter(!str_detect(variable, "Bb|By|Bs|_mort|Tb|Tp|Ty")) %>%
   arrange(area, -Rhat, variable) -> unconverged
 
-flextable(unconverged) %>%
+flextable(unconverged1) %>%
   #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
  #             align_with_table = TRUE, style = "Table Caption") %>%
   autofit() %>%
