@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "_pH33B2flat_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "_fulllike_",Sys.Date(),".html"))
       })
 ---
 
@@ -59,7 +59,7 @@ mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
 #bestish
-res <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06_2025-08-26"
+res <- "Gen3aa_indcomp_swhsR_FULL_thru2023_1e+06_2025-09-11"
 #trying
 #res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
@@ -4741,6 +4741,14 @@ flextable(unconverged1) %>%
   #align(j = 2:4, align = "center", part = "all") %>%
   set_table_properties(width = 1, layout = "autofit")
     
+flextable(unconverged) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
     
     
 #  mutate(across(starts_with("index"), as.numeric)) %>%
