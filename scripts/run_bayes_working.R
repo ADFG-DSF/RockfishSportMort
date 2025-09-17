@@ -72,8 +72,8 @@ mod <- "Gen3aa_indcomp_swhsR_FULL"
 use_inits = "yes"
 
 use_this_model <- "Gen3aa_indcomp_pH33flat_no_swhs_rel_FULL_thru2023_5e+06_2025-08-25"
-use_this_model <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06__2025-08-26"
-use_this_model <- "Gen3aa_indcomp_swhsR_FULL_thru2023_1e+06_2025-09-11"
+use_this_model <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06_2025-08-26"
+use_this_model <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000__2025-09-17"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -357,7 +357,7 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
@@ -515,11 +515,20 @@ jagsUI::traceplot(postH,
 jagsUI::traceplot(postH, 
                   parameters = c("Ry_ayu")) 
 jagsUI::traceplot(postH, 
+                  parameters = c("Ry_ayg"))
+jagsUI::traceplot(postH, 
+                  parameters = c("Hy_ayu"))
+
+jagsUI::traceplot(postH, 
                   parameters = c("Ro_ayg")) 
 jagsUI::traceplot(postH, 
                   parameters = c("Rs_ayu")) 
 jagsUI::traceplot(postH, 
                   parameters = c("Rb_ayu")) 
+jagsUI::traceplot(postH, 
+                  parameters = c("Rb_ayg"))
+jagsUI::traceplot(postH, 
+                  parameters = c("Hb_ayu"))
 jagsUI::traceplot(postH, 
                   parameters = c("Rp_ayu")) 
 
@@ -634,6 +643,25 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
                                         "beta0_black","beta1_black",
                                         "beta2_black","beta3_black","beta4_black",
                                         "beta5_black","beta6_black"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic_kod","mu_beta1_pelagic_kod",
+                                        "mu_beta2_pelagic_kod","mu_beta4_pelagic_kod",
+                                        "mu_beta5_pelagic_kod",
+                                        "tau_beta0_pelagic_kod","tau_beta1_pelagic_kod",
+                                        "tau_beta2_pelagic_kod","tau_beta4_pelagic_kod",
+                                        "tau_beta5_pelagic_kod"))
+jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow_kod","mu_beta1_yellow_kod",
+                                        "mu_beta2_yellow_kod","mu_beta4_yellow_kod",
+                                        "mu_beta5_yellow_kod",
+                                        "tau_beta0_yellow_kod","tau_beta1_yellow_kod",
+                                        "tau_beta2_yellow_kod","tau_beta4_yellow_kod",
+                                        "tau_beta5_yellow_kod"))
+jagsUI::traceplot(postH, parameters = c("mu_beta0_black_kod","mu_beta1_black_kod",
+                                        "mu_beta2_black_kod","mu_beta4_black_kod",
+                                        "mu_beta5_black_kod",
+                                        "tau_beta0_black_kod","tau_beta1_black_kod",
+                                        "tau_beta2_black_kod","tau_beta4_black_kod",
+                                        "tau_beta5_black_kod"))
 
 jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
 jagsUI::traceplot(postH, parameters = "logbc_H")
