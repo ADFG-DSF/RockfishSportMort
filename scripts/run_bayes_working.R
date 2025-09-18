@@ -361,7 +361,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen3aa_indcomp_swhsR_FULL_thru2023_1e+06_2025-09-11"
+results <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000__2025-09-17"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -409,6 +409,31 @@ rhat_exam <- rhat$Rhat_values %>%
 with(rhat_exam, table(variable,area))
 range(rhat_exam$Rhat)
 
+rhat_exam_all <- all_rhat$Rhat_values %>%
+  rownames_to_column(var = "Parameter") %>%
+  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/sp", "user","sp"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n") %>%
+  arrange(-Rhat)
+
+unique(rhat_exam_all$variable)  %>% sort() -> all_params
+true_params <- all_params[c(1,2,9:41,77:78,82:92,101,122:128,150:167)]
+dev_params <- all_params[!all_params %in% true_params]
+
+rhat_exam_all %>% filter(variable %in% true_params,
+                         Rhat > 1.01) %>% 
+  arrange(-Rhat) -> true_param_not_converged
+
+rhat_exam_all %>% filter(variable %in% dev_params,
+                         Rhat > 1.01) %>% 
+  arrange(-Rhat) -> dev_param_not_converged
 
 rhat_exam %>% group_by(variable) %>%
   filter(variable %in% c("logbc_H", "mu_bc_H", "sd_bc_H",
@@ -445,6 +470,11 @@ rhat_exam %>% group_by(variable) %>%
                          "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H")) -> rhat_exam_params
 print(rhat_exam_params, n = 50)
 
+unique(rhat_exam_params$variable) %>% sort()
+
+true_params <- c(unique(rhat_exam_params$variable) %>% sort())[c(1:19,29:31,35,37)]
+
+der_params
 
 rhat_exam_params %>%  summarise(n = n(),
             badRhat_avg = mean(Rhat)) %>%
