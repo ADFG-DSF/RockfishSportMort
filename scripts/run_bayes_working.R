@@ -63,6 +63,9 @@ mod <- "Gen3aa_indcomp_pH33B2share_swhsR_FULL"
 mod <- "Gen3aa_indcomp_no_swhs_rel_FULL"
 mod <- "Gen3aa_indcomp_swhsR_FULL"
 
+mod <- "Gen3ab_indcomp_no_swhs_rel_FULL" #separate B4 for pH by species grouping
+mod <- "Gen3ab_indcomp_swhsR_FULL" #separate B4 for pH by species grouping
+
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 #  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
 #}
@@ -73,7 +76,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen3aa_indcomp_pH33flat_no_swhs_rel_FULL_thru2023_5e+06_2025-08-25"
 use_this_model <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06_2025-08-26"
-use_this_model <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000__2025-09-17"
+use_this_model <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000_2025-09-17"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -172,6 +175,42 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 })
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_beta5_slope"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_black_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_black_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_black_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta5_black_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_pelagic_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_pelagic_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_pelagic_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta5_pelagic_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta0_yellow_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta1_yellow_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta2_yellow_kod"]
+})
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "tau_beta5_yellow_kod"]
 })
 
 for (i in 1:3){ #i <- 1
@@ -357,11 +396,11 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000__2025-09-17"
+results <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_1e+05__2025-09-18"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged

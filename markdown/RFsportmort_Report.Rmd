@@ -310,15 +310,15 @@ $H_{(yelloweye)ayu}~=~H_{(DSR)ayu}*P_{(yelloweye|DSR)ayu}$
 
 Species composition data is not available for the entire time series and as such it was necessary to assume some trend in the data to project backwards in time. To do so, we fit a logistic curve to the species composition data that would account for shifts in the species composition during the observed time period but would not extrapolate beyond the limits of the observed data when hindcasting. The logistic curve was fit to data through 2019 and ignored data after that point. In order to stabilize harvests, ADF&G began taking management action in 2020 that had a strong effect on the species composition of the harvest as well as the retention probability and thus data from those years would not be informative to pre-2020 patterns that had limited management action. This approach also allows for an easier estimation procedure in future years that can exclude the harvest reconstruction prior to 2020. Thus, the composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve such that:
 
-$\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)ayu} + \frac{\beta1_{(comp)ayu}}{(1 + exp(\beta2_{(comp)ayu}*(y - \beta3_{(comp)ayu})))} + \beta4_{(comp)ayu}*I(u=private)+re_{(comp)ayu}$
+$\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)a} + \frac{\beta1_{(comp)a}}{(1 + exp(\beta2_{(comp)a}*(y - \beta3_{(comp)a})))} + \beta4_{(comp)a}*I(u=private)+re_{(comp)ayu}$
 
 where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line (Tables 3 - 6). When $\beta$ parameters were inestimable as a result of no discernible change in composition over the observed time period $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Tables 3 - 6 pComp_PRIORS). 
 
-The goal of the logistic curve was to produce reasonable curves that reflected changing species compositions over time, and generated defensible values for making historical assumptions. While a hierarchical approach was considered, it was decided that species composition likely reflected local habitat and that broad, regional-scale patterns would have minimal information in estimating these values. However, because there is a lack of port sampling in most Kodiak CFMU's the species $\beta$ logistic terms for the Kodiak CFMU's were modelled hierarchically around a mean and standard deviation (Table XXX). Model development began with vague and uninformative priors but slow convergence and occasional non-sensical results necessitated tuning and constraining priors. In many cases logistic curves were easily fit as the underlying data supported the fit. In other instances, it was necessary to constrain and modify priors to impose a logistic curve on data where a logistic trend was not strongly apparent, sample sizes were low, or when a particular area demonstrated distinct patterns from other areas in that region. While it is generally preferential to allow a data driven process in these kinds of estimations, the fitted curves only affect estimates in years where data is absent, or sample sizes are very low. When proportional data is adequate the random effect terms (re_(comp)ayu) allow estimates to accurately reflect the data regardless of the curve. The fitted curve functions primarily to inform estimates during the period when no data was available and during years and areas where sample sizes are low or absent.  
+The goal of the logistic curve was to produce reasonable curves that reflected changing species compositions over time, and generated defensible values for making historical assumptions. While a hierarchical approach was considered, it was decided that species composition likely reflected local habitat and that broad, regional-scale patterns would have minimal information in estimating these values. However, because there is a lack of port sampling in most Kodiak CFMU's the species $\beta$ logistic terms for the Kodiak CFMU's were modelled hierarchically around a mean and standard deviation (Table XXX). Model development began with vague and uninformative priors but slow convergence and occasional non-sensical results necessitated tuning and constraining priors. In many cases logistic curves were easily fit as the underlying data supported the fit. In other instances, it was necessary to constrain and modify priors to impose a logistic curve on data where a logistic trend was not strongly apparent, sample sizes were low, or when a particular area demonstrated distinct patterns from other areas in that region. While it is generally preferential to allow a data driven process in these kinds of estimations, the fitted curves only affect estimates in years where data is absent, or sample sizes are very low. When proportional data is adequate the random effect terms ($re_{(comp)ayu}$) allow estimates to accurately reflect the data regardless of the curve. The fitted curve functions primarily to inform estimates during the period when no data was available and during years and areas where sample sizes are low or absent.  
 
-The regional ($\beta0$) and ($\beta4$) terms were readily estimated and required only vague priors that were centered normally around 0. The scaler ($\beta1$) and slope ($\beta2$) terms required more informed priors to fit the logistic curves. The ($\beta1$) and ($\beta2$) terms interact such that when both have the same sign (positive or negative), the realized slope of the curve is positive. When the two terms have different signs, the realized slope is negative. To stabilize the model a lognormal prior was used applied to the ($\beta1$) term to maintain a positive value so that only the sign of the ($\beta2$) term determined the direction of the slope. If the slope of the curve was clearly positive or negative the ($\beta2$) term was sometimes provided a prior that reflected the direction of the curve to speed convergence. When there was no discernable change in the compositional proportion over time, ($\beta1$) and ($\beta2$) became inestimable. In those instances, ($\beta1$) and ($\beta2$) were fixed to 0 so that the long-term mean was used for hindcasting (Tables 3 - 6 pComp_PRIORS).
+The regional $\beta0$ and $\beta4$ terms were readily estimated and required only vague priors that were centered normally around 0. The scaler ($\beta1$) and slope ($\beta2$) terms required more informed priors to fit the logistic curves. The $\beta1$ and $\beta2$ terms interact such that when both have the same sign (positive or negative), the realized slope of the curve is positive. When the two terms have different signs, the realized slope is negative. To stabilize the model a lognormal prior was used applied to the $\beta1$ term to maintain a positive value so that only the sign of the $\beta2$ term determined the direction of the slope. If the slope of the curve was clearly positive or negative the $\beta2$ term was sometimes provided a prior that reflected the direction of the curve to speed convergence. When there was no discernable change in the compositional proportion over time, $\beta1$ and $\beta2$ became inestimable. In those instances, $\beta1$ and $\beta2$ were fixed to 0 so that the long-term mean was used for hindcasting (Tables 3 - 6 pComp_PRIORS).
 
-A uniform prior was applied to the inflection point ($\beta3$) bracketed by the time period during which data was available. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with ($\beta1$) and ($\beta2$), when there was no discernible change in the proportional data over time, ($\beta3$) was inestimable and necessitated fixing the parameter so that only the ($\beta0$) term was estimated to determine the long term mean of that proportion. 
+A uniform prior was applied to the inflection point ($\beta3$) bracketed by the time period during which data was available. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with $\beta1$ and $\beta2$, when there was no discernible change in the proportional data over time, $\beta3$ was inestimable and necessitated fixing the parameter so that only the $\beta0$ term was estimated to determine the long term mean of that proportion. 
 
 ### Releases
 
@@ -330,9 +330,9 @@ with total releases equal to the sum of the compositional releases.
 
 The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
 
-$\textrm{logit}(pH_{ayuc})~=~(\beta0_{(pH)ayuc} + \frac{\beta1_{(pH)ayuc}}{(1 + exp(\beta2_{(pH)ayuc}*(y - \beta3_{(pH)ayuc})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)ayuc} - 1)) + re_{(pH)ayuc}$
+$\textrm{logit}(pH_{ayuc})~=~(\beta0_{(pH)ac} + \frac{\beta1_{(pH)ac}}{(1 + exp(\beta2_{(pH)ac}*(y - \beta3_{(pH)ac})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)ay} - 1)) + re_{(pH)ayuc}$
 
-where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Unlike the compositional trends, *pH* $\beta$ parameters were modeled hierarchically by region such that each area specific $\beta$ parameter was centered around region-specific hyperpriors of the mean and standard deviation (Tables 7 - 9). Prior development and reasoning followed the same logic as the species compositions logistic curves described above. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Unlike the compositional trends, *pH* $\beta$ parameters were modeled hierarchically by region such that each area specific $\beta$ parameter was centered around region-specific hyperpriors of the mean and standard deviation (Tables 7 - 9). Prior development and reasoning followed the same logic as the species compositions logistic curves described above. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
 
 The regional $\beta0$ and $\beta4$ hyperpriors were readily estimated and only required vague priors on the regional means that were centered normally around 0. The hyperprior for the regional standard deviation, also modeled as precision, $\tau$ where
 
@@ -340,27 +340,37 @@ $\tau = \frac{1}{sd^2}$
 
 and *sd* is the standard deviation, was somewhat constrained for the $\beta0$ term to maintain reasonable continuity within regions. Constraints on the standard deviations were based on examination of traceplots and an effort to limit extreme, but rare, values in the monte carlo chains that had little to no effect on the results but slowed convergence. 
 
-Although we do not use the guided:unguided ratio of total rockfish releases in the SWHS data to directly calculate unguided releases as in the Howard methods, the SWHS does offer information on the relative number of fish caught, retained and released for each user group. Because the proportion harvested is known for guided anglers via logbook data, the difference in the proportion harvested for each user group in the SWHS data suggests whether private anglers are more or less likely to retain a rockfish relative to guided anglers. As such the SWHS was used to develop a prior to inform the $\beta4_{(pH)ayuc}$ terms that describe the offset of the *pH* logistic curve for unguided anglers (Tables 7 - 9 pH_PRIOR). SWHS data became stratified by user groups in 2011 and thus the prior for recent years for each CFMU uses values estimated from the data. The $\beta4_{(pH)ayuc}$ term was given a prior informed by the ratio of the proportion harvested by private anglers, as estimated by the SWHS ($pH_{unguided}^{SWHS}$)  to the proportion harvested by guided anglers, as estimated by the SWHS ($pH_{guided}^{SWHS}$) such that unguided:guided SWHS pH ratio, $pH_{ung}:pH_{gui}$ is defined as
+Although these methods do not apply the Howard methods of using guided:unguided ratio of total rockfish releases in the SWHS data to directly calculate unguided releases, the SWHS nevertheless offers information on the relative number of fish caught, retained and released for each user group. Because the proportion harvested is known for guided anglers via logbook data, the difference in the proportion harvested for each user group in the SWHS data suggests whether private anglers are more or less likely to retain a generic rockfish relative to guided anglers. As such the SWHS was used to develop a prior to inform the $\beta4_{(pH)ayuc}$ terms that describe the offset of the *pH* logistic curve for unguided anglers (Tables 7 - 9 pH_PRIOR). SWHS data became stratified by user groups in 2011 and thus the prior for recent years for each CFMU uses values estimated from the data. The $\beta4_{(pH)ayuc}$ term was given a prior informed by the ratio of the proportion harvested by private anglers, as estimated by the SWHS ($pH_{unguided}^{SWHS}$), to the proportion harvested by guided anglers, as estimated by the SWHS ($pH_{guided}^{SWHS}$), such that unguided:guided SWHS *pH* ratio in area *a* and year *y*, $pH_{ay}^{ung:gui}$ is defined as
 
-$pH_{ung}:pH_{gui}=\frac{pH_{unguided_{ay}}^{SWHS}}{pH_{guided_{ay}}^{SWHS}}$  
+$pH_{ay}^{ung:gui}=\frac{pH_{unguided_{ay}}^{SWHS}}{pH_{guided_{ay}}^{SWHS}}$  
 
-$pH_{user_{ay}}^{SWHS}=\frac{\widehat{SWHS}_H{ayu}}{\widehat{SWHS}_R{ayu} + \widehat{SWHS}_H{ayu}}$
+such that
 
-$se_{pHuser} = \sqrt{se_H^2\widehat{SWHS}_R{ayu}^2 + se_R^2\widehat{SWHS}_H{ayu}^2 - 2*\widehat{SWHS}_R{ayu}*\widehat{SWHS}_H{ayu}*cov*se_{H_{ay}}*se_{R_{ay}}}$
+$pH_{ayu}^{SWHS}=\frac{\widehat{H}^{SWHS}_{ayu}}{\widehat{H}^{SWHS}_{ayu} + \widehat{R}^{SWHS}_{ayu}}$
 
-Thus $\beta4_{(pH)ayuc}$ for 2011 through present receives a prior of
+where $\widehat{H}^{SWHS}_{ayu}$ and $\widehat{R}^{SWHS}_{ayu}$ are the SWHS estimates of harvests and releases, respectively, and the standard error is
 
-$\beta4_{(pH)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ung}:pH_{gui}), \sigma_{pH_{ung}:pH_{gui}}^2\right)$
+$se_{pHayu} = \sqrt{se_{H_{ay}}^2{\widehat{R}^{SWHS}_{ayu}}^2 + se_{R_{ay}}^2{\widehat{H}^{SWHS}_{ayu}}^2 - 2*{\widehat{R}^{SWHS}_{ayu}}*{\widehat{H}^{SWHS}_{ayu}}*cov*se_{H_{ay}}*se_{R_{ay}}}$
+
+Thus for years 2011 onward $\beta4_{(pH)ayuc}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
+
+$\beta4_{(pH)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
 
 where 
 
-$\sigma_{pH_{ung}:pH_{gui}} = \sqrt{\frac{se_{pHung}^2}{pH_{gui}^{SWHS^2}}+\frac{pH_{ung}^{SWHS^2}*se_{pHgui}^2}{pH_{gui}^{SWHS^4}}-(2*\frac{pH_{ung}^{SWHS}*cov*se_{pHung}*se_{pHgui}}{pH_{gui}^{SWHS^3}})}$
+$\sigma_{pH_{ay}^{ung:gui}}^2 = {\frac{se_{pHung}^2}{pH_{gui}^{SWHS^2}}+\frac{pH_{ung}^{SWHS^2}*se_{pHgui}^2}{pH_{gui}^{SWHS^4}}-(2*\frac{pH_{ung}^{SWHS}*cov*se_{pHung}*se_{pHgui}}{pH_{gui}^{SWHS^3}})}$
 
-where *cov* refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$. For years prior to 2011, each CFMU uses a prior centered around the mean of the area specific $pH_{ung}:pH_{gui}$ ratios, excluding years beyond 2019 when management actions altered angler retention probabilities. For pre-2011 years the standard deviation for the prior was estimated from a uniform distribution between 0.1 and 5 bounded on the lower end by 0.75 times the minimum observed ratio and 1.5 times the maximum observed ratio. 
+and *cov* refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$. 
+
+For years prior to 2011, each CFMU uses a prior centered around the mean of the area specific $pH_{ay}^{ung:gui}$ ratios, excluding years beyond 2019 when management actions altered angler retention probabilities, such that
+
+$\beta4_{(pH)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(\frac{1}{n} \sum_{y=2011}^{2019} ({pH_{ay}^{ung:gui}})), \sigma_{pH_{a}^{ung:gui}}^2\right)$
+
+where the standard deviation in those years was modeled with an area-specific uniform prior between 0.1 and 5 (Table PRIORS) and $\beta4_{(pH)ayuc}$ was bounded such that the lower bound was equal to 0.75 times the lowest observed $pH_{ay}^{ung:gui}$ ratio and the upper bound was equal to 1.5 times the maximum observed $pH_{ay}^{ung:gui}$ ratio in that area. 
 
 The hyper priors for the regional $\beta1$ and $\beta2$ standard deviations used relatively constrained uniform priors on the standard deviation. Attempts to apply a gamma distribution directly to precision resulted in rare but extreme values that slowed convergence. Limiting the upper end of the standard deviation to values of 5 and 4 allowed for more influence of the regional hyperprior by limiting area specific deviations from the regional mean which stabilized the model and allowed data-poor areas to reach convergence. 
 
-Similar to the compositional logistic curve, a uniform prior was applied to the inflection point $\beta3$ bracketed by the time period during which data was available and did not use a hyper prior. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with $\beta1$ and $\beta2$, when there was no discernible change in the proportional data over time, $\beta3$ was inestimable and necessitated fixing the parameter so that only the $\beta0$ term was estimated to determine the long term mean of that proportion. As with the $\beta1$ and $\beta2$, regional precision hyperpriors used a constrained uniform prior on the standard deviation to allow more influence of the regional mean, stabilize the model and speed convergence. 
+Similar to the species composition logistic curve, a uniform prior was applied to the inflection point $\beta3$ bracketed by the time period during which data was available and did not use a hyper prior. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with $\beta1$ and $\beta2$, when there was no discernible change in the proportional data over time, $\beta3$ was inestimable and necessitated fixing the parameter so that only the $\beta0$ term was estimated to determine the long term mean of that proportion.  
 
 It was assumed that $pH_{(black)ayu}$ was equal to $pH_{(pelagic)ayu}$ given the dominance of that species within the assemblage. For Southeast Alaska, there was no way to estimate $pH_{(DSR)ayu}$ or $pH_{(slope)ayu}$ and so $P_{(DSR)ayu}$ and $P_{(slope)ayu}$ were applied to the $R_{(other)ayu}$ estimates to generate estimates of $R_{(DSR)ayu}$ and $R_{(slope)ayu}$. The assumption that DSR and slope rockfish would be released in similar proportions was deemed reasonable given that these species tend to be caught in similar habitat with similar methods and these species are regarded comparably by anglers.
 
@@ -386,35 +396,35 @@ where $\overline{wt}_{(comp)ayu}$ is the mean weight by species, area, user and 
 
 ### Harvest Data
 
-The modeled process described above was fit to the SWHS, logbook and port sampling data using the following equations. SWHS estimates of annual rockfish harvest $\widehat{SWHS}_H{ay}$ were assumed to index true harvest:
+The modeled process described above was fit to the SWHS, logbook and port sampling data using the following equations. SWHS estimates of annual rockfish harvest $\widehat{H}_{ay}^{SWHS}$ were assumed to index true harvest:
 
-$\widehat{SWHS}_H{ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_H{ay}), \sigma_{SWHSHay}^2\right)$
+$\widehat{H}_{ay}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_H{ay}), \sigma_{SWHSHay}^2\right)$
 
 where bias in the SWHS harvest estimates $b_H{ay}$ is modeled hierarchically across years as:
 
 $b_H{ay}~\sim~\textrm{Normal}(\mu_H{(b)a}, \sigma_H{(b)a})$
 
-with non-informative priors on both parameters (Table 2 PRIORS). SWHS estimates of guided angler harvest $\widehat{SWHS}_H{ay1}$ are thus related to total harvest by:
+with non-informative priors on both parameters (Table 2 PRIORS). SWHS estimates of guided angler harvest $\widehat{H}_{ay1}^{SWHS}$ are thus related to total guided harvest by:
 
-$\widehat{SWHS}_H{ay1}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)$
+$\widehat{H}_{ay1}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)$
 
-Reported guide logbook harvest $\widehat{LB}_H{ay}$ are considered a census of the true harvest and is related to true harvest as:
+Reported guide logbook harvest $\widehat{H}_{ay}^{LB}$ are considered a census of the true harvest and is related to true harvest as:
 
-$\widehat{LB}_H{ay}~\sim~\textrm{Poisson}(H_{ay1})$
+$\widehat{H}_{ay}^{LB}~\sim~\textrm{Poisson}(H_{ay1})$
 
-$\widehat{LB}_H{(pelagic)ay}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})$
+$\widehat{H}_{(pelagic)ay}^{LB}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})$
 
-$\widehat{LB}_H{(yelloweye)ay}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})$
+$\widehat{H}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})$
 
-$\widehat{LB}_H{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(H_{(nonpel,nonye)ay1})$
+$\widehat{H}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(H_{(non-pel,non-ye)ay1})$
 
-Note that for Southcentral and Kodiak areas $H_{(nonpel,nonye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For Southeast areas $H_{(nonpel,nonye)ay1}$ is equal to the sum of the DSR and slope harvests *minus* yelloweye harvests.
+Note that for Southcentral and Kodiak areas $H_{(non-pel,non-ye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For Southeast areas $H_{(non-pel,non-ye)ay1}$ is equal to the sum of the DSR and slope harvests *minus* yelloweye harvests.
 
 ### Release Data
 
-SWHS estimates of annual rockfish releases $\widehat{SWHS}_R{ay}$ were assumed to index true releases similarly to harvests and were modeled such that
+SWHS estimates of annual rockfish releases $\widehat{R}_{ay}^{SWHS}$ were assumed to index true releases similarly to harvests and were modeled such that
 
-$\widehat{SWHS}_R{ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(R_{ay}b_R{ay}), \sigma_{SWHS_R{ay}}^2\right)$
+$\widehat{R}_{ay}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(R_{ay}b_R{ay}), \sigma_{SWHS_R{ay}}^2\right)$
 
 SWHS estimates of guided angler releases assumed an independent bias from that of the harvests such that
 
@@ -424,15 +434,15 @@ where bias in the SWHS release estimates $b_R{ay}$ is modeled hierarchically acr
 
 Reported guide logbook releases $\widehat{LB}_R{ay}$ are considered a census of the true releases and is related to true releases as:
 
-$\widehat{LB}_R{ay}~\sim~\textrm{Poisson}(R_{ay1})$
+$\widehat{R}_{ay}^{LB}~\sim~\textrm{Poisson}(R_{ay1})$
 
-$\widehat{LB}_R{(pelagic)ay}~\sim~\textrm{Poisson}(R_{ay1}P_{(pelagic)ay1})$
+$\widehat{R}_{(pelagic)ay}^{LB}~\sim~\textrm{Poisson}(R_{ay1}P_{(pelagic)ay1})$
 
-$\widehat{LB}_R{(yelloweye)ay}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
+$\widehat{R}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
 
-$\widehat{LB}_R{(nonpel,nonye)ay}~\sim~\textrm{Poisson}(R_{(nonpel,nonye)ay1})$
+$\widehat{R}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(non-pel,non-ye)ay1})$
 
-Unguided release estimates by species were not directly informed by data and instead reflect the balancing of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{SWHS}_R{ay}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities tied to guided angler retention probabilities, $pH_{(comp)ayg}$, and 4) the $pH_{unguided}^{SWHS}$:$pH_{guided}^{SWHS}$ ratios indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{unguided}^{SWHS}$:$pH_{guided}^{SWHS}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific unguided releases must sum to the bias corrected SWHS estimate of unguided releases:
+Unguided release estimates by species were not directly informed by data and instead reflect the balancing of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ayg}$, and 4) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific unguided releases must sum to the bias corrected SWHS estimate of unguided releases:
 
 $R_{ay2} = R_{(pelagic)ay2} + R_{(yelloweye)ay2} + R_{(non-pelagic, non-yelloweye)ay2}$
 
@@ -476,29 +486,29 @@ where *region* refers to Kodiak, Southcentral and Southeast. Mean weights and va
 
 Kodiak has limited port sampling beyond the main harbors but has a robust hydroacoustic survey that is used to quantify black rockfish abundance across the management area and uses  stereocameras to derive species compositions of the hydroacoustic data (Tscherisch et al. 2023). This data was used as supplementary data to further inform the model on the proportion of pelagic rockfish that are black in Kodiak areas. Where angler landing data is available, they demonstrate a higher proportion of black rockfish relative to the hydroacoustic survey and thus the predicted proportion of black rockfish in the hydroacoustic sample related to the true proportion such that 
 
-$\widehat{P}_{(black|pelagic)ayu}^{HA} ~=~ P_{(black|pelagic)ayu} + ae_{au}$
+$\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ P_{(black|pelagic)ayu} + ae_{au}$
 
-where $ae_{au}$ is the angler effect for each area and user group modeled hierarchically around a mean of 0. Predicted $P_{(black|pelagic)ayu}^{HA}$ assumed a beta distribution such that observed $P^{HA}$
+where $ae_{au}$ is the angler effect for each area and user group modeled hierarchically around a mean of 0. Predicted $P_{(black|pelagic)ayu}^{ha}$ assumed a beta distribution such that 
 
-$P_{(black|pelagic)ayu}^{HA} ~\sim~ beta(\alpha_{HA},\beta_{HA})$
+$P_{(black|pelagic)ayu}^{ha} ~\sim~ beta(\alpha^{ha},\beta^{ha})$
 
 where
 
-$\alpha_{HA} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{HA})^2 * \frac{1 - \widehat{P}_{(black|pelagic)ayu}^{HA}}{\frac{var_{P_{HA}}-1}{\widehat{P}_{(black|pelagic)ayu}^{HA}}},$
+$\alpha^{ha} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{ha})^2 * \frac{1 - \widehat{P}_{(black|pelagic)ayu}^{ha}}{\frac{var_{\widehat{P}_{ha}}-1}{\widehat{P}_{(black|pelagic)ayu}^{ha}}},$
 
-$\beta_{HA} ~=~ (\alpha_{HA}) * \frac{1}{\widehat{P}_{(black|pelagic)ayu}^{HA} - 1},$
+$\beta^{ha} ~=~ (\alpha^{ha}) * \frac{1}{\widehat{P}_{(black|pelagic)ayu}^{ha} - 1},$
 
-$var_{P_{HA}} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{HA} * cvP_{(black|pelagic)ayu}^{HA})^2$
+$var_{\widehat{P}^{ha}} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{ha} * cv\widehat{P}_{(black|pelagic)ayu}^{ha})^2$
 
-where $cvP_{(black|pelagic)ayu}^{HA}$ is the coefficient of variation for the observed hydroacoustic proportions 
+where $cv\widehat{P}_{(black|pelagic)ayu}^{ha}$ is the coefficient of variation for the observed hydroacoustic proportions 
 
-$cvP_{(black|pelagic)ayu}^{HA} ~=~ \frac{\sqrt{varP_{(black|pelagic)ayu}^{HA}}}{P_{(black|pelagic)ayu}^{HA}}$
+$cv\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ \frac{\sqrt{var\widehat{P}_{(black|pelagic)ayu}^{ha}}}{\widehat{P}_{(black|pelagic)ayu}^{ha}}$
 
 and the variance is approximated using the delta method (Casella and Berger 2002) as 
 
-$varP_{(black|pelagic)ayu}^{HA} ~=~ (\frac{1}{n_{pel}})^2 * varN_{black} + (\frac{n_{black}}{n_{pel}^2})^2 * varN_{pel}$
+$var\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ (\frac{1}{n_{pel}})^2 * varN_{black}^{ha} + (\frac{n_{black}}{n_{pel}^2})^2 * varN_{pel}^{ha}$
 
-where $varN_{black}$ and $varN_{pelagic}$ are the variance of the estimated number of black and pelagic rockfish in the hydroacoustic survey, respectively (Tscherisch et al. 2023). The covariance term was omitted as it was at or near 0.
+where $varN_{black}^{ha}$ and $varN_{pelagic}^{ha}$ are the variance of the estimated number of black and pelagic rockfish in the hydroacoustic survey, respectively (Tscherisch et al. 2023). The covariance term was omitted as it was at or near 0.
 
 ## Model platform and diagnostics
 
