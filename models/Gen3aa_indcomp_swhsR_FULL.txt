@@ -162,7 +162,7 @@ mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
   sd_beta5_pelagic_kod ~ dunif(0.1, 5)
 
   mu_beta0_yellow_kod ~ dnorm(0, 0.01)
-  mu_beta4_yellow_kod ~ dnorm(0, 0.01)
+  mu_beta4_yellow_kod ~ dnorm(0, 0.01)T(-50,50)
   mu_beta5_yellow_kod ~ dnorm(0, 0.001)
 
   tau_beta0_yellow_kod <- 1 / sd_beta0_yellow_kod / sd_beta0_yellow_kod
@@ -353,7 +353,7 @@ for (a in 5:10){
 #  beta6_pelagic[a] ~ dnorm(0, 0.001)
 
   beta0_yellow[a] ~ dnorm(mu_beta0_yellow_kod, tau_beta0_yellow_kod)
-  beta4_yellow[a] ~ dnorm(mu_beta4_yellow_kod, tau_beta4_yellow_kod)T(-50,50)
+  beta4_yellow[a] ~ dnorm(mu_beta4_yellow_kod, tau_beta4_yellow_kod)#T(-50,50)
   beta5_yellow[a] ~ dnorm(mu_beta5_yellow_kod, tau_beta5_yellow_kod)
 #  beta6_yellow[a] ~ dnorm(0, 0.001)
 

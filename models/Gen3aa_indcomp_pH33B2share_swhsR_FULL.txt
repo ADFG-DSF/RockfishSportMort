@@ -349,7 +349,7 @@ for (a in 3:4){ #PWSI and PWSO
 for (a in 5:10){
   beta0_pelagic[a] ~ dnorm(mu_beta0_pelagic_kod, tau_beta0_pelagic_kod) 
   beta3_pelagic[a] ~ dunif(18,Y-7) #dlnorm(log(mu_beta3_pelagic[regions[a]]), tau_beta3_pelagic[regions[a]])T(18,Y-1) 
-  beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic_kod, tau_beta4_pelagic_kod)T(-25,25)
+  beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic_kod, tau_beta4_pelagic_kod)#T(-25,25)
   beta5_pelagic[a] ~ dnorm(mu_beta5_pelagic_kod, tau_beta5_pelagic_kod)
 #  beta6_pelagic[a] ~ dnorm(0, 0.001)
 
