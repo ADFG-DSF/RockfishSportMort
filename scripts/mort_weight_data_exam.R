@@ -9,7 +9,7 @@ library(tidyr)
 library(wesanderson)
 library(janitor)
 ###############################################################################
-dat <- read.csv("data/raw_dat/2023/rf_mort_sc.csv") %>%
+dat <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>%
   clean_names() %>% mutate(rel_cat = as.factor(rel_cat))
 
 ggplot(dat, aes(x = year, y = mort_rate, col = assemblage, shape = rel_cat)) +

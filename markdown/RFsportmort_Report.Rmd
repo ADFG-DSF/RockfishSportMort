@@ -11,7 +11,7 @@ fontsize: 12pt
 
 #knit: (function(input_file, encoding) {
 #        rmarkdown::render(input_file, 
-#                          output_file = paste0("RFsportmort_update_", "theModel_prelim_",Sys.Date(),".html"))
+#                          output_file = paste0("RFsportmort_update_", "AB_model_swhsR_",Sys.Date(),".html"))
 #      })
 ---
 
@@ -49,7 +49,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen3aa_indcomp_swhsR_FULL_thru2023_1e+06_2025-09-11"
+res <- "Gen3ab_indcomp_swhsR_FULL_thru2023_2500000__2025-09-24"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

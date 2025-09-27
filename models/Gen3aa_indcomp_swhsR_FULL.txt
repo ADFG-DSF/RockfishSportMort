@@ -148,7 +148,7 @@ for (r in 1:2){
 }
 mu_beta2_pH[3,1] ~ dnorm(0, 0.01)
 mu_beta2_pH[3,2] ~ dnorm(0, 0.01)
-mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
+mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(-20,-0.01)
 
 #HYPER PRIORS FOR SPECIES COMPOSITION PARAMTERS:
   mu_beta0_pelagic_kod ~ dnorm(0, 0.01)
@@ -199,13 +199,13 @@ mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
  }
 
  for (a in 1:4){
-      beta0_pelagic[a] ~ dnorm(0, 0.001)T(-1.3,) 
+      beta0_pelagic[a] ~ dnorm(0, 0.001)T(-1,) 
     beta3_pelagic[a] ~ dunif(18,Y-7) #dlnorm(log(mu_beta3_pelagic[regions[a]]), tau_beta3_pelagic[regions[a]])T(18,Y-1) 
     beta4_pelagic[a] ~ dnorm(0, 0.01)
     beta5_pelagic[a] ~ dnorm(0, 0.001)
   #  beta6_pelagic[a] ~ dnorm(0, 0.001)
 
-    beta0_yellow[a] ~ dnorm(0, 0.001)T(-1.25,)
+    beta0_yellow[a] ~ dnorm(0, 0.001)T(-1,)
     beta4_yellow[a] ~ dnorm(0, 0.01)
     beta5_yellow[a] ~ dnorm(0, 0.001)
 #  beta6_yellow[a] ~ dnorm(0, 0.001)
@@ -217,7 +217,7 @@ mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
   }
 
   for (a in 11:16){
-    beta0_pelagic[a] ~ dnorm(0, 0.001)T(-1.5,)
+    beta0_pelagic[a] ~ dnorm(0, 0.001)T(-1.25,)
     beta3_pelagic[a] ~ dunif(18,Y-7) #dlnorm(log(mu_beta3_pelagic[regions[a]]), tau_beta3_pelagic[regions[a]])T(18,Y-1) 
     beta4_pelagic[a] ~ dnorm(0, 0.01)
     beta5_pelagic[a] ~ dnorm(0, 0.001)
@@ -303,7 +303,7 @@ beta1_yellow[1] <- 0
 beta2_yellow[1] <- 0
 beta3_yellow[1] <- 25
 
-beta1_yellow[2] ~ dlnorm(log(0.01), 0.01)T(0.01,4)
+beta1_yellow[2] ~ dlnorm(log(0.01), 0.01)T(0.01,3)
 beta2_yellow[2] ~ dnorm(0,0.01)T(-30,-0.01)
 beta3_yellow[2] ~ dunif(18,Y-5) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
@@ -317,13 +317,13 @@ beta1_pH[2,3] <- 0
 beta2_pH[2,3] <- 0 
 
 for (a in 3:4){ #PWSI and PWSO
-  beta1_pelagic[a] ~ dlnorm(log(0.1), 0.01)T(0.01,2.5)
+  beta1_pelagic[a] ~ dlnorm(log(0.1), 0.01)T(0.01,2.25)
   beta2_pelagic[a] ~ dnorm(0,0.01)T(0,)
   beta1_black[a] <- 0 #~ dlnorm(log(mu_beta1_pelagic[regions[a]]), tau_beta1_pelagic[regions[a]])
   beta2_black[a] <- 0 #~ dnorm(mu_beta2_pelagic[regions[a]], tau_beta2_pelagic[regions[a]])
   beta3_black[a] <- 25
-  beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
-  beta2_yellow[a] ~ dnorm(0,0.01)T(-30,-0.01)
+  beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.01,4.5)
+  beta2_yellow[a] ~ dnorm(0,0.01)T(-25,-0.01)
   beta3_yellow[a] ~ dunif(18,Y-5) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
   beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1]) #INTERCEPT
@@ -455,20 +455,20 @@ for (a in 11:16){
 
   beta0_pH[a,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
   beta1_pH[a,3] ~ dlnorm(log(mu_beta1_pH[regions[a],3]), tau_beta1_pH[regions[a],3]) 
-  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-25,-0.01) # SLOPE 
+  beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-20,-0.01) # SLOPE 
   beta3_pH[a,3] ~ dunif(29,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 }
 
-beta1_pelagic[11] ~ dlnorm(log(0.01), 0.1)T(0.1,3)
+beta1_pelagic[11] ~ dlnorm(log(0.01), 0.1)T(0.5,2.5)
 beta2_pelagic[11] ~ dnorm(0,0.1)T(0.01,)
 
 beta1_pelagic[12] <- 0
 beta2_pelagic[12] <- 0
 
-beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(0.01,3.5)
+beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(0.01,3)
 beta1_pelagic[14] ~ dlnorm(log(0.01), 0.1)T(0.01,3.5)
 beta1_pelagic[15] ~ dlnorm(log(0.01), 0.1)T(0.01,1)
-beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.01,3.5)
+beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.01,3.25)
 
 for (a in 13:16){
 #  beta1_pelagic[a] ~ dlnorm(log(0.01), 0.1)T(0.01,3)
@@ -515,7 +515,7 @@ for (a in 1:A){
 		Hp_ay[a, y] <- Hp_ayg[a, y] + Hp_ayu[a, y]
 
 		Rp_ayg[a, y] <- (Hp_ayg[a, y] / pH[a,y,1,1]) - Hp_ayg[a, y]   
-		Rp_ayu[a, y] <- (Hp_ayu[a, y] / pH[a,y,2,1]) - Hp_ayu[a, y]  
+		Rp_ayu[a, y] <- min(3*Hp_ayu[a, y], (Hp_ayu[a, y] / pH[a,y,2,1]) - Hp_ayu[a, y])  
 		Rp_ay[a, y] <- Rp_ayg[a, y] + Rp_ayu[a, y]
 
 		#Black rockfish
@@ -524,7 +524,7 @@ for (a in 1:A){
 		Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
 
 		Rb_ayg[a, y] <- (Hb_ayg[a, y] / pH[a,y,1,1]) - Hb_ayg[a, y]   
-		Rb_ayu[a, y] <- (Hb_ayu[a, y] / pH[a,y,2,1]) - Hb_ayu[a, y]  
+		Rb_ayu[a, y] <- min(3*Hb_ayu[a, y], (Hb_ayu[a, y] / pH[a,y,2,1]) - Hb_ayu[a, y])  
 		Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
 		#Yelloweye rockfish

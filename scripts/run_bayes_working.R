@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 25E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 40E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -63,8 +63,8 @@ mod <- "Gen3aa_indcomp_pH33B2share_swhsR_FULL"
 mod <- "Gen3aa_indcomp_no_swhs_rel_FULL"
 mod <- "Gen3aa_indcomp_swhsR_FULL"
 
-mod <- "Gen3ab_indcomp_no_swhs_rel_FULL" #separate B4 for pH by species grouping
-mod <- "Gen3ab_indcomp_swhsR_FULL" #separate B4 for pH by species grouping
+mod <- "Gen3ab_indcomp_no_swhs_rel_FULL" #separate B4 for pH by species grouping; 4e+6; 2.6 days; 0.9142 
+mod <- "Gen3ab_indcomp_swhsR_FULL" #separate B4 for pH by species grouping; 2.5e+6; 2.65 days 0.9485
 
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 #  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
@@ -75,8 +75,8 @@ mod <- "Gen3ab_indcomp_swhsR_FULL" #separate B4 for pH by species grouping
 use_inits = "yes"
 
 use_this_model <- "Gen3aa_indcomp_pH33flat_no_swhs_rel_FULL_thru2023_5e+06_2025-08-25"
-use_this_model <- "Gen3aa_indcomp_pH33B2share_no_swhs_rel_FULL_thru2023_5e+06_2025-08-26"
-use_this_model <- "Gen3aa_indcomp_no_swhs_rel_FULL_thru2023_2500000_2025-09-17"
+use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_4e+06__2025-09-24"
+use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_2500000__2025-09-24"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -543,6 +543,55 @@ get_Rhat <- function(post, cutoff = 1.1){
 }
 
 
+#Get posteriors of bad parameters:
+sumtab <- postH$summary
+bad_params <- rownames(sumtab[sumtab[,"Rhat"] > 1.01, , drop = FALSE])
+bad_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  filter(Rhat > 1.1) %>%
+  select(parameter, mean, median = `50%`, Rhat) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         Rhat = round(Rhat,3))
+
+View(bad_df)
+
+bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter))
+
+bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) ) %>%
+  filter(!grepl("_mort",parameter))
+
+bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter))
+
+bad_betas <- bad_df %>% filter(grepl("beta", parameter))
+
+bad_Rs %>% arrange(mean)
+plot(bad_Rs$mean ~ bad_Rs$Rhat)
+hist(bad_Rs$mean)
+
+bad_Rs %>% 
+  summarise(p_lt1 = sum(median < 1)/n(),
+            p_lt10 = sum(median < 10)/n(),
+            p_lt25 = sum(median < 25)/n(),
+            p_lt100 = sum(median < 100)/n())
+
+quantile(bad_Rs$median, c(0.5,0.75,0.95,0.99))
+
+bad_Rs %>% filter(!grepl("\\[6,",parameter) & grepl("Rp_",parameter)) -> nonSOKO_Rp
+bad_Rs %>% filter(!grepl("\\[6,",parameter) & grepl("Rb_",parameter))
+
+quantile(bad_Rs$median, c(0.5,0.75,0.95,0.99))
 #--- Traceplots ----------------------------------------------------------------
 area_codes
 
@@ -580,26 +629,26 @@ unconv %>%
 jagsUI::traceplot(postH, 
                   parameters = c("beta3_pelagic")) 
 
+jagsUI::traceplot(postH, 
+                  parameters = c("Ry_ayu"), Rhat_min = 1.01) 
 
 jagsUI::traceplot(postH, 
-                  parameters = c("Ry_ayu")) 
+                  parameters = c("Ry_ayg"), Rhat_min = 1.01)
 jagsUI::traceplot(postH, 
-                  parameters = c("Ry_ayg"))
-jagsUI::traceplot(postH, 
-                  parameters = c("Hy_ayu"))
+                  parameters = c("Hy_ayu"), Rhat_min = 1.01)
 
 jagsUI::traceplot(postH, 
-                  parameters = c("Ro_ayg")) 
+                  parameters = c("Ro_ayg"), Rhat_min = 1.01) 
 jagsUI::traceplot(postH, 
-                  parameters = c("Rs_ayu")) 
+                  parameters = c("Rs_ayu"), Rhat_min = 1.01) 
 jagsUI::traceplot(postH, 
-                  parameters = c("Rb_ayu")) 
+                  parameters = c("Rb_ayu"), Rhat_min = 1.01) 
 jagsUI::traceplot(postH, 
-                  parameters = c("Rb_ayg"))
+                  parameters = c("Rb_ayg"), Rhat_min = 1.01)
 jagsUI::traceplot(postH, 
-                  parameters = c("Hb_ayu"))
+                  parameters = c("Hb_ayu"), Rhat_min = 1.01)
 jagsUI::traceplot(postH, 
-                  parameters = c("Rp_ayu")) 
+                  parameters = c("Rp_ayu"), Rhat_min = 1.01) 
 
 jagsUI::traceplot(postH, 
                   parameters = c("beta1_pH"))
@@ -747,6 +796,121 @@ library(coda)
 library(shinystan)
 launch_shinystan(as.shinystan(postH$samples))
 
+#---------------------------------------------------------------------------
+# SOK2SAP wants to launch old release estimates off into space. Examine:
+full_join(as.data.frame(
+  rbind(t(postH$mean$H_ay),
+        t(postH$mean$Hp_ay),
+        t(postH$mean$Hb_ay),
+        t(postH$mean$Hy_ay),
+        t(postH$mean$Ho_ay))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  as.data.frame(
+    rbind(t(postH$mean$R_ay),
+          t(postH$mean$Rp_ay),
+          t(postH$mean$Rb_ay),
+          t(postH$mean$Ry_ay),
+          t(postH$mean$Ro_ay))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "R") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  by = c("year","est","area")) %>%
+  mutate(dif = H-R,
+         dif_mult = R/H) %>% arrange(est,-dif_mult) -> H_vs_R_comp
+
+View(H_vs_R_comp)
+
+ggplot(H_vs_R_comp %>% filter(est != "YE"),
+       aes(dif_mult, col = est, fill = est)) +
+  geom_density(binwidth = 50) +
+  facet_wrap(~area, scale = "free")
+
+# Check by user group
+full_join(as.data.frame(
+  rbind(t(postH$mean$H_ayg),
+        t(postH$mean$Hp_ayg),
+        t(postH$mean$Hb_ayg),
+        t(postH$mean$Hy_ayg),
+        t(postH$mean$Ho_ayg))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  as.data.frame(
+    rbind(t(postH$mean$R_ayg),
+          t(postH$mean$Rp_ayg),
+          t(postH$mean$Rb_ayg),
+          t(postH$mean$Ry_ayg),
+          t(postH$mean$Ro_ayg))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "R") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  by = c("year","est","area")) %>%
+  mutate(dif = H-R,
+         dif_mult = R/H) -> H_vs_R_comp_GUI
+
+View(H_vs_R_comp_GUI %>% filter(est %in% c("B","Pel")) %>% arrange(-dif_mult))
+
+full_join(as.data.frame(
+  rbind(t(postH$mean$H_ayu),
+        t(postH$mean$Hp_ayu),
+        t(postH$mean$Hb_ayu),
+        t(postH$mean$Hy_ayu),
+        t(postH$mean$Ho_ayu))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  as.data.frame(
+    rbind(t(postH$mean$R_ayu),
+          t(postH$mean$Rp_ayu),
+          t(postH$mean$Rb_ayu),
+          t(postH$mean$Ry_ayu),
+          t(postH$mean$Ro_ayu))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 5),
+           est = rep(c("Tot", "Pel",
+                       "B",
+                       "YE",
+                       "O"), each = Y)) %>%
+    pivot_longer(!c(year, est), names_to = "area", values_to = "R") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+  by = c("year","est","area")) %>%
+  mutate(dif = H-R,
+         dif_mult = R/H) -> H_vs_R_comp_PRI
+
+View(H_vs_R_comp_PRI %>% filter(est %in% c("B","Pel")) %>% arrange(-dif_mult))
+
+print(H_vs_R_comp_PRI %>%
+  group_by(est,area) %>%
+  summarise(max_dif = max(dif_mult)),
+  n=100)
+
 # Inspect posterior --------------------------------------------------------
 str(postH)
 
@@ -776,8 +940,9 @@ as.data.frame(
   mutate(year = rep(start_yr:end_yr, times = 3),
          source = rep(c("SWHS", "trend", "H"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "H") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = H, color = source)) +
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) -> Hest
+
+  ggplot(Hest,aes(x = year, y = H, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
 
@@ -789,10 +954,23 @@ as.data.frame(
   mutate(year = rep(start_yr:end_yr, times = 2),
          source = rep(c("SWHS", "R"), each = Y)) %>%
   pivot_longer(!c(year, source), names_to = "area", values_to = "R") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  ggplot(aes(x = year, y = R, color = source)) +
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) -> Rest
+
+  ggplot(Rest,aes(x = year, y = R, color = source)) +
   geom_line() + 
   facet_wrap(. ~ area, scales = "free")
+  
+  unique(Rest$source)
+  unique(Hest$source)
+  
+full_join(Hest %>% filter(source == "H") %>% select(-source),
+          Rest %>% filter(source == "R") %>% select(-source),
+          by = c("year","area")) %>%
+  mutate(dif = H-R,
+         dif_mult = R/H) %>% arrange(-dif_mult) -> H_vs_R_comp
+
+View(H_vs_R_comp)
+hist(H_vs_R_comp$dif_mult, breaks = 50)
 
 rhat_exam %>% group_by(variable,area) %>%
   summarise(n = n(),
