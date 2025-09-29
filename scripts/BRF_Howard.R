@@ -34,8 +34,11 @@ library(ggplot2)
 library(janitor)
 library(haven)
 library(openxlsx)
+library(dplyr)
 
-YEAR <- 2023
+library(stringr)
+
+YEAR <- 2024
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -54,28 +57,50 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 LB_H %>% filter(year == YEAR)
 #get SE port sampling data:
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
-                     sheet = "Sheet1",
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
+                     #sheet = "Sheet1", 2023
+                     sheet = "MHS num Fish", #2024; different format
                      range = paste0("A1:AZ1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #get SC port sampling data:
 SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
+SC_port %>% filter(Year == YEAR)
 
 #combine for species comp estimates
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
 
-# need to add extra columns to SC to facilitate cobining the two regions for analysis
+# need to add extra columns to SC to facilitate combining the two regions for analysis
+# in 2024 SE changed some of their column names. Fuckinghell.
+SE_port <- SE_port %>%
+  rename_with(~ str_replace_all(.x, "ave", "avg"))
+
+colnames(SE_port); ncol(SE_port)
+colnames(SC_port); ncol(SC_port)
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+#OK, one of SC names is off. Motherf#$%r
+SC_port %>% rename(var_pBRFinPel = varBRFinPel) -> SC_port
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+
+se_columns <- setdiff(colnames(SE_port),colnames(SC_port))
+
 dif <- ncol(SE_port)-ncol(SC_port)
-new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+#new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+new_columns <- setNames(as.list(rep(NA, dif)), se_columns)
 
 SC_port <- SC_port %>%
   mutate(!!!new_columns)
 ncol(SE_port) - ncol(SC_port)
 
-names(SC_port) <- names(SE_port)
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
 
 spec_apor <- rbind(SE_port,SC_port) %>% 
   rename(RptArea = Rpt_Area) %>%
@@ -103,6 +128,8 @@ spec_apor <- spec_apor %>%
   )) %>%
   mutate(RptArea = factor(RptArea))
 
+spec_apor %>% data.frame()
+
 left_join(spec_apor,
           spec_apor %>% filter(Year == 2019) %>% 
             select(RptArea,User,
@@ -111,6 +138,8 @@ left_join(spec_apor,
                    use_pBRFinPel_aRA = pBRFinPel_avgRptArea,
                    use_var_pBRFinPel_aRA = var_pBRFinPel_avgRptArea),
           by = c("RptArea","User")) -> spec_apor
+
+View(spec_apor %>% filter(Year == YEAR) %>% data.frame())
 
 # look at port sample sizes for Kodiak in new year:
 Kod <- spec_apor %>% filter(Year == YEAR,
@@ -250,28 +279,28 @@ BRF_lastR <- read.csv(paste0("output/BRF_rel_Howard_thru",YEAR-1,".csv"))
 
 #*** Bug in code with releases; RptArea got changed to numbers instead of names
 #Temp fix here:
-BRF_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
-                       sheet = "BRF release",
-                       range = paste0("A1:Y1000"), 
-                       na = "NA")
-BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
+#BRF_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
+#                       sheet = "BRF release",
+#                       range = paste0("A1:Y1000"), 
+#                       na = "NA")
+#BRF_lastR <- BRF_lastR[rowSums(is.na(BRF_lastR)) != ncol(BRF_lastR), ]
 #YE sheet good so will use it to relabel RptArea
-YE_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
-                       sheet = "YE release",
-                       range = paste0("A1:AB1000"), 
-                       na = "NA")
-YE_lastR <- YE_lastR[rowSums(is.na(YE_lastR)) != ncol(YE_lastR), ]
+#YE_lastR <- read_xlsx(paste0(".\\output\\release_estimates_Howard_thru",YEAR-1,".xlsx"), 
+#                       sheet = "YE release",
+#                       range = paste0("A1:AB1000"), 
+#                       na = "NA")
+#YE_lastR <- YE_lastR[rowSums(is.na(YE_lastR)) != ncol(YE_lastR), ]
 
-match <- YE_lastR %>% select(Region,year,RptArea,Log_rfrel)
+#match <- YE_lastR %>% select(Region,year,RptArea,Log_rfrel)
 
-BRF_lastR %>% mutate(RptArea_num = RptArea) %>% select(-RptArea) %>%
-  left_join(match, by = c("Region","year","Log_rfrel")) %>%
-  relocate(RptArea, .after = year) %>%
-  relocate(RptArea_num, .after = RptArea) -> try
-with(try,table(RptArea,RptArea_num))
-View(try)
+#BRF_lastR %>% mutate(RptArea_num = RptArea) %>% select(-RptArea) %>%
+#  left_join(match, by = c("Region","year","Log_rfrel")) %>%
+#  relocate(RptArea, .after = year) %>%
+#  relocate(RptArea_num, .after = RptArea) -> try
+#with(try,table(RptArea,RptArea_num))
+#View(try)
 
-BRF_lastR <- try %>% select(-RptArea_num)
+#BRF_lastR <- try %>% select(-RptArea_num)
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:
@@ -326,7 +355,7 @@ BRF_harvest <- cbind(BRF_guiH,break_col,BRF_priH %>% select(-c(Region,year,RptAr
          TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
 
 # Add it onto the running sheet:
-BRF_lastH <- BRF_lastH[,-1] #get rid of this when doing 2024; should be saved without rownames now
+#BRF_lastH <- BRF_lastH[,-1] #get rid of this when doing 2024; should be saved without rownames now
 # colnames(BRF_lastH) <- colnames(BRF_harvest) #these should already be the same for 2023 and beyond
 #BRF_lastH <- BRF_lastH %>% data.frame() %>% 
 #  mutate(RptArea = as.factor(RptArea),
@@ -337,7 +366,7 @@ ncol(BRF_lastH); ncol(BRF_harvest)
 
 updated_BRF_H <- rbind(BRF_lastH,BRF_harvest) %>% arrange(Region,RptArea,year)
 
-updated_BRF_H %>% filter(year == 2023 ) 
+updated_BRF_H %>% filter(year >= 2022 ) 
 #checks out! just save one 2022 row
 #updated_BRF_H <- rbind(BRF_lastH %>% filter(year < YEAR),
 #                       BRF_harvest) %>% 
@@ -406,7 +435,7 @@ BRF_release <- cbind(BRF_guiR,break_col,BRF_priR %>% select(-c(Region,year,RptAr
          TotalBRF_UPRLWR95 = 1.96 * sqrt_totalBRF)
 
 # Add it onto the running sheet:
-#BRF_lastR <- BRF_lastR[,-1]
+BRF_lastR <- BRF_lastR %>% select(-X)
 #colnames(BRF_lastR) <- colnames(BRF_release)
 #BRF_lastR <- BRF_lastR %>% data.frame() %>% 
 #  mutate(RptArea = as.factor(RptArea),
@@ -417,7 +446,7 @@ ncol(BRF_lastR); ncol(BRF_release)
 
 updated_BRF_R <- rbind(BRF_lastR,BRF_release) %>% arrange(Region,RptArea,year)
 
-updated_BRF_R %>% filter(year == 2023)
+updated_BRF_R %>% filter(year >= 2023)
 # CSEO values diff between new R and old excel. Foud a copy-paste error in excel version:
 
 #updated_BRF_R <- rbind(BRF_lastR %>% filter(year < YEAR),

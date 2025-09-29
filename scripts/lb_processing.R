@@ -25,9 +25,9 @@ library(janitor)
 library(haven)
 
 # year of new data
-YEAR <- 2023
+YEAR <- 2024
 
-LB_file_name <- "2023LogbookData08022024.csv" #date is the date the data was pulled by logbook folks
+LB_file_name <- "2024LogbookData.9.15.2025.csv" #date is the date the data was pulled by logbook folks
 
 # Logbook data -----------------------------------------------------------------
 
@@ -40,7 +40,10 @@ raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bd
 raw_log23 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
   clean_names()
 
-raw_log <- raw_log23
+raw_log24 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
+  clean_names()
+
+raw_log <- raw_log24
 
 log <- raw_log %>% 
   mutate(
@@ -382,7 +385,7 @@ write.csv(res_log,paste0("data/raw_dat/",YEAR,"/LB_harv_by_Residency.csv"), row.
 
 # RELEASES #-----------------------------------------------------------------------
 with(log, table(port_site,RptArea)) %>% data.frame() ->sites
-write.csv(sites,"data/port_sites_andRptArea.csv")
+write.csv(sites,paste0("data/port_sites_andRptArea_iter",YEAR,".csv"))
 
 # Diagnostic - Check CF Mgmt Area assignments (RELEASE)
 freq_table <- log %>% #filter(region == "SC") %>%
@@ -399,7 +402,7 @@ print(freq_table, n=24)
 # are UNDERESTIMATED! The largest difference I saw was ~10% so not a major issue
 # but worth considering until this is rerun through the entire time series (ugh).
 # R code is correct;
-# Here is the code that shows the under counting in the SAS code
+# Here is the code that shows the under counting in the SAS code; line 406-443 can be skipped now
 {
 # FLAG!! Something is fucked up with release data. Code for harvests mirrors SAS output
 # but release data does not. SE matches, but not SC. Did some digging but no luck. Maybe? something is off
@@ -517,7 +520,7 @@ R_sum_1 <- log_sorted_1 %>%
   filter(region %in% c("SC"))
 
 # Print the summary for the first block
-print(R_sum_1)
+print(R_sum_1, n = 100)
 
 # Second block: RF release by SWHS and CF Management Unit
 # Sort by year, port_site, port_SWHS, and RptArea
@@ -545,10 +548,10 @@ db <- log %>% filter(RptArea == "CI") %>%
 sum(db$p_rock_rel, na.rm = T)
 View(db)
 # Title equivalent for the first block (optional)
-cat('Southeast Region charter KNOWN rf release by port_SWHS and CF Management Unit caught (logbook).\n')
+#cat('Southeast Region charter KNOWN rf release by port_SWHS and CF Management Unit caught (logbook).\n')
 
 # Title equivalent for the second block (optional)
-cat('Southeast Region charter KNOWN rf release by port_SWHS and CF Management Unit caught (logbook).\n')
+#cat('Southeast Region charter KNOWN rf release by port_SWHS and CF Management Unit caught (logbook).\n')
 
 # Fill in holes of missing RptArea based on port_site; this can be replaced with what I have started for groundfish harvest reporting to NMFS
 log <- log %>%
@@ -644,7 +647,7 @@ summary_harvest <- log %>%
   arrange(year, RptArea)
 
 # Print the summary of rockfish harvest
-print(summary_harvest)
+print(summary_harvest, n = 40)
 
 # Overall Region 1 rockfish harvest by CF Management Unit (CATCH)
 summary_catch <- log %>%
@@ -653,7 +656,7 @@ summary_catch <- log %>%
   arrange(year, RptArea)
 
 # Print the summary of rockfish catch
-print(summary_catch)
+print(summary_catch, n = 40)
 
 # RF harv by SWHS where port of landing is located and CF Management Unit where the fish was caught
 summary_swhs_rfharv <- log %>%
@@ -687,7 +690,7 @@ west_side_ports <- c('BEAR VALLEY LODGE', 'CRAIG', 'CALDER BAY', 'DALL ISLAND', 
 
 # Filter for only west side port sites
 Bwest <- log %>%
-  filter(port_site %in% west_side_ports)
+  filter(port_site %in% west_side_ports); Bwest
 
 # Summarise the data for west side charter logbook harvest
 summary_Bwest <- Bwest %>%
@@ -706,7 +709,8 @@ print(summary_Bwest)
 
 MissingNMFS_H %>%
   select(date, port_site, sfstat, rfharv) %>%
-  print()
+  print() 
+#none in 2024 data
 
 # Identify port sites of missing harvest data (rfharv) with a weighted frequency table
 port_site_summary_H <- MissingNMFS_H %>%
@@ -783,7 +787,7 @@ SC_appor <- left_join(SC_appor,UnknownH,by = c("port_site")) %>%
             unk_y_harv = sum(unk_y_harv * prop_y, na.rm = T),
             unk_o_harv = sum(unk_o_harv * prop_o, na.rm = T),
             tot_unk_h = unk_p_harv + unk_y_harv + unk_o_harv) %>%
-  replace(is.na(.), 0)
+  replace(is.na(.), 0); SC_appor
 
 # now add this back into final harvest estimate for the year: 
 H_sum_F <- left_join(H_sum_2,SC_appor,by = "RptArea") %>% data.frame() %>%
@@ -803,20 +807,23 @@ H_sum_F <- rbind(H_sum_F,
 
 # Add in blank line for Southwest if needed
 unique(H_sum_F$RptArea) #none in 2022
-# SOUTHWEST present in 2023: ignoring next command:
+# SOUTHWEST present in 2024: ignoring next command:
 H_sum_F %>% filter(RptArea == "SOUTHWEST")
 
-H_sum_F <- H_sum_F %>%
-  add_row(year = YEAR, RptArea = "SOUTHWEST",
-          tot_rf_harv = 0,
-          tot_pel_harv = 0,
-          tot_ye_harv = 0,
-          tot_o_harv = 0)
+if(nrow(H_sum_F %>% filter(RptArea == "SOUTHWEST")) < 1){
+  H_sum_F <- H_sum_F %>%
+    add_row(year = YEAR, RptArea = "SOUTHWEST",
+            tot_rf_harv = 0,
+            tot_pel_harv = 0,
+            tot_ye_harv = 0,
+            tot_o_harv = 0)
+}
+
 
 #-------------------------------------------------------------------------------
 # Update logbook harvest and release data sheets.
-lb_harv <- read.csv(paste0("data/processed_dat/logbook_harvest_thru",YEAR-1,".csv"))
-lb_rel <- read.csv(paste0("data/processed_dat/logbook_release_thru",YEAR-1,".csv"))
+lb_harv <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR-1,".csv"))
+lb_rel <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR-1,".csv"))
 
 #get rid of column 1 which is rown names. CHECK! This can go away once we've
 # caught up with saving everything with row.names = F
@@ -882,7 +889,7 @@ lb_harv2 %>% filter(!(RptArea == "EWYKT" & Region == "SC")) -> lb_harv2
 
 unique(lb_harv2 %>% filter(year == YEAR))
 
-write.csv(unique(lb_harv2), paste0("data/processed_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
+write.csv(unique(lb_harv2), paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"), row.names = F)
 
 #*Note... caught what appears to be a cutting and pasting error in PWSO in 2022
 
@@ -927,7 +934,7 @@ lb_rel2 %>% filter(year == YEAR)
 
 lb_rel2 %>% mutate(Region = ifelse(RptArea == "EWYKT", "SE", Region)) -> lb_rel2
 
-write.csv(unique(lb_rel2), paste0("data/processed_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
+write.csv(unique(lb_rel2), paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"), row.names = F)
 
 
 #-------------------------------------------------------------------------------
@@ -938,8 +945,8 @@ new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_harv_",YEAR,".csv"))
 new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_rel_",YEAR,".csv"))
 
 #if you are in a new session, here is where you were
-lb_H <- read.csv(paste0("data/processed_dat/logbook_harvest_thru",YEAR,".csv"))
-lb_R <- read.csv(paste0("data/processed_dat/logbook_release_thru",YEAR,".csv"))
+lb_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
+lb_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
 # otherwise
 lb_H <- unique(lb_harv2)
 lb_R <- unique(lb_rel2)

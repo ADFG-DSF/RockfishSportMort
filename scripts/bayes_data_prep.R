@@ -3,7 +3,7 @@
 #
 # Author: Phil Joy & Adam Reimer
 # 
-# Last updated: Nov 2024
+# Last updated: Oct 2025
 #
 # This script will take the raw and semi-processed rockfish data and prepare
 # it for use in the model
@@ -16,7 +16,7 @@ library(ggplot2)
 library(janitor)
 library(scales)
 
-REP_YR <- 2023
+REP_YR <- 2024
 
 #look up table for region
 lut <- 
@@ -89,8 +89,8 @@ with(amalg %>%
                       # If they are 1's then they aren't yet in the data set and
                       # need to be added in.
 
-#!!! BSAI and SOKO2SAP missing in 2022 and 2023 so need to add them back in
-H_ayg0 %>% bind_rows(amalg %>% filter(year %in% c(2022,2023) & area %in% c("BSAI","SOKO2SAP"))) %>%
+#!!! BSAI and SOKO2SAP missing in 2022 and 2023 and 2024 so need to add them back in
+H_ayg0 %>% bind_rows(amalg %>% filter(year %in% c(2022,2023,2024) & area %in% c("BSAI","SOKO2SAP"))) %>%
   arrange(area, year) -> H_ayg0
 
 #double check... 
@@ -206,6 +206,7 @@ saveRDS(R_ayg, ".\\data\\bayes_dat\\R_ayg.rds")
 # SWHS Data
 #-------------------------------------------------------------------------------
 # PRE-1996 DATA:
+# 
 #------------------------
 #need to retain unknowns to apportion out in model...
 lut_pre96 <- lut %>%
@@ -254,7 +255,8 @@ with(Chat_ay77to95, table(area, year))
 # CONTEMPORARY SWHS DATA but NO USER GROUPS:
 #------------------------
 # what is the name of this year's data file?
-swhs_dat <- "rf_byMgmtUnit_sent20240925.xlsx"
+#swhs_dat <- "rf_byMgmtUnit_sent20240925.xlsx" #2023
+swhs_dat <- "rf_byMgmtUnit_sent20250916.xlsx" #2024
 
 # Hhat_ay data ----
 Hhat_ay0 <- 
@@ -318,7 +320,9 @@ Chat_ay <- left_join(Chat_ay0, seChat_ay, by = c("year", "area", "region"))
 # Note: Ideally this would be done in the estimation model to propogate the
 # uncertainty, but while developing the base model we'll do it outside the model
 # here. -pj
+
 #-------------------------------------------------------------------------------
+
 Hhat96 <- Hhat_ay %>% filter(year == 1996)
 
 H_Appors <- Hhat96 %>% 
@@ -432,11 +436,25 @@ Chat_ay <- rbind(Chat_ay77to95 %>% mutate(seC = NA) %>% data.frame(),
   arrange(region,area,year)
 #save it
 Chat_ay %>% filter (area == "UNKNOWN")
+
+Chat_ay %>%
+  select(year, area, region, C, seC) %>%
+  ggplot(aes(year, C)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
+Chat_ay %>%
+  select(year, area, region, C, seC, cv) %>%
+  ggplot(aes(year, cv)) +
+  geom_line() +
+  facet_wrap(area ~ ., scales = "free")
+
 saveRDS(Chat_ay, ".\\data\\bayes_dat\\Chat_ay.rds")
 
-#------------------------
+unique(Chat_ay$year)
+#-------------------------------------------------------------------------------
 # CONTEMPORARY SWHS DATA WITH USER GROUPS:
-#------------------------
+#-------------------------------------------------------------------------------
 # Hhat_ayu data ----
 Hhat_ayg0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\",swhs_dat), 
@@ -558,26 +576,47 @@ saveRDS(Chat_ayu, ".\\data\\bayes_dat\\Chat_ayu.rds")
 #-------------------------------------------------------------------------------
 # Species comp / port sampling data ----
 #-------------------------------------------------------------------------------
+S_ayu_ly <- readRDS(".//data//bayes_dat//S_ayu.rds") #last year's data
+table(S_ayu_ly$region, S_ayu_ly$area)
+table(S_ayu_ly$year, S_ayu_ly$area)
 
 sppcompR1_0 <- 
-  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-            range = c("A1:I1000")),
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-            range = c("AH1:AH1000")),
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-            range = c("AQ1:AQ1000")) ) %>%
+ # cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 2023
+#            range = c("A1:I1000")),
+#  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
+#            range = c("AH1:AH1000")),
+#  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
+#            range = c("AQ1:AQ1000")) ) %>%
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,".xlsx"), 
+            range = c("A1:R1000"))  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
   filter_all(any_vars(!is.na(.))) %>%
-  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n","notye_nonpel_n","dsr_n","slope_n"),as.numeric)
+  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
+              "notye_nonpel_n","dsr_n","slope_n",
+              "pelnbrf_n","dsrnye_n","slope_lg_n","slope_sm_n"),as.numeric)
 
 unique(sppcompR1_0$user)
+unique(sppcompR1_0$year)
 
-table(sppcompR1_0$area)
+table(sppcompR1_0$region, sppcompR1_0$area)
+table(sppcompR1_0$year, sppcompR1_0$area)
+
+SE_ly <- S_ayu_ly %>% filter(region == "Southeast")
+
+with(SE_ly,
+     table(year,area)) #%>% as.tibble() #select(year,CSEO)
+
+#As of 9/29/25 the new SE data is fucked up. For now I may just patch on the new
+# 2024 data to the old data through 2023.
+
+
 
 str(sppcompR1_0)
 #Note EKYKT = IBS + EKYT ; checking , should be all TRUE
+# Not recorded in new SE data in 2025 (for 2024 data calcs)
 sppcompR1_0$totalrf_n[sppcompR1_0$area == "EWYKT"] == sppcompR1_0$totalrf_n[sppcompR1_0$area == "EYKT"] + sppcompR1_0$totalrf_n[sppcompR1_0$area == "IBS"]
 
 sppcompR1 <- 
@@ -586,6 +625,8 @@ sppcompR1 <-
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
   arrange(region, area, year)
 table(sppcompR1$area)
+
+
 
 sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv")) %>%
 #  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv"), 
@@ -600,6 +641,49 @@ unique(sppcompR2_0$user)
 table(sppcompR2_0$area)
 
 with(sppcompR2_0, table(area,user))
+
+# Noted in 2024 that there were some Reg2 based charters fishing in the EWYKT:
+sppcompR2_0 %>% filter(area %in% c("EYKT","IBS"))
+# remove them from Region 2 and add to region 1:
+sppcompR2_0 %>% filter(area %in% c("EYKT","IBS")) %>%
+  summarize(year = "2024", user = "charter", area = "EWYKT", region = "Southeast",
+            totalrf_n = sum(totalrf_n),
+            ye_n = sum(ye_n),
+            black_n = sum(black_n),
+            pelagic_n = sum(pelagic_n),
+            nonpel_n = sum(nonpel_n),
+            notye_nonpel_n =  sum(notye_nonpel_n),
+            dsr_n = 0,slope_n = 0,
+            pelnbrf_n = pelagic_n - black_n,
+            slope_sm_n = 0, slope_lg_n = 0,
+            dsrnye_n = 0) -> R1fish_in_R2ports
+
+sppcompR1 %>% filter(area == "EWYKT" & year == REP_YR & user == "charter") -> R1_EWYKT
+
+coldifs <- setdiff(colnames(sppcompR1),colnames(R1fish_in_R2ports))
+
+rbind(R1_EWYKT,
+      R1fish_in_R2ports) %>%
+  summarize(year = "2024", user = "charter", area = "EWYKT", region = "Southeast",
+            totalrf_n = sum(totalrf_n),
+            ye_n = sum(ye_n),
+            black_n = sum(black_n),
+            pelagic_n = sum(pelagic_n),
+            nonpel_n = sum(nonpel_n),
+            notye_nonpel_n =  sum(notye_nonpel_n),
+            dsr_n = sum(dsr_n),
+            slope_n = sum(dsr_n),
+            pelnbrf_n = sum(pelnbrf_n),
+            slope_sm_n = sum(slope_sm_n), 
+            slope_lg_n = sum(slope_lg_n),
+            dsrnye_n = sum(dsrnye_n)) -> patch
+
+sppcompR1 %>%
+  rows_update(patch, by = c("year","user","area")) -> try
+R1_EWYKT
+try %>% filter(area == "EWYKT" & year == REP_YR & user == "charter")
+
+sppcompR1 <- try
 
 sppcompR2_0 %>% filter(area == "EASTSIDE")
 #Note no samples from SOKO2SAP (= southeast + southwest + sakpen + chignik)
@@ -619,12 +703,15 @@ sppcompR2 <-
 table(sppcompR2$region, sppcompR2$area)
 
 S_ayu <- 
-  rbind(sppcompR1, sppcompR2) %>%
+  rbind(sppcompR1 %>%
+          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsrnye_n)), 
+        sppcompR2) %>%
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
   arrange(user, area, year)
 
 table(S_ayu$region, S_ayu$area)
 saveRDS(S_ayu, ".\\data\\bayes_dat\\S_ayu.rds")
+
 
 #-------------------------------------------------------------------------------
 # Kodiak hydroacoustic supplemental data  ----

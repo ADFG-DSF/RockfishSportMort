@@ -38,7 +38,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2023
+YEAR <- 2024
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -59,8 +59,10 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 
 #get SE port sampling data:
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
-                     sheet = "Sheet1",
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
+                     #sheet = "Sheet1", 2023
+                     sheet = "MHS num Fish", #2024; different format
                      range = paste0("A1:AZ1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
@@ -72,22 +74,42 @@ SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_th
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
 
-# need to add extra columns to SC to facilitate cobining the two regions for analysis
+# need to add extra columns to SC to facilitate combining the two regions for analysis
+# in 2024 SE changed some of their column names. Fuckinghell.
+SE_port <- SE_port %>%
+  rename_with(~ str_replace_all(.x, "ave", "avg"))
+
+colnames(SE_port); ncol(SE_port)
+colnames(SC_port); ncol(SC_port)
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+#OK, one of SC names is off. Motherf#$%r
+SC_port %>% rename(var_pBRFinPel = varBRFinPel) -> SC_port
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+
+se_columns <- setdiff(colnames(SE_port),colnames(SC_port))
+
 dif <- ncol(SE_port)-ncol(SC_port)
-new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+#new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+new_columns <- setNames(as.list(rep(NA, dif)), se_columns)
 
 SC_port <- SC_port %>%
   mutate(!!!new_columns)
 ncol(SE_port) - ncol(SC_port)
 
-names(SC_port) <- names(SE_port)
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
 
 spec_apor <- rbind(SE_port,SC_port) %>% 
   rename(RptArea = Rpt_Area) %>%
   mutate(User = as.factor(ifelse(User == "Charter","charter",
-                       ifelse(User == "Private","private",User))),
+                                 ifelse(User == "Private","private",User))),
          RptArea = as.factor(RptArea)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+  #mutate(RptArea = as.factor(ifelse(RptArea %in% c("WESTSIDE"),"WKMA",RptArea))) %>%
+  mutate_if(is.character, ~as.numeric(.)) 
 
 str(spec_apor)
 
@@ -109,7 +131,7 @@ str(spec_apor)
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
 DSR_lastH <- read.csv(paste0("output/DSR_harv_Howard_thru",YEAR-1,".csv"))
 DSR_lastR <- read.csv(paste0("output/DSR_rel_Howard_thru",YEAR-1,".csv"))
-DSR_lastH<-DSR_lastH[,-1] #get rid of this when the code is rerun clean
+#DSR_lastH<-DSR_lastH[,-1] #get rid of this when the code is rerun clean
 #DSR_lastR<-DSR_lastR[,-1] #get rid of this when the code is rerun clean
 
 #DSR_lastH %>% mutate(Region = "SE") %>%

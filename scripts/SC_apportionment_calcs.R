@@ -25,27 +25,32 @@ library(ggplot2)
 library(janitor)
 library(haven)
 
-YEAR <- 2023
+YEAR <- 2024
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
 new_R <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_rel_",YEAR,".csv"))
 
 #get SE port sampling data:
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
-                     sheet = "Sheet1",
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
+                     #sheet = "Sheet1", 2023
+                     sheet = "MHS num Fish", #2024; different format
                      range = paste0("A1:AZ1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #Read in SC port sampling data: 
-SC_port_gui <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_guided_093024.csv")
-SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.csv")
+#SC_port_gui <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_guided_093024.csv")
+#SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_093024.csv")
+SC_port_gui <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_guided_091725.csv")
+SC_port_priv <- read.csv("data/raw_dat/Species_comp_SC/Spcomp_unguided_091725.csv")
 
 #For Southcentral we need to weight the samples for PWS and NG respective to the landings:
 # Port level data comes with the IPHC reports from Jake:
 #SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SC\\IPHC_2022_guipri_all_sent09282023.xlsx"), #2022
-SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\IPHC_2023_guipri_all_sent20240924.xlsx"), 
+#SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\",REP_YR,"\\IPHC_2023_guipri_all_sent20240924.xlsx"), #2023
+SWHS_port <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\IPHC_2024_guipri_all_sent09162025.xlsx"), 
                        sheet = "Halibut Area Harvest",
                        range = paste0("A5:X41"), 
                        na = "NA") %>% clean_names()
@@ -477,7 +482,7 @@ SE_port
 SC_port_gui
 SC_port_priv
 
-SC_port_priv %>% filter(CFMU == "EASTSIDE" & YEAR == 2022)
+SC_port_priv %>% filter(CFMU == "EASTSIDE" & YEAR >= 2022)
 
 #Portion calculation already done for SE (Go Chris!)
 #Need to do it for SC
@@ -657,19 +662,22 @@ lastyr <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thr
 
 lastyr %>%  filter(Rpt_Area == "EASTSIDE" & Year > 2021)
 
-lastyr <- lastyr %>% filter(Year < 2022)
+lastyr <- lastyr %>% filter(Year <= YEAR)
 
 tosave <- SC_port_fin[,-c(34:43)]
 names(tosave) <-names(lastyr)
 
+unique(tosave$Year)
+unique(lastyr$Year)
+
 #checking calcs
 View(rbind(lastyr,tosave) %>% arrange(User, Rpt_Area, Year) %>% filter(Year > 2018) %>% data.frame())
 
-Species_comp_Region2
+
 
 final <- rbind(lastyr %>% filter(Year < YEAR),
                tosave %>% 
-                 filter(Year %in% c(YEAR-1,YEAR))) %>% #filter(Year == YEAR)
+                 filter(Year %in% c(YEAR))) %>% #filter(Year == YEAR)
   arrange(User, Rpt_Area, Year) %>% data.frame()
 View(final)
 

@@ -26,7 +26,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2023
+YEAR <- 2024
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -57,53 +57,74 @@ head(all_R %>% data.frame(), n = 5); head(new_R %>% data.frame(), n = 5)
 #read in logbook harvest and release estimate
 LB_H <- read.csv(paste0("data/raw_dat/logbook_harvest_thru",YEAR,".csv"))
 LB_R <- read.csv(paste0("data/raw_dat/logbook_release_thru",YEAR,".csv"))
-LB_H<-LB_H[,-1] #get rid of this when the code is rerun clean
-LB_R<-LB_R[,-1] #get rid of this when the code is rerun clean
+
 
 #temp patch
 LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 
 #get SE port sampling data:
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
-                     sheet = "Sheet1",
-                     range = paste0("A1:AZ1000"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
+                     #sheet = "Sheet1", 2023
+                     sheet = "MHS num Fish", #2024; different format
+                     range = paste0("A1:KE1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #get SC port sampling data:
-SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,"_INCOMPLETE.csv"))
-SC_port <- SC_port[,-1]
+SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
+
 #combine for species comp estimates
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
 
 # need to add extra columns to SC to facilitate combining the two regions for analysis
+# in 2024 SE changed some of their column names. Fuckinghell.
+SE_port <- SE_port %>%
+  rename_with(~ str_replace_all(.x, "ave", "avg"))
+
+colnames(SE_port); ncol(SE_port)
+colnames(SC_port); ncol(SC_port)
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+#OK, one of SC names is off. Motherf#$%r
+SC_port %>% rename(var_pBRFinPel = varBRFinPel) -> SC_port
+
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
+
+se_columns <- setdiff(colnames(SE_port),colnames(SC_port))
+
 dif <- ncol(SE_port)-ncol(SC_port)
-new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+#new_columns <- setNames(as.list(rep(NA, dif)), paste0("new", 1:dif))
+new_columns <- setNames(as.list(rep(NA, dif)), se_columns)
 
 SC_port <- SC_port %>%
   mutate(!!!new_columns)
 ncol(SE_port) - ncol(SC_port)
 
-names(SC_port) <- names(SE_port)
+setdiff(colnames(SE_port),colnames(SC_port))
+setdiff(colnames(SC_port),colnames(SE_port))
 
 spec_apor <- rbind(SE_port,SC_port) %>% 
   rename(RptArea = Rpt_Area) %>%
   mutate(User = as.factor(ifelse(User == "Charter","charter",
-                       ifelse(User == "Private","private",User))),
+                                 ifelse(User == "Private","private",User))),
          RptArea = as.factor(RptArea)) %>% 
-  mutate_if(is.character, ~as.numeric(.))
+  #mutate(RptArea = as.factor(ifelse(RptArea %in% c("WESTSIDE"),"WKMA",RptArea))) %>%
+  mutate_if(is.character, ~as.numeric(.)) 
+
+
 
 str(spec_apor)
 
 #-------------------------------------------------------------------------------
 # No previous Pelagic calculations, so will need to call up '22 ests when doing '23 ests in Oct '24
 # 2024 coding starting with 2022 data using the old spreadsheets to compare and convert
-PEL_lastH <- read.csv(paste0("output/PEL_harv_Howard_thru",YEAR-1,".csv"))
-PEL_lastR <- read.csv(paste0("output/PEL_rel_Howard_thru",YEAR-1,".csv"))
-PEL_lastH<-PEL_lastH[,-1] #get rid of this when the code is rerun clean
-PEL_lastR<-PEL_lastR[,-1] #get rid of this when the code is rerun clean
+PEL_lastH <- read.csv(paste0("output/PEL_harv_Howard_thru",YEAR-1,".csv")) %>% select(-X)
+PEL_lastR <- read.csv(paste0("output/PEL_rel_Howard_thru",YEAR-1,".csv")) %>% select(-X)
 
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:

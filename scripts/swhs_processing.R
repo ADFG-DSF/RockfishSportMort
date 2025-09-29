@@ -3,7 +3,7 @@
 ## release and mortality estimation
 ##
 ## Author: Phil Joy
-## Last updated: 10/24
+## Last updated: 10/25
 ##
 ## Data sources:
 ## Statewide Harvest Survey SWHS (Nick Smith at nick.smith@alaska.gov)
@@ -18,12 +18,14 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 
-YEAR <- 2023
+YEAR <- 2024
 
 #2022
 SWHS_file_name <- "rf_byMgmtUnit_20240305.xlsx"
 #2023
 SWHS_file_name <- "rf_byMgmtUnit_sent20240925.xlsx"
+#2024
+SWHS_file_name <- "rf_byMgmtUnit_sent20250916.xlsx"
 
 # KODIAK: Between 2017 and 2021 Kodiak harvests were not handled properly. The last
 # FS I confused the sample size requirements for SWHS responses (12+) and those 
@@ -39,46 +41,46 @@ gui_cat <- #guided catch
   read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "gui_cat",
             range = paste0("A4:R",YEAR-2011+5), 
-            na = "NA") %>% rename_all(~ gsub("\"", "", .))
+            na = "NA") %>% rename_all(~ gsub("\"", "", .)); gui_cat
 
 
 gui_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "guicat_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
-                        na = "NA") %>% rename_all(~ gsub("\"", "", .))
+                        na = "NA") %>% rename_all(~ gsub("\"", "", .)); gui_cat_se
 
 gui_har <- #guided harvest
   read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "gui_har",
             range = paste0("A4:R",YEAR-2011+5), 
-            na = "NA") %>% rename_all(~ gsub("\"", "", .))
+            na = "NA") %>% rename_all(~ gsub("\"", "", .)); gui_har
 
 gui_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "guihar_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
-                        na = "NA") %>% rename_all(~ gsub("\"", "", .))
+                        na = "NA") %>% rename_all(~ gsub("\"", "", .)); gui_har_se
 
 pri_cat <- #prvate catch
   read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "pri_cat",
             range = paste0("A4:R",YEAR-2011+5), 
-            na = "NA") %>% rename_all(~ gsub("\"", "", .))
+            na = "NA") %>% rename_all(~ gsub("\"", "", .)); pri_cat
 
 pri_cat_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "pricat_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
-                        na = "NA") %>% rename_all(~ gsub("\"", "", .))
+                        na = "NA") %>% rename_all(~ gsub("\"", "", .)); pri_cat_se
 
 pri_har <- #private catch
   read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
             sheet = "pri_har",
             range = paste0("A4:R",YEAR-2011+5), 
-            na = "NA") %>% rename_all(~ gsub("\"", "", .))
+            na = "NA") %>% rename_all(~ gsub("\"", "", .)); pri_har
 
 pri_har_se <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
                         sheet = "prihar_se",
                         range = paste0("A4:Q",YEAR-2011+5), 
-                        na = "NA") %>% rename_all(~ gsub("\"", "", .))
+                        na = "NA") %>% rename_all(~ gsub("\"", "", .)); pri_har_se
 
 #-------------------------------------------------------------------------------
 # Responses: Minimum sample size is 12:
@@ -86,7 +88,7 @@ gui_resp <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name),
                         sheet = "gui_resp",
                         range = paste0("A4:C1000"), 
                         na = "NA") %>% rename_all(~ gsub("\"", "", .)) %>%
-  mutate(year = YEAR) %>% select(-YEAR)
+  mutate(year = YEAR) %>% select(-YEAR); gui_resp
 gui_resp <- gui_resp[rowSums(is.na(gui_resp)) != ncol(gui_resp), ]
 
 pri_resp <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR,"\\",SWHS_file_name), 
@@ -121,13 +123,13 @@ pri_rel_se <- pri_rel_se %>% mutate(year = pri_cat$YEAR)
 # an excel worksheet since that is the format that has been used. 
 
 # SWHS HARVESTS updated from last year: 
-rock_harv <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\harvest estimates excel version_thru",YEAR-1,".xlsx"), 
-                       sheet = "rockfish harvests",
-                       range = paste0("A1:R1000"), 
-                       na = "NA")
-rock_harv <- rock_harv[rowSums(is.na(rock_harv)) != ncol(rock_harv), ]
+#rock_harv <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\harvest estimates excel version_thru",YEAR-1,".xlsx"), 
+#                       sheet = "rockfish harvests",
+#                       range = paste0("A1:R1000"), 
+#                       na = "NA")
+#rock_harv <- rock_harv[rowSums(is.na(rock_harv)) != ncol(rock_harv), ]
 
-colnames(rock_harv)
+#colnames(rock_harv)
 
 new_gharv <- gui_har[nrow(gui_har),] %>% mutate(var = "guiSWHS_rfharv") %>% select(-Total) # (G-hatSi)
 
@@ -164,16 +166,18 @@ new_H %>% slice(-1) %>%
                               ((privSWHS_rfharv)^2*var_guiSWHS_rfharv))/
                              (guiSWHS_rfharv+privSWHS_rfharv)^4)
          ) %>%
-  relocate(c(Region,year,RptArea,Log_rfharv), .before = everything()) -> new_H
+  relocate(c(Region,year,RptArea,Log_rfharv), .before = everything()) -> new_H; new_H
+
+#no harvsts in SOKO2SAP in 2024
 
 # SWHS RELEASES
-rock_rel <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\release estimates excel version_thru",YEAR-1,".xlsx"), 
-                       sheet = "rockfish release",
-                       range = paste0("A1:R1000"), 
-                       na = "NA")
-rock_rel <- rock_rel[rowSums(is.na(rock_rel)) != ncol(rock_rel), ]
+#rock_rel <- read_xlsx(paste0(".\\data\\raw_dat\\",YEAR-1,"\\release estimates excel version_thru",YEAR-1,".xlsx"), 
+#                       sheet = "rockfish release",
+#                       range = paste0("A1:R1000"), 
+#                       na = "NA")
+#rock_rel <- rock_rel[rowSums(is.na(rock_rel)) != ncol(rock_rel), ]
 
-colnames(rock_rel)
+#colnames(rock_rel)
 
 new_grel <- gui_rel[nrow(gui_rel),] %>% mutate(var = "guiSWHS_rfrel") %>% select(-Total) # (G-hatSi)
 
@@ -210,7 +214,7 @@ new_R %>% slice(-1) %>%
                               ((privSWHS_rfrel)^2*var_guiSWHS_rfrel))/
                              (guiSWHS_rfrel+privSWHS_rfrel)^4)
   ) %>%
-  relocate(c(Region,year,RptArea,Log_rfrel), .before = everything()) -> new_R
+  relocate(c(Region,year,RptArea,Log_rfrel), .before = everything()) -> new_R; new_R
 
 # KODIAK: Because of inadequate sample sizes we need to make substitutions for harvest
 # and release numbers:
