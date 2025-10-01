@@ -576,18 +576,28 @@ saveRDS(Chat_ayu, ".\\data\\bayes_dat\\Chat_ayu.rds")
 #-------------------------------------------------------------------------------
 # Species comp / port sampling data ----
 #-------------------------------------------------------------------------------
+# Southeast: When entering data in 2025 for the 2024 estimates we found a large
+# discrepency in the SE data between the two years. Going forward it will be 
+# necessary to check their data until their system is worked out to be trustworthy.
 S_ayu_ly <- readRDS(".//data//bayes_dat//S_ayu.rds") #last year's data
 table(S_ayu_ly$region, S_ayu_ly$area)
 table(S_ayu_ly$year, S_ayu_ly$area)
 
+#2023 data set
+S_ayu_ly2 <-cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), #2023
+              range = c("A1:I1000")),
+    read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), 
+              range = c("AH1:AH1000")),
+    read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), 
+              range = c("AQ1:AQ1000")) ) %>%
+  rename_all(.funs = tolower) %>%
+  mutate(user = tolower(user)) %>%
+  rename(area = rpt_area) %>% 
+  filter_all(any_vars(!is.na(.)))
+
+#2024 data set
 sppcompR1_0 <- 
- # cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 2023
-#            range = c("A1:I1000")),
-#  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-#            range = c("AH1:AH1000")),
-#  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR,".FINAL.xlsx"), 
-#            range = c("AQ1:AQ1000")) ) %>%
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,".xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
             range = c("A1:R1000"))  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
@@ -598,20 +608,56 @@ sppcompR1_0 <-
               "notye_nonpel_n","dsr_n","slope_n",
               "pelnbrf_n","dsrnye_n","slope_lg_n","slope_sm_n"),as.numeric)
 
-unique(sppcompR1_0$user)
-unique(sppcompR1_0$year)
+# compare the data:
+table(sppcompR1_0$year, sppcompR1_0$area, sppcompR1_0$user)
 
-table(sppcompR1_0$region, sppcompR1_0$area)
-table(sppcompR1_0$year, sppcompR1_0$area)
+table(S_ayu_ly$year, S_ayu_ly$area, S_ayu_ly$user)
+
+table(S_ayu_ly2$year, S_ayu_ly2$area, S_ayu_ly2$user)
 
 SE_ly <- S_ayu_ly %>% filter(region == "Southeast")
 
-with(SE_ly,
-     table(year,area)) #%>% as.tibble() #select(year,CSEO)
-
+eg24 <- sppcompR1_0 %>% filter(area == "NSEI" & user == "private")
+eg23 <- S_ayu_ly2 %>% filter(area == "NSEI" & user == "private")
+eg23; print(eg24)
 #As of 9/29/25 the new SE data is fucked up. For now I may just patch on the new
 # 2024 data to the old data through 2023.
+ as <- unique(sppcompR1_0$area)
+ us <- unique(sppcompR1_0$user)
+ 
+ for (a in as){ #a <-as[1]
+   for (u in us){ #u <- us[1]
+     eg24 <- sppcompR1_0 %>% filter(area == a & user == u) %>%
+       select(-c(slope_lg_n, slope_sm_n,dsrnye_n,pelnbrf_n,notye_nonpel_n)) %>% data.frame()
+     eg23 <- S_ayu_ly2 %>% filter(area == a & user == u) %>%
+       mutate(across(4:11, as.numeric)) %>% select(-notye_nonpel_n)
+     #str(eg24); str(eg23)
+     setdiff(eg23,eg24) -> abs_fr_24_x
+     setdiff(eg24,eg23) -> new_in_24_x
+     
+     #abs_fr_24 <- abs_fr_24 %>%
+    #   filter(!if_all(4:11, ~ .x == 0 | is.na(.x)))
+     
+     if (a == as[1] & u == us[1]){
+       abs_fr_24 <- abs_fr_24_x
+       new_in_24 <- new_in_24_x
+     } else {
+       abs_fr_24 <- rbind(abs_fr_24_x,abs_fr_24) %>%
+         arrange(area,user,year)
+       new_in_24 <- rbind(new_in_24_x,new_in_24)
+     }
+   }
+ }
 
+ rbind(abs_fr_24 %>% mutate(dat_yr = 2023, cat = "'23 data absent from '24 data",
+                            data_source = "Species_comp_Region1_forR_2023.FINAL"),
+       new_in_24 %>% mutate(dat_yr = 2024, cat = "new in '24, absent/different in '23 data",
+                            data_source = "Species_comp_MHS_Region1_forR_2024_RUN_30-Sep-2025")) %>%
+   arrange(area,user,year) %>%
+   filter(year != 2024) -> datcomp
+ 
+ #save the discrepencies to verify with Region 1 staff
+ write.csv(datcomp,"data/raw_dat/Species_comp_SE/Region1_data_discrepencies.csv", row.names = FALSE)
 
 
 str(sppcompR1_0)
