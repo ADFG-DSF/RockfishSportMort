@@ -44,7 +44,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
+res <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -2238,21 +2238,31 @@ pHpel_obs <-
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
+beta4_pH <- postH$q50$beta4_pH[,,1] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
 rbind(beta0_pH <- postH$q50$beta0_pH[,1],
       beta1_pH <- postH$q50$beta1_pH[,1],
       beta2_pH <- postH$q50$beta2_pH[,1],
-      beta3_pH <- postH$q50$beta3_pH[,1],
-      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
+      beta3_pH <- postH$q50$beta3_pH[,1]) %>% t() %>%
+#      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
   data.frame() %>%
   mutate(area = unique(H_ayg$area),
          species = "pelagic") %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
   right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
                          area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
              by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
+
   mutate(logit_pH = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
          pH = logit_to_prob(logit_pH),
          year = y + 1976,
          user = ifelse(u == 1, "charter","private"))-> pHpel_trend
@@ -2335,24 +2345,24 @@ pHye_obs <-
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
-rbind(beta0_pH <- postH$q50$beta0_pH[,2],
-      beta1_pH <- postH$q50$beta1_pH[,2],
-      beta2_pH <- postH$q50$beta2_pH[,2],
-      beta3_pH <- postH$q50$beta3_pH[,2],
-      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
-  data.frame() %>%
-  mutate(area = unique(H_ayg$area),
-         species = "ye") %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-             by = "area") %>%
-  mutate(logit_pH = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
-         pH = logit_to_prob(logit_pH),
-         year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pHye_trend
+#rbind(beta0_pH <- postH$q50$beta0_pH[,2],
+#      beta1_pH <- postH$q50$beta1_pH[,2],
+#      beta2_pH <- postH$q50$beta2_pH[,2],
+#      beta3_pH <- postH$q50$beta3_pH[,2],
+#      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
+#  data.frame() %>%
+#  mutate(area = unique(H_ayg$area),
+#         species = "ye") %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+#             by = "area") %>%
+#  mutate(logit_pH = beta0 +
+#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+#           beta4 * (u - 1),
+#         pH = logit_to_prob(logit_pH),
+#         year = y + 1976,
+#         user = ifelse(u == 1, "charter","private"))-> pHye_trend
 
 pHye_obs %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2438,24 +2448,24 @@ pHnpny_obs <-
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
-rbind(beta0_pH <- postH$q50$beta0_pH[,3],
-      beta1_pH <- postH$q50$beta1_pH[,3],
-      beta2_pH <- postH$q50$beta2_pH[,3],
-      beta3_pH <- postH$q50$beta3_pH[,3],
-      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
-  data.frame() %>%
-  mutate(area = unique(H_ayg$area),
-         species = "nonp-nonye") %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-             by = "area") %>%
-  mutate(logit_pH = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
-         pH = logit_to_prob(logit_pH),
-         year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pHnpny_trend
+#rbind(beta0_pH <- postH$q50$beta0_pH[,3],
+#      beta1_pH <- postH$q50$beta1_pH[,3],
+#      beta2_pH <- postH$q50$beta2_pH[,3],
+#      beta3_pH <- postH$q50$beta3_pH[,3],
+#      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
+#  data.frame() %>%
+#  mutate(area = unique(H_ayg$area),
+#         species = "nonp-nonye") %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+#             by = "area") %>%
+#  mutate(logit_pH = beta0 +
+#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+#           beta4 * (u - 1),
+#         pH = logit_to_prob(logit_pH),
+#         year = y + 1976,
+#         user = ifelse(u == 1, "charter","private"))-> pHnpny_trend
 
 pHnpny_obs %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2923,23 +2933,23 @@ p_dsr_obs <-
          p_dsr = comp_dsr / (comp_N - comp_pelagic),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
-rbind(beta0_dsr <- postH$q50$beta0_dsr,
-      beta1_dsr <- postH$q50$beta1_dsr,
-      beta2_dsr <- postH$q50$beta2_dsr,
-      beta3_dsr <- postH$q50$beta3_dsr,
-      beta4_dsr <- postH$q50$beta4_dsr) %>% t() %>%
-  data.frame() %>%
-  mutate(area = unique(H_ayg$area)) %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-             by = "area") %>%
-  mutate(logit_y = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
-         p_dsr = logit_to_prob(logit_y),
-         year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> dsr_trend
+#rbind(beta0_dsr <- postH$q50$beta0_dsr,
+#      beta1_dsr <- postH$q50$beta1_dsr,
+#      beta2_dsr <- postH$q50$beta2_dsr,
+#      beta3_dsr <- postH$q50$beta3_dsr,
+#      beta4_dsr <- postH$q50$beta4_dsr) %>% t() %>%
+#  data.frame() %>%
+#  mutate(area = unique(H_ayg$area)) %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+#             by = "area") %>%
+#  mutate(logit_y = beta0 +
+#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+#           beta4 * (u - 1),
+#         p_dsr = logit_to_prob(logit_y),
+#         year = y + 1976,
+#         user = ifelse(u == 1, "charter","private"))-> dsr_trend
 
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
@@ -2954,7 +2964,7 @@ rbind(p_dsr_obs) %>% filter(area %in% southeast) %>%
   geom_point() +
   #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
   geom_line(data = p_dsr_mod %>% filter(area %in% southeast), linetype = 2) +
-  geom_line(data = dsr_trend %>% filter(area %in% southeast)) +
+  #geom_line(data = dsr_trend %>% filter(area %in% southeast)) +
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
@@ -3036,23 +3046,23 @@ p_slope_obs <-
          p_slope = comp_slope / (comp_N - comp_pelagic),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
-rbind(beta0_slope <- postH$q50$beta0_slope,
-      beta1_slope <- postH$q50$beta1_slope,
-      beta2_slope <- postH$q50$beta2_slope,
-      beta3_slope <- postH$q50$beta3_slope,
-      beta4_slope <- postH$q50$beta4_slope) %>% t() %>%
-  data.frame() %>%
-  mutate(area = unique(H_ayg$area)) %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-             by = "area") %>%
-  mutate(logit_y = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
-         p_slope = logit_to_prob(logit_y),
-         year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> slope_trend
+#rbind(beta0_slope <- postH$q50$beta0_slope,
+#      beta1_slope <- postH$q50$beta1_slope,
+#      beta2_slope <- postH$q50$beta2_slope,
+#      beta3_slope <- postH$q50$beta3_slope,
+#      beta4_slope <- postH$q50$beta4_slope) %>% t() %>%
+#  data.frame() %>%
+#  mutate(area = unique(H_ayg$area)) %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+#             by = "area") %>%
+#  mutate(logit_y = beta0 +
+#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+#           beta4 * (u - 1),
+#         p_slope = logit_to_prob(logit_y),
+#         year = y + 1976,
+#         user = ifelse(u == 1, "charter","private"))-> slope_trend
 
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
@@ -3067,7 +3077,7 @@ rbind(p_slope_obs %>% filter(area %in% southeast)) %>%
   geom_point() +
   #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
   geom_line(data = p_slope_mod %>% filter(area %in% southeast), linetype = 2) +
-  geom_line(data = slope_trend %>% filter(area %in% southeast)) +
+  #geom_line(data = slope_trend %>% filter(area %in% southeast)) +
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
@@ -3149,24 +3159,24 @@ pr_slope_obs <-
          pr_slope = comp_slope / (comp_N - comp_pelagic - comp_yellow),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
-rbind(beta0_slope <- postH$q50$beta0_slope,
-      beta1_slope <- postH$q50$beta1_slope,
-      beta2_slope <- postH$q50$beta2_slope,
-      beta3_slope <- postH$q50$beta3_slope,
-      beta4_slope <- postH$q50$beta4_slope,
-      beta5_rslope <- postH$q50$beta4_slope) %>% t() %>%
-  data.frame() %>%
-  mutate(area = unique(H_ayg$area)) %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5, beta5 = X6) %>%
-  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-             by = "area") %>%
-  mutate(logit_y = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1) + beta5,
-         pr_slope = logit_to_prob(logit_y),
-         year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> rslope_trend
+#rbind(beta0_slope <- postH$q50$beta0_slope,
+#      beta1_slope <- postH$q50$beta1_slope,
+#      beta2_slope <- postH$q50$beta2_slope,
+#      beta3_slope <- postH$q50$beta3_slope,
+#      beta4_slope <- postH$q50$beta4_slope,
+#      beta5_rslope <- postH$q50$beta4_slope) %>% t() %>%
+#  data.frame() %>%
+#  mutate(area = unique(H_ayg$area)) %>%
+#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5, beta5 = X6) %>%
+#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+#             by = "area") %>%
+#  mutate(logit_y = beta0 +
+#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
+#           beta4 * (u - 1) + beta5,
+#         pr_slope = logit_to_prob(logit_y),
+#         year = y + 1976,
+#         user = ifelse(u == 1, "charter","private"))-> rslope_trend
 
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
@@ -3181,7 +3191,7 @@ rbind(pr_slope_obs %>% filter(area %in% southeast)) %>%
   geom_point() +
   #geom_point(data = p_yellowX_obs, aes(x = year, y = p_yellow), color = "yellow", size = 0.5) +
   geom_line(data = pr_slope_mod %>% filter(area %in% southeast), linetype = 2) +
-  geom_line(data = rslope_trend %>% filter(area %in% southeast)) +
+  #geom_line(data = rslope_trend %>% filter(area %in% southeast)) +
   #geom_hline(data = p_yellow_trend, aes(yintercept = p_yellow), linetype = 2) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +

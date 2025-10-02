@@ -515,7 +515,7 @@ for (a in 1:A){
 		Hp_ay[a, y] <- Hp_ayg[a, y] + Hp_ayu[a, y]
 
 		Rp_ayg[a, y] <- (Hp_ayg[a, y] / pH[a,y,1,1]) - Hp_ayg[a, y]   
-		Rp_ayu[a, y] <- (Hp_ayu[a, y] / pH[a,y,2,1]) - Hp_ayu[a, y]  
+		Rp_ayu[a, y] <- min(3*Hp_ayu[a, y], (Hp_ayu[a, y] / pH[a,y,2,1]) - Hp_ayu[a, y]) 
 		Rp_ay[a, y] <- Rp_ayg[a, y] + Rp_ayu[a, y]
 
 		#Black rockfish
@@ -524,7 +524,7 @@ for (a in 1:A){
 		Hb_ay[a, y] <- Hb_ayg[a, y] + Hb_ayu[a, y]
 
 		Rb_ayg[a, y] <- (Hb_ayg[a, y] / pH[a,y,1,1]) - Hb_ayg[a, y]   
-		Rb_ayu[a, y] <- (Hb_ayu[a, y] / pH[a,y,2,1]) - Hb_ayu[a, y]  
+		Rb_ayu[a, y] <-  min(3*Hb_ayu[a, y], (Hb_ayu[a, y] / pH[a,y,2,1]) - Hb_ayu[a, y]) 
 		Rb_ay[a, y] <- Rb_ayg[a, y] + Rb_ayu[a, y]
 
 		#Yelloweye rockfish

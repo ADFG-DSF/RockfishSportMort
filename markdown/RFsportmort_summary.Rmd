@@ -134,6 +134,12 @@ central <- c("CI","NG","PWSI","PWSO")
 kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
 reg2 <- c(central,kodiak)
 
+area_codes <- comp %>% select(area,area_n) %>% unique() %>%
+  add_row(area = "BSAI", area_n = 5) %>%
+  add_row(area = "SOKO2SAP", area_n = 6) %>%
+  add_row(area = "WKMA", area_n = 7) %>%
+  mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
+
 df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
 
@@ -2799,24 +2805,34 @@ pHpel_obs <-
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
-#rbind(beta0_pH <- postH$q50$beta0_pH[,1],
-#      beta1_pH <- postH$q50$beta1_pH[,1],
-#      beta2_pH <- postH$q50$beta2_pH[,1],
-#      beta3_pH <- postH$q50$beta3_pH[,1],
+beta4_pH <- postH$q50$beta4_pH[,,1] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,1],
+      beta1_pH <- postH$q50$beta1_pH[,1],
+      beta2_pH <- postH$q50$beta2_pH[,1],
+      beta3_pH <- postH$q50$beta3_pH[,1]) %>% t() %>%
 #      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
-#  data.frame() %>%
-#  mutate(area = unique(H_ayg$area),
-#         species = "pelagic") %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "pelagic") %>%
 #  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-#             by = "area") %>%
-#  mutate(logit_pH = beta0 +
-#           beta1 / (1 + exp(-beta2 * (y - beta3))) *
-#           (1 + (u - 1) * (beta4 - 1)),
-#         pH = logit_to_prob(logit_pH),
-#         year = y + 1976,
-#         user = ifelse(u == 1, "charter","private"))-> pHpel_trend
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
+
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private"))-> pHpel_trend
 
 pHpel_obs %>% filter(user != "all") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2827,7 +2843,7 @@ pHpel_obs %>% filter(user != "all") %>%
   geom_point(aes(shape = source)) +
   #geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
-#  geom_line(data = pHpel_trend, aes(color = user)) +
+  geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
@@ -4699,9 +4715,8 @@ df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
 ``` 
 <br>
-### Summary of unconverged parameters:
 
-**Table X.** Unconverged parameters.
+### Summary of unconverged parameters:
 
 ```{r}  
 #names(rhat)[1] <- "Rhat_values"
@@ -4732,6 +4747,409 @@ rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", f
   filter(!str_detect(variable, "Bb|By|Bs|_mort|Tb|Tp|Ty")) %>%
   arrange(area, -Rhat, variable) -> unconverged
 
+sumtab <- postH$summary
+bad_params <- rownames(sumtab[sumtab[,"Rhat"] > 1.01, , drop = FALSE])
+
+true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
+                 "lambda_H",
+                 #betas,
+                 #"re"
+                 "sd_prigui_pre",
+                 "mu_bc_H","sd_bc_H","logbc_H",
+                 "mu_bc_R","sd_bc_R","logbc_R",
+                 "b1_pG","b2_pG","pG")
+
+Rhat_cutoff = 1.01
+
+bad_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter) &
+                              !grepl("Bp_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+  filter(!is.na(year))
+
+bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) ) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_betas <- bad_df %>% filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
+  mutate(year = as.numeric('year/species'),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(variable))
+
+bad_true_params <- rbind(bad_betas,
+                         bad_df %>%
+                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+                           mutate(index = str_replace(index, "\\]", "")) %>%
+                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+                           mutate(year = NA,
+                                  area_n = as.character(area_n)) %>%
+                           full_join(area_codes,by = "area_n") %>%
+                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+                           filter(!is.na(variable)))
+
+bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+bad_Hs <- bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+bad_Rs %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
+bad_Rs %>% filter(!area_n %in% c(5,6)) -> other_R
+
+bad_Hs %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
+bad_Hs %>% filter(!area_n %in% c(5,6)) -> other_H
+
+prop_badR_BS <- nrow(bad_Rs %>% filter(area_n %in% c(5,6)))/nrow(bad_Rs)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt1 <- nrow(SOKO_Rp %>% filter(median < 1)) / nrow(SOKO_Rp)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt50 <- nrow(SOKO_Rp %>% filter(median < 50)) / nrow(SOKO_Rp)
+prop_badR_BS_lt100 <- nrow(SOKO_Rp %>% filter(median < 100)) / nrow(SOKO_Rp)
+minR_badR_BS <- min(SOKO_Rp$median)
+medR_badR_BS <- median(SOKO_Rp$median)
+mean_badR_BS <- mean(SOKO_Rp$median)
+skew_badR_BS <- mean(SOKO_Rp$skew)
+
+prop_badR_O_lt1 <- nrow(other_R %>% filter(median < 1)) / nrow(other_R)
+prop_badR_O_lt10 <- nrow(other_R %>% filter(median < 10)) / nrow(other_R)
+prop_badR_O_lt50 <- nrow(other_R %>% filter(median < 50)) / nrow(other_R)
+prop_badR_O_lt100 <- nrow(other_R %>% filter(median < 100)) / nrow(other_R)
+minR_badR_O <- min(other_R$median)
+medR_badR_O <- median(other_R$median)
+mean_badR_O <- mean(other_R$median)
+skew_badR_O <- mean(other_R$skew)
+
+prop_badH_BS <- nrow(bad_Hs %>% filter(area_n %in% c(5,6)))/nrow(bad_Hs)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt1 <- nrow(SOKO_Hp %>% filter(median < 1)) / nrow(SOKO_Hp)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt50 <- nrow(SOKO_Hp %>% filter(median < 50)) / nrow(SOKO_Hp)
+minH_badH_BS <- min(SOKO_Hp$median)
+medH_badH_BS <- median(SOKO_Hp$median)
+mean_badH_BS <- mean(SOKO_Hp$median)
+skew_badH_BS <- mean(SOKO_Hp$skew)
+
+prop_badH_O_lt1 <- nrow(other_H %>% filter(median < 1)) / nrow(other_H)
+prop_badH_O_lt10 <- nrow(other_H %>% filter(median < 10)) / nrow(other_H)
+prop_badH_O_lt50 <- nrow(other_H %>% filter(median < 50)) / nrow(other_H)
+minH_badH_O <- min(other_H$median)
+medH_badH_O <- median(other_H$median)
+mean_badH_O <- mean(other_H$median)
+skew_badH_O <- mean(other_H$skew)
+
+data.frame(Statistic = c(paste0("n unconverged at Rhat = ",Rhat_cutoff),
+                         "Prop. of total",
+                         "Prop. median less than 1",
+                         "Prop. median less than 10",
+                         "Prop. median less than 50",
+                         "Median of the median values",
+                         "Mean of the median values",
+                         "Mean skew of posteriors"),
+           # Harvests = c(nrow(bad_Hs),
+           #              round(prop_badH_BS,2),
+           #              rep("",6)),
+           'non-BSAI/SOKO Harv' = c(round(nrow(other_H),0),
+                                    round(1-prop_badH_BS,2),
+                                    round(prop_badH_O_lt1,2),
+                                    round(prop_badH_O_lt10,2),
+                                    round(prop_badH_O_lt50,2),
+                                    round(medH_badH_O,2),
+                                    round(mean_badH_O,2),
+                                    round(skew_badH_O,2)),
+           'BSAI/SOKO Harv' = c(round(nrow(SOKO_Hp),0),
+                                round(prop_badH_BS,2),
+                                round(prop_badH_BS_lt1,2),
+                                round(prop_badH_BS_lt10,2),
+                                round(prop_badH_BS_lt50,2),
+                                round(medH_badH_BS,2),
+                                round(mean_badH_BS,2),
+                                round(skew_badH_BS,2)),
+           'non-BSAI/SOKO Rel' = c(round(nrow(other_R),0),
+                                   round(1-prop_badR_BS,2),
+                                   round(prop_badR_O_lt1,2),
+                                   round(prop_badR_O_lt10,2),
+                                   round(prop_badR_O_lt50,2),
+                                   round(medR_badR_O,2),
+                                   round(mean_badR_O,2),
+                                   round(skew_badR_O,2)),
+           'BSAI/SOKO Rel' = c(round(nrow(SOKO_Rp),0),
+                               round(prop_badR_BS,2),
+                               round(prop_badR_BS_lt1,2),
+                               round(prop_badR_BS_lt10,2),
+                               round(prop_badR_BS_lt50,2),
+                               round(medR_badR_BS,2),
+                               round(mean_badR_BS,2),
+                               round(skew_badR_BS,2))) -> badRhat_sumstat
+
+Rhat_cutoff = 1.1
+
+bad_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) ) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+bad_Hs <- bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+bad_Rs %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
+bad_Rs %>% filter(!area_n %in% c(5,6)) -> other_R
+
+bad_Hs %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
+bad_Hs %>% filter(!area_n %in% c(5,6)) -> other_H
+
+prop_badR_BS <- nrow(bad_Rs %>% filter(area_n %in% c(5,6)))/nrow(bad_Rs)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt1 <- nrow(SOKO_Rp %>% filter(median < 1)) / nrow(SOKO_Rp)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt50 <- nrow(SOKO_Rp %>% filter(median < 50)) / nrow(SOKO_Rp)
+prop_badR_BS_lt100 <- nrow(SOKO_Rp %>% filter(median < 100)) / nrow(SOKO_Rp)
+minR_badR_BS <- min(SOKO_Rp$median)
+medR_badR_BS <- median(SOKO_Rp$median)
+mean_badR_BS <- mean(SOKO_Rp$median)
+skew_badR_BS <- mean(SOKO_Rp$skew)
+
+prop_badR_O_lt1 <- nrow(other_R %>% filter(median < 1)) / nrow(other_R)
+prop_badR_O_lt10 <- nrow(other_R %>% filter(median < 10)) / nrow(other_R)
+prop_badR_O_lt50 <- nrow(other_R %>% filter(median < 50)) / nrow(other_R)
+prop_badR_O_lt100 <- nrow(other_R %>% filter(median < 100)) / nrow(other_R)
+minR_badR_O <- min(other_R$median)
+medR_badR_O <- median(other_R$median)
+mean_badR_O <- mean(other_R$median)
+skew_badR_O <- mean(other_R$skew)
+
+prop_badH_BS <- nrow(bad_Hs %>% filter(area_n %in% c(5,6)))/nrow(bad_Hs)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt1 <- nrow(SOKO_Hp %>% filter(median < 1)) / nrow(SOKO_Hp)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt50 <- nrow(SOKO_Hp %>% filter(median < 50)) / nrow(SOKO_Hp)
+minH_badH_BS <- min(SOKO_Hp$median)
+medH_badH_BS <- median(SOKO_Hp$median)
+mean_badH_BS <- mean(SOKO_Hp$median)
+skew_badH_BS <- mean(SOKO_Hp$skew)
+
+prop_badH_O_lt1 <- nrow(other_H %>% filter(median < 1)) / nrow(other_H)
+prop_badH_O_lt10 <- nrow(other_H %>% filter(median < 10)) / nrow(other_H)
+prop_badH_O_lt50 <- nrow(other_H %>% filter(median < 50)) / nrow(other_H)
+minH_badH_O <- min(other_H$median)
+medH_badH_O <- median(other_H$median)
+mean_badH_O <- mean(other_H$median)
+skew_badH_O <- mean(other_H$skew)
+
+data.frame(Statistic = c(paste0("n unconverged at Rhat = ",Rhat_cutoff),
+                         "Prop. of total",
+                         "Prop. median less than 1",
+                         "Prop. median less than 10",
+                         "Prop. median less than 50",
+                         "Median of the median values",
+                         "Mean of the median values",
+                         "Mean skew of posteriors"),
+           # Harvests = c(nrow(bad_Hs),
+           #              round(prop_badH_BS,2),
+           #              rep("",6)),
+           'non-BSAI/SOKO Harv' = c(round(nrow(other_H),0),
+                                    round(1-prop_badH_BS,2),
+                                    round(prop_badH_O_lt1,2),
+                                    round(prop_badH_O_lt10,2),
+                                    round(prop_badH_O_lt50,2),
+                                    round(medH_badH_O,2),
+                                    round(mean_badH_O,2),
+                                    round(skew_badH_O,2)),
+           'BSAI/SOKO Harv' = c(round(nrow(SOKO_Hp),0),
+                                round(prop_badH_BS,2),
+                                round(prop_badH_BS_lt1,2),
+                                round(prop_badH_BS_lt10,2),
+                                round(prop_badH_BS_lt50,2),
+                                round(medH_badH_BS,2),
+                                round(mean_badH_BS,2),
+                                round(skew_badH_BS,2)),
+           'non-BSAI/SOKO Rel' = c(round(nrow(other_R),0),
+                                   round(1-prop_badR_BS,2),
+                                   round(prop_badR_O_lt1,2),
+                                   round(prop_badR_O_lt10,2),
+                                   round(prop_badR_O_lt50,2),
+                                   round(medR_badR_O,2),
+                                   round(mean_badR_O,2),
+                                   round(skew_badR_O,2)),
+           'BSAI/SOKO Rel' = c(round(nrow(SOKO_Rp),0),
+                               round(prop_badR_BS,2),
+                               round(prop_badR_BS_lt1,2),
+                               round(prop_badR_BS_lt10,2),
+                               round(prop_badR_BS_lt50,2),
+                               round(medR_badR_BS,2),
+                               round(mean_badR_BS,2),
+                               round(skew_badR_BS,2))) -> badRhat_sumstat1p1
+
+#print(paste0("Number of unconverged proportional estimates = ", nrow(bad_ps %>% filter(median > 0.95 | median < 0.05)) / nrow(bad_ps)))
+
+#print(paste0("Proportion of unconverged true parameters with Rhat > 1.01 that are also > 1.1 is ",
+#            round( nrow(bad_true_params %>% filter(Rhat > 1.1))/nrow(bad_true_params),2)))
+
+bad_ps_true <- bad_ps %>% filter(median < 0.95 & median > 0.05)
+true_params_rha_gt1p1 <- bad_true_params %>% filter(Rhat > 1.1)
+
+```
+
+The proportion of unconverged species composition proportional estimates that are near the bounds of 0 or 1 is `r nrow(bad_ps %>% filter(median > 0.95 | median < 0.05)) / nrow(bad_ps)`
+
+The proportion of unconverged true parameters (defined as Rhat > 1.01) that are also in excess of an Rhat of 1.1 is `r round( nrow(bad_true_params %>% filter(Rhat > 1.1))/nrow(bad_true_params),2)` while `r round( nrow(bad_true_params %>% filter(Rhat <= 1.1))/nrow(bad_true_params),2)` are less than 1.1.
+
+**Table Xa.** Species proportion derived quantities that are not with 0.05 of the 0 and 1 bounds and are not converged relative to an Rhat of 1.01.
+```{r}
+
+#---------------------------------------------
+
+flextable(bad_ps_true) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
+
+**Table Xb.** True parameters with an Rhat in excess of 1.1
+```{r}
+
+flextable(true_params_rha_gt1p1) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
+**Table Xc.** Summary statistics describing the characteristics of the derived harvest and release estimates that are not converged relative to an Rhat of 1.01.
+```{r}
+
+flextable(badRhat_sumstat) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
+**Table Xd.** Summary statistics describing the characteristics of the derived harvest and release estimates that are not converged relative to an Rhat of 1.1.
+```{r}
+
+flextable(badRhat_sumstat1p1) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
+
+**Table Xe.** All parameters and derived quantities that are not converged relative to an Rhat of 1.1.
+```{r}
+    
+    
 flextable(unconverged1) %>%
   #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
  #             align_with_table = TRUE, style = "Table Caption") %>%
@@ -4740,35 +5158,6 @@ flextable(unconverged1) %>%
   fontsize(size = 12, part = "all") %>%
   #align(j = 2:4, align = "center", part = "all") %>%
   set_table_properties(width = 1, layout = "autofit")
-
-sumtab <- postH$summary
-bad_params <- rownames(sumtab[sumtab[,"Rhat"] > 1.01, , drop = FALSE])
-bad_df <- as.data.frame(postH$summary) %>%
-  mutate(parameter = rownames(postH$summary)) %>%
-  filter(Rhat > 1.1) %>%
-  select(parameter, mean, median = `50%`, Rhat) %>%
-  mutate(mean = round(mean,3),
-         median = round(median,3),
-         Rhat = round(Rhat,3))
-
-flextable(bad_df) %>%
-  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
- #             align_with_table = TRUE, style = "Table Caption") %>%
-  autofit() %>%
-  flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 12, part = "all") %>%
-  #align(j = 2:4, align = "center", part = "all") %>%
-  set_table_properties(width = 1, layout = "autofit")
-    
-    
-#  mutate(across(starts_with("index"), as.numeric)) %>%
-#  left_join(comp %>% select(area,area_n) %>% unique() %>%
-#              add_row(area = "BSAI", area_n = 5) %>%
-#              add_row(area = "SOKO2SAP", area_n = 6) %>%
-#              add_row(area = "WKMA", area_n = 7) %>%
-#              mutate(area_n = as.character(area_n)),
-#            by = "area_n") %>%
-#  mutate(parameter = variable) %>% select(-variable) #%>%
 
 ```
 

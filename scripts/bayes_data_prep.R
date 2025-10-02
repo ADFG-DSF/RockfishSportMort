@@ -598,7 +598,8 @@ S_ayu_ly2 <-cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_c
 #2024 data set
 sppcompR1_0 <- 
   read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
-            range = c("A1:R1000"))  %>%
+            range = c("A1:R1000"),
+            sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
@@ -1006,9 +1007,38 @@ with(wt_rm_dat, table(region,area))
 
 saveRDS(wt_rm_dat, ".\\data\\bayes_dat\\wt_rm_dat.rds")
 
+################################################################################
+# Interview Data
+# SE has interview data on the proportion released for both user groups so lets
+# check it out and use it if we can!
+################################################################################
+se_int <-  
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
+            range = c("A1:R1000"),
+            sheet = "MHS Rel proportion")  %>%
+  rename_all(.funs = tolower) %>%
+  mutate(user = tolower(user),
+         var = ifelse(var == 0, 0.5,var),
+         lo95 = pmax(0, proportion - 1.96 * sqrt(var)),
+         hi95 = pmin(1, proportion + 1.96 * sqrt(var)),
+         p_h = 1-proportion,
+         lo95_h = pmax(0, p_h - 1.96 * sqrt(var)),
+         hi95_h = pmin(1, p_h + 1.96 * sqrt(var))) %>%
+  rename(area = rpt_area) %>% 
+  filter_all(any_vars(!is.na(.)))
 
+unique(se_int$assemblage)
 
+ggplot(se_int %>% filter(assemblage == "Black"), 
+       aes(x = year, y = p_h, col = user)) +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95_h, ymin = lo95_h)) +
+  facet_wrap(~area) +
+  theme_bw()
 
+max((se_int$var),na.rm = T)
+
+#I don't trust the variance of 0
 
 
 
