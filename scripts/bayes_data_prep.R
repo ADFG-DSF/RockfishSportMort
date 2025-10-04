@@ -757,6 +757,7 @@ S_ayu <-
   arrange(user, area, year)
 
 table(S_ayu$region, S_ayu$area)
+
 saveRDS(S_ayu, ".\\data\\bayes_dat\\S_ayu.rds")
 
 
@@ -1012,51 +1013,323 @@ saveRDS(wt_rm_dat, ".\\data\\bayes_dat\\wt_rm_dat.rds")
 # SE has interview data on the proportion released for both user groups so lets
 # check it out and use it if we can!
 ################################################################################
+z<-1.96 #for CI calculations and graphics
+
 se_int <-  
   read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
             range = c("A1:R1000"),
-            sheet = "MHS Rel proportion")  %>%
+            sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
-  mutate(user = tolower(user),
-         var = ifelse(var == 0, 0.5,var),
-         lo95 = pmax(0, proportion - 1.96 * sqrt(var)),
-         hi95 = pmin(1, proportion + 1.96 * sqrt(var)),
-         p_h = 1-proportion,
-         lo95_h = pmax(0, p_h - 1.96 * sqrt(var)),
-         hi95_h = pmin(1, p_h + 1.96 * sqrt(var))) %>%
+  mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
-  filter_all(any_vars(!is.na(.)))
+  #filter_all(any_vars(!is.na(.))) %>%
+  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
+              "notye_nonpel_n","dsr_n","slope_n",
+              "pelnbrf_n","dsrnye_n","slope_lg_n","slope_sm_n"),as.numeric) %>%
+  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
+                  range = c("CA1:CK1000"),
+                  sheet = "MHS num Fish")  %>%
+          rename_all(.funs = tolower) %>%
+          mutate_at(c("ye_n_rel","black_n_rel","pelagic_n_rel","nonpel_n_rel",
+                      "notye_nonpel_n_rel","dsr_n_rel","slope_n_rel",
+                      "pelnbrf_n_rel","dsrnye_n_rel","slope_lg_n_rel","slope_sm_n_rel"),as.numeric)) %>%
+  filter_all(any_vars(!is.na(.))) %>%
+  mutate(totalrf_n_rel = ye_n_rel+pelagic_n_rel+notye_nonpel_n_rel) %>%
+  mutate(pH_ye = ye_n / (ye_n + ye_n_rel),
+         pH_pel = pelagic_n / (pelagic_n + pelagic_n_rel),
+         pH_black = black_n / (black_n + black_n_rel),
+         pH_other = notye_nonpel_n / (notye_nonpel_n + notye_nonpel_n_rel),
+         pH_dsr = dsrnye_n / (dsrnye_n + dsrnye_n_rel),
+         pH_slope = slope_n / (slope_n + slope_n_rel)) #,
 
-unique(se_int$assemblage)
+sc_int <- read.csv("data/raw_dat/Species_comp_SC/sc_rf_release.csv") %>%
+  clean_names() %>% mutate(user = tolower(user)) %>%
+  rename(area = cfmu,
+         ye_n = yekept,
+         ye_n_rel = yerel,
+         pelagic_n = pelkept,
+         pelagic_n_rel = pelrel,
+         notye_nonpel_n = npkept,
+         notye_nonpel_n_rel = nprel) 
 
-ggplot(se_int %>% filter(assemblage == "Black"), 
-       aes(x = year, y = p_h, col = user)) +
+sc_int %>% filter(area %in% c("WESTSIDE","MAINLAND")) %>% 
+  group_by(year,user,area) %>%
+  summarise(across(everything(), sum, na.rm = TRUE), .groups = "drop") %>%
+  mutate(area = "WKMA") -> wkma
+
+sc_int %>% filter(area %in% c("SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK")) %>% 
+  group_by(year,user,area) %>%
+  summarise(across(everything(), sum, na.rm = TRUE), .groups = "drop") %>%
+  mutate(area = "SOKO2SAP")->soko2sap
+
+sc_int %>% filter(area %in% c("ALEUTIAN","BERING")) %>% 
+  group_by(year,user,area) %>%
+  summarise(across(everything(), sum, na.rm = TRUE), .groups = "drop") %>%
+  mutate(area = "BSAI")->bsai
+
+sc_int <- sc_int %>% 
+  filter(!area %in% c("WESTSIDE","MAINLAND","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK")) %>%
+  rbind(wkma,soko2sap,bsai) %>%
+  mutate(dsr_n = NA,
+         slope_n = NA,
+         black_n = NA,
+         dsr_n_rel = NA,
+         slope_n_rel = NA,
+         black_n_rel = NA,
+         dsrnye_n = NA,
+         dsrnye_n_rel = NA,
+         pH_ye = ye_n / (ye_n + ye_n_rel),
+         pH_pel = pelagic_n / (pelagic_n + pelagic_n_rel),
+         pH_black = NA, #black_n / (black_n + black_n_rel),
+         pH_other = ifelse(year > 2010,
+                           notye_nonpel_n / (notye_nonpel_n + notye_nonpel_n_rel),
+                           (notye_nonpel_n - ye_n) / (notye_nonpel_n + notye_nonpel_n_rel - ye_n - ye_n_rel)), #npkept
+         pH_dsr = NA,
+         pH_slope = NA) %>%
+  select(-c(rfkept,rfrel))
+
+head(se_int); head(sc_int)
+
+int <- rbind(sc_int, se_int %>% select(colnames(sc_int))) %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE),
+         lo95pH_ye = (pH_ye + z^2/(2*(ye_n + ye_n_rel)) - 
+                        z * sqrt((pH_ye*(1 - pH_ye) + z^2/(4*(ye_n + ye_n_rel))) / (ye_n + ye_n_rel))) /
+           (1 + z^2/(ye_n + ye_n_rel)),
+         hi95pH_ye = (pH_ye + z^2/(2*(ye_n + ye_n_rel)) + 
+                        z * sqrt((pH_ye*(1 - pH_ye) + z^2/(4*(ye_n + ye_n_rel))) / (ye_n + ye_n_rel))) /
+           (1 + z^2/(ye_n + ye_n_rel)),
+         lo95pH_pel = (pH_pel + z^2/(2*(pelagic_n + pelagic_n_rel)) - 
+                         z * sqrt((pH_pel*(1 - pH_pel) + z^2/(4*(pelagic_n + pelagic_n_rel))) / (pelagic_n + pelagic_n_rel))) /
+           (1 + z^2/(pelagic_n + pelagic_n_rel)),
+         hi95pH_pel = (pH_pel + z^2/(2*(pelagic_n + pelagic_n_rel)) + 
+                         z * sqrt((pH_pel*(1 - pH_pel) + z^2/(4*(pelagic_n + pelagic_n_rel))) / (pelagic_n + pelagic_n_rel))) /
+           (1 + z^2/(pelagic_n + pelagic_n_rel)),
+         lo95pH_black = (pH_black + z^2/(2*(black_n + black_n_rel)) - 
+                           z * sqrt((pH_black*(1 - pH_black) + z^2/(4*(black_n + black_n_rel))) / (black_n + black_n_rel))) /
+           (1 + z^2/(black_n + black_n_rel)),
+         hi95pH_black = (pH_black + z^2/(2*(black_n + black_n_rel)) + 
+                           z * sqrt((pH_black*(1 - pH_black) + z^2/(4*(black_n + black_n_rel))) / (black_n + black_n_rel))) /
+           (1 + z^2/(black_n + black_n_rel)),
+         lo95pH_other = (pH_other + z^2/(2*(notye_nonpel_n + notye_nonpel_n_rel)) - 
+                           z * sqrt((pH_other*(1 - pH_other) + z^2/(4*(notye_nonpel_n + notye_nonpel_n_rel))) / (notye_nonpel_n + notye_nonpel_n_rel))) /
+           (1 + z^2/(notye_nonpel_n + notye_nonpel_n_rel)),
+         #lo95pH_other = pmax(0,pH_other - 1.96 * sqrt(pH_other*(1-pH_other)/(notye_nonpel_n + notye_nonpel_n_rel))),
+         hi95pH_other = (pH_other + z^2/(2*(notye_nonpel_n + notye_nonpel_n_rel)) + 
+                           z * sqrt((pH_other*(1 - pH_other) + z^2/(4*(notye_nonpel_n + notye_nonpel_n_rel))) / (notye_nonpel_n + notye_nonpel_n_rel))) /
+           (1 + z^2/(notye_nonpel_n + notye_nonpel_n_rel)),
+         lo95pH_dsr = (pH_dsr + z^2/(2*(dsrnye_n + dsrnye_n_rel)) - 
+                         z * sqrt((pH_dsr*(1 - pH_dsr) + z^2/(4*(dsrnye_n + dsrnye_n_rel))) / (dsrnye_n + dsrnye_n_rel))) /
+           (1 + z^2/(dsrnye_n + dsrnye_n_rel)),
+         #lo95pH_dsr = pmax(0,pH_dsr - 1.96 * sqrt(pH_dsr*(1-pH_dsr)/(dsrnye_n + dsrnye_n_rel))),
+         hi95pH_dsr = (pH_dsr + z^2/(2*(dsrnye_n + dsrnye_n_rel)) + 
+                         z * sqrt((pH_dsr*(1 - pH_dsr) + z^2/(4*(dsrnye_n + dsrnye_n_rel))) / (dsrnye_n + dsrnye_n_rel))) /
+           (1 + z^2/(dsrnye_n + dsrnye_n_rel)),
+         lo95pH_slope = (pH_slope + z^2/(2*(slope_n + slope_n_rel)) - 
+                           z * sqrt((pH_slope*(1 - pH_slope) + z^2/(4*(slope_n + slope_n_rel))) / (slope_n + slope_n_rel))) /
+           (1 + z^2/(slope_n + slope_n_rel)),
+         hi95pH_slope = (pH_slope + z^2/(2*(slope_n + slope_n_rel)) + 
+                           z * sqrt((pH_slope*(1 - pH_slope) + z^2/(4*(slope_n + slope_n_rel))) / (slope_n + slope_n_rel))) /
+           (1 + z^2/(slope_n + slope_n_rel))) 
+  
+str(int)
+
+int %>% filter(area == "CI" & year < 2010)
+
+ggplot(int, 
+       aes(x = year, y = pH_pel, col = user)) +
   geom_point() + geom_line() +
-  geom_errorbar(aes(ymax = hi95_h, ymin = lo95_h)) +
+  geom_errorbar(aes(ymax = hi95pH_pel, ymin = lo95pH_pel)) +
   facet_wrap(~area) +
-  theme_bw()
+  theme_bw() + ggtitle("Pelagic") +
+  ylab("Proportion harvested") + ylim(0,1)
+
+ggplot(int, 
+       aes(x = year, y = pH_black, col = user)) +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_black, ymin = lo95pH_black)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Black") +
+  ylab("Proportion harvested") + ylim(0,1)
+
+ggplot(int, 
+       aes(x = year, y = pH_ye, col = user)) +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_ye, ymin = lo95pH_ye)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Yelloweye") +
+  ylab("Proportion harvested")+ ylim(0,1)
+
+ggplot(int,  
+       aes(x = year, y = pH_dsr, col = user)) +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_dsr, ymin = lo95pH_dsr)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("DSR (non-yelloweye)") +
+  ylab("Proportion harvested")+ ylim(0,1)
+
+ggplot(int,  
+       aes(x = year, y = pH_slope, col = user)) +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_slope, ymin = lo95pH_slope)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Slope") +
+  ylab("Proportion harvested")+ ylim(0,1)
 
 max((se_int$var),na.rm = T)
 
 #I don't trust the variance of 0
+# Compare to logbook data: 
+H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
+  mutate(H_lb = ifelse(H == 0, 1, H),
+         area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))
+
+# Logbook releases by area, year for guided trips
+R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+  mutate(R_lb = ifelse(R == 0, 1, R),
+         Rye = ifelse(year < 2006, NA,Rye),
+         area = toupper(area)) %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))
+
+head(H_ayg); head(R_ayg)
+head(se_int)
+
+unique(H_ayg$area);unique(R_ayg$area) 
+
+with(H_ayg, table(year,area))
+
+full_join(H_ayg,R_ayg,by = c("year","area","region")) %>%
+  mutate(p_h = H / (R+H),
+         p_h_p = Hp / (Rp+Hp),
+         p_h_np = Hnp / (Rnp + Hnp),
+         p_h_ye = Hye / (Rye + Hye),
+         p_h_o = Ho / (Ro + Ho)) %>%
+  select(year,area,p_h,p_h_p,p_h_np,p_h_ye,p_h_o) %>%
+  pivot_longer(cols = c(p_h,p_h_p,p_h_np,p_h_ye,p_h_o),
+               names_to = "assemblage",
+               values_to = "p_h") %>%
+  mutate(assemblage = ifelse(assemblage == "p_h","all",
+                             ifelse(assemblage == "p_h_p", "Pel",
+                                    ifelse(assemblage == "p_h_np", "NonPel",
+                                           ifelse(assemblage == "p_h_ye", "Yelloweye",
+                                                  ifelse(assemblage == "p_h_o","Other",NA))))),
+         user = "charter",
+         proportion = 1-p_h,
+         var = 0,
+         lo95 = NA,
+         hi95 = NA,
+         lo95_h = NA, hi95_h = NA,
+         source = "lb") %>%
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) -> lb_hprob
+
+unique(lb_hprob$area)
+
+unique(se_int$area) -> se_areas
+
+unique(se_int$assemblage); unique(lb_hprob$assemblage)
+
+str(se_int); str(lb_hprob)
+
+ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_pel, col = user)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Pel") %>%
+              mutate(pH_pel = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_pel, ymin = lo95pH_pel)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Pelagic") +
+  ylab("Proportion harvested")
+
+ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_black, col = user)) +
+  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
+                                         assemblage == "Pel") %>%
+              mutate(pH_black = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_black, ymin = lo95pH_black)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Black and LB Pelagic") +
+  ylab("Proportion harvested")
+
+ggplot(int %>% mutate(year = as.integer(year)),  
+       aes(x = year, y = pH_ye, col = user)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Yelloweye") %>%
+              mutate(pH_ye = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_ye, ymin = lo95pH_ye)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Yelloweye") +
+  ylab("Proportion harvested")
+
+ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_other, col = user)) +
+  geom_line(data = lb_hprob %>% filter( assemblage == "Other") %>%
+              mutate(pH_other = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_other, ymin = lo95pH_other)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Other") +
+  ylab("Proportion harvested")
+
+ggplot(int %>% mutate(year = as.integer(year)),  
+       aes(x = year, y = pH_dsr, col = user)) +
+  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
+                                         assemblage == "Other") %>%
+              mutate(pH_dsr = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_dsr, ymin = lo95pH_dsr)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("DSR & LB other") +
+  ylab("Proportion harvested")
+
+ggplot(int %>% mutate(year = as.integer(year)),  
+       aes(x = year, y = pH_slope, col = user)) +
+  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
+                                         assemblage == "Other") %>%
+              mutate(pH_slope = p_h),
+            linetype = 1, size = 1.25, col = "darkred") +
+  geom_point() + geom_line() +
+  geom_errorbar(aes(ymax = hi95pH_slope, ymin = lo95pH_slope)) +
+  facet_wrap(~area) +
+  theme_bw() + ggtitle("Slope & LB other") +
+  ylab("Proportion harvested")
 
 
+int$pH_slope
 
 
+#-- Prep and save for Bayes model
+int %>% filter(year > 1994) %>%
+  select(year,user,area,
+         pelagic_n,pelagic_n_rel,
+         ye_n,ye_n_rel,
+         #black_n,black_n_rel,
+         other_n = notye_nonpel_n,other_n_rel = notye_nonpel_n_rel,
+         dsr_n,dsr_n_rel,
+         slope_n,slope_n_rel) %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE),
+         pelagic_c = pelagic_n + pelagic_n_rel,
+         ye_c = ye_n + ye_n_rel,
+         other_c = other_n + other_n_rel,
+         dsr_c = dsr_n + dsr_n_rel,
+         slope_c = slope_n + slope_n_rel) %>%
+  right_join(lut,by = "area") -> int_for_mod
+
+str(int_for_mod)
+
+int_for_mod %>% mutate(area = factor(area, lut$area, ordered = TRUE)) -> int_for_mod
+
+saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 
 
+S_ayu_ly <- readRDS(".//data//bayes_dat//S_ayu.rds")
+str(S_ayu_ly)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+head(S_ayu_ly); head(int_for_mod)
+lut

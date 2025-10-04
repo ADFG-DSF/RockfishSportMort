@@ -113,6 +113,7 @@ find_modes <- function(x, max_modes = 3, bw = "nrd0") {
 readinData <- function(spl_knts = 7,
                        start_yr = 1977,
                        end_yr = 2023){
+  # Logbook harvests by area, year for guided trips
   H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
     mutate(H_lb = ifelse(H == 0, 1, H))
   
@@ -201,12 +202,26 @@ readinData <- function(spl_knts = 7,
     filter(year >= 1996) %>%
     arrange(user, area, year) 
   
-  #When retention of YE is prohibited as n SE AK between 2020 through 2024 we need
-  # to censor the survey/creel data
-  #S_ayu <- S_ayu %>%
-  #  mutate(ye_n = ifelse(region == "Southeast" &
-  #                         year > 2019 & year < 2025,
-  #                       NA,ye_n))
+  #Interview data on kept and released 
+  I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
+    filter(!is.na(user))
+  
+  setdiff(expand_grid(year = unique(I_ayu0$year),
+                      area = unique(I_ayu0$area),
+                      user = unique(I_ayu0$user)),
+          I_ayu0 %>% select(year,area,user)) -> misdat
+  na_df <- as.data.frame(matrix(NA, nrow = nrow(misdat), 
+                                ncol = length(colnames(I_ayu0)[4:18])))
+  colnames(na_df) <- colnames(I_ayu0)[4:18]
+  
+  I_ayu <- 
+    I_ayu0 %>% mutate(year = as.integer(year)) %>%
+    bind_rows(bind_cols(misdat, na_df) %>%
+                mutate(year = as.integer(year)) %>%
+                right_join(I_ayu0 %>% select(area,region) %>% unique(),
+                           by = "area")) %>%
+    # filter(year >= 1996) %>%
+    arrange(user, area, year) 
   
   # Kodiak hydroacoustic supplemental data
   kha <- readRDS(".//data//bayes_dat//kha.rds")
@@ -260,7 +275,22 @@ readinData <- function(spl_knts = 7,
            region,area) %>%
     filter(N != 0) %>%
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
-  ##         N = ifelse(is.na(yellow),NA,N))
+  
+  int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+    mutate(area_n = as.numeric(as.factor(area)), 
+           user_n = ifelse(user == "charter", 0, 1), 
+           year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+           #region_n = ifelse()
+           source = 1) %>%
+    select(year, year_n, area_n, user_n, source, # N = totalrf_n, 
+           inth_pel = pelagic_n, #black = black_n, 
+           inth_yellow = ye_n, 
+           inth_other = other_n, inth_dsr = dsr_n, inth_slope = slope_n,
+           intc_pel = pelagic_n_rel, #black = black_n, 
+           intc_yellow = ye_n_rel, 
+           intc_other = other_n_rel, intc_dsr = dsr_n_rel, intc_slope = slope_n_rel,
+           region,area) %>%
+    filter(!is.na(inth_pel))
   
   compX <- comp %>% filter(area_n %in% c(11,12,13,14,15,16)) %>%
     mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
@@ -420,6 +450,23 @@ readinData <- function(spl_knts = 7,
       SEn2 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 0,]))),
       SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
+      
+      #interview data
+      int_area = int$area_n,
+      int_year = int$year_n,
+      int_user = int$user_n,
+      inth_pel = int$inth_pel,
+      inth_yellow = int$inth_yellow,
+      inth_other = int$inth_other,
+      inth_dsr = int$inth_dsr,
+      inth_slope = int$inth_slope,
+      intc_pel = int$intc_pel,
+      intc_yellow = int$intc_yellow,
+      intc_other = int$intc_other,
+      intc_dsr = int$intc_dsr,
+      intc_slope = int$intc_slope,
+      Nint = dim(int)[1],
+      
       
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
       
