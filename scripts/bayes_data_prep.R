@@ -751,7 +751,9 @@ table(sppcompR2$region, sppcompR2$area)
 
 S_ayu <- 
   rbind(sppcompR1 %>%
-          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsrnye_n)), 
+          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsr_n)) %>%
+          rename(dsr_n = dsrnye_n), 
+#          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsrnye_n)), 
         sppcompR2) %>%
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
   arrange(user, area, year)
@@ -1043,6 +1045,19 @@ se_int <-
          pH_dsr = dsrnye_n / (dsrnye_n + dsrnye_n_rel),
          pH_slope = slope_n / (slope_n + slope_n_rel)) #,
 
+pel_ch <- se_int%>% select(year,area,user,pelagic_n_rel)
+ye_ch <- se_int%>% select(year,area,user,ye_n_rel)
+black_ch <- se_int%>% select(year,area,user,black_n_rel)
+dsr_ch <- se_int%>% select(year,area,user,dsr_n_rel)
+slope_ch <- se_int%>% select(year,area,user,slope_n_rel)
+
+with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(Pelagic_rels = Freq)
+
+full_join(with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(Pelagic_rels = Freq),
+          with(ye_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(ye_rels = Freq),
+          by = c("area","year","user"))
+
+
 sc_int <- read.csv("data/raw_dat/Species_comp_SC/sc_rf_release.csv") %>%
   clean_names() %>% mutate(user = tolower(user)) %>%
   rename(area = cfmu,
@@ -1092,7 +1107,7 @@ sc_int <- sc_int %>%
 head(se_int); head(sc_int)
 
 int <- rbind(sc_int, se_int %>% select(colnames(sc_int))) %>%
-  mutate(area = factor(area, lut$area, ordered = TRUE),
+  mutate(area = factor(area, toupper(lut$area), ordered = TRUE),
          lo95pH_ye = (pH_ye + z^2/(2*(ye_n + ye_n_rel)) - 
                         z * sqrt((pH_ye*(1 - pH_ye) + z^2/(4*(ye_n + ye_n_rel))) / (ye_n + ye_n_rel))) /
            (1 + z^2/(ye_n + ye_n_rel)),
@@ -1182,15 +1197,13 @@ max((se_int$var),na.rm = T)
 # Compare to logbook data: 
 H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
   mutate(H_lb = ifelse(H == 0, 1, H),
-         area = toupper(area)) %>%
-  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))
+         area = toupper(factor(area, lut$area, ordered = TRUE))) 
 
 # Logbook releases by area, year for guided trips
 R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
   mutate(R_lb = ifelse(R == 0, 1, R),
          Rye = ifelse(year < 2006, NA,Rye),
-         area = toupper(area)) %>%
-  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))
+         area = toupper(factor(area, lut$area, ordered = TRUE))) 
 
 head(H_ayg); head(R_ayg)
 head(se_int)
@@ -1221,88 +1234,192 @@ full_join(H_ayg,R_ayg,by = c("year","area","region")) %>%
          hi95 = NA,
          lo95_h = NA, hi95_h = NA,
          source = "lb") %>%
-  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) -> lb_hprob
+  mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE),
+         User = user) -> lb_hprob
 
-unique(lb_hprob$area)
+baseTXT <- 17 # base text size
+legTXT <- 12 #legend text size
+axTXT <- 16 # axis tic label text size
+axTiTXT <- 17 # axis title text size
+barwidth <- 1 #bar width on bar graphs
 
-unique(se_int$area) -> se_areas
-
-unique(se_int$assemblage); unique(lb_hprob$assemblage)
-
-str(se_int); str(lb_hprob)
-
-ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
-       aes(x = year, y = pH_pel, col = user)) +
-  geom_line(data = lb_hprob %>% filter(assemblage == "Pel") %>%
-              mutate(pH_pel = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
-  geom_point() + geom_line() +
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_pel, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
   geom_errorbar(aes(ymax = hi95pH_pel, ymin = lo95pH_pel)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Pel") %>%
+              mutate(pH_pel = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
   facet_wrap(~area) +
-  theme_bw() + ggtitle("Pelagic") +
-  ylab("Proportion harvested")
+  #scale_linetype_manual(values = c("Model" = 1), name = "Source") +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("Pelagic") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
 
-ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
-       aes(x = year, y = pH_black, col = user)) +
-  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
-                                         assemblage == "Pel") %>%
-              mutate(pH_black = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
-  geom_point() + geom_line() +
+unique(se_int$area) -> se_area
+
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user) %>% filter(area %in% se_area), 
+       aes(x = year, y = pH_black, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
   geom_errorbar(aes(ymax = hi95pH_black, ymin = lo95pH_black)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Pel",
+                                       area %in% se_area) %>%
+              mutate(pH_black = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
   facet_wrap(~area) +
-  theme_bw() + ggtitle("Black and LB Pelagic") +
-  ylab("Proportion harvested")
+  #scale_linetype_manual(values = c("Model" = 1), name = "Source") +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("Black and Logbook pelagics") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
 
-ggplot(int %>% mutate(year = as.integer(year)),  
-       aes(x = year, y = pH_ye, col = user)) +
-  geom_line(data = lb_hprob %>% filter(assemblage == "Yelloweye") %>%
-              mutate(pH_ye = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
-  geom_point() + geom_line() +
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_ye, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
   geom_errorbar(aes(ymax = hi95pH_ye, ymin = lo95pH_ye)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Yelloweye") %>%
+              mutate(pH_ye = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
   facet_wrap(~area) +
-  theme_bw() + ggtitle("Yelloweye") +
-  ylab("Proportion harvested")
+  #scale_linetype_manual(values = c("Model" = 1), name = "Source") +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("Yelloweye") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
 
-ggplot(int %>% mutate(year = as.integer(year)), #%>% filter(assemblage == "Black"), 
-       aes(x = year, y = pH_other, col = user)) +
-  geom_line(data = lb_hprob %>% filter( assemblage == "Other") %>%
-              mutate(pH_other = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
-  geom_point() + geom_line() +
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user), #%>% filter(assemblage == "Black"), 
+       aes(x = year, y = pH_other, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
   geom_errorbar(aes(ymax = hi95pH_other, ymin = lo95pH_other)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Other") %>%
+              mutate(pH_other = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
   facet_wrap(~area) +
-  theme_bw() + ggtitle("Other") +
-  ylab("Proportion harvested")
+  #scale_linetype_manual(values = c("Model" = 1), name = "Source") +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("Other (non-pelagic, non-yelloweye)") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
+
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user) %>% filter(area %in% se_area), 
+       aes(x = year, y = pH_dsr, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
+  geom_errorbar(aes(ymax = hi95pH_dsr, ymin = lo95pH_dsr)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Other",
+                                       area %in% se_area) %>%
+              mutate(pH_dsr = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
+  facet_wrap(~area) +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("DSR and logbook others") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
+
+ggplot(int %>% mutate(year = as.integer(year),
+                      User = user) %>% filter(area %in% se_area), 
+       aes(x = year, y = pH_slope, shape = User, fill = User, color = "Interviews")) +
+  geom_point(size = 2) + geom_line(linetype = 2, size = 0.25, alpha = 0.0) +
+  geom_errorbar(aes(ymax = hi95pH_slope, ymin = lo95pH_slope)) +
+  geom_line(data = lb_hprob %>% filter(assemblage == "Other",
+                                       area %in% se_area) %>%
+              mutate(pH_slope = p_h), aes(color = "Logbook"),
+            linetype = 1, size = 1.25, #col = "darkgrey", 
+            alpha = 0.5) +
+  facet_wrap(~area) +
+  scale_shape_manual(values = c(21, 24)) + 
+  theme_bw(base_size = baseTXT)+
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         legend.position = "bottom",
+         legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+         legend.text = element_text(size = axTXT)) +
+  ggtitle("Slope and logbook others") +
+  scale_colour_grey(start = 0.5, end = 0) + scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
+  ylab("Proportion harvested") + xlab("Year") +
+  labs(colour = "Source", User = "User group")
+
+
+
+
+
+#----
+#Scrapola:
 
 ggplot(int %>% mutate(year = as.integer(year)),  
-       aes(x = year, y = pH_dsr, col = user)) +
-  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
+       aes(x = year, y = pH_dsr, col = user, shape = user)) +
+  geom_line(data = lb_hprob %>% filter(#area %in% se_areas &
                                          assemblage == "Other") %>%
               mutate(pH_dsr = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
+            linetype = 1, size = 1.25, col = "lightgrey") +
   geom_point() + geom_line() +
   geom_errorbar(aes(ymax = hi95pH_dsr, ymin = lo95pH_dsr)) +
   facet_wrap(~area) +
   theme_bw() + ggtitle("DSR & LB other") +
-  ylab("Proportion harvested")
+  scale_colour_grey(start = 0.6, end = 0) + scale_fill_grey(start = 0.6, end = 0) +
+  ylab("Proportion harvested") + xlab("Year")
 
 ggplot(int %>% mutate(year = as.integer(year)),  
-       aes(x = year, y = pH_slope, col = user)) +
-  geom_line(data = lb_hprob %>% filter(area %in% se_areas &
+       aes(x = year, y = pH_slope, col = user, shape = user)) +
+  geom_line(data = lb_hprob %>% filter(#area %in% se_areas &
                                          assemblage == "Other") %>%
               mutate(pH_slope = p_h),
-            linetype = 1, size = 1.25, col = "darkred") +
+            linetype = 1, size = 1.25, col = "lightgrey") +
   geom_point() + geom_line() +
   geom_errorbar(aes(ymax = hi95pH_slope, ymin = lo95pH_slope)) +
   facet_wrap(~area) +
   theme_bw() + ggtitle("Slope & LB other") +
-  ylab("Proportion harvested")
+  scale_colour_grey(start = 0.6, end = 0) + scale_fill_grey(start = 0.6, end = 0) +
+  ylab("Proportion harvested") + xlab("Year")
 
 
-int$pH_slope
-
+with(int,table(year,area,user))
+int %>% filter(year>2019 & user == "private")
 
 #-- Prep and save for Bayes model
 int %>% filter(year > 1994) %>%
@@ -1333,3 +1450,85 @@ str(S_ayu_ly)
 
 head(S_ayu_ly); head(int_for_mod)
 lut
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ggplot(int %>% mutate(year = as.integer(year)),
+       aes(x = year, y = pH_pel, shape = user, fill = user)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymax = hi95pH_pel, ymin = lo95pH_pel)) +
+  
+  # add model line with pseudo 'user' aesthetic so it gets a legend entry
+  geom_line(
+    data = lb_hprob %>%
+      filter(assemblage == "Pel") %>%
+      mutate(pH_pel = p_h, user = "Model"),
+    aes(x = year, y = pH_pel, linetype = user, color = user),
+    size = 1.25, alpha = 0.5
+  ) +
+  
+  facet_wrap(~area) +
+  scale_shape_manual(
+    values = c("charter" = 21, "private" = 24, "Model" = NA),
+    breaks = c("charter", "private", "Model")   # legend order
+  ) +
+  scale_fill_grey(start = 0.6, end = 0.2) +
+  scale_color_manual(
+    values = c("charter" = "black", "private" = "black", "Model" = "darkgrey"),
+    breaks = c("charter", "private", "Model")
+  ) +
+  scale_linetype_manual(
+    values = c("charter" = 0, "private" = 0, "Model" = 1),
+    breaks = c("charter", "private", "Model")
+  ) +
+  
+  guides(
+    shape = guide_legend(
+      override.aes = list(
+        linetype = c(0, 0, 1),
+        shape = c(21, 24, NA),
+        fill = c("grey40", "grey20", NA)
+      )
+    ),
+    fill = "none",
+    color = "none",
+    linetype = "none"
+  ) +
+  
+  theme_bw(base_size = baseTXT) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.position = "bottom",
+    legend.title = element_text(size = axTiTXT),
+    legend.text = element_text(size = axTXT)
+  ) +
+  ggtitle("Pelagic") +
+  ylab("Proportion harvested") +
+  xlab("Year")
+
+
+
+

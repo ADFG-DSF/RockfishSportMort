@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "_ab_NO_swhsR_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "_abSHARE_swhsR_",Sys.Date(),".html"))
       })
 ---
 
@@ -59,7 +59,7 @@ mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
 #bestish
-res <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
+res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
 #res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"

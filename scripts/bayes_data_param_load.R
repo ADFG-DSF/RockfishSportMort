@@ -286,11 +286,29 @@ readinData <- function(spl_knts = 7,
            inth_pel = pelagic_n, #black = black_n, 
            inth_yellow = ye_n, 
            inth_other = other_n, inth_dsr = dsr_n, inth_slope = slope_n,
-           intc_pel = pelagic_n_rel, #black = black_n, 
-           intc_yellow = ye_n_rel, 
-           intc_other = other_n_rel, intc_dsr = dsr_n_rel, intc_slope = slope_n_rel,
+           intc_pel = pelagic_c, #black = black_n, 
+           intc_yellow = ye_c, 
+           intc_other = other_c, 
+           intc_dsr = dsr_c, 
+           intc_slope = slope_c,
            region,area) %>%
     filter(!is.na(inth_pel))
+  
+  int_pel <- int %>% select(year,year_n,area_n,user_n,inth_pel,intc_pel) %>%
+    filter(!is.na(intc_pel),
+           intc_pel != 0)
+  int_ye <- int %>% select(year,year_n,area_n,user_n,inth_yellow,intc_yellow) %>%
+    filter(!is.na(intc_yellow),
+           intc_yellow != 0)
+  int_oth <- int %>% select(year,year_n,area_n,user_n,inth_other,intc_other) %>%
+    filter(!is.na(intc_other),
+           intc_other != 0)
+  int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
+    filter(!is.na(intc_dsr),
+           intc_dsr != 0)
+  int_slope <- int %>% select(year,year_n,area_n,user_n,inth_slope,intc_slope) %>%
+    filter(!is.na(intc_slope),
+           intc_slope != 0)
   
   compX <- comp %>% filter(area_n %in% c(11,12,13,14,15,16)) %>%
     mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
@@ -452,21 +470,40 @@ readinData <- function(spl_knts = 7,
       SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
       #interview data
-      int_area = int$area_n,
-      int_year = int$year_n,
-      int_user = int$user_n,
-      inth_pel = int$inth_pel,
-      inth_yellow = int$inth_yellow,
-      inth_other = int$inth_other,
-      inth_dsr = int$inth_dsr,
-      inth_slope = int$inth_slope,
-      intc_pel = int$intc_pel,
-      intc_yellow = int$intc_yellow,
-      intc_other = int$intc_other,
-      intc_dsr = int$intc_dsr,
-      intc_slope = int$intc_slope,
-      Nint = dim(int)[1],
+      intp_area = int_pel$area_n,
+      intp_year = int_pel$year_n,
+      intp_user = int_pel$user_n,
+      inth_pel = int_pel$inth_pel,
+      intc_pel = int_pel$intc_pel,
+      Nint_pel = dim(int_pel)[1],
       
+      inty_area = int_ye$area_n,
+      inty_year = int_ye$year_n,
+      inty_user = int_ye$user_n,
+      inth_ye = int_ye$inth_yellow,
+      intc_ye = int_ye$intc_yellow,
+      Nint_ye = dim(int_ye)[1],
+      
+      into_area = int_oth$area_n,
+      into_year = int_oth$year_n,
+      into_user = int_oth$user_n,
+      inth_other = int_oth$inth_other,
+      intc_other = int_oth$intc_other,
+      Nint_oth = dim(int_oth)[1],
+      
+      intd_area = int_dsr$area_n,
+      intd_year = int_dsr$year_n,
+      intd_user = int_dsr$user_n,
+      inth_dsr = int_dsr$inth_dsr,
+      intc_dsr = int_dsr$intc_dsr,
+      Nint_dsr = dim(int_dsr)[1],
+      
+      ints_area = int_slope$area_n,
+      ints_year = int_slope$year_n,
+      ints_user = int_slope$user_n,
+      inth_slope = int_slope$inth_slope,
+      intc_slope = int_slope$intc_slope,
+      Nint_slope = dim(int_slope)[1],
       
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
       

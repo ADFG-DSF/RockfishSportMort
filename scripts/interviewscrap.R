@@ -9,10 +9,6 @@ S_ayu <-
   filter(year >= 1996) %>%
   arrange(user, area, year) 
 
-head(S_ayu0,n= 10); head(S_ayu,n=10); head(I_ayu0,n=10)
-
-S_ayu %>% filter(area == "CI")
-
 #Interview data on kept and released 
 I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
   filter(!is.na(user))
@@ -31,7 +27,7 @@ I_ayu <-
               mutate(year = as.integer(year)) %>%
               right_join(I_ayu0 %>% select(area,region) %>% unique(),
                          by = "area")) %>%
- # filter(year >= 1996) %>%
+  # filter(year >= 1996) %>%
   arrange(user, area, year) 
 
 
@@ -118,12 +114,13 @@ int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
          inth_pel = pelagic_n, #black = black_n, 
          inth_yellow = ye_n, 
          inth_other = other_n, inth_dsr = dsr_n, inth_slope = slope_n,
-         intc_pel = pelagic_n_rel, #black = black_n, 
-         intc_yellow = ye_n_rel, 
-         intc_other = other_n_rel, intc_dsr = dsr_n_rel, intc_slope = slope_n_rel,
+         intc_pel = pelagic_c, #black = black_n, 
+         intc_yellow = ye_c, 
+         intc_other = other_c, 
+         intc_dsr = dsr_c, 
+         intc_slope = slope_c,
          region,area) %>%
-  filter(!is.na(inth_pel) &
-           inth_pel > 0)
+  filter(!is.na(inth_pel))
 
 I_ayu %>% filter(is.na(pelagic_n_rel) & !is.na(pelagic_n))
 I_ayu0 %>% filter(is.na(pelagic_n_rel) & !is.na(pelagic_n))

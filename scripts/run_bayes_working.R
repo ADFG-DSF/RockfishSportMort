@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 30E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -63,6 +63,7 @@ mod <- "Gen3ab_indcomp_swhsR_FULL" #separate B4 for pH by species grouping; 2.5e
 mod <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL"
 mod <- "Gen3ab_indcomp_pH33B2share_no_swhs_rel_FULL"
 
+mod <- "Gen4int_indcomp_swhsR_FULL"
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 #  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
 #}
