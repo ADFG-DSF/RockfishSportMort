@@ -1045,6 +1045,11 @@ se_int <-
          pH_dsr = dsrnye_n / (dsrnye_n + dsrnye_n_rel),
          pH_slope = slope_n / (slope_n + slope_n_rel)) #,
 
+#check slope and dsr = other
+se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
+                  slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
+  ggplot(aes(x = slopedsr_n, y = notye_nonpel_n)) + geom_point()
+
 pel_ch <- se_int%>% select(year,area,user,pelagic_n_rel)
 ye_ch <- se_int%>% select(year,area,user,ye_n_rel)
 black_ch <- se_int%>% select(year,area,user,black_n_rel)
@@ -1387,7 +1392,8 @@ ggplot(int %>% mutate(year = as.integer(year),
 
 
 
-
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
 #----
 #Scrapola:
 

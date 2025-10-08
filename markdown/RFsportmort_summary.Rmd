@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("RFsportmort_update_", "_abSHARE_swhsR_",Sys.Date(),".html"))
+                          output_file = paste0("RFsportmort_update_", "_intdat_swhsR_",Sys.Date(),".html"))
       })
 ---
 
@@ -38,7 +38,7 @@ library(writexl)
 library(flextable)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
-#source("./scripts/bayes_data_param_load", echo = FALSE)
+#source("../scripts/bayes_data_param_load.R", echo = FALSE)
 start_yr <- 1977
 end_yr <- 2023
 REP_YR <- 2023 #for Howard estimates
@@ -58,10 +58,12 @@ list2env(readinData(start_yr = start_yr,
 mod<-"LB_fit_3pH"
 #mod<-"LB_hyb_3pH"
 
+intdat <- "yes"
+
 #bestish
-res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
+#res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
-#res <- "rf_harvest_est_kha_rm_wt_thru2023_3e+06_7kn_2025-05-29"
+res <- "Gen4int_indcomp_swhsR_FULL_thru2023_1e+05__2025-10-08"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -1497,18 +1499,24 @@ dsr_how %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
   mutate(H_how = H_how - ye_how)-> dsr_how
 
 as.data.frame(
-  rbind(t(postH$q50$Hdnye_ayg),
-        t(postH$q50$Hdnye_ayu),
-        t(postH$q50$Hdnye_ay))) %>%
+#  rbind(t(postH$q50$Hdnye_ayg),
+#        t(postH$q50$Hdnye_ayu),
+#        t(postH$q50$Hdnye_ay))) %>%
+  rbind(t(postH$q50$Hd_ayg),
+        t(postH$q50$Hd_ayu),
+        t(postH$q50$Hd_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q2.5$Hdnye_ayg),
-          t(postH$q2.5$Hdnye_ayu),
-          t(postH$q2.5$Hdnye_ay))) %>%
+#    rbind(t(postH$q2.5$Hdnye_ayg),
+#          t(postH$q2.5$Hdnye_ayu),
+#          t(postH$q2.5$Hdnye_ay))) %>%
+    rbind(t(postH$q2.5$Hd_ayg),
+          t(postH$q2.5$Hd_ayu),
+          t(postH$q2.5$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1516,9 +1524,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q97.5$Hdnye_ayg),
-          t(postH$q97.5$Hdnye_ayu),
-          t(postH$q97.5$Hdnye_ay))) %>%
+   #  rbind(t(postH$q97.5$Hdnye_ayg),
+  #        t(postH$q97.5$Hdnye_ayu),
+  #        t(postH$q97.5$Hdnye_ay))) %>%
+    rbind(t(postH$q97.5$Hd_ayg),
+          t(postH$q97.5$Hd_ayu),
+          t(postH$q97.5$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1526,9 +1537,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$sd$Hdnye_ayg),
-          t(postH$sd$Hdnye_ayu),
-          t(postH$sd$Hdnye_ay))) %>%
+    #rbind(t(postH$sd$Hdnye_ayg),
+    #      t(postH$sd$Hdnye_ayu),
+    #      t(postH$sd$Hdnye_ay))) %>%
+    rbind(t(postH$sd$Hd_ayg),
+          t(postH$sd$Hd_ayu),
+          t(postH$sd$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1610,18 +1624,24 @@ dsr_howR %>% select(-c("var_gui_dsr","var_priv_dsr","var_tot_dsr")) %>%
 #ye_howR %>% filter(area == "PWSI") %>% arrange(user,year) %>% print(n = 80)
 
 as.data.frame(
-  rbind(t(postH$q50$Rdnye_ayg),
-        t(postH$q50$Rdnye_ayu),
-        t(postH$q50$Rdnye_ay))) %>%
+ # rbind(t(postH$q50$Rdnye_ayg),
+#        t(postH$q50$Rdnye_ayu),
+#        t(postH$q50$Rdnye_ay))) %>%
+  rbind(t(postH$q50$Rd_ayg),
+        t(postH$q50$Rd_ayu),
+        t(postH$q50$Rd_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q2.5$Rdnye_ayg),
-          t(postH$q2.5$Rdnye_ayu),
-          t(postH$q2.5$Rdnye_ay))) %>%
+    #rbind(t(postH$q2.5$Rdnye_ayg),
+    #      t(postH$q2.5$Rdnye_ayu),
+    #      t(postH$q2.5$Rdnye_ay))) %>%
+    rbind(t(postH$q2.5$Rd_ayg),
+          t(postH$q2.5$Rd_ayu),
+          t(postH$q2.5$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1629,9 +1649,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q97.5$Rdnye_ayg),
-          t(postH$q97.5$Rdnye_ayu),
-          t(postH$q97.5$Rdnye_ay))) %>%
+    #rbind(t(postH$q97.5$Rdnye_ayg),
+    #      t(postH$q97.5$Rdnye_ayu),
+    #      t(postH$q97.5$Rdnye_ay))) %>%
+    rbind(t(postH$q97.5$Rd_ayg),
+          t(postH$q97.5$Rd_ayu),
+          t(postH$q97.5$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1639,9 +1662,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$sd$Rdnye_ayg),
-          t(postH$sd$Rdnye_ayu),
-          t(postH$sd$Rdnye_ay))) %>%
+    #rbind(t(postH$sd$Rdnye_ayg),
+    #      t(postH$sd$Rdnye_ayu),
+    #      t(postH$sd$Rdnye_ay))) %>%
+    rbind(t(postH$sd$Rd_ayg),
+          t(postH$sd$Rd_ayu),
+          t(postH$sd$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1654,18 +1680,24 @@ as.data.frame(
   filter(area %in% southeast) -> DSR_rel
 
 as.data.frame(
-  rbind(t(postH$q50$Rdnye_ayg_mort),
-        t(postH$q50$Rdnye_ayu_mort),
-        t(postH$q50$Rdnye_ay_mort))) %>%
+  #rbind(t(postH$q50$Rdnye_ayg_mort),
+  #      t(postH$q50$Rdnye_ayu_mort),
+  #      t(postH$q50$Rdnye_ay_mort))) %>%
+  rbind(t(postH$q50$Rd_ayg_mort),
+        t(postH$q50$Rd_ayu_mort),
+        t(postH$q50$Rd_ay_mort))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(start_yr:end_yr, times = 3),
          user = rep(c("guided", "unguided", "All"), each = Y)) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q2.5$Rdnye_ayg_mort),
-          t(postH$q2.5$Rdnye_ayu_mort),
-          t(postH$q2.5$Rdnye_ay_mort))) %>%
+    #rbind(t(postH$q2.5$Rdnye_ayg_mort),
+    #      t(postH$q2.5$Rdnye_ayu_mort),
+    #      t(postH$q2.5$Rdnye_ay_mort))) %>%
+    rbind(t(postH$q2.5$Rd_ayg_mort),
+          t(postH$q2.5$Rd_ayu_mort),
+          t(postH$q2.5$Rd_ay_mort))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1673,9 +1705,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$q97.5$Rdnye_ayg_mort),
-          t(postH$q97.5$Rdnye_ayu_mort),
-          t(postH$q97.5$Rdnye_ay_mort))) %>%
+    #rbind(t(postH$q97.5$Rdnye_ayg_mort),
+    #      t(postH$q97.5$Rdnye_ayu_mort),
+    #      t(postH$q97.5$Rdnye_ay_mort))) %>%
+    rbind(t(postH$q97.5$Rd_ayg_mort),
+          t(postH$q97.5$Rd_ayu_mort),
+          t(postH$q97.5$Rd_ay_mort))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -1683,9 +1718,12 @@ as.data.frame(
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
   left_join(as.data.frame(
-    rbind(t(postH$sd$Rdnye_ayg_mort),
-          t(postH$sd$Rdnye_ayu_mort),
-          t(postH$sd$Rdnye_ay_mort))) %>%
+    #rbind(t(postH$sd$Rdnye_ayg_mort),
+    #      t(postH$sd$Rdnye_ayu_mort),
+    #      t(postH$sd$Rdnye_ay_mort))) %>%
+    rbind(t(postH$sd$Rd_ayg_mort),
+          t(postH$sd$Rd_ayu_mort),
+          t(postH$sd$Rd_ay_mort))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
       mutate(year = rep(start_yr:end_yr, times = 3),
              user = rep(c("guided", "unguided", "All"), each = Y)) %>%
@@ -2800,10 +2838,30 @@ pHpel_obs <-
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = rep(unique(Hhat_ay$year), times = 1),
                  user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "logbook") %>%
+                 source = "Logbook") %>%
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
+
+if (intdat == "yes"){
+  z <- 1.96
+  pHpel_obs %>% rbind(int %>%
+                        mutate(year = year_n + 1976, #1995,
+                               area = unique(H_ayg$area)[area_n],
+                               user = ifelse(user_n == 0, "charter", "private"),
+                               source = ifelse(source == 1, "sample", "logbook"),
+                               pH = inth_pel / intc_pel,
+                               p_lo95 = (pH + z^2/(2*(intc_pel)) - 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_pel))) / (intc_pel))) /
+                                 (1 + z^2/(intc_pel)),
+                               p_hi95 = (pH + z^2/(2*(intc_pel)) + 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_pel))) / (intc_pel))) /
+                                 (1 + z^2/(intc_pel)),
+                               area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                        select(year, area, user, source, pH,p_lo95,p_hi95) %>%
+                        mutate(source = "Portside interviews") %>%
+                        filter(!is.na(pH))) -> pHpel_obs
+}
 
 beta4_pH <- postH$q50$beta4_pH[,,1] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
@@ -2826,15 +2884,16 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,1],
                          area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
              by = "area") %>%
   full_join(beta4_pH, by = c("y","area")) %>%
-
   mutate(logit_pH = beta0 +
            beta1 / (1 + exp(-beta2 * (y - beta3))) *
            (1 + (u - 1) * (beta4 - 1)),
          pH = logit_to_prob(logit_pH),
          year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pHpel_trend
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHpel_trend
 
-pHpel_obs %>% filter(user != "all") %>%
+
+pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -2843,7 +2902,7 @@ pHpel_obs %>% filter(user != "all") %>%
   geom_point(aes(shape = source)) +
   #geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
-  geom_line(data = pHpel_trend, aes(color = user)) +
+  #geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
@@ -2909,31 +2968,59 @@ pHye_obs <-
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = rep(unique(Hhat_ay$year), times = 1),
                  user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "logbook") %>%
+                 source = "Logbook") %>%
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
-#rbind(beta0_pH <- postH$q50$beta0_pH[,2],
-#      beta1_pH <- postH$q50$beta1_pH[,2],
-#      beta2_pH <- postH$q50$beta2_pH[,2],
-#      beta3_pH <- postH$q50$beta3_pH[,2],
-#      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
-#  data.frame() %>%
-#  mutate(area = unique(H_ayg$area),
-#         species = "ye") %>%
-#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-#             by = "area") %>%
-#  mutate(logit_pH = beta0 +
-#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-#           beta4 * (u - 1),
-#         pH = logit_to_prob(logit_pH),
-#         year = y + 1976,
-#         user = ifelse(u == 1, "charter","private"))-> pHye_trend
+if (intdat == "yes"){
+  z <- 1.96
+  pHye_obs %>% rbind(int %>%
+                        mutate(year = year_n + 1976, #1995,
+                               area = unique(H_ayg$area)[area_n],
+                               user = ifelse(user_n == 0, "charter", "private"),
+                               source = ifelse(source == 1, "sample", "logbook"),
+                               pH = inth_yellow / intc_yellow,
+                               p_lo95 = (pH + z^2/(2*(intc_yellow)) - 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_yellow))) / (intc_yellow))) /
+                                 (1 + z^2/(intc_yellow)),
+                               p_hi95 = (pH + z^2/(2*(intc_yellow)) + 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_yellow))) / (intc_yellow))) /
+                                 (1 + z^2/(intc_yellow)),
+                               area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                        select(year, area, user, source, pH,p_lo95,p_hi95) %>%
+                        mutate(source = "Portside interviews") %>%
+                        filter(!is.na(pH))) -> pHye_obs
+}
 
-pHye_obs %>% filter(user != "all") %>%
+beta4_pH <- postH$q50$beta4_pH[,,2] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,2],
+      beta1_pH <- postH$q50$beta1_pH[,2],
+      beta2_pH <- postH$q50$beta2_pH[,2],
+      beta3_pH <- postH$q50$beta3_pH[,2]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "yelloweye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHye_trend
+
+pHye_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -3017,26 +3104,54 @@ pHnpny_obs <-
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA))
 
-#rbind(beta0_pH <- postH$q50$beta0_pH[,3],
-#      beta1_pH <- postH$q50$beta1_pH[,3],
-#      beta2_pH <- postH$q50$beta2_pH[,3],
-#      beta3_pH <- postH$q50$beta3_pH[,3],
-#      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
-#  data.frame() %>%
-#  mutate(area = unique(H_ayg$area),
-#         species = "nonp-nonye") %>%
-#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
-#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-#             by = "area") %>%
-#  mutate(logit_pH = beta0 +
-#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-#           beta4 * (u - 1),
-#         pH = logit_to_prob(logit_pH),
-#         year = y + 1976,
-#         user = ifelse(u == 1, "charter","private"))-> pHnpny_trend
+if (intdat == "yes"){
+  z <- 1.96
+  pHnpny_obs %>% rbind(int %>%
+                        mutate(year = year_n + 1976, #1995,
+                               area = unique(H_ayg$area)[area_n],
+                               user = ifelse(user_n == 0, "charter", "private"),
+                               source = ifelse(source == 1, "sample", "logbook"),
+                               pH = inth_other / intc_other,
+                               p_lo95 = (pH + z^2/(2*(intc_other)) - 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_other))) / (intc_other))) /
+                                 (1 + z^2/(intc_other)),
+                               p_hi95 = (pH + z^2/(2*(intc_other)) + 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_other))) / (intc_other))) /
+                                 (1 + z^2/(intc_other)),
+                               area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                        select(year, area, user, source, pH,p_lo95,p_hi95) %>%
+                        mutate(source = "Portside interviews") %>%
+                        filter(!is.na(pH))) -> pHnpny_obs
+}
 
-pHnpny_obs %>% filter(user != "all") %>%
+beta4_pH <- postH$q50$beta4_pH[,,3] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+
+rbind(beta0_pH <- postH$q50$beta0_pH[,3],
+      beta1_pH <- postH$q50$beta1_pH[,3],
+      beta2_pH <- postH$q50$beta2_pH[,3],
+      beta3_pH <- postH$q50$beta3_pH[,3]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "other") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHnpny_trend
+
+pHnpny_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -3065,7 +3180,8 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 pal <- wes_palette(name = "AsteroidCity1", n=5)#[c(2,5)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
 
-if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
+if (intdat != "yes"){} else {
+#if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
 pHdsr_mod <- 
   rbind(postH$mean$pH[,,1,4] %>% t(),
         postH$mean$pH[,,2,4] %>% t()) %>%
@@ -3117,32 +3233,56 @@ pHdsr_obs <-
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = rep(unique(Hhat_ay$year), times = 1),
                  user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "logbook") %>%
+                 source = "Logbook") %>%
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")%>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA)) %>%
-  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  rbind(int %>% mutate(year = year_n + 1976, #1995,
+                               area = unique(H_ayg$area)[area_n],
+                               user = ifelse(user_n == 0, "charter", "private"),
+                               source = ifelse(source == 1, "sample", "logbook"),
+                               pH = inth_dsr / intc_dsr,
+                               p_lo95 = (pH + z^2/(2*(intc_dsr)) - 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_dsr))) / (intc_dsr))) /
+                                 (1 + z^2/(intc_dsr)),
+                               p_hi95 = (pH + z^2/(2*(intc_dsr)) + 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_dsr))) / (intc_dsr))) /
+                                 (1 + z^2/(intc_dsr)),
+                               area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                        select(year, area, user, source, pH,p_lo95,p_hi95) %>%
+                        mutate(source = "Portside interviews") %>%
+                        filter(!is.na(pH)))
+
+beta4_pH <- postH$q50$beta4_pH[,,4] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
 rbind(beta0_pH <- postH$q50$beta0_pH[,4],
       beta1_pH <- postH$q50$beta1_pH[,4],
       beta2_pH <- postH$q50$beta2_pH[,4],
-      beta3_pH <- postH$q50$beta3_pH[,4],
-      beta4_pH <- postH$q50$beta4_pH[,4]) %>% t() %>%
+      beta3_pH <- postH$q50$beta3_pH[,4]) %>% t() %>%
   data.frame() %>%
   mutate(area = unique(H_ayg$area),
-         species = "DSR") %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+         species = "dsr") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
   right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
                          area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
              by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
   mutate(logit_pH = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
          pH = logit_to_prob(logit_pH),
          year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pHdsr_trend
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHdsr_trend
 
-pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
+                       source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
@@ -3150,8 +3290,8 @@ pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
               aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
-  geom_point(data  = pHdsr_obs %>% filter(user == "all"), 
-             color = "darkgrey", shape = 8, alpha = 0.5) +
+#  geom_point(data  = pHdsr_obs %>% filter(user == "all"), 
+#             color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHdsr_mod, 
             aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
@@ -3169,7 +3309,8 @@ X <- X+1
 ```{r, fig.width = 10, fig.height = 5, fig.cap = paste0("**Figure ",X,".**- Annual proportion of Slope rockfish catch that was harvested. Note that pre-1990 estimates are used to estimate catch in these years when catch estimates are not available. Note that the observed logbook data is for all non-pelagic, non-yelloweye fish.")}
 pal <- wes_palette(name = "Rushmore1", n=5)[c(3,4)] #BottleRocket2 2,3 or 2,4 Rushmore1 2,3,4 Darjeeling 1,2,3,4,5 FantasticFox1 3,4,5
 #library(paletteer); scale_colour_paletteer_d("nationalparkcolors::Acadia")
-if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
+if (intdat != "yes"){} else {
+#if (mod %in% c("LB_fit_3pH","LB_hyb_3pH")){} else {
 pHslope_mod <- 
   rbind(postH$mean$pH[,,1,5] %>% t(),
         postH$mean$pH[,,2,5] %>% t()) %>%
@@ -3225,38 +3366,61 @@ pHslope_obs <-
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA)) %>%
-  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
+  filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  rbind(int %>% mutate(year = year_n + 1976, #1995,
+                               area = unique(H_ayg$area)[area_n],
+                               user = ifelse(user_n == 0, "charter", "private"),
+                               source = ifelse(source == 1, "sample", "logbook"),
+                               pH = inth_slope / intc_slope,
+                               p_lo95 = (pH + z^2/(2*(intc_slope)) - 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_slope))) / (intc_slope))) /
+                                 (1 + z^2/(intc_slope)),
+                               p_hi95 = (pH + z^2/(2*(intc_slope)) + 
+                                           z * sqrt((pH*(1 - pH) + z^2/(4*(intc_slope))) / (intc_slope))) /
+                                 (1 + z^2/(intc_slope)),
+                               area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+                        select(year, area, user, source, pH,p_lo95,p_hi95) %>%
+                        mutate(source = "Portside interviews") %>%
+                        filter(!is.na(pH)))
+
+beta4_pH <- postH$q50$beta4_pH[,,5] %>%t() %>% as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+              mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
+                     #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              pivot_longer(-c(y), names_to = "area", values_to = "beta4")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
 rbind(beta0_pH <- postH$q50$beta0_pH[,5],
       beta1_pH <- postH$q50$beta1_pH[,5],
       beta2_pH <- postH$q50$beta2_pH[,5],
-      beta3_pH <- postH$q50$beta3_pH[,5],
-      beta4_pH <- postH$q50$beta4_pH[,5]) %>% t() %>%
+      beta3_pH <- postH$q50$beta3_pH[,5]) %>% t() %>%
   data.frame() %>%
   mutate(area = unique(H_ayg$area),
-         species = "Slope") %>%
-  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+         species = "slope") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4) %>%
   right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
                          area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
              by = "area") %>%
+  full_join(beta4_pH, by = c("y","area")) %>%
   mutate(logit_pH = beta0 +
-           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-           beta4 * (u - 1),
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
          pH = logit_to_prob(logit_pH),
          year = y + 1976,
-         user = ifelse(u == 1, "charter","private"))-> pHslope_trend
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHslope_trend
 
-pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
+                       source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHslope_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
   geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75) +
-  geom_point(data  = pHslope_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
+  #geom_point(data  = pHslope_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHslope_mod, aes(color = user)) +
-  #geom_line(data = pHye_trend, aes(color = user)) +
-  #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
+  #geom_line(data = pHslope_trend, aes(color = user)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
   scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = 14)+
@@ -4136,7 +4300,8 @@ stopifnot(ncol(df) == length(reg2))  # sanity check
 ### P(slope|non-pelagic & non-yellowye) *For release estimates*
  
 ```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",X,".**- Annual estimates of the percent of the sport non-pelagic, non-yelloweye releases that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1996-2023. ")}
-pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
+if (intdat == "yes"){} else {
+  pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 
 pr_slope_mod <- 
   rbind(postH$mean$pr_slope[,,1] %>% t(),
@@ -4204,25 +4369,6 @@ pr_slope_obs <-
          pr_slope = comp_slope / (comp_N - comp_pelagic - comp_yellow),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
 
-#rbind(beta0_slope <- postH$q50$beta0_slope,
-#      beta1_slope <- postH$q50$beta1_slope,
-#      beta2_slope <- postH$q50$beta2_slope,
-#      beta3_slope <- postH$q50$beta3_slope,
-#      beta4_slope <- postH$q50$beta4_slope,
-#      beta5_rslope <- postH$q50$beta4_slope) %>% t() %>%
-#  data.frame() %>%
-#  mutate(area = unique(H_ayg$area)) %>%
-#  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5, beta5 = X6) %>%
-#  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
-#                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
-#             by = "area") %>%
-#  mutate(logit_y = beta0 +
-#           beta1 / (1 + exp(-beta2 * (y - beta3))) +
-#           beta4 * (u - 1) + beta5,
-#         pr_slope = logit_to_prob(logit_y),
-#         year = y + 1976,
-#         user = ifelse(u == 1, "charter","private"))-> rslope_trend
-
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
   
@@ -4249,6 +4395,9 @@ X <- X+1
 
 df <- t(jags_dat$r2_gmort_b)
 stopifnot(ncol(df) == length(reg2))  # sanity check
+}
+
+
 ```
 <br><br>
 

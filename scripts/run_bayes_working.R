@@ -398,7 +398,7 @@ saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",o
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
+results <- "Gen4int_indcomp_swhsR_FULL_thru2023_1e+05__2025-10-08"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -882,7 +882,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "mu_beta4_pH","tau_beta4_pH",
                                         "mu_beta5_pH","tau_beta5_pH"))
 
-jagsUI::traceplot(postH, parameters = c("beta2_pH"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("beta2_pH"))
 jagsUI::traceplot(postH, parameters = c("beta4_pH"))
 
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",

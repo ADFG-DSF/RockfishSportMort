@@ -340,7 +340,7 @@ with total releases equal to the sum of the compositional releases.
 
 The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
 
-$\textrm{logit}(pH_{ayuc})~=~(\beta0_{(pH)ac} + \frac{\beta1_{(pH)ac}}{(1 + exp(\beta2_{(pH)ac}*(y - \beta3_{(pH)ac})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)ay} - 1)) + re_{(pH)ayuc}$
+$\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)ay} - 1)) + re_{(pH)(comp)ayu}$
 
 where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. 
 
@@ -352,7 +352,7 @@ $\tau = \frac{1}{sd^2}$
 
 and *sd* is the standard deviation, was somewhat constrained for the $\beta0$ term to maintain reasonable continuity within regions. Constraints on the standard deviations were based on examination of traceplots and an effort to limit extreme, but rare, values in the monte carlo chains that had little to no effect on the results but slowed convergence. 
 
-Although these methods do not apply the Howard methods of using guided:unguided ratio of total rockfish releases in the SWHS data to directly calculate unguided releases, the SWHS nevertheless offers information on the relative number of fish caught, retained and released for each user group. Because the proportion harvested is known for guided anglers via logbook data, the difference in the proportion harvested for each user group in the SWHS data suggests whether private anglers are more or less likely to retain a generic rockfish relative to guided anglers. As such the SWHS was used to develop a prior to inform the $\beta4_{(pH)ayuc}$ terms that describe the offset of the *pH* logistic curve for unguided anglers (Tables 7 - 9 pH_PRIOR). SWHS data became stratified by user groups in 2011 and thus the prior for recent years for each CFMU uses values estimated from the data. The $\beta4_{(pH)ayuc}$ term was given a prior informed by the ratio of the proportion harvested by private anglers, as estimated by the SWHS ($pH_{unguided}^{SWHS}$), to the proportion harvested by guided anglers, as estimated by the SWHS ($pH_{guided}^{SWHS}$), such that unguided:guided SWHS *pH* ratio in area *a* and year *y*, $pH_{ay}^{ung:gui}$ is defined as
+Although these methods do not apply the Howard methods of using guided:unguided ratio of total rockfish releases in the SWHS data to directly calculate unguided releases, the SWHS nevertheless offers information on the relative number of fish caught, retained and released for each user group. Because the proportion harvested is known for guided anglers via logbook data, the difference in the proportion harvested for each user group in the SWHS data suggests whether private anglers are more or less likely to retain a generic rockfish relative to guided anglers. As such the SWHS was used to develop a prior to inform the $\beta4_{(pH)(comp)ayu}$ terms that describe the offset of the *pH* logistic curve for unguided anglers (Tables 7 - 9 pH_PRIOR). SWHS data became stratified by user groups in 2011 and thus the prior for recent years for each CFMU uses values estimated from the data. The $\beta4_{(pH)(comp)ayu}$ term was given a prior informed by the ratio of the proportion harvested by private anglers, as estimated by the SWHS ($pH_{unguided}^{SWHS}$), to the proportion harvested by guided anglers, as estimated by the SWHS ($pH_{guided}^{SWHS}$), such that unguided:guided SWHS *pH* ratio in area *a* and year *y*, $pH_{ay}^{ung:gui}$ is defined as
 
 $pH_{ay}^{ung:gui}=\frac{pH_{unguided_{ay}}^{SWHS}}{pH_{guided_{ay}}^{SWHS}}$  
 
@@ -364,9 +364,9 @@ where $\widehat{H}^{SWHS}_{ayu}$ and $\widehat{R}^{SWHS}_{ayu}$ are the SWHS est
 
 $se_{pHayu} = \sqrt{se_{H_{ay}}^2{\widehat{R}^{SWHS}_{ayu}}^2 + se_{R_{ay}}^2{\widehat{H}^{SWHS}_{ayu}}^2 - 2*{\widehat{R}^{SWHS}_{ayu}}*{\widehat{H}^{SWHS}_{ayu}}*cov*se_{H_{ay}}*se_{R_{ay}}}$
 
-Thus for years 2011 onward $\beta4_{(pH)ayuc}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
+Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
 
-$\beta4_{(pH)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
+$\beta4_{(pH)(comp)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
 
 where 
 
@@ -374,11 +374,11 @@ $\sigma_{pH_{ay}^{ung:gui}}^2 = {\frac{se_{pHung}^2}{pH_{gui}^{SWHS^2}}+\frac{pH
 
 and *cov* refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$. 
 
-For years prior to 2011, each CFMU uses a prior centered around the mean of the area specific $pH_{ay}^{ung:gui}$ ratios, excluding years beyond 2019 when management actions altered angler retention probabilities, such that
+For years between 1977 and 2010, the prior for each CFMU uses a prior centered around the mean of the area specific $\beta4_{(pH)(comp)ayu}$ values between 2011 and 2019 (later years are not used because management changes altered angler behavior after 2019) such that 
 
-$\beta4_{(pH)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(\frac{1}{n} \sum_{y=2011}^{2019} ({pH_{ay}^{ung:gui}})), \sigma_{pH_{a}^{ung:gui}}^2\right)$
+$\beta4_{(pH)(comp)ay}~\sim~\textrm{Normal}\left((\frac{1}{n} \sum_{y=2011}^{2019} (\beta4_{(pH)(comp)ay})), \sigma_{\beta4_{(pH)(comp)ay}}^2\right)$
 
-where the standard deviation in those years was modeled with an area-specific uniform prior between 0.1 and 5 (Table PRIORS) and $\beta4_{(pH)ayuc}$ was bounded such that the lower bound was equal to 0.75 times the lowest observed $pH_{ay}^{ung:gui}$ ratio and the upper bound was equal to 1.5 times the maximum observed $pH_{ay}^{ung:gui}$ ratio in that area. 
+The $\beta4_{(pH)(comp)ayu}$ from years 2011 to 2019 are used for the pre-2011 years rather than the $pH_{ay}^{ung:gui}$ ratios because the offset $\beta4$ term is also influenced by the interview data that provides estimates of the proportion harvested for both user groups . Structuring the priors for the early years using the recent $\beta4_{(pH)(comp)ayu}$ estimates allows both the $pH_{ay}^{ung:gui}$ estimates and the interview data to inform those estimates
 
 The hyper priors for the regional $\beta1$ and $\beta2$ standard deviations used relatively constrained uniform priors on the standard deviation. Attempts to apply a gamma distribution directly to precision resulted in rare but extreme values that slowed convergence. Limiting the upper end of the standard deviation to values of 5 and 4 allowed for more influence of the regional hyperprior by limiting area specific deviations from the regional mean which stabilized the model and allowed data-poor areas to reach convergence. 
 
@@ -452,11 +452,11 @@ $\widehat{R}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(non-pel,non-ye)
 
 Releases are related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
 
-$x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, x_{(comp)ayu}+r_{(comp)ayu}^{int})$
+$x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ayu}^{int})$
 
-where $r_{(comp)ayu}^{int}$ is the corresponding number rockfish reported as released in portside angler interviews.
+where $r_{(comp)ayu}^{int}$ is the corresponding number of rockfish reported as released in portside angler interviews.
 
-Unguided release estimates by species thus reflect a balance of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ayg}$, 4) portside sampling estimates of $pH_{(comp)ayg}$ and $pH_{(comp)ayu}$ for both user groups, and 5) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific releases must sum to the bias corrected SWHS estimate of releases for both user groups such that
+Unguided release estimates by species thus reflect a balance of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ay1}$, 4) portside sampling estimates of $pH_{(comp)ayu}$ for both user groups, and 5) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific releases must sum to the bias corrected SWHS estimate of releases for both user groups such that
 
 $R_{ayu} = R_{(pelagic)ayu} + R_{(yelloweye)ayu} + R_{(non-pelagic, non-yelloweye)ayu}$
 

@@ -759,6 +759,7 @@ jags_params <- function(){
     "Rb_ayg_mort","Rb_ayu_mort","Rb_ay_mort",
     "Ry_ayg_mort","Ry_ayu_mort","Ry_ay_mort",
     "Rdnye_ayg_mort","Rdnye_ayu_mort","Rdnye_ay_mort",
+    "Rd_ayg_mort","Rd_ayu_mort","Rd_ay_mort",
     "Rs_ayg_mort","Rs_ayu_mort","Rs_ay_mort",
     
     #total mortality
@@ -766,6 +767,7 @@ jags_params <- function(){
     "Tb_ayg","Tb_ayu","Tb_ay",
     "Ty_ayg","Ty_ayu","Ty_ay",
     "Tdnye_ayg","Tdnye_ayu","Tdnye_ay",
+    "Td_ayg","Td_ayu","Td_ay",
     "Ts_ayg","Ts_ayu","Ts_ay",
     
     #biomass conversions
@@ -773,6 +775,7 @@ jags_params <- function(){
     "Bb_ayg","Bb_ayu","Bb_ay",
     "By_ayg","By_ayu","By_ay",
     "Bdnye_ayg","Bdnye_ayu","Bdnye_ay",
+    "Bd_ayg","Bd_ayu","Bd_ay",
     "Bs_ayg","Bs_ayu","Bs_ay")
   return(params)
 }

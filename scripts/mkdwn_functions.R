@@ -160,12 +160,26 @@ readinData <- function(spl_knts = 7,
     filter(year >= 1996) %>%
     arrange(user, area, year) 
   
-  #When retention of YE is prohibited as n SE AK between 2020 through 2024 we need
-  # to censor the survey/creel data
-  #S_ayu <- S_ayu %>%
-  #  mutate(ye_n = ifelse(region == "Southeast" &
-  #                         year > 2019 & year < 2025,
-  #                       NA,ye_n))
+  #Interview data on kept and released 
+  I_ayu0 <- readRDS("..//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
+    filter(!is.na(user))
+  
+  setdiff(expand_grid(year = unique(I_ayu0$year),
+                      area = unique(I_ayu0$area),
+                      user = unique(I_ayu0$user)),
+          I_ayu0 %>% select(year,area,user)) -> misdat
+  na_df <- as.data.frame(matrix(NA, nrow = nrow(misdat), 
+                                ncol = length(colnames(I_ayu0)[4:18])))
+  colnames(na_df) <- colnames(I_ayu0)[4:18]
+  
+  I_ayu <- 
+    I_ayu0 %>% mutate(year = as.integer(year)) %>%
+    bind_rows(bind_cols(misdat, na_df) %>%
+                mutate(year = as.integer(year)) %>%
+                right_join(I_ayu0 %>% select(area,region) %>% unique(),
+                           by = "area")) %>%
+    # filter(year >= 1996) %>%
+    arrange(user, area, year) 
   
   # Kodiak hydroacoustic supplemental data
   kha <- readRDS("..//data//bayes_dat//kha.rds")
@@ -223,6 +237,40 @@ readinData <- function(spl_knts = 7,
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow))  #,
   ##         N = ifelse(is.na(yellow),NA,N))
   
+  int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+    mutate(area_n = as.numeric(as.factor(area)), 
+           user_n = ifelse(user == "charter", 0, 1), 
+           year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+           #region_n = ifelse()
+           source = 1) %>%
+    select(year, year_n, area_n, user_n, source, # N = totalrf_n, 
+           inth_pel = pelagic_n, #black = black_n, 
+           inth_yellow = ye_n, 
+           inth_other = other_n, inth_dsr = dsr_n, inth_slope = slope_n,
+           intc_pel = pelagic_c, #black = black_n, 
+           intc_yellow = ye_c, 
+           intc_other = other_c, 
+           intc_dsr = dsr_c, 
+           intc_slope = slope_c,
+           region,area) %>%
+    filter(!is.na(inth_pel))
+  
+  int_pel <- int %>% select(year,year_n,area_n,user_n,inth_pel,intc_pel) %>%
+    filter(!is.na(intc_pel),
+           intc_pel != 0)
+  int_ye <- int %>% select(year,year_n,area_n,user_n,inth_yellow,intc_yellow) %>%
+    filter(!is.na(intc_yellow),
+           intc_yellow != 0)
+  int_oth <- int %>% select(year,year_n,area_n,user_n,inth_other,intc_other) %>%
+    filter(!is.na(intc_other),
+           intc_other != 0)
+  int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
+    filter(!is.na(intc_dsr),
+           intc_dsr != 0)
+  int_slope <- int %>% select(year,year_n,area_n,user_n,inth_slope,intc_slope) %>%
+    filter(!is.na(intc_slope),
+           intc_slope != 0)
+  
   compX <- comp %>%
     mutate(yellow_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                              NA,yellow),
@@ -230,13 +278,7 @@ readinData <- function(spl_knts = 7,
            N_x = ifelse(region == "Southeast" & year > 2019 & year < 2025,
                         NA,N)) %>%
     filter(!is.na(N_x))
-  #comp %>% filter(region == "Southeast") %>% print(n =200)
-  #comp %>% print(n =50)
-  #range(comp$year_n)
   
-  #with(comp, table(area_n, area))
-  #with(comp, table(user_n,area))
-  #with(S_ayu, table(user,area))
   S_ayu %>% mutate(area_n = as.numeric(area)) %>%
     select(area,area_n) %>% unique() %>% #-> area_ns
     right_join(kha, by = "area") %>% filter(year >= start_yr & year <= end_yr) %>%
@@ -389,6 +431,42 @@ readinData <- function(spl_knts = 7,
       SEn3 = min(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       SEn4 = max(as.numeric(row.names(comp[comp$region == "Southeast" & comp$user_n == 1,]))),
       
+      #interview data
+      intp_area = int_pel$area_n,
+      intp_year = int_pel$year_n,
+      intp_user = int_pel$user_n,
+      inth_pel = int_pel$inth_pel,
+      intc_pel = int_pel$intc_pel,
+      Nint_pel = dim(int_pel)[1],
+      
+      inty_area = int_ye$area_n,
+      inty_year = int_ye$year_n,
+      inty_user = int_ye$user_n,
+      inth_ye = int_ye$inth_yellow,
+      intc_ye = int_ye$intc_yellow,
+      Nint_ye = dim(int_ye)[1],
+      
+      into_area = int_oth$area_n,
+      into_year = int_oth$year_n,
+      into_user = int_oth$user_n,
+      inth_other = int_oth$inth_other,
+      intc_other = int_oth$intc_other,
+      Nint_oth = dim(int_oth)[1],
+      
+      intd_area = int_dsr$area_n,
+      intd_year = int_dsr$year_n,
+      intd_user = int_dsr$user_n,
+      inth_dsr = int_dsr$inth_dsr,
+      intc_dsr = int_dsr$intc_dsr,
+      Nint_dsr = dim(int_dsr)[1],
+      
+      ints_area = int_slope$area_n,
+      ints_year = int_slope$year_n,
+      ints_user = int_slope$user_n,
+      inth_slope = int_slope$inth_slope,
+      intc_slope = int_slope$intc_slope,
+      Nint_slope = dim(int_slope)[1],
+      
       regions = c(1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
       
       Nkha = dim(kha_dat)[1],
@@ -503,6 +581,7 @@ readinData <- function(spl_knts = 7,
               S_ayu = S_ayu,
               comp = comp,
               compX = compX,
+              int = int,
               Y = Y, A = A))
 }
 
