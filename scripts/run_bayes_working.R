@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 35E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 6E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -64,6 +64,7 @@ mod <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL"
 mod <- "Gen3ab_indcomp_pH33B2share_no_swhs_rel_FULL"
 
 mod <- "Gen4int_indcomp_swhsR_FULL"
+mod <- "Gen4int_indcomp_swhsR_FULL_fix"
 #if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
 #  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
 #}
@@ -74,7 +75,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen3aa_indcomp_pH33B2share_swhsR_FULL_thru2023_2500000__2025-09-26"
 use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
-use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06__2025-09-29"
+use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -394,7 +395,7 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder

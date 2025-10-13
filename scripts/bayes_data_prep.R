@@ -1135,7 +1135,10 @@ se_int <-
          pH_black = black_n / (black_n + black_n_rel),
          pH_other = notye_nonpel_n / (notye_nonpel_n + notye_nonpel_n_rel),
          pH_dsr = dsrnye_n / (dsrnye_n + dsrnye_n_rel),
-         pH_slope = slope_n / (slope_n + slope_n_rel)) #,
+         pH_slope = slope_n / (slope_n + slope_n_rel)) %>%
+  #Need to censure the CSEO data in these years because most released fish were not id'd to species
+  filter(!(year %in% seq(2000,2005,1) & area %in% c("CSEO","EWYKT","SSEO","SSEI")),
+         !(year %in% c(2000,2001,2004) & area %in% c("NSEO","NSEI")))#,
 
 #check slope and dsr = other
 se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
@@ -1149,6 +1152,8 @@ dsr_ch <- se_int%>% select(year,area,user,dsr_n_rel)
 slope_ch <- se_int%>% select(year,area,user,slope_n_rel)
 
 with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(Pelagic_rels = Freq)
+
+with(se_int, table(year,area,user))
 
 full_join(with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(Pelagic_rels = Freq),
           with(ye_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(ye_rels = Freq),
@@ -1195,7 +1200,7 @@ sc_int <- sc_int %>%
          pH_black = NA, #black_n / (black_n + black_n_rel),
          pH_other = ifelse(year > 2010,
                            notye_nonpel_n / (notye_nonpel_n + notye_nonpel_n_rel),
-                           (notye_nonpel_n - ye_n) / (notye_nonpel_n + notye_nonpel_n_rel - ye_n - ye_n_rel)), #npkept
+                           NA), #npkept
          pH_dsr = NA,
          pH_slope = NA) %>%
   select(-c(rfkept,rfrel))
@@ -1338,6 +1343,12 @@ legTXT <- 12 #legend text size
 axTXT <- 16 # axis tic label text size
 axTiTXT <- 17 # axis title text size
 barwidth <- 1 #bar width on bar graphs
+
+#Get rid of pre1999 data. Before the start of the logbook species ID program the
+# interview data is all over the place, but smooths out and is more consistent
+# once the logbook program started.
+
+int <- int %>% filter(year > 1998)
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user), #%>% filter(assemblage == "Black"), 
@@ -1492,13 +1503,24 @@ ggplot(int %>% mutate(year = as.integer(year),
 
 ggsave("figures/int_vs_lb_propH_slope-other.png")
 
+unique(int$area)
+str(int)
 #-- Prep and save for Bayes model
 int %>% filter(year > 1994) %>%
+  mutate(other_n = ifelse(year < 2011 & 
+                            area %in% c("AFOGNAK","NG","NORTHEAST","PWSI","PWSO","CI",
+                                        "EASTSIDE","WKMA","BSAI","SOKO2SAP"),
+                          0, notye_nonpel_n),
+         other_n_rel = ifelse(year < 2011 &
+                                area %in% c("AFOGNAK","NG","NORTHEAST","PWSI","PWSO","CI",
+                                            "EASTSIDE","WKMA","BSAI","SOKO2SAP"),
+                              0, notye_nonpel_n_rel)) %>%
   select(year,user,area,
          pelagic_n,pelagic_n_rel,
          ye_n,ye_n_rel,
          #black_n,black_n_rel,
-         other_n = notye_nonpel_n,other_n_rel = notye_nonpel_n_rel,
+         other_n,# 
+         other_n_rel, 
          dsr_n,dsr_n_rel,
          slope_n,slope_n_rel) %>%
   mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE","NORTHEAST"),
@@ -1517,6 +1539,10 @@ str(int_for_mod)
 unique(int_for_mod$area)
 with(int, table(area,year))
 colnames(int)
+
+int_for_mod %>% select(year,user,area,other_n,other_n_rel) %>%
+  filter(other_n != 0 & other_n_rel != 0) -> o_ch
+with(o_ch,table(area,year,user))
 
 saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 #-----------------------------------------------------------------------------------
