@@ -491,11 +491,13 @@ $x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
 
 ### Weight Data
 
-The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that the average weight by species, area, year and user group $wt_{(comp)ayu}$ is related to the average weigh by area and user group $wt_{(comp)au}$ which is related to the average weight by area $wt_{(comp)a}$ which is related to the average weight by region $wt_{(comp)region}$ such that
+The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that the average weight by species, area, year and user group $wt_{(comp)ayu}$ is related to the average weight by area and year $wt_{(comp)ay}$ which is related to the average weight by area $wt_{(comp)a}$ which is related to the average weight by region $wt_{(comp)region}$ and by species only $wt_{(comp)}$ such that
 
-$wt_{(comp)ayu} ~\sim~ Lognormal(wt_{(comp)au},\sigma_{wt_{(comp)au}}) ~\sim~ Normal(wt_{(comp)a},\sigma_{wt_{(comp)a}}) ~\sim~ Normal(wt_{(comp)region},\sigma_{wt_{(comp)}})$
+$wt_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)ay},\sigma_{wt_{(comp)ay}}) ~\sim~ \text{Normal}(wt_{(comp)a},\sigma_{wt_{(comp)a}}) ~\sim~ \text{Normal}(wt_{(comp)region},\sigma_{wt_{(comp)region}} ~\sim~ \text{Normal}(wt_{(comp)},\sigma_{wt_{(comp)}})$
 
-where *region* refers to Kodiak, Southcentral and Southeast. Mean weights and variance were calculated as **XXX**.
+where *region* refers to Kodiak, Southcentral and Southeast. The prior for the species mean weight was centered on the mean of the data and corresponding variance and standard deviation. Observed mean weights assume a normal distribution such that
+
+$\overline{wt}_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)ayu}, \sigma_{\overline{wt}_{(comp)ayu}})$
 
 ### Kodiak Hydroacoustic Data
 

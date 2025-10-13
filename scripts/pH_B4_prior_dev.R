@@ -144,15 +144,15 @@ ggplot(prigui_priors,aes(x=year,y=prigui_ratio)) +
   scale_x_continuous(breaks=seq(1978,2024,2)) +
   labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
 
+pri_rel_pr_old <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
+
+str(pri_rel_pr)
+unique(pri_rel_pr_old$year)
+unique(pri_rel_pr$year)
+unique(prigui_priors$year)
+
 saveRDS(pri_rel_pr, ".\\data\\bayes_dat\\pri_rel_pr.rds")
-saveRDS(prigui_priors, ".\\data\\bayes_dat\\pri_rel_pr.rds")
-
-pri_rel_pr <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
-
-
-
-
-
+#saveRDS(prigui_priors, ".\\data\\bayes_dat\\pri_rel_pr.rds")
 
 
 

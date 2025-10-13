@@ -47,7 +47,7 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-res <- "Gen4int_indcomp_swhsR_FULL_thru2023_1e+05__2025-10-08"
+res <- "Gen4int_indcomp_swhsR_FULL_thru2023_1e+05__2025-10-10"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -2665,7 +2665,7 @@ pHdsr_obs <-
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = rep(unique(Hhat_ay$year), times = 1),
                  user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "Logbook") %>%
+                 source = "Logbook (DSR & Slope)") %>%
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")%>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA)) %>%
@@ -2715,25 +2715,24 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,4],
 
 pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
                        source != "SWHS (all RF)") %>%
-  ggplot(aes(x = year, y = pH, color = user)) +
+  ggplot(aes(x = year, y = pH, color = user, fill = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHdsr_mod, 
               aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75,size = pointSIZE) +
-#  geom_point(data  = pHdsr_obs %>% filter(user == "all"), 
-#             color = "darkgrey", shape = 8, alpha = 0.5) +
+  geom_point(aes(shape = source, alpha = source), size = pointSIZE) +
   geom_line(data = pHdsr_mod, 
             aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = baseTXT-2)+
+  theme_bw(base_size = baseTXT-2)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of DSR catches harvested", x = "Year")+
-  scale_shape_manual(values = c(19, 5))
+  scale_shape_manual(values = c(19, 25)) +
+  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.7))
 }
 Fig_N <- Fig_N+1
 ``` 
@@ -2775,6 +2774,7 @@ pHslope_mod <-
             by = c("year","area","user","source")) %>%
   filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"))
 
+z<-1.96
 pHslope_obs <- 
   as.data.frame(
     rbind(t(jags_dat$Hhat_ayg/(jags_dat$Rhat_ayg + jags_dat$Hhat_ayg)),
@@ -2794,7 +2794,7 @@ pHslope_obs <-
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = rep(unique(Hhat_ay$year), times = 1),
                  user = rep(c("charter"), each = length(unique(Hhat_ay$year))),
-                 source = "logbook") %>%
+                 source = "Logbook (DSR & Slope)") %>%
           pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH") %>%
           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
                  p_lo95 = NA, p_hi95 = NA)) %>%
@@ -2844,21 +2844,23 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,5],
 
 pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
                        source != "SWHS (all RF)") %>%
-  ggplot(aes(x = year, y = pH, color = user)) +
+  ggplot(aes(x = year, y = pH, color = user, fill = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHslope_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75,size = pointSIZE) +
+  geom_point(aes(shape = source, alpha = source), size = pointSIZE) +
   #geom_point(data  = pHslope_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHslope_mod, aes(color = user)) +
   #geom_line(data = pHslope_trend, aes(color = user)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = baseTXT-2)+
+  #scale_shape_manual(values = c(19, 1)) + 
+  theme_bw(base_size = baseTXT-2)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of slope catches harvested", x = "Year")+
-  scale_shape_manual(values = c(19, 5))
+  scale_shape_manual(values = c(19, 25)) +
+  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.7))
 }
 
 Fig_N <- Fig_N+1
@@ -3180,14 +3182,11 @@ p_yellow_obs <-
   mutate(year = comp_year + 1976,
          area = unique(H_ayg$area)[comp_area],
          user = ifelse(comp_user == 0, "charter", "private"),
-         p_yellow = ifelse(comp_area < 11,
-                           comp_yellow / (comp_N - comp_pelagic),
-                           comp_yellow / comp_dsr),
+         #p_yellow = ifelse(comp_area < 11,
+        #                   comp_yellow / (comp_N - comp_pelagic),
+        #                   comp_yellow / comp_dsr),
+         p_yellow = comp_yellow / (comp_N - comp_pelagic),
          area = factor(area, unique(H_ayg$area), ordered = TRUE))
-
-#p_yellowX_obs <- compX %>%
-#  mutate(p_yellow = yellow_x / (N - pelagic),
-#         user = ifelse(user_n == 0, "charter", "private"))
 
 rbind(beta0_ye <- postH$q50$beta0_yellow,
       beta1_ye <- postH$q50$beta1_yellow,

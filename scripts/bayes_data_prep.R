@@ -597,69 +597,70 @@ S_ayu_ly2 <-cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_c
 
 #2024 data set
 sppcompR1_0 <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
-            range = c("A1:R1000"),
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
+            range = c("A1:N1000"),
             sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
   filter_all(any_vars(!is.na(.))) %>%
-  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+#  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  select(-c("totalrf_n_rel")) %>%
   mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
               "notye_nonpel_n","dsr_n","slope_n",
-              "pelnbrf_n","dsrnye_n","slope_lg_n","slope_sm_n"),as.numeric)
+              "pelnbrf_n","dsrnye_n"),as.numeric)
 
 # compare the data:
+colnames(sppcompR1_0)
 table(sppcompR1_0$year, sppcompR1_0$area, sppcompR1_0$user)
 
 table(S_ayu_ly$year, S_ayu_ly$area, S_ayu_ly$user)
 
-table(S_ayu_ly2$year, S_ayu_ly2$area, S_ayu_ly2$user)
-
 SE_ly <- S_ayu_ly %>% filter(region == "Southeast")
 
-eg24 <- sppcompR1_0 %>% filter(area == "NSEI" & user == "private")
-eg23 <- S_ayu_ly2 %>% filter(area == "NSEI" & user == "private")
-eg23; print(eg24)
+
 #As of 9/29/25 the new SE data is fucked up. For now I may just patch on the new
-# 2024 data to the old data through 2023.
- as <- unique(sppcompR1_0$area)
- us <- unique(sppcompR1_0$user)
- 
- for (a in as){ #a <-as[1]
-   for (u in us){ #u <- us[1]
-     eg24 <- sppcompR1_0 %>% filter(area == a & user == u) %>%
-       select(-c(slope_lg_n, slope_sm_n,dsrnye_n,pelnbrf_n,notye_nonpel_n)) %>% data.frame()
-     eg23 <- S_ayu_ly2 %>% filter(area == a & user == u) %>%
-       mutate(across(4:11, as.numeric)) %>% select(-notye_nonpel_n)
-     #str(eg24); str(eg23)
-     setdiff(eg23,eg24) -> abs_fr_24_x
-     setdiff(eg24,eg23) -> new_in_24_x
-     
-     #abs_fr_24 <- abs_fr_24 %>%
-    #   filter(!if_all(4:11, ~ .x == 0 | is.na(.x)))
-     
-     if (a == as[1] & u == us[1]){
-       abs_fr_24 <- abs_fr_24_x
-       new_in_24 <- new_in_24_x
-     } else {
-       abs_fr_24 <- rbind(abs_fr_24_x,abs_fr_24) %>%
-         arrange(area,user,year)
-       new_in_24 <- rbind(new_in_24_x,new_in_24)
-     }
-   }
- }
-
- rbind(abs_fr_24 %>% mutate(dat_yr = 2023, cat = "'23 data absent from '24 data",
-                            data_source = "Species_comp_Region1_forR_2023.FINAL"),
-       new_in_24 %>% mutate(dat_yr = 2024, cat = "new in '24, absent/different in '23 data",
-                            data_source = "Species_comp_MHS_Region1_forR_2024_RUN_30-Sep-2025")) %>%
-   arrange(area,user,year) %>%
-   filter(year != 2024) -> datcomp
- 
- #save the discrepencies to verify with Region 1 staff
- write.csv(datcomp,"data/raw_dat/Species_comp_SE/Region1_data_discrepencies.csv", row.names = FALSE)
-
+# As of 10/9/2025 the SE crew has thing fixed and this next bracketed section can 
+# be skipped. Leaving it in for now for next year to check data stays consistent
+{
+  # 2024 data to the old data through 2023.
+  as <- unique(sppcompR1_0$area)
+  us <- unique(sppcompR1_0$user)
+  
+  for (a in as){ #a <-as[1]
+    for (u in us){ #u <- us[1]
+      eg24 <- sppcompR1_0 %>% filter(area == a & user == u) %>%
+        select(-c(slope_lg_n, slope_sm_n,dsrnye_n,pelnbrf_n,notye_nonpel_n)) %>% data.frame()
+      eg23 <- S_ayu_ly2 %>% filter(area == a & user == u) %>%
+        mutate(across(4:11, as.numeric)) %>% select(-notye_nonpel_n)
+      #str(eg24); str(eg23)
+      setdiff(eg23,eg24) -> abs_fr_24_x
+      setdiff(eg24,eg23) -> new_in_24_x
+      
+      #abs_fr_24 <- abs_fr_24 %>%
+      #   filter(!if_all(4:11, ~ .x == 0 | is.na(.x)))
+      
+      if (a == as[1] & u == us[1]){
+        abs_fr_24 <- abs_fr_24_x
+        new_in_24 <- new_in_24_x
+      } else {
+        abs_fr_24 <- rbind(abs_fr_24_x,abs_fr_24) %>%
+          arrange(area,user,year)
+        new_in_24 <- rbind(new_in_24_x,new_in_24)
+      }
+    }
+  }
+  
+  rbind(abs_fr_24 %>% mutate(dat_yr = 2023, cat = "'23 data absent from '24 data",
+                             data_source = "Species_comp_Region1_forR_2023.FINAL"),
+        new_in_24 %>% mutate(dat_yr = 2024, cat = "new in '24, absent/different in '23 data",
+                             data_source = "Species_comp_MHS_Region1_forR_2024_RUN_30-Sep-2025")) %>%
+    arrange(area,user,year) %>%
+    filter(year != 2024) -> datcomp
+  
+  #save the discrepencies to verify with Region 1 staff
+  write.csv(datcomp,"data/raw_dat/Species_comp_SE/Region1_data_discrepencies.csv", row.names = FALSE)
+}
 
 str(sppcompR1_0)
 #Note EKYKT = IBS + EKYT ; checking , should be all TRUE
@@ -672,7 +673,6 @@ sppcompR1 <-
   mutate(area = factor(area, lut$area, ordered = TRUE)) %>% 
   arrange(region, area, year)
 table(sppcompR1$area)
-
 
 
 sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv")) %>%
@@ -702,16 +702,16 @@ sppcompR2_0 %>% filter(area %in% c("EYKT","IBS")) %>%
             notye_nonpel_n =  sum(notye_nonpel_n),
             dsr_n = 0,slope_n = 0,
             pelnbrf_n = pelagic_n - black_n,
-            slope_sm_n = 0, slope_lg_n = 0,
+            #slope_sm_n = 0, slope_lg_n = 0,
             dsrnye_n = 0) -> R1fish_in_R2ports
 
 sppcompR1 %>% filter(area == "EWYKT" & year == REP_YR & user == "charter") -> R1_EWYKT
 
-coldifs <- setdiff(colnames(sppcompR1),colnames(R1fish_in_R2ports))
+coldifs <- setdiff(colnames(sppcompR1),colnames(R1fish_in_R2ports)); coldifs
 
 rbind(R1_EWYKT,
       R1fish_in_R2ports) %>%
-  summarize(year = "2024", user = "charter", area = "EWYKT", region = "Southeast",
+  summarize(year = as.numeric("2024"), user = "charter", area = "EWYKT", region = "Southeast",
             totalrf_n = sum(totalrf_n),
             ye_n = sum(ye_n),
             black_n = sum(black_n),
@@ -721,13 +721,13 @@ rbind(R1_EWYKT,
             dsr_n = sum(dsr_n),
             slope_n = sum(dsr_n),
             pelnbrf_n = sum(pelnbrf_n),
-            slope_sm_n = sum(slope_sm_n), 
-            slope_lg_n = sum(slope_lg_n),
+            #slope_sm_n = sum(slope_sm_n), 
+            #slope_lg_n = sum(slope_lg_n),
             dsrnye_n = sum(dsrnye_n)) -> patch
 
 sppcompR1 %>%
   rows_update(patch, by = c("year","user","area")) -> try
-R1_EWYKT
+sppcompR1 %>% filter(area == "EWYKT" & year == REP_YR & user == "charter")
 try %>% filter(area == "EWYKT" & year == REP_YR & user == "charter")
 
 sppcompR1 <- try
@@ -751,16 +751,17 @@ table(sppcompR2$region, sppcompR2$area)
 
 S_ayu <- 
   rbind(sppcompR1 %>%
-          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsr_n)) %>%
+          select(-c(pelnbrf_n,dsr_n)) %>%
           rename(dsr_n = dsrnye_n), 
 #          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsrnye_n)), 
         sppcompR2) %>%
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
+  mutate(year = as.character(year)) %>%
   arrange(user, area, year)
 
 table(S_ayu$region, S_ayu$area)
 
-saveRDS(S_ayu, ".\\data\\bayes_dat\\S_ayu.rds")
+saveRDS(data.frame(S_ayu), ".\\data\\bayes_dat\\S_ayu.rds")
 
 
 #-------------------------------------------------------------------------------
@@ -816,21 +817,131 @@ saveRDS(kha, ".\\data\\bayes_dat\\kha.rds")
 # their mortality esimtates while southeast applies a standard rate base on year
 # when dwr mechanisms were mandated. 
 # Secondly, southeast divides their slope numbers into large and small slope rf.
+ly_wt <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+  mutate(assemblage = factor(assemblage, 
+                             levels = c("black","yelloweye","pelnbrf","dsrlessye","slope"))) %>%
+  arrange(assemblage, user,region, area, year) 
 
+#Running 2023 numbers in 2024
 # Southcentral data:
-sc_wt_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc.csv") %>% clean_names() %>%
-  mutate(#cfmu = tolower(cfmu),
-         user = tolower(user),
-         assemblage = tolower(assemblage))
+#sc_wt_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc.csv") %>% clean_names() %>%
+#  mutate(#cfmu = tolower(cfmu),
+#         user = tolower(user),
+#         assemblage = tolower(assemblage))
 
-sc_wt_rm %>% group_by(year, cfmu, assemblage, user) %>%
-  summarize(wt_kg = weighted.mean(avg_wt_kg,p_rel,na.rm=T),
-            wt_cv = ifelse(is.na(weighted.mean(se_wt_kg) / wt_kg),1,
-                           weighted.mean(se_wt_kg) / wt_kg),
-            r_mort = weighted.mean(mort_rate, p_rel, na.rm = T)) -> sc_wt_rm
+#sc_wt_rm %>% group_by(year, cfmu, assemblage, user) %>%
+#  summarize(wt_kg = weighted.mean(avg_wt_kg,p_rel,na.rm=T),
+#            wt_cv = ifelse(is.na(weighted.mean(se_wt_kg) / wt_kg),1,
+#                           weighted.mean(se_wt_kg) / wt_kg),
+#            r_mort = weighted.mean(mort_rate, p_rel, na.rm = T)) -> sc_wt_rm
+
+# 2024 numbers in 2025:
+sc_wt <- read.csv("data/raw_dat/Species_comp_SC/rf_mean_wt_SC.csv") %>% clean_names() %>%
+  mutate(assemblage = ifelse(sp == 142,"black",
+                             ifelse(sp == 145,"yelloweye","other")),
+         wt_lbs = mean_wt * 2.20462262,
+         wt_cv = sd_wt * 2.20462262 / wt_lbs,
+         user = tolower(user)) %>%
+  rename(area = cfmu) %>%
+  right_join(lut %>% filter(region %in% c("Central","Kodiak")) %>%
+               mutate(area = toupper(area)),
+             by = "area") %>%
+  filter(boats >= 4 & n_fish > 5) %>%
+  select(-c(sp,mean_wt,sd_wt))
+
+head(sc_wt)
+unique(sc_wt$area)
+
+sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
+  rename(area = cfmu) %>%
+  select(year,assemblage,user,area,rel_cat,p_rel,pcat_surface,pcat_drm,mort_rate) %>%
+  mutate(assemblage = tolower(assemblage),
+         user = tolower(user)) %>% 
+  group_by(year, area, assemblage, user) %>%
+  summarize(r_mort = weighted.mean(mort_rate, p_rel, na.rm = T))
+
+head(sc_rm); unique(sc_rm$area)
+
+sc_rm %>% filter(is.na(r_mort))
+
+ggplot(sc_rm, aes(x= year, y = r_mort, col = area, type = user)) +
+  geom_line() +
+  facet_wrap(~assemblage)
+
+sc_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate = r_mort[which.min(year)]) -> sc_mrates_oldest
+
+sc_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate_dwr = r_mort[which.max(year)]) -> sc_mrates_dwr
+
+expand.grid(year = seq(1977,(max(sc_rm$year)),1),
+            area = unique(sc_rm$area),
+            assemblage = unique(sc_rm$assemblage),
+            user = unique(sc_rm$user)) %>%
+  left_join(sc_mrates_oldest, by = c("user","assemblage","area")) %>%
+  left_join(sc_mrates_dwr, by = c("user","assemblage","area")) %>%
+  full_join(sc_rm, by = c("user","assemblage","area","year")) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         area = toupper(area)) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         area = toupper(area)) %>%
+  select(year,area,assemblage,user,r_mort) %>%
+  right_join(lut %>% filter(region %in% c("Central","Kodiak")) %>%
+               mutate(area = toupper(area)),
+             by = "area") -> r2_rm
+
+r2_rm <- rbind(r2_rm %>%
+                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+                                      tolower(area),area)),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "BSAI"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "SOKO2SAP"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "WKMA"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "afognak"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "eastside")) -> r2_rm
+
+sc_wt <- rbind(sc_wt %>%
+                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+                                      tolower(area),area)),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "BSAI"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "SOKO2SAP"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "WKMA"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "afognak"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "eastside")) %>%
+  mutate(wt_lbs = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                         NA,wt_lbs),
+         wt_cv = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                        1,wt_cv))
+
+full_join(sc_wt,r2_rm,by = c("year","area","assemblage","user","region")) %>%
+  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) -> r2_wt_rm
+
+r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> mismort; mismort
+
+ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = area)) +
+  geom_line() + geom_point() +
+  facet_wrap(~assemblage + user)
+
+r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> damnit; damnit
+
+r2_wt_rm %>% filter(user == damnit$user, area == damnit$area,year == damnit$year, assemblage == damnit$assemblage)
+
+r2_wt_rm %>% filter(area == "BSAI" & year == 2017)
 
 #Southeast data
-se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+#se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
                        sheet = "Wt matrix",
                        range = paste0("A1:G2000")) %>% clean_names() %>%
   mutate(cfmu = rpt_area, #tolower(rpt_area),
@@ -840,8 +951,10 @@ se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_R
   filter(rowSums(is.na(.)) < ncol(.))
 
 unique(se_wt$cfmu)
+unique(se_wt$assemblage)
 
-se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+#se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
                    sheet = "Mortality Rates",
                    range = paste0("A1:E2000")) %>% clean_names() %>%
   mutate(year = as.numeric(year),
@@ -851,35 +964,41 @@ se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_R
   select(-rpt_area) %>%
   filter(rowSums(is.na(.)) < ncol(.))
 
-se_rm %>% mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-                                     "slope",assemblage)) %>%
-  group_by(year,user,assemblage) %>%
-  summarize(mrate = mean(mrate, na.rm=T)) ->mrates
+unique(se_rm$cfmu)
+unique(se_rm$assemblage)
 
-se_slopes <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
-                   sheet = "MHS num Fish",
-                   range = paste0("A1:R300")) %>% clean_names() %>%
-  mutate(year = as.numeric(year),
-         cfmu = rpt_area, #tolower(rpt_area),
-         user = tolower(user)) %>%
-  select(year,cfmu,user,slope_lg_n,slope_sm_n) %>%
-  pivot_longer(cols = c(slope_lg_n,slope_sm_n),
-               values_to = "slope_n",
-               names_to = "slope_size") %>%
-  mutate(assemblage = str_remove(slope_size,"_n")) %>%
-  select(-slope_size) %>%
-  filter(rowSums(is.na(.)) < ncol(.))
+#se_rm %>% mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+#                                     "slope",assemblage)) %>%
+#  group_by(year,user,assemblage) %>%
+#  summarize(mrate = mean(mrate, na.rm=T)) ->mrates
 
-print(se_slopes %>% filter(year > 2010) %>%
-        arrange(year,cfmu,user),n = 50)
+#se_slopes <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+#                   sheet = "MHS num Fish",
+#                   range = paste0("A1:R300")) %>% clean_names() %>%
+#  mutate(year = as.numeric(year),
+#         cfmu = rpt_area, #tolower(rpt_area),
+#         user = tolower(user)) %>%
+#  select(year,cfmu,user,slope_lg_n,slope_sm_n) %>%
+#  pivot_longer(cols = c(slope_lg_n,slope_sm_n),
+#               values_to = "slope_n",
+#               names_to = "slope_size") %>%
+#  mutate(assemblage = str_remove(slope_size,"_n")) %>%
+#  select(-slope_size) %>%
+#  filter(rowSums(is.na(.)) < ncol(.))
+
+#print(se_slopes %>% filter(year > 2010) %>%
+#        arrange(year,cfmu,user),n = 50)
+
+mrates <- se_rm %>% group_by(year,user,assemblage) %>%
+  reframe(mrate = mrate)
 
 #with(sc_wt_rm, table(year,cfmu, assemblage, user))
 full_join(se_rm,se_wt,by = c("year","user","assemblage","cfmu")) %>%
-  full_join(se_slopes,by = c("year","cfmu","user","assemblage")) %>%
-  mutate(slope_cat = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-                            assemblage,NA)) %>%
-  mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-                             "slope",assemblage),
+  #full_join(se_slopes,by = c("year","cfmu","user","assemblage")) %>%
+  #mutate(slope_cat = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+  #                          assemblage,NA)) %>%
+  mutate(#assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+        #                     "slope",assemblage),
          mean_wt_lbs = ifelse(num_wts < 5, NA, mean_wt_lbs),
          std_error_m_wt = ifelse(num_wts < 5, NA, std_error_m_wt),
          wt_cv = std_error_m_wt / mean_wt_lbs) %>%
@@ -887,16 +1006,18 @@ full_join(se_rm,se_wt,by = c("year","user","assemblage","cfmu")) %>%
             by = c("year","user","assemblage")) %>%
   mutate(mrate = ifelse(is.na(mrate),mrate2,mrate)) %>%
   group_by(assemblage,year,user,cfmu) %>%
-  mutate(wt_lbs = ifelse(assemblage != "slope",mean_wt_lbs,
-                          weighted.mean(mean_wt_lbs,slope_n,na.rm=T)),
-         wt_cv = ifelse(assemblage != "slope",wt_cv,
-                         weighted.mean(wt_cv,slope_n,na.rm=T))) %>%
-  mutate(wt_lbs = ifelse(is.nan(wt_lbs),# & mean_wt_lbs > 0,
-                         weighted.mean(mean_wt_lbs,num_wts,na.rm=T),
-                         wt_lbs),
-         wt_cv = ifelse(is.nan(wt_cv),# & mean_wt_lbs > 0,
-                         weighted.mean(std_error_m_wt / mean_wt_lbs,num_wts,na.rm=T),
-                        wt_cv)) %>%
+  #mutate(wt_lbs = ifelse(assemblage != "slope",mean_wt_lbs,
+  #                        weighted.mean(mean_wt_lbs,slope_n,na.rm=T)),
+  #       wt_cv = ifelse(assemblage != "slope",wt_cv,
+  #                       weighted.mean(wt_cv,slope_n,na.rm=T))) %>%
+  mutate(wt_lbs = mean_wt_lbs,
+         wt_cv = wt_cv) %>%
+  #mutate(wt_lbs = ifelse(is.nan(wt_lbs),# & mean_wt_lbs > 0,
+  #                       weighted.mean(mean_wt_lbs,num_wts,na.rm=T),
+  #                       wt_lbs),
+  #       wt_cv = ifelse(is.nan(wt_cv),# & mean_wt_lbs > 0,
+  #                       weighted.mean(std_error_m_wt / mean_wt_lbs,num_wts,na.rm=T),
+  #                      wt_cv)) %>%
   ungroup() %>% #filter(!(is.na(wt_lbs) & slope_n == 0)) -> gack #%>% 
   select(year,cfmu,assemblage,user,wt_lbs,wt_cv,mrate) %>%
   unique() %>% filter(!is.na(user))-> se_wt_rm
@@ -907,53 +1028,6 @@ with(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT"),
      table(year,user))
 
 #fill in release mortalities back to 1977
-ggplot(sc_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
-  geom_line() +
-  facet_wrap(~assemblage)
-
-sc_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
-  summarize(mrate = r_mort[which.min(year)]) -> sc_mrates_oldest
-
-sc_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
-  summarize(mrate_dwr = r_mort[which.max(year)]) -> sc_mrates_dwr
-
-expand.grid(year = seq(1977,(max(sc_wt_rm$year)),1),
-            cfmu = unique(sc_wt_rm$cfmu),
-            assemblage = unique(sc_wt_rm$assemblage),
-            user = unique(sc_wt_rm$user)) %>%
-  left_join(sc_mrates_oldest, by = c("user","assemblage","cfmu")) %>%
-  left_join(sc_mrates_dwr, by = c("user","assemblage","cfmu")) %>%
-  full_join(sc_wt_rm, by = c("user","assemblage","cfmu","year")) %>%
-  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
-                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
-         wt_cv = ifelse(is.na(wt_cv),1,wt_cv),
-         wt_lbs = wt_kg * 2.204622476038) %>%
-  select(year,cfmu,assemblage,user,wt_lbs,wt_cv,r_mort) -> r2_wt_rm
-unique(r2_wt_rm$cfmu) 
-
-r2_wt_rm %>% filter(wt_cv == 0)
-unique(r2_wt_rm$cfmu)
-#Add in other Kodiak areas:
-r2_wt_rm <- rbind(r2_wt_rm,
-                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "BSAI"),
-                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "SOKO2SAP"),
-                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "WKMA"),
-                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "afognak"),
-                  r2_wt_rm %>% filter(cfmu == "NORTHEAST") %>%
-                    mutate(cfmu = "eastside")) %>%
-  mutate(wt_lbs = ifelse(cfmu %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
-                         NA,wt_lbs),
-         wt_cv = ifelse(cfmu %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
-                        1,wt_cv))
-
-ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
-  geom_line() + geom_point() +
-  facet_wrap(~assemblage + user)
-
 
 se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
   summarize(mrate_old = mrate[which.min(year)]) -> se_mrates_oldest
@@ -977,19 +1051,21 @@ ggplot(r1_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
   geom_line() + geom_point() +
   facet_wrap(~assemblage + user)
 
-rbind(r1_wt_rm,r2_wt_rm) %>%
-  mutate(area = ifelse(cfmu != "NORTHEAST",cfmu,"northeast"),
+rbind(r1_wt_rm %>% rename(area = cfmu),
+      r2_wt_rm %>% select(colnames(r1_wt_rm %>% rename(area = cfmu)))) %>%
+  mutate(area = ifelse(area != "NORTHEAST",area,"northeast"),
          wt_cv = ifelse(wt_cv == 0,1,wt_cv)) %>% 
-  select(-cfmu) %>%
+  #select(-cfmu) %>%
   left_join(lut,by = "area") %>%
   arrange(assemblage, region, area, year)-> wt_rm_dat
 
 pal <- c("darkorange","darkgrey")
 
-wt_rm_dat %>%
+wt_rm_dat %>% filter(!is.na(user)) %>%
   mutate(Species = ifelse(assemblage %in% c("dsrlessye","yelloweye","slope"),"Demersal shelf (yelloweye) and slope",
                              ifelse(assemblage %in% c("pelnbrf","black"),"Pelagics (black)",assemblage)),
-         area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+         #area = factor(area, unique(H_ayg$area), ordered = TRUE)
+         area = factor(area, unique(lut$area), ordered = TRUE)) %>%
   mutate(Species = str_wrap(Species, width = 21),
          User = user) %>%
   ggplot(aes(x = year, y = r_mort, col = Species, shape = User)) +
@@ -1008,7 +1084,22 @@ wt_rm_dat %>% filter(wt_cv == 0)
 
 with(wt_rm_dat, table(region,area))
 
-saveRDS(wt_rm_dat, ".\\data\\bayes_dat\\wt_rm_dat.rds")
+with(wt_rm_dat, table(region,year))
+
+saveRDS(wt_rm_dat %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
+
+##------------------------------------------------------------------------------
+# Get mean weights by species across all years for priors:
+wt_rm_dat %>% filter(!is.na(wt_lbs)) %>%
+  group_by(assemblage) %>%
+  summarise(mean_wt = mean(wt_lbs),
+            med_wt = median(wt_lbs),
+            var_wt = var(wt_lbs),
+            sd_wt = sd(wt_lbs),
+            cv_wt = sd_wt/mean_wt,
+            tau_wt = 1/(sd_wt*sd_wt)) -> wt_priors; wt_priors
+
+# Just looking at it here. This will be calculated and loaded as data in bayes_data_param_load.R
 
 ################################################################################
 # Interview Data
@@ -1018,24 +1109,25 @@ saveRDS(wt_rm_dat, ".\\data\\bayes_dat\\wt_rm_dat.rds")
 z<-1.96 #for CI calculations and graphics
 
 se_int <-  
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
-            range = c("A1:R1000"),
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
+            range = c("A1:N1000"),
             sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
   #filter_all(any_vars(!is.na(.))) %>%
-  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  #select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  select(-c("totalrf_n_rel")) %>%
   mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
               "notye_nonpel_n","dsr_n","slope_n",
-              "pelnbrf_n","dsrnye_n","slope_lg_n","slope_sm_n"),as.numeric) %>%
-  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_30-Sep-2025.xlsx"), 
-                  range = c("CA1:CK1000"),
+              "pelnbrf_n","dsrnye_n"),as.numeric) %>%
+  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
+                  range = c("AI1:AQ1000"),
                   sheet = "MHS num Fish")  %>%
           rename_all(.funs = tolower) %>%
           mutate_at(c("ye_n_rel","black_n_rel","pelagic_n_rel","nonpel_n_rel",
                       "notye_nonpel_n_rel","dsr_n_rel","slope_n_rel",
-                      "pelnbrf_n_rel","dsrnye_n_rel","slope_lg_n_rel","slope_sm_n_rel"),as.numeric)) %>%
+                      "pelnbrf_n_rel","dsrnye_n_rel"),as.numeric)) %>%
   filter_all(any_vars(!is.na(.))) %>%
   mutate(totalrf_n_rel = ye_n_rel+pelagic_n_rel+notye_nonpel_n_rel) %>%
   mutate(pH_ye = ye_n / (ye_n + ye_n_rel),
@@ -1061,7 +1153,6 @@ with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mu
 full_join(with(pel_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(Pelagic_rels = Freq),
           with(ye_ch,table(area,year,user)) %>% data.frame() %>% filter(Freq == 0) %>% mutate(Freq = "missing") %>% rename(ye_rels = Freq),
           by = c("area","year","user"))
-
 
 sc_int <- read.csv("data/raw_dat/Species_comp_SC/sc_rf_release.csv") %>%
   clean_names() %>% mutate(user = tolower(user)) %>%
@@ -1271,6 +1362,8 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
+ggsave("figures/int_vs_lb_propH_pelagics.png")  
+
 unique(se_int$area) -> se_area
 
 ggplot(int %>% mutate(year = as.integer(year),
@@ -1297,6 +1390,8 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
+ggsave("figures/int_vs_lb_propH_black-pelagics.png")
+
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user), #%>% filter(assemblage == "Black"), 
        aes(x = year, y = pH_ye, shape = User, fill = User, color = "Interviews")) +
@@ -1319,6 +1414,8 @@ ggplot(int %>% mutate(year = as.integer(year),
   scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
+
+ggsave("figures/int_vs_lb_propH_yelloweye.png")
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user), #%>% filter(assemblage == "Black"), 
@@ -1343,6 +1440,8 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
+ggsave("figures/int_vs_lb_propH_other.png")
+
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user) %>% filter(area %in% se_area), 
        aes(x = year, y = pH_dsr, shape = User, fill = User, color = "Interviews")) +
@@ -1365,6 +1464,8 @@ ggplot(int %>% mutate(year = as.integer(year),
   scale_color_manual(values = c("Interviews" = "black", "Logbook" = "red")) +
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
+
+ggsave("figures/int_vs_lb_propH_dsr-other.png")
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user) %>% filter(area %in% se_area), 
@@ -1389,13 +1490,45 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
+ggsave("figures/int_vs_lb_propH_slope-other.png")
 
+#-- Prep and save for Bayes model
+int %>% filter(year > 1994) %>%
+  select(year,user,area,
+         pelagic_n,pelagic_n_rel,
+         ye_n,ye_n_rel,
+         #black_n,black_n_rel,
+         other_n = notye_nonpel_n,other_n_rel = notye_nonpel_n_rel,
+         dsr_n,dsr_n_rel,
+         slope_n,slope_n_rel) %>%
+  mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE","NORTHEAST"),
+                       tolower(area),toupper(area))) %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE),
+         pelagic_c = pelagic_n + pelagic_n_rel,
+         ye_c = ye_n + ye_n_rel,
+         other_c = other_n + other_n_rel,
+         dsr_c = dsr_n + dsr_n_rel,
+         slope_c = slope_n + slope_n_rel) %>%
+  right_join(lut,by = "area") -> int_for_mod
 
+int_for_mod %>% mutate(area = factor(area, lut$area, ordered = TRUE)) -> int_for_mod
 
+str(int_for_mod)
+unique(int_for_mod$area)
+with(int, table(area,year))
+colnames(int)
+
+saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 #----
 #Scrapola:
+int %>% filter(area == "CSEO") %>%
+  select(year,user,pelagic_n,pelagic_n_rel,pH_pel)
+
+
+
+
 
 ggplot(int %>% mutate(year = as.integer(year)),  
        aes(x = year, y = pH_dsr, col = user, shape = user)) +
@@ -1427,28 +1560,7 @@ ggplot(int %>% mutate(year = as.integer(year)),
 with(int,table(year,area,user))
 int %>% filter(year>2019 & user == "private")
 
-#-- Prep and save for Bayes model
-int %>% filter(year > 1994) %>%
-  select(year,user,area,
-         pelagic_n,pelagic_n_rel,
-         ye_n,ye_n_rel,
-         #black_n,black_n_rel,
-         other_n = notye_nonpel_n,other_n_rel = notye_nonpel_n_rel,
-         dsr_n,dsr_n_rel,
-         slope_n,slope_n_rel) %>%
-  mutate(area = factor(area, lut$area, ordered = TRUE),
-         pelagic_c = pelagic_n + pelagic_n_rel,
-         ye_c = ye_n + ye_n_rel,
-         other_c = other_n + other_n_rel,
-         dsr_c = dsr_n + dsr_n_rel,
-         slope_c = slope_n + slope_n_rel) %>%
-  right_join(lut,by = "area") -> int_for_mod
 
-str(int_for_mod)
-
-int_for_mod %>% mutate(area = factor(area, lut$area, ordered = TRUE)) -> int_for_mod
-
-saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 
 
 S_ayu_ly <- readRDS(".//data//bayes_dat//S_ayu.rds")
