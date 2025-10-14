@@ -440,9 +440,9 @@ for (a in 5:6) { #BSAI and SOKO2SAP
 
 #SOUTHEAST
 for (a in 11:16){
-	beta1_yellow[a] <- 0 #~ dlnorm(log(mu_beta1_yellow[regions[a]]), tau_beta1_yellow[regions[a]])
-	beta2_yellow[a] <- 0 #~ dnorm(mu_beta2_yellow[regions[a]], tau_beta2_yellow[regions[a]])T(,0.25)
-	beta3_yellow[a] <- 25 #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
+	beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
+	beta2_yellow[a] ~ dnorm(0,0.01)T(-30,-0.01)
+	beta3_yellow[a] ~ dunif(28,Y-5) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 
 	beta0_dsr[a] ~ dnorm(0, 0.01)
   beta1_dsr[a] <- 0 # ~ dlnorm(log(mu_beta1_dsr), tau_beta1_dsr)
