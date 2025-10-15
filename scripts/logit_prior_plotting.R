@@ -99,9 +99,9 @@ plot_logit(n = 10,
            sd_b2 <- 0.1,
            b3_lo <- 18,
            b3_hi <- 42,
-           b4_mu <- 0.75
+           b4_mu <- 0.99
            ,
-           sd_b4 <- 0.15)
+           sd_b4 <- 0)
 
 
 #fixed black

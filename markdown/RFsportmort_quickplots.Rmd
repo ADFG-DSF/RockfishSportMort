@@ -60,10 +60,12 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
+B4 <- "simp" #complex
+
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
-res <- "Gen4int_indcomp_swhsR_FULL_fix_thru2024_1e+05_2025-10-13"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_1e+05__2025-10-14"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -2557,7 +2559,32 @@ if (intdat == "yes"){
                         filter(!is.na(pH))) -> pHpel_obs
 }
 
-beta4_pH <- postH$q50$beta4_pH[,,1] %>%t() %>% as.data.frame() %>%
+#B4 <- "simp" #complex
+if(B4 == "simp"){
+  rbind(beta0_pH <- postH$q50$beta0_pH[,1],
+      beta1_pH <- postH$q50$beta1_pH[,1],
+      beta2_pH <- postH$q50$beta2_pH[,1],
+      beta3_pH <- postH$q50$beta3_pH[,1],
+      beta4_pH <- postH$q50$beta4_pH[,1]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "pelagic") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHpel_trend
+}
+if(B4 == "complex"){
+  beta4_pH <- postH$q50$beta4_pH[,,1] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
               mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
                      #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
@@ -2585,7 +2612,7 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,1],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHpel_trend
-
+}
 
 pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2596,7 +2623,7 @@ pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   geom_point(aes(shape = source)) +
   #geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
-  #geom_line(data = pHpel_trend, aes(color = user)) +
+  geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
@@ -2687,7 +2714,31 @@ if (intdat == "yes"){
                         filter(!is.na(pH))) -> pHye_obs
 }
 
-beta4_pH <- postH$q50$beta4_pH[,,2] %>%t() %>% as.data.frame() %>%
+if(B4 == "simp"){
+  rbind(beta0_pH <- postH$q50$beta0_pH[,2],
+      beta1_pH <- postH$q50$beta1_pH[,2],
+      beta2_pH <- postH$q50$beta2_pH[,2],
+      beta3_pH <- postH$q50$beta3_pH[,2],
+      beta4_pH <- postH$q50$beta4_pH[,2]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "yelloweye") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHye_trend
+}
+if(B4 == "complex"){
+  beta4_pH <- postH$q50$beta4_pH[,,2] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
               mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
                      #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
@@ -2713,6 +2764,7 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,2],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHye_trend
+}
 
 pHye_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2818,7 +2870,31 @@ if (intdat == "yes"){
                         filter(!is.na(pH))) -> pHnpny_obs
 }
 
-beta4_pH <- postH$q50$beta4_pH[,,3] %>%t() %>% as.data.frame() %>%
+if(B4 == "simp"){
+  rbind(beta0_pH <- postH$q50$beta0_pH[,3],
+      beta1_pH <- postH$q50$beta1_pH[,3],
+      beta2_pH <- postH$q50$beta2_pH[,3],
+      beta3_pH <- postH$q50$beta3_pH[,3],
+      beta4_pH <- postH$q50$beta4_pH[,3]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "other") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHnpny_trend
+}
+if(B4 == "complex"){
+  beta4_pH <- postH$q50$beta4_pH[,,3] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
               mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
                      #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
@@ -2844,6 +2920,8 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,3],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHnpny_trend
+}
+
 
 pHnpny_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2948,7 +3026,32 @@ pHdsr_obs <-
                         mutate(source = "Portside interviews") %>%
                         filter(!is.na(pH)))
 
-beta4_pH <- postH$q50$beta4_pH[,,4] %>%t() %>% as.data.frame() %>%
+
+if(B4 == "simp"){
+  rbind(beta0_pH <- postH$q50$beta0_pH[,4],
+      beta1_pH <- postH$q50$beta1_pH[,4],
+      beta2_pH <- postH$q50$beta2_pH[,4],
+      beta3_pH <- postH$q50$beta3_pH[,4],
+      beta4_pH <- postH$q50$beta4_pH[,4]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "dsr") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHdsr_trend
+}
+if(B4 == "complex"){
+ beta4_pH <- postH$q50$beta4_pH[,,4] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
               mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
                      #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
@@ -2974,6 +3077,7 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,4],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHdsr_trend
+}
 
 pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
                        source != "SWHS (all RF)") %>%
@@ -3077,7 +3181,31 @@ pHslope_obs <-
                         mutate(source = "Portside interviews") %>%
                         filter(!is.na(pH)))
 
-beta4_pH <- postH$q50$beta4_pH[,,5] %>%t() %>% as.data.frame() %>%
+if(B4 == "simp"){
+  rbind(beta0_pH <- postH$q50$beta0_pH[,5],
+      beta1_pH <- postH$q50$beta1_pH[,5],
+      beta2_pH <- postH$q50$beta2_pH[,5],
+      beta3_pH <- postH$q50$beta3_pH[,5],
+      beta4_pH <- postH$q50$beta4_pH[,5]) %>% t() %>%
+  data.frame() %>%
+  mutate(area = unique(H_ayg$area),
+         species = "slope") %>%
+  rename(beta0 = X1, beta1=X2, beta2=X3, beta3=X4, beta4 = X5) %>%
+  
+  right_join(expand.grid(y = seq(1,end_yr-start_yr+1,1), u = c(1, 2), 
+                         area = factor(comp$area, unique(H_ayg$area), ordered = TRUE)),
+             by = "area") %>%
+  
+  mutate(logit_pH = beta0 +
+           beta1 / (1 + exp(-beta2 * (y - beta3))) *
+           (1 + (u - 1) * (beta4 - 1)),
+         pH = logit_to_prob(logit_pH),
+         year = y + 1976,
+         user = ifelse(u == 1, "charter","private")) %>% 
+  filter(!is.na(pH))-> pHslope_trend
+}
+if(B4 == "complex"){
+ beta4_pH <- postH$q50$beta4_pH[,,5] %>%t() %>% as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
               mutate(y = seq(1,end_yr-start_yr+1,1)) %>%
                      #user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
@@ -3103,6 +3231,7 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,5],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHslope_trend
+}
 
 pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
                        source != "SWHS (all RF)") %>%

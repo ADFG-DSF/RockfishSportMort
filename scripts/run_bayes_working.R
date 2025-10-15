@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 5E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 3E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -64,10 +64,12 @@ mod <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL"
 mod <- "Gen3ab_indcomp_pH33B2share_no_swhs_rel_FULL"
 
 mod <- "Gen4int_indcomp_swhsR_FULL"
-mod <- "Gen4int_indcomp_swhsR_FULL_fix"
-#if (mod <- "HR_hybLBR_2bias_hierPcomp_3pH_hybPr_splitpH_v4") {
-#  jags_dat$Rlbp_ayg[jags_dat$Rlbp_ayg == 0] <- 1
-#}
+mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
+
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0"
+
+mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -75,7 +77,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen3aa_indcomp_pH33B2share_swhsR_FULL_thru2023_2500000__2025-09-26"
 use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
-use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
+use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06__2025-09-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -395,11 +397,11 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen4int_indcomp_swhsR_FULL_fix_thru2024_1e+05_2025-10-13"
+results <- "Gen4int_indcomp_swhsR_FULL_fix_thru2024_5e+05_2025-10-14"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -884,7 +886,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
                                         "mu_beta5_pH","tau_beta5_pH"))
 
 jagsUI::traceplot(postH, parameters = c("beta2_pH"))
-jagsUI::traceplot(postH, parameters = c("beta4_pH"))
+jagsUI::traceplot(postH, parameters = c("beta4_pH"), Rhat_min = 1.01)
 
 jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH",

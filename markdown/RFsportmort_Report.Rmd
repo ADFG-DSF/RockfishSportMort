@@ -318,7 +318,17 @@ Species composition data is not available for the entire time series and as such
 
 $\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)a} + \frac{\beta1_{(comp)a}}{(1 + exp(\beta2_{(comp)a}*(y - \beta3_{(comp)a})))} + \beta4_{(comp)a}*I(u=private)+re_{(comp)ayu}$
 
-where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(comp)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line (Tables 3 - 6). When $\beta$ parameters were inestimable as a result of no discernible change in composition over the observed time period $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Tables 3 - 6 pComp_PRIORS). 
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise. The $re_{(comp)ayu}$ term is a random effect with a non-informative prior that estimates deviation from the fit line and sum to zero for each area, user group and species such that 
+
+$re_{(comp)ayu} = \epsilon_{(comp)au} - \frac{1}{Y}\sum_{y=1}^{Y}\epsilon_{(comp)ayu}$
+
+where 
+
+$\epsilon_{(comp)ayu} ~\sim~\textrm{Normal}(0,\tau)$
+
+As with the logistic curves, the random effect terms summed to zero for two separate time periods; pre-2020 before management actions changed angler behavior, and from 2020 through the current year.
+
+When there was no discernible change in composition over the observed time period $\beta$ parameters became inestimable. As such,  $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Tables 3 - 6 pComp_PRIORS). 
 
 The goal of the logistic curve was to produce reasonable curves that reflected changing species compositions over time, and generated defensible values for making historical assumptions. While a hierarchical approach was considered, it was decided that species composition likely reflected local habitat and that broad, regional-scale patterns would have minimal information in estimating these values. However, because there is a lack of port sampling in most Kodiak CFMU's the species $\beta$ logistic terms for the Kodiak CFMU's were modelled hierarchically around a mean and standard deviation (Table XXX). Model development began with vague and uninformative priors but slow convergence and occasional non-sensical results necessitated tuning and constraining priors. In many cases logistic curves were easily fit as the underlying data supported the fit. In other instances, it was necessary to constrain and modify priors to impose a logistic curve on data where a logistic trend was not strongly apparent, sample sizes were low, or when a particular area demonstrated distinct patterns from other areas in that region. While it is generally preferential to allow a data driven process in these kinds of estimations, the fitted curves only affect estimates in years where data is absent, or sample sizes are very low. When proportional data is adequate the random effect terms ($re_{(comp)ayu}$) allow estimates to accurately reflect the data regardless of the curve. The fitted curve functions primarily to inform estimates during the period when no data was available and during years and areas where sample sizes are low or absent.  
 
@@ -342,7 +352,11 @@ The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logi
 
 $\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)ay} - 1)) + re_{(pH)(comp)ayu}$
 
-where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. 
+**OR** (simple B4 construction)
+
+$\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)a} - 1)) + re_{(pH)(comp)ayu}$
+
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. Random effect terms were also forced to sum to one for eahc area, user group and species in an identical manner to that described in equation **XX** for species compositions.
 
 Unlike the compositional trends, *pH* $\beta$ parameters were modeled hierarchically by region such that each area specific $\beta$ parameter was centered around region-specific hyperpriors of the mean and standard deviation (Tables 7 - 9). Prior development and reasoning followed the same logic as the species compositions logistic curves described above. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
 
@@ -364,7 +378,7 @@ where $\widehat{H}^{SWHS}_{ayu}$ and $\widehat{R}^{SWHS}_{ayu}$ are the SWHS est
 
 $se_{pHayu} = \sqrt{se_{H_{ay}}^2{\widehat{R}^{SWHS}_{ayu}}^2 + se_{R_{ay}}^2{\widehat{H}^{SWHS}_{ayu}}^2 - 2*{\widehat{R}^{SWHS}_{ayu}}*{\widehat{H}^{SWHS}_{ayu}}*cov*se_{H_{ay}}*se_{R_{ay}}}$
 
-Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
+**Complex B4 construction:** Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
 
 $\beta4_{(pH)(comp)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
 
@@ -379,6 +393,20 @@ For years between 1977 and 2010, the prior for each CFMU uses a prior centered a
 $\beta4_{(pH)(comp)ay}~\sim~\textrm{Normal}\left((\frac{1}{n} \sum_{y=2011}^{2019} (\beta4_{(pH)(comp)ay})), \sigma_{\beta4_{(pH)(comp)ay}}^2\right)$
 
 The $\beta4_{(pH)(comp)ayu}$ from years 2011 to 2019 are used for the pre-2011 years rather than the $pH_{ay}^{ung:gui}$ ratios because the offset $\beta4$ term is also influenced by the interview data that provides estimates of the proportion harvested for both user groups . Structuring the priors for the early years using the recent $\beta4_{(pH)(comp)ayu}$ estimates allows both the $pH_{ay}^{ung:gui}$ estimates and the interview data to inform those estimates
+
+**OR Simple B4 construction:** For each area the mean $pH_{ay}^{ung:gui}$ ratio was used as a prior on $\beta4_{(pH)(comp)ay}$ with the annual associated error of the $pH_{ay}^{ung:gui}$ estimates propagated through the prior such that
+
+$\beta4_{(pH)(comp)ay}~\sim~ \textrm{LogNormal}(log(\mu_{a}^{\beta4}),\tau_{\overline{pH}})$ 
+
+where modeled $\widehat{pH}_{ay}^{ung:gui}$ assumes a lognormal distribution relative to observed $pH_{ay}^{ung:gui}$ such that
+
+$pH_{ay}^{ung:gui} ~\sim~ \textrm{LogNormal} (log(\widehat{pH}_{ay}^{ung:gui}), se_{pHayu})$ 
+
+and
+
+$\widehat{pH}_{ay}^{ung:gui} ~\sim~ \textrm{LogNormal}(log(\mu_{a}^{\beta4}), \tau_{\overline{pH}})$
+
+where $\mu_{a}^{\beta4}$ and $\tau_{\overline{pH}}$ assume vague priors (Table PRIORS)
 
 The hyper priors for the regional $\beta1$ and $\beta2$ standard deviations used relatively constrained uniform priors on the standard deviation. Attempts to apply a gamma distribution directly to precision resulted in rare but extreme values that slowed convergence. Limiting the upper end of the standard deviation to values of 5 and 4 allowed for more influence of the regional hyperprior by limiting area specific deviations from the regional mean which stabilized the model and allowed data-poor areas to reach convergence. 
 
