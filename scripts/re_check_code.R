@@ -39,7 +39,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
   add_row(area = "WKMA", area_n = 7) %>%
   mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
 
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_1e+05__2025-10-14"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_3e+05_2025-10-15"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -56,7 +56,7 @@ prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.0115))/nrow(rhat_vals),4)
 
 #------------------------------------------------------------------------------
 #re_pH[a,y,u,s]
-pHpel_mod <- 
+pel_re_pH <- 
   rbind(postH$mean$re_pH[,,1,1] %>% t(),
         postH$mean$re_pH[,,2,1] %>% t()) %>%
   as.data.frame() %>%

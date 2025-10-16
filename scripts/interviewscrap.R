@@ -144,3 +144,91 @@ str(I_ayu$area)
 str(I_ayu)
 View(int)
 View(int %>% filter(inth_pel == 0))
+
+##############################################################################
+jags_dat$intc_dsr
+jags_dat$inth_dsr
+jags_dat$intc_slope
+jags_dat$inth_slope
+jags_dat$intc_other
+jags_dat$inth_other
+
+length(jags_dat$intc_dsr); length(jags_dat$inth_dsr)
+length(jags_dat$intc_slope); length(jags_dat$inth_slope)
+length(jags_dat$intc_other); length(jags_dat$inth_other)
+
+jags_dat$intc_dsr+jags_dat$intc_slope -> other_check
+
+nrow()
+
+
+I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
+  filter(!is.na(user)) 
+
+I_ayu0 %>% filter(region == "Southeast") %>%
+  mutate(o_n_ch = slope_n + dsr_n,
+         o_n_rel_ch = slope_n_rel + dsr_n_rel) -> I_ayu0_check
+
+I_ayu0_check$o_n_ch
+
+ggplot(I_ayu0_check,
+       aes(x = other_n, y = o_n_ch)) +
+  facet_wrap(~area)
+
+
+setdiff(expand_grid(year = unique(I_ayu0$year),
+                    area = unique(I_ayu0$area),
+                    user = unique(I_ayu0$user)),
+        I_ayu0 %>% select(year,area,user)) -> misdat
+na_df <- as.data.frame(matrix(NA, nrow = nrow(misdat), 
+                              ncol = length(colnames(I_ayu0)[4:18])))
+colnames(na_df) <- colnames(I_ayu0)[4:18]
+
+I_ayu <- 
+  I_ayu0 %>% mutate(year = as.integer(year)) %>%
+  bind_rows(bind_cols(misdat, na_df) %>%
+              mutate(year = as.integer(year)) %>%
+              right_join(I_ayu0 %>% select(area,region) %>% unique(),
+                         by = "area")) %>%
+  # filter(year >= 1996) %>%
+  arrange(user, area, year) 
+
+int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+  mutate(area_n = as.numeric(as.factor(area)), 
+         user_n = ifelse(user == "charter", 0, 1), 
+         year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+         #region_n = ifelse()
+         source = 1) %>%
+  select(year, year_n, area_n, user_n, source, # N = totalrf_n, 
+         inth_pel = pelagic_n, #black = black_n, 
+         inth_yellow = ye_n, 
+         inth_other = other_n, inth_dsr = dsr_n, inth_slope = slope_n,
+         intc_pel = pelagic_c, #black = black_n, 
+         intc_yellow = ye_c, 
+         intc_other = other_c, 
+         intc_dsr = dsr_c, 
+         intc_slope = slope_c,
+         region,area) %>%
+  filter(!is.na(inth_pel))
+
+int_oth <- int %>% select(year,year_n,area_n,user_n,inth_other,intc_other) %>%
+  filter(!is.na(intc_other),
+         intc_other != 0)
+int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
+  filter(!is.na(intc_dsr),
+         intc_dsr != 0)
+int_slope <- int %>% select(year,year_n,area_n,user_n,inth_slope,intc_slope) %>%
+  filter(!is.na(intc_slope),
+         intc_slope != 0)
+
+int %>% select(year, year_n, area_n, user_n, source,
+               inth_other, inth_dsr, inth_slope,
+               intc_other, intc_dsr, intc_slope) %>%
+  mutate(oc_ch = intc_dsr + intc_slope,
+               oh_ch = inth_dsr + inth_slope) -> intx
+
+intx %>% filter(oc_ch != intc_other)
+intx %>% filter(oh_ch != inth_other)
+
+
+

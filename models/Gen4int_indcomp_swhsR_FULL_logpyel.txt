@@ -74,11 +74,11 @@ for (a in 1:A){
    Rhat_ayg[a, y] ~ dlnorm(logRhat_ayg[a, y], tauRhat_ayg[a, y])
   }
 
-  for (y in 14:Y){ #all user SWHS release likelihood
-   tauRhat_ay[a, y] <- 1 / log(cvRhat_ay[a, y] * cvRhat_ay[a, y] + 1)
-   logRhat_ay[a, y] <- log(R_ay[a, y]) + logbc_R[a, y]
-   Rhat_ay[a, y] ~ dlnorm(logRhat_ay[a, y], tauRhat_ay[a, y])
-  }
+#  for (y in 14:Y){ #all user SWHS release likelihood
+#   tauRhat_ay[a, y] <- 1 / log(cvRhat_ay[a, y] * cvRhat_ay[a, y] + 1)
+#   logRhat_ay[a, y] <- log(R_ay[a, y]) + logbc_R[a, y]
+#   Rhat_ay[a, y] ~ dlnorm(logRhat_ay[a, y], tauRhat_ay[a, y])
+#  }
 
   for(y in 22:Y){ #logbook likelihood; guided harvest by area and year
    Hlb_ayg[a, y] ~ dpois(H_ayg[a, y])   # all rockfish
@@ -157,7 +157,7 @@ for (r in 1:2){
 mu_beta2_pH[3,1] ~ dnorm(0, 0.01)
 mu_beta2_pH[3,2] ~ dnorm(0, 0.01)
 mu_beta2_pH[3,3] ~ dnorm(0, 0.01)T(,-0.01)
-mu_beta2_pH[3,4] ~ dnorm(0, 0.01)
+mu_beta2_pH[3,4] ~ dnorm(0, 0.01)T(,0.0001)
 mu_beta2_pH[3,5] <- 0 #~ dnorm(0, 0.01) #Note that NSEI, NSEO and SSEO are straight lines
 
 #HYPER PRIORS FOR SPECIES COMPOSITION PARAMTERS:

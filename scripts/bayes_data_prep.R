@@ -1145,6 +1145,11 @@ se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
                   slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
   ggplot(aes(x = slopedsr_n, y = notye_nonpel_n)) + geom_point()
 
+se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
+                  slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
+  ggplot(aes(x = slopedsr_n_rel, y = notye_nonpel_n_rel)) + geom_point()
+
+
 pel_ch <- se_int%>% select(year,area,user,pelagic_n_rel)
 ye_ch <- se_int%>% select(year,area,user,ye_n_rel)
 black_ch <- se_int%>% select(year,area,user,black_n_rel)
@@ -1521,7 +1526,8 @@ int %>% filter(year > 1994) %>%
          #black_n,black_n_rel,
          other_n,# 
          other_n_rel, 
-         dsr_n,dsr_n_rel,
+         dsr_n = dsrnye_n,
+         dsr_n_rel = dsrnye_n_rel,
          slope_n,slope_n_rel) %>%
   mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE","NORTHEAST"),
                        tolower(area),toupper(area))) %>%
@@ -1544,7 +1550,25 @@ int_for_mod %>% select(year,user,area,other_n,other_n_rel) %>%
   filter(other_n != 0 & other_n_rel != 0) -> o_ch
 with(o_ch,table(area,year,user))
 
+str(int_for_mod)
+
+#double check slope, dsr and others are accounted for
+int_for_mod %>% filter(region == "Southeast") %>%
+  mutate(slopedsr_n = dsr_n + slope_n,
+                  slopedsr_n_rel = dsr_n_rel + slope_n_rel) %>%
+  ggplot(aes(x = slopedsr_n, y = other_n)) + geom_point() +
+  facet_wrap(~area)
+
+int_for_mod %>% filter(region == "Southeast") %>%
+  mutate(slopedsr_n = dsr_n + slope_n,
+         slopedsr_n_rel = dsr_n_rel + slope_n_rel)  %>%
+  ggplot(aes(x = slopedsr_n_rel, y = other_n_rel)) + geom_point() +
+  facet_wrap(~area)
+
 saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
+
+
+
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 #----

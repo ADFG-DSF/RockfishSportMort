@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Quickplots_", "_intdat_swhsR_",Sys.Date(),".html"))
+                          output_file = paste0("Quickplots_Gen4", "pHB4pars_swhsR_quickcheck",Sys.Date(),".html"))
       })
 ---
 
@@ -60,12 +60,12 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-B4 <- "simp" #complex
+B4 <- "simp" #complex "simp"
 
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_1e+05__2025-10-14"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_1e+05__2025-10-15"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -3481,7 +3481,7 @@ rbind(bc_mod2, bc_obs) %>%
   geom_line() +
   coord_cartesian(ylim = c(0, 5)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
+  facet_wrap(. ~ area, scale = "free") + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
@@ -3495,7 +3495,7 @@ rbind(bc_mod2, bc_obs) %>%
   geom_line() +
   #coord_cartesian(ylim = c(0, 5)) +
   geom_hline(aes(yintercept = mu_bc), data = mu_bc_H) +
-  facet_wrap(. ~ area) + theme_bw(base_size = 14)+
+  facet_wrap(. ~ area, scale = "free") + theme_bw(base_size = 14)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          plot.margin = margin(t = 20, r = 5, b = 5, l = 5)) +
