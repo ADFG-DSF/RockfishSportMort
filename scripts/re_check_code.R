@@ -39,7 +39,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
   add_row(area = "WKMA", area_n = 7) %>%
   mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
 
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_3e+05_2025-10-15"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_thru2024_10000__2025-10-16"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -65,7 +65,9 @@ pel_re_pH <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(pel_re_pH,
        aes(x = year,y = re_pH, colour = user)) +
@@ -74,8 +76,8 @@ ggplot(pel_re_pH,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pel_re_pH %>% group_by(user,area) %>%
-  summarise(re_sum = sum(re_pH)), n = 50)
+print(pel_re_pH %>% group_by(user,area, period) %>%
+  summarise(re_sum = sum(re_pH)), n = 100)
 
 pHye_mod <- 
   rbind(postH$mean$re_pH[,,1,2] %>% t(),
@@ -86,7 +88,9 @@ pHye_mod <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(pHye_mod,
        aes(x = year,y = re_pH, colour = user)) +
@@ -95,7 +99,7 @@ ggplot(pHye_mod,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pHye_mod %>% group_by(user,area) %>%
+print(pHye_mod %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_pH)), n = 50)
 
 
@@ -108,7 +112,9 @@ pHother_mod <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(pHother_mod,
        aes(x = year,y = re_pH, colour = user)) +
@@ -117,7 +123,7 @@ ggplot(pHother_mod,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pHother_mod %>% group_by(user,area) %>%
+print(pHother_mod %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_pH)), n = 50)
 
 
@@ -130,7 +136,9 @@ pHdsr_mod <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(pHdsr_mod,
        aes(x = year,y = re_pH, colour = user)) +
@@ -139,7 +147,7 @@ ggplot(pHdsr_mod,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pHdsr_mod %>% group_by(user,area) %>%
+print(pHdsr_mod %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_pH)), n = 50)
 
 
@@ -152,7 +160,9 @@ pHslope_mod <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(pHslope_mod,
        aes(x = year,y = re_pH, colour = user)) +
@@ -161,7 +171,7 @@ ggplot(pHslope_mod,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pHdsr_mod %>% group_by(user,area) %>%
+print(pHdsr_mod %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_pH)), n = 50)
 
 print(pHdsr_mod %>% group_by(area) %>%
@@ -178,7 +188,9 @@ p_pel <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_p_pel")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(p_pel,
        aes(x = year,y = re_p_pel, colour = user)) +
@@ -187,7 +199,7 @@ ggplot(p_pel,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(p_pel %>% group_by(user,area) %>%
+print(p_pel %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_p_pel)), n = 50)
 
 #-------------------------------------------------------------------------------
@@ -201,7 +213,9 @@ p_ye <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_p_ye")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(p_ye,
        aes(x = year,y = re_p_ye, colour = user)) +
@@ -210,7 +224,7 @@ ggplot(p_ye,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(p_ye %>% group_by(user,area) %>%
+print(p_ye %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_p_ye)), n = 50)
 
 #-------------------------------------------------------------------------------
@@ -224,7 +238,9 @@ p_black <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_p_black")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(p_black,
        aes(x = year,y = re_p_black, colour = user)) +
@@ -233,7 +249,7 @@ ggplot(p_black,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(p_black %>% group_by(user,area) %>%
+print(p_black %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_p_black)), n = 50)
 
 
@@ -248,7 +264,9 @@ p_dsr <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_p_dsr")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(p_dsr,
        aes(x = year,y = re_p_dsr, colour = user)) +
@@ -257,7 +275,7 @@ ggplot(p_dsr,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(p_dsr %>% group_by(user,area) %>%
+print(p_dsr %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_p_dsr)), n = 50)
 
 
@@ -272,7 +290,9 @@ p_slope <-
          user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_p_slope")  %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         period = ifelse(year < 1999, "a", 
+                         ifelse(year > 1998 & year < 2020, "b", "c")))
 
 ggplot(p_slope,
        aes(x = year,y = re_p_slope, colour = user)) +
@@ -281,7 +301,7 @@ ggplot(p_slope,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(p_slope %>% group_by(user,area) %>%
+print(p_slope %>% group_by(user,area, period) %>%
         summarise(re_sum = sum(re_p_slope)), n = 50)
 
 

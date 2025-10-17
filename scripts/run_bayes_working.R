@@ -53,6 +53,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 #iterations, burnin, chains and trimming rate:
 ni <- 3E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 28E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -67,9 +68,9 @@ mod <- "Gen4int_indcomp_swhsR_FULL"
 mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d"
 
-mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0"
+mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d"
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -77,7 +78,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_3e+05_2025-10-15"
 use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
-use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
+use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06__2025-09-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -212,6 +213,10 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 })
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "tau_beta5_yellow_kod"]
+})
+
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  chain_list[names(chain_list) != "sd_comp"]
 })
 
 for (i in 1:3){ #i <- 1

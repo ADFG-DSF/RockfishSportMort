@@ -758,7 +758,7 @@ jags_params <- function(){
     
     #random effects on species
     "re_pelagic", "re_black","re_yellow","re_dsr","re_slope","re_rslope",
-    "sd_comp", "tau_comp",
+    "sd_comp", "tau_comp","re_comp",
     
     #harvest estimates and spline parts
     "Htrend_ay", "H_ay", "sigma_H", "lambda_H", "H_ayg", "H_ayu", 
