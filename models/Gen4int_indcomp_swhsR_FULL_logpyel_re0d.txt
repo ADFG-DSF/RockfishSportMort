@@ -899,8 +899,8 @@ for (a in 11:16) {
 		Hs_ayu[a, y] <- max(0.001, H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_slope[a, y, 2])
 		Hs_ay[a, y] <- Hs_ayg[a, y] + Hs_ayu[a, y]
 
-		Rs_ayg[a, y] <- max(0,(Hs_ayg[a, y] / max(0.000001,pH[a,y,1,5])) - Hs_ayg[a, y]) 
-		Rs_ayu[a, y] <- max(0,(Hs_ayu[a, y] / max(0.000001,pH[a,y,2,5])) - Hs_ayu[a, y]) 
+		Rs_ayg[a, y] <- min(4*Hs_ayg[a, y], max(0,(Hs_ayg[a, y] / max(0.000001,pH[a,y,1,5])) - Hs_ayg[a, y])) 
+    Rs_ayu[a, y] <- min(4*Hs_ayu[a, y], max(0,(Hs_ayu[a, y] / max(0.000001,pH[a,y,2,5])) - Hs_ayu[a, y]) )
 		Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
 		Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] # - Hy_ayg[a, y] 

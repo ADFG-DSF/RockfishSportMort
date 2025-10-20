@@ -65,7 +65,7 @@ B4 <- "complex" #complex "simp"
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
-res <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d_thru2024_10000__2025-10-16"
+res <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d_thru2024_280000__2025-10-17"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
