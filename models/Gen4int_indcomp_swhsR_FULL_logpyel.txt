@@ -198,7 +198,7 @@ mu_beta2_pH[3,5] <- 0 #~ dnorm(0, 0.01) #Note that NSEI, NSEO and SSEO are strai
     sdmb4[a,s] <- sd(beta4_pH[a,(35:43),s])
     taumb4[a,s] <- 1 / sdmb4[a,s] / sdmb4[a,s]
     for (y in 1:34){
-      beta4_pH[a,y,s] ~ dnorm(mb4[a,s], taumb4[a,s])
+      beta4_pH[a,y,s] ~ dnorm(mb4[a,s], taumb4[a,s])T(0,20)
       #mb4[a,s] ~ dnorm(beta4_pH[a,y,s], taumb4[a,s])
     }
    }

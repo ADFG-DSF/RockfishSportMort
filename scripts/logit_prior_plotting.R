@@ -12,7 +12,8 @@ plot_logit <- function(n = 5000,
   b1 <- rlnorm(n,log(b1_mu),sd_b1)
   b2 <- rnorm(n,b2_mu,sd_b2)
   b3 <- runif(n,b3_lo,b3_hi)
-  b4 <- rlnorm(n,log(b4_mu),sd_b4)
+  #b4 <- rlnorm(n,log(b4_mu),sd_b4)
+  b4 <- rnorm(n,b4_mu,sd_b4)
   
   cbind(b0,b1,b2,b3,b4) %>% data.frame -> pr_sim
   props <- data.frame(matrix(nrow = n, ncol=Y)) 
@@ -99,7 +100,7 @@ plot_logit(n = 10,
            sd_b2 <- 0.1,
            b3_lo <- 18,
            b3_hi <- 42,
-           b4_mu <- 0.99
+           b4_mu <- -0.01
            ,
            sd_b4 <- 0)
 

@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Quickplots_Gen4_", "pHB4cmplx_swhsR_quickcheck",Sys.Date(),".html"))
+                          output_file = paste0("Quickplots_Gen4_", "pHB4cmplx_rebase_swhsR_quickcheck",Sys.Date(),".html"))
       })
 ---
 
@@ -60,12 +60,12 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-B4 <- "complex" #complex "simp"
+B4 <- "none" #complex "simp", "none
 
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 #trying
-res <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d_thru2024_280000__2025-10-17"
+res <- "Gen4int_indcomp_swhs_gR_FULL_pHu_thru2024_2e+05__2025-10-20"
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -2613,6 +2613,9 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,1],
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHpel_trend
 }
+if(B4 == "none"){
+
+}
 
 pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
@@ -2623,7 +2626,7 @@ pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   geom_point(aes(shape = source)) +
   #geom_point(data  = pHpel_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHpel_mod, aes(color = user)) +
-  geom_line(data = pHpel_trend, aes(color = user)) +
+  #geom_line(data = pHpel_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
@@ -2764,6 +2767,9 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,2],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHye_trend
+}
+if(B4 == "none"){
+
 }
 
 pHye_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
@@ -2920,6 +2926,9 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,3],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHnpny_trend
+}
+if(B4 == "none"){
+
 }
 
 
@@ -3078,6 +3087,9 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,4],
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHdsr_trend
 }
+if(B4 == "none"){
+
+}
 
 pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &
                        source != "SWHS (all RF)") %>%
@@ -3231,6 +3243,9 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,5],
          year = y + 1976,
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHslope_trend
+}
+if(B4 == "none"){
+
 }
 
 pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO") &

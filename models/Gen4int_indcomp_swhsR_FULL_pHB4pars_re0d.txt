@@ -830,9 +830,9 @@ for (a in 1:A){
 	 #		re_yellow[a, y, u] ~ dnorm(0, tau_comp)
 
 			for (s in 1:3){
-				logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + (beta0_pH[a,s] + 
-                                     beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s])))) * #Note change to multiplicative
-                                     (1 + (u - 1) * (beta4_pH[a,s] - 1))  #u=1 = same, u=2 = b4 effect
+				logit(pH[a, y, u, s]) <- max(0.000001,re_pH[a, y, u, s] + (beta0_pH[a,s] + 
+                                             beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s])))) * #Note change to multiplicative
+                                             (1 + (u - 1) * (beta4_pH[a,s] - 1)))  #u=1 = same, u=2 = b4 effect
 	   		#re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
 			}
 		}
@@ -922,9 +922,9 @@ for (a in 11:16) {
 		#	re_slope[a, y, u] ~ dnorm(0, tau_comp)
 
       for (s in 4:5){
-        logit(pH[a, y, u, s]) <- re_pH[a, y, u, s] + (beta0_pH[a,s] + 
-                                     beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s])))) * #Note change to multiplicative
-                                     (1 + (u - 1) * (beta4_pH[a,s] - 1))  #u=1 = same, u=2 = b4 effect
+        logit(pH[a, y, u, s]) <- max(0.0000001,re_pH[a, y, u, s] + (beta0_pH[a,s] + 
+                                             beta1_pH[a,s] / (1 + exp(-beta2_pH[a,s] * (y - beta3_pH[a,s])))) * #Note change to multiplicative
+                                             (1 + (u - 1) * (beta4_pH[a,s] - 1)))  #u=1 = same, u=2 = b4 effect
       #  re_pH[a, y, u, s] ~ dnorm(0, tau_pH[s])
       }
 		}

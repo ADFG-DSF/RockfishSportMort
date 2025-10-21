@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 15E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 28E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -72,13 +72,16 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d"
 
+mod <- "Gen4int_indcomp_swhs_gR_FULL_pHu"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHu"
+
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_thru2024_3e+05_2025-10-15"
 use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
-use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06__2025-09-29"
+use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
