@@ -1,5 +1,7 @@
 source(".\\scripts//bayes_data_param_load.R")
 
+logit_to_prob(-10)
+
 plot_logit <- function(n = 5000,
                        Y,b0_mu,sd_b0,
                        b1_mu,sd_b1,

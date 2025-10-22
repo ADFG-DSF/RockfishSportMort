@@ -39,7 +39,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
   add_row(area = "WKMA", area_n = 7) %>%
   mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
 
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_thru2024_10000__2025-10-16"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_1e+05_2025-10-20"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
