@@ -51,17 +51,22 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 
 #get SE port sampling data:
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
-#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+# SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
                      #sheet = "Sheet1", 2023
                      sheet = "MHS num Fish", #2024; different format
-                     range = paste0("A1:AZ1000"), 
+                     range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #grab the columns you want. 
 colnames(SE_port)
-SE_port <- SE_port[,c(1:14,35:43)]
+
+SE_port %>% filter(Year %in% c("2019","2023","2024") & Rpt_Area %in% c("NSEI","NSEO")) %>% data.frame() %>%
+  select(Year,Rpt_Area,User,pYE,pYE_avgRptArea,var_pYE,var_pYE_avgRptArea,
+         pDSR,pDSR_avgRptArea,var_pDSR,var_pDSR_avgRptArea,
+         pSlope,pSlope_avgRptArea,var_pSlope,var_pSlope_avgRptArea)
 
 #get SC port sampling data:
 SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
@@ -293,8 +298,8 @@ write.csv(updated_YE_H, paste0("output/YE_harv_Howard_thru",YEAR,".csv"), row.na
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 harv_est_xlsx <- loadWorkbook(paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"))
-addWorksheet(harv_est_xlsx, "YE harvest")
-writeData(harv_est_xlsx, "YE harvest", updated_YE_H)
+addWorksheet(harv_est_xlsx, "YE harvest check")
+writeData(harv_est_xlsx, "YE harvest check", updated_YE_H)
 saveWorkbook(harv_est_xlsx, paste0("output/harvest_estimates_Howard_thru",YEAR,".xlsx"),overwrite=T)
 
 #---RELEASES--------------------------------------------------------------------
@@ -407,8 +412,8 @@ write.csv(updated_YE_R,paste0("output/YE_rel_Howard_thru",YEAR,".csv"), row.name
 
 # For EXCEL recording, the BRF analysis is where you create the workbook: 
 rel_est_xlsx <- loadWorkbook(paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"))
-addWorksheet(rel_est_xlsx, "YE release")
-writeData(rel_est_xlsx, "YE release", updated_YE_R)
+addWorksheet(rel_est_xlsx, "YE release check")
+writeData(rel_est_xlsx, "YE release check", updated_YE_R)
 saveWorkbook(rel_est_xlsx, paste0("output/release_estimates_Howard_thru",YEAR,".xlsx"),overwrite=T)
 #-------------------------------------------------------------------------------
 # Summary and plots
@@ -590,12 +595,12 @@ insertImage(SC_rep, "YE release", "figures/SC_YE_rel.png", width = 10, height = 
 saveWorkbook(SC_rep, paste0("output/reports/SC_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
 
 SE_rep <- loadWorkbook(paste0("output/reports/SE_RF_HowMth_thru",YEAR,".xlsx"))
-addWorksheet(SE_rep, "YE harvest")
-addWorksheet(SE_rep, "YE release")
-writeData(SE_rep, "YE harvest", SE_H)
-writeData(SE_rep, "YE release", SE_R)
-insertImage(SE_rep, "YE harvest", "figures/SE_YE_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
-insertImage(SE_rep, "YE release", "figures/SE_YE_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
+addWorksheet(SE_rep, "YE harvest 10-22")
+addWorksheet(SE_rep, "YE release 10-22")
+writeData(SE_rep, "YE harvest 10-22", SE_H)
+writeData(SE_rep, "YE release 10-22", SE_R)
+insertImage(SE_rep, "YE harvest 10-22", "figures/SE_YE_harv.png", width = 10, height = 7, startRow = 1, startCol = 12)
+insertImage(SE_rep, "YE release 10-22", "figures/SE_YE_rel.png", width = 10, height = 7, startRow = 1, startCol = 12)
 saveWorkbook(SE_rep, paste0("output/reports/SE_RF_HowMth_thru",YEAR,".xlsx"),overwrite=T)
 #NOTE FLAG GODDAMN:
 # Harvest and catches should really be in log space. Fucking hell... 

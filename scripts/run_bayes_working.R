@@ -52,8 +52,8 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 3E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
-ni <- 28E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 4E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -69,6 +69,7 @@ mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d"
+mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d" #15e5 - 3.2 days
 
@@ -79,9 +80,9 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHu2"
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_1e+05__2025-10-21"
-use_this_model <- "Gen3ab_indcomp_no_swhs_rel_FULL_thru2023_5e+06_2025-09-29"
-use_this_model <- "Gen3ab_indcomp_swhsR_FULL_thru2023_4e+06_2025-09-29"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-22"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d_thru2024_3e+05_2025-10-22"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHu2_thru2024_3e+05_2025-10-22"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -405,12 +406,13 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen4int_indcomp_swhsR_FULL_pHu_thru2024_1e+05_2025-10-20"
-
+results <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d_thru2024_3e+05_2025-10-22"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-22"
+results <- "Gen4int_indcomp_swhsR_FULL_pHu2_thru2024_3e+05_2025-10-22"
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
 #model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
@@ -914,7 +916,9 @@ rhat_exam %>% group_by(variable,area) %>%
   arrange(-badRhat_avg,-n) %>% 
   filter(str_detect(variable, "pH"))
 
-jagsUI::traceplot(postH, parameters = c("sd_comp","mu_beta0_yellow","tau_beta0_yellow",
+jagsUI::traceplot(postH, parameters = "sd_comp")
+
+jagsUI::traceplot(postH, parameters = c("mu_beta0_yellow","tau_beta0_yellow",
                                         "mu_beta1_yellow","tau_beta1_yellow",
                                         "mu_beta2_yellow","tau_beta2_yellow",
                                         "mu_beta3_yellow","tau_beta3_yellow",

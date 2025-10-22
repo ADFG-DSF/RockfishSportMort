@@ -285,7 +285,9 @@ readinData <- function(spl_knts = 7,
            other = notye_nonpel_n, dsr = dsr_n, slope = slope_n,
            region,area) %>%
     filter(N != 0) %>%
-    mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) #,
+    mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) %>%
+    mutate(yellow = ifelse(region == "Southeast" & year < 2006,
+                           NA,yellow)) #,
   
   int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
     mutate(area_n = as.numeric(as.factor(area)), 

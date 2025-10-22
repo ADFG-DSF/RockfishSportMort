@@ -596,8 +596,23 @@ S_ayu_ly2 <-cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_c
   filter_all(any_vars(!is.na(.)))
 
 #2024 data set
-sppcompR1_0 <- 
+sppcompR1_corrupt <- 
   read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
+            range = c("A1:N1000"),
+            sheet = "MHS num Fish")  %>%
+  rename_all(.funs = tolower) %>%
+  mutate(user = tolower(user)) %>%
+  rename(area = rpt_area) %>% 
+  filter_all(any_vars(!is.na(.))) %>%
+  #  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
+  select(-c("totalrf_n_rel")) %>%
+  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
+              "notye_nonpel_n","dsr_n","slope_n",
+              "pelnbrf_n","dsrnye_n"),as.numeric)
+
+sppcompR1_0 <- 
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_22-Oct-2025.xlsx"), 
+  #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
             range = c("A1:N1000"),
             sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
@@ -610,6 +625,8 @@ sppcompR1_0 <-
               "notye_nonpel_n","dsr_n","slope_n",
               "pelnbrf_n","dsrnye_n"),as.numeric)
 
+setdiff(sppcompR1_corrupt,sppcompR1_0) %>% arrange(area,user,year)
+setdiff(sppcompR1_0,sppcompR1_corrupt) %>% arrange(area,user,year)
 # compare the data:
 colnames(sppcompR1_0)
 table(sppcompR1_0$year, sppcompR1_0$area, sppcompR1_0$user)

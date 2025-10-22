@@ -228,7 +228,7 @@ for (a in 1:4){
     beta5_pelagic[a] ~ dnorm(0, 0.001)
 #  beta6_pelagic[a] ~ dnorm(0, 0.001)
 
-    beta0_yellow[a] ~ dnorm(0, 0.001)T(-2.25,)
+    beta0_yellow[a] ~ dnorm(0, 0.001)#T(-2.25,)
     beta4_yellow[a] ~ dnorm(0, 0.01)
     beta5_yellow[a] ~ dnorm(0, 0.001)
 #  beta6_yellow[a] ~ dnorm(0, 0.001)
@@ -460,15 +460,15 @@ for (a in 5:6) { #BSAI and SOKO2SAP
 
     beta0_pH[a,1,3] ~ dnorm(mu_beta0_pH[regions[a],3], tau_beta0_pH[regions[a],3]) #INTERCEPT
     beta1_pH[a,1,3] ~ dlnorm(log(mu_beta1_pH[regions[a],1,3]), tau_beta1_pH[regions[a],1,3])T(0.1,) 
-    beta2_pH[a,1,3] ~ dnorm(mu_beta2_pH[regions[a],1,3], tau_beta2_pH[regions[a],1,3])T(0.0001,20) # SLOPE 
-    beta3_pH[a,1,3] ~ dunif(28,44)
+    beta2_pH[a,1,3] ~ dnorm(mu_beta2_pH[regions[a],1,3], tau_beta2_pH[regions[a],1,3])T(0.001,) # SLOPE 
+    beta3_pH[a,1,3] ~ dunif(29,44)
   } 
 
 #SOUTHEAST
 for (a in 11:16){
-	beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
-	beta2_yellow[a] ~ dnorm(0,0.01)T(-30,-0.01)
-	beta3_yellow[a] ~ dunif(28,42) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
+	beta1_yellow[a] <- 0 #~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
+	beta2_yellow[a] <- 0 #~ dnorm(0,0.01)T(-30,-0.01)
+	beta3_yellow[a] <- 25 #~ dunif(28,42) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 
 	beta0_dsr[a] ~ dnorm(0, 0.01)
   beta1_dsr[a] <- 0 # ~ dlnorm(log(mu_beta1_dsr), tau_beta1_dsr)
