@@ -60,9 +60,10 @@ LB_H %>% filter(year == YEAR)
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
                      #sheet = "Sheet1", 2023
-                     sheet = "MHS num Fish", #2024; different format
+                     sheet = "Sheet1", #2024; different format
                      range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
@@ -112,7 +113,7 @@ spec_apor <- rbind(SE_port,SC_port) %>%
   #mutate(RptArea = as.factor(ifelse(RptArea %in% c("WESTSIDE"),"WKMA",RptArea))) %>%
   mutate_if(is.character, ~as.numeric(.)) 
 
-
+str(spec_apor)
 # Before we get going we need to deal with the Kodiak decision tree
 # Eastside gui_pBRFinPel = average or raw depending on sample size
 # Eastside Priv_pBRF = Northeast pBRF

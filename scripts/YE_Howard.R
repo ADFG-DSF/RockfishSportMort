@@ -52,16 +52,22 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 #get SE port sampling data:
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
-#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"),
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"),
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
                      #sheet = "Sheet1", 2023
-                     sheet = "MHS num Fish", #2024; different format
+                     sheet = "Sheet1", #2024; different format
                      range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
 #grab the columns you want. 
 colnames(SE_port)
+
+# need to add extra columns to SC to facilitate combining the two regions for analysis
+# in 2024 SE changed some of their column names. Fuckinghell.
+SE_port <- SE_port %>%
+  rename_with(~ str_replace_all(.x, "ave", "avg"))
 
 SE_port %>% filter(Year %in% c("2019","2023","2024") & Rpt_Area %in% c("NSEI","NSEO")) %>% data.frame() %>%
   select(Year,Rpt_Area,User,pYE,pYE_avgRptArea,var_pYE,var_pYE_avgRptArea,

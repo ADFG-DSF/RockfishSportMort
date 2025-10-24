@@ -242,7 +242,8 @@ readinData <- function(spl_knts = 7,
               sd_wt = sd(wt_lbs),
               cv_wt = sd_wt/mean_wt,
               tau_wt = 1/(sd_wt),
-              max_wt = max(wt_lbs))
+              max_wt = max(wt_lbs),
+              min_wt = min(wt_lbs))
   #---------------------------------------
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
@@ -531,6 +532,7 @@ readinData <- function(spl_knts = 7,
       wt_prm = wt_priors$mean_wt,
       wt_prtau = wt_priors$tau_wt,
       wt_prub = wt_priors$max_wt,
+      wt_prlb = wt_priors$min_wt,
       
       r1_gwt_b = matrix(se_rmwt$wt_lbs[se_rmwt$assemblage == "black" & se_rmwt$user == "charter"],
                         nrow = 6, ncol = length(unique(se_rmwt$year)), byrow=TRUE),

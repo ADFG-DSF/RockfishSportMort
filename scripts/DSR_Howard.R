@@ -62,12 +62,18 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_Region1_forR_2023.FINAL.xlsx"), 
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
                      #sheet = "Sheet1", 2023
-                     sheet = "MHS num Fish", #2024; different format
+                     sheet = "Sheet1", #2024; different format
                      range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
+
+# need to add extra columns to SC to facilitate combining the two regions for analysis
+# in 2024 SE changed some of their column names. Fuckinghell.
+SE_port <- SE_port %>%
+  rename_with(~ str_replace_all(.x, "ave", "avg"))
 
 #get SC port sampling data:
 SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_thru",YEAR,".csv"))
@@ -76,10 +82,7 @@ SC_port <- read.csv(paste0("data/raw_dat/Species_comp_SC/Species_comp_Region2_th
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
 
-# need to add extra columns to SC to facilitate combining the two regions for analysis
-# in 2024 SE changed some of their column names. Fuckinghell.
-SE_port <- SE_port %>%
-  rename_with(~ str_replace_all(.x, "ave", "avg"))
+
 
 colnames(SE_port); ncol(SE_port)
 colnames(SC_port); ncol(SC_port)
@@ -114,6 +117,27 @@ spec_apor <- rbind(SE_port,SC_port) %>%
   mutate_if(is.character, ~as.numeric(.)) 
 
 str(spec_apor)
+
+# There are still fucked up calculations coming out of SE
+spec_apor %>%
+  select(Year,RptArea,User,
+         pDSRinNonP,pDSRinNonP_avgRptArea,pDSR,pDSR_avgRptArea,
+         var_pDSR_avgRptArea,var_pDSRinNonP, var_pDSRinNonP_avgRptArea) %>%
+  filter(Year > 2022) -> check; print(check, n = 60)
+
+spec_apor %>% 
+  mutate(var_pDSRinNonP = ifelse(is.infinite(var_pDSRinNonP),
+                                 pDSRinNonP*(1-pDSRinNonP)/Nonpel_n,
+                                 var_pDSRinNonP)) %>%
+  select(Year,RptArea,User,
+         pDSRinNonP,pDSRinNonP_avgRptArea,pDSR,pDSR_avgRptArea,
+         var_pDSR_avgRptArea,var_pDSRinNonP, var_pDSRinNonP_avgRptArea) %>%
+  filter(Year > 2022) -> check; print(check, n = 60)
+
+spec_apor %>% 
+  mutate(var_pDSRinNonP = ifelse(is.infinite(var_pDSRinNonP),
+                                 pDSRinNonP*(1-pDSRinNonP)/Nonpel_n,
+                                 var_pDSRinNonP)) -> spec_apor
 
 #-------------------------------------------------------------------------------
 #get the last BRF run down: 
@@ -162,7 +186,6 @@ left_join(spec_apor,
                    use_pDSRinNP_aRA = pDSRinNonP_avgRptArea,
                    use_var_pDSRinNP_aRA = var_pDSRinNonP_avgRptArea),
           by = c("RptArea","User"))  -> spec_apor
-
 
 DSR_guiH <- new_H %>% filter(Region == "SE") %>%
   select(Region, year, RptArea,Log_rfharv) %>%
@@ -387,6 +410,8 @@ DSR_rel_table %>% select(year,Region,RptArea,Guided,Private,Total) %>%
   mutate(hi95 = Releases + 1.96*SE,
          lo95 = ifelse(Releases - 1.96*SE < 1,
                        1,Releases - 1.96*SE))-> Rplot_dat
+
+print(Hplot_dat %>% filter(year > 2022), n = 50)
 
 library(wesanderson)
 names(wes_palettes)

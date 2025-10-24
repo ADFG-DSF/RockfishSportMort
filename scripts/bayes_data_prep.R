@@ -611,10 +611,12 @@ sppcompR1_corrupt <-
               "pelnbrf_n","dsrnye_n"),as.numeric)
 
 sppcompR1_0 <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_22-Oct-2025.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+  #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_22-Oct-2025.xlsx"), 
   #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
             range = c("A1:N1000"),
-            sheet = "MHS num Fish")  %>%
+            sheet = "Sheet1")  %>%
+            #sheet = "MHS num Fish")  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
@@ -1126,9 +1128,10 @@ wt_rm_dat %>% filter(!is.na(wt_lbs)) %>%
 z<-1.96 #for CI calculations and graphics
 
 se_int <-  
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
+  #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
             range = c("A1:N1000"),
-            sheet = "MHS num Fish")  %>%
+            sheet = "Sheet1")  %>%
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
@@ -1138,9 +1141,9 @@ se_int <-
   mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
               "notye_nonpel_n","dsr_n","slope_n",
               "pelnbrf_n","dsrnye_n"),as.numeric) %>%
-  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
-                  range = c("AI1:AQ1000"),
-                  sheet = "MHS num Fish")  %>%
+  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+                  range = c("BO1:BW1000"),
+                  sheet = "Sheet1")  %>%
           rename_all(.funs = tolower) %>%
           mutate_at(c("ye_n_rel","black_n_rel","pelagic_n_rel","nonpel_n_rel",
                       "notye_nonpel_n_rel","dsr_n_rel","slope_n_rel",
@@ -1166,6 +1169,15 @@ se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
                   slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
   ggplot(aes(x = slopedsr_n_rel, y = notye_nonpel_n_rel)) + geom_point()
 
+se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
+                  slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
+  filter(notye_nonpel_n != slopedsr_n)
+
+se_int %>% mutate(slopedsr_n = dsrnye_n + slope_n,
+                  slopedsr_n_rel = dsrnye_n_rel + slope_n_rel) %>%
+  filter(notye_nonpel_n_rel != slopedsr_n_rel)
+
+#OK... these are years where "other" was recorded, but slope and dsr weren't
 
 pel_ch <- se_int%>% select(year,area,user,pelagic_n_rel)
 ye_ch <- se_int%>% select(year,area,user,ye_n_rel)
@@ -1581,6 +1593,11 @@ int_for_mod %>% filter(region == "Southeast") %>%
          slopedsr_n_rel = dsr_n_rel + slope_n_rel)  %>%
   ggplot(aes(x = slopedsr_n_rel, y = other_n_rel)) + geom_point() +
   facet_wrap(~area)
+
+int_for_mod %>% filter(region == "Southeast") %>%
+  mutate(slopedsr_n = dsr_n + slope_n,
+         slopedsr_n_rel = dsr_n_rel + slope_n_rel)  %>%
+  filter(slopedsr_n_rel != other_n_rel)
 
 saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 
