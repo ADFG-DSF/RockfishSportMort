@@ -833,43 +833,22 @@ saveRDS(kha, ".\\data\\bayes_dat\\kha.rds")
 #-------------------------------------------------------------------------------
 # Note that the 2 regions approach things a bit differently.
 # Southcentral factors in long term estimates of depth-at-release data to adjust
-# their mortality esimtates while southeast applies a standard rate base on year
+# their mortality estimates while southeast applies a standard rate base on year
 # when dwr mechanisms were mandated. 
-# Secondly, southeast divides their slope numbers into large and small slope rf.
-ly_wt <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
-  mutate(assemblage = factor(assemblage, 
-                             levels = c("black","yelloweye","pelnbrf","dsrlessye","slope"))) %>%
-  arrange(assemblage, user,region, area, year) 
 
-#Running 2023 numbers in 2024
-# Southcentral data:
-#sc_wt_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc.csv") %>% clean_names() %>%
-#  mutate(#cfmu = tolower(cfmu),
-#         user = tolower(user),
-#         assemblage = tolower(assemblage))
-
-#sc_wt_rm %>% group_by(year, cfmu, assemblage, user) %>%
-#  summarize(wt_kg = weighted.mean(avg_wt_kg,p_rel,na.rm=T),
-#            wt_cv = ifelse(is.na(weighted.mean(se_wt_kg) / wt_kg),1,
-#                           weighted.mean(se_wt_kg) / wt_kg),
-#            r_mort = weighted.mean(mort_rate, p_rel, na.rm = T)) -> sc_wt_rm
-
-# 2024 numbers in 2025:
-sc_wt <- read.csv("data/raw_dat/Species_comp_SC/rf_mean_wt_SC.csv") %>% clean_names() %>%
-  mutate(assemblage = ifelse(sp == 142,"black",
-                             ifelse(sp == 145,"yelloweye","other")),
-         wt_lbs = mean_wt * 2.20462262,
-         wt_cv = sd_wt * 2.20462262 / wt_lbs,
-         user = tolower(user)) %>%
+# Wt data processed in wt_ssize_eval.R
+wts <- read.csv("data/bayes_dat/wt_dat_processed.csv") %>%
   rename(area = cfmu) %>%
-  right_join(lut %>% filter(region %in% c("Central","Kodiak")) %>%
+  mutate(wt_lbs = mean_wtkg * 2.20462262,
+         sd_wtlbs = sd_wt * 2.20462262,
+         wt_cv = sd_wtlbs / wt_lbs,
+         user = tolower(user)) %>%
+  right_join(lut %>% 
                mutate(area = toupper(area)),
              by = "area") %>%
-  filter(boats >= 4 & n_fish > 5) %>%
-  select(-c(sp,mean_wt,sd_wt))
+  select(-X)
 
-head(sc_wt)
-unique(sc_wt$area)
+unique(wts$area)
 
 sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
   rename(area = cfmu) %>%
@@ -878,6 +857,24 @@ sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_nam
          user = tolower(user)) %>% 
   group_by(year, area, assemblage, user) %>%
   summarize(r_mort = weighted.mean(mort_rate, p_rel, na.rm = T))
+
+sc_rm <- rbind(sc_rm %>%
+               mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+                                    tolower(area),area)),
+               sc_rm %>% filter(area == "NORTHEAST") %>%
+               mutate(area = "BSAI"),
+               sc_rm %>% filter(area == "NORTHEAST") %>%
+               mutate(area = "SOKO2SAP"),
+               sc_rm %>% filter(area == "NORTHEAST") %>%
+               mutate(area = "WKMA"),
+               sc_rm %>% filter(area == "NORTHEAST") %>%
+               mutate(area = "afognak"),
+               sc_rm %>% filter(area == "NORTHEAST") %>%
+               mutate(area = "eastside")) #%>%
+#  mutate(wt_lbs = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+#                         NA,wt_lbs),
+#         wt_cv = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+#                        1,wt_cv))
 
 head(sc_rm); unique(sc_rm$area)
 
@@ -911,176 +908,98 @@ expand.grid(year = seq(1977,(max(sc_rm$year)),1),
                mutate(area = toupper(area)),
              by = "area") -> r2_rm
 
-r2_rm <- rbind(r2_rm %>%
-                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
-                                      tolower(area),area)),
-               r2_rm %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "BSAI"),
-               r2_rm %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "SOKO2SAP"),
-               r2_rm %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "WKMA"),
-               r2_rm %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "afognak"),
-               r2_rm %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "eastside")) -> r2_rm
+with(r2_rm, table(year,area,assemblage,user))
 
-sc_wt <- rbind(sc_wt %>%
-                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
-                                      tolower(area),area)),
-               sc_wt %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "BSAI"),
-               sc_wt %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "SOKO2SAP"),
-               sc_wt %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "WKMA"),
-               sc_wt %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "afognak"),
-               sc_wt %>% filter(area == "NORTHEAST") %>%
-                 mutate(area = "eastside")) %>%
-  mutate(wt_lbs = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
-                         NA,wt_lbs),
-         wt_cv = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
-                        1,wt_cv))
-
-full_join(sc_wt,r2_rm,by = c("year","area","assemblage","user","region")) %>%
-  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) -> r2_wt_rm
-
-r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> mismort; mismort
-
-ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = area)) +
-  geom_line() + geom_point() +
-  facet_wrap(~assemblage + user)
-
-r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> damnit; damnit
-
-r2_wt_rm %>% filter(user == damnit$user, area == damnit$area,year == damnit$year, assemblage == damnit$assemblage)
-
-r2_wt_rm %>% filter(area == "BSAI" & year == 2017)
-
-#Southeast data
-se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
-#se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
-                       sheet = "Wt matrix",
-                       range = paste0("A1:G2000")) %>% clean_names() %>%
-  mutate(cfmu = rpt_area, #tolower(rpt_area),
-         user = tolower(user),
-         assemblage = tolower(assemblage)) %>%
-  select(-rpt_area) %>%
-  filter(rowSums(is.na(.)) < ncol(.))
-
-unique(se_wt$cfmu)
-unique(se_wt$assemblage)
+#r2_rm <- rbind(r2_rm %>%
+#                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+#                                      tolower(area),area)),
+#               r2_rm %>% filter(area == "NORTHEAST") %>%
+#                 mutate(area = "BSAI"),
+#               r2_rm %>% filter(area == "NORTHEAST") %>%
+#                 mutate(area = "SOKO2SAP"),
+#               r2_rm %>% filter(area == "NORTHEAST") %>%
+#                 mutate(area = "WKMA"),
+#               r2_rm %>% filter(area == "NORTHEAST") %>%
+#                 mutate(area = "afognak"),
+#               r2_rm %>% filter(area == "NORTHEAST") %>%
+#                 mutate(area = "eastside")) -> r2_rm
 
 se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
-#se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                   #se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
                    sheet = "Mortality Rates",
                    range = paste0("A1:E2000")) %>% clean_names() %>%
   mutate(year = as.numeric(year),
-         cfmu = rpt_area, #tolower(rpt_area),
+         area = rpt_area, #tolower(rpt_area),
          user = tolower(user),
-         assemblage = tolower(assemblage)) %>%
-  select(-rpt_area) %>%
+         assemblage = tolower(assemblage),
+         r_mort = mrate) %>%
+  select(-rpt_area,-mrate) %>%
   filter(rowSums(is.na(.)) < ncol(.))
 
-unique(se_rm$cfmu)
-unique(se_rm$assemblage)
+se_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate = r_mort[which.min(year)]) -> se_mrates_oldest
 
-#se_rm %>% mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-#                                     "slope",assemblage)) %>%
-#  group_by(year,user,assemblage) %>%
-#  summarize(mrate = mean(mrate, na.rm=T)) ->mrates
+se_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate_dwr = r_mort[which.max(year)]) -> se_mrates_dwr
 
-#se_slopes <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
-#                   sheet = "MHS num Fish",
-#                   range = paste0("A1:R300")) %>% clean_names() %>%
-#  mutate(year = as.numeric(year),
-#         cfmu = rpt_area, #tolower(rpt_area),
-#         user = tolower(user)) %>%
-#  select(year,cfmu,user,slope_lg_n,slope_sm_n) %>%
-#  pivot_longer(cols = c(slope_lg_n,slope_sm_n),
-#               values_to = "slope_n",
-#               names_to = "slope_size") %>%
-#  mutate(assemblage = str_remove(slope_size,"_n")) %>%
-#  select(-slope_size) %>%
-#  filter(rowSums(is.na(.)) < ncol(.))
 
-#print(se_slopes %>% filter(year > 2010) %>%
-#        arrange(year,cfmu,user),n = 50)
+expand.grid(year = seq(1977,(max(se_rm$year)),1),
+            area = unique(se_rm$area),
+            assemblage = unique(se_rm$assemblage),
+            user = unique(se_rm$user)) %>%
+  left_join(se_mrates_oldest, by = c("user","assemblage","area")) %>%
+  left_join(se_mrates_dwr, by = c("user","assemblage","area")) %>%
+  full_join(se_rm, by = c("user","assemblage","area","year")) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         area = toupper(area)) %>%
+  #mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+  #                       ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+  #       area = toupper(area)) %>%
+  select(year,area,assemblage,user,r_mort) %>%
+  right_join(lut %>% filter(region %in% c("Southeast")) %>%
+               mutate(area = toupper(area)),
+             by = "area") -> r1_rm
 
-mrates <- se_rm %>% group_by(year,user,assemblage) %>%
-  reframe(mrate = mrate)
+unique(wts$spec)
+unique(r1_rm$assemblage)
+unique(r2_rm$assemblage)
 
-#with(sc_wt_rm, table(year,cfmu, assemblage, user))
-full_join(se_rm,se_wt,by = c("year","user","assemblage","cfmu")) %>%
-  #full_join(se_slopes,by = c("year","cfmu","user","assemblage")) %>%
-  #mutate(slope_cat = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-  #                          assemblage,NA)) %>%
-  mutate(#assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
-        #                     "slope",assemblage),
-         mean_wt_lbs = ifelse(num_wts < 5, NA, mean_wt_lbs),
-         std_error_m_wt = ifelse(num_wts < 5, NA, std_error_m_wt),
-         wt_cv = std_error_m_wt / mean_wt_lbs) %>%
-  left_join(mrates %>% mutate(mrate2 = mrate) %>% select(-mrate),
-            by = c("year","user","assemblage")) %>%
-  mutate(mrate = ifelse(is.na(mrate),mrate2,mrate)) %>%
-  group_by(assemblage,year,user,cfmu) %>%
-  #mutate(wt_lbs = ifelse(assemblage != "slope",mean_wt_lbs,
-  #                        weighted.mean(mean_wt_lbs,slope_n,na.rm=T)),
-  #       wt_cv = ifelse(assemblage != "slope",wt_cv,
-  #                       weighted.mean(wt_cv,slope_n,na.rm=T))) %>%
-  mutate(wt_lbs = mean_wt_lbs,
-         wt_cv = wt_cv) %>%
-  #mutate(wt_lbs = ifelse(is.nan(wt_lbs),# & mean_wt_lbs > 0,
-  #                       weighted.mean(mean_wt_lbs,num_wts,na.rm=T),
-  #                       wt_lbs),
-  #       wt_cv = ifelse(is.nan(wt_cv),# & mean_wt_lbs > 0,
-  #                       weighted.mean(std_error_m_wt / mean_wt_lbs,num_wts,na.rm=T),
-  #                      wt_cv)) %>%
-  ungroup() %>% #filter(!(is.na(wt_lbs) & slope_n == 0)) -> gack #%>% 
-  select(year,cfmu,assemblage,user,wt_lbs,wt_cv,mrate) %>%
-  unique() %>% filter(!is.na(user))-> se_wt_rm
+rbind(r1_rm,r2_rm) %>% 
+  filter(!is.na(assemblage)) %>%
+  full_join(wts %>% rename(assemblage = spec) %>%
+              filter(!is.na(assemblage)) %>%
+              mutate(assemblage = ifelse(assemblage == "pelagic_less_blk","pelnbrf",
+                                         ifelse(assemblage == "dsr_less_ye","dsrlessye",assemblage))),
+            by = c("year","user","area","assemblage","region")) %>%
+  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) -> wt_rm
 
-print(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT") %>%
-        arrange(user,year),n=80) 
-with(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT"),
-     table(year,user))
+wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> mismort; mismort
 
-#fill in release mortalities back to 1977
-
-se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
-  summarize(mrate_old = mrate[which.min(year)]) -> se_mrates_oldest
-
-se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
-  summarize(mrate_dwr = mrate[which.max(year)]) -> se_mrates_dwr
-
-expand.grid(year = seq(1977,max(se_wt_rm$year,na.rm=T),1),
-            cfmu = unique(se_wt_rm$cfmu),
-            assemblage = unique(se_wt_rm$assemblage),
-            user = unique(se_wt_rm$user)) %>%
-  left_join(se_mrates_oldest, by = c("user","assemblage","cfmu")) %>%
-  left_join(se_mrates_dwr, by = c("user","assemblage","cfmu")) %>%
-  full_join(se_wt_rm, by = c("user","assemblage","cfmu","year")) %>%
-  mutate(r_mort = ifelse(is.na(mrate) & year < 2013,mrate_old,
-                         ifelse(is.na(mrate) & year > 2012,mrate_dwr,mrate)),
-         wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) %>%
-  select(year,cfmu,assemblage,user,wt_lbs ,wt_cv,r_mort) -> r1_wt_rm
-
-ggplot(r1_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
+ggplot(wt_rm, aes(x= year, y = r_mort, col = user)) +
   geom_line() + geom_point() +
-  facet_wrap(~assemblage + user)
+  facet_wrap(~assemblage + area)
 
-rbind(r1_wt_rm %>% rename(area = cfmu),
-      r2_wt_rm %>% select(colnames(r1_wt_rm %>% rename(area = cfmu)))) %>%
-  mutate(area = ifelse(area != "NORTHEAST",area,"northeast"),
-         wt_cv = ifelse(wt_cv == 0,1,wt_cv)) %>% 
-  #select(-cfmu) %>%
-  left_join(lut,by = "area") %>%
-  arrange(assemblage, region, area, year)-> wt_rm_dat
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)), 
+       aes(x= year, y = wt_lbs, col = user_sp, fill = user)) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs)) +
+  facet_wrap(~area, scale = "free") +
+  xlim(2005,REP_YR) + theme_bw() +
+  ylim(0,30)
+
+
+
+wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> damnit; damnit
+
+wt_rm %>% filter(user == damnit$user, area == damnit$area,year == damnit$year, assemblage == damnit$assemblage)
+
+wt_rm %>% filter(area == "BSAI" & year == 2017)
 
 pal <- c("darkorange","darkgrey")
 
-wt_rm_dat %>% filter(!is.na(user)) %>%
+wt_rm %>% filter(!is.na(user)) %>%
   mutate(Species = ifelse(assemblage %in% c("dsrlessye","yelloweye","slope"),"Demersal shelf (yelloweye) and slope",
                              ifelse(assemblage %in% c("pelnbrf","black"),"Pelagics (black)",assemblage)),
          #area = factor(area, unique(H_ayg$area), ordered = TRUE)
@@ -1099,13 +1018,19 @@ wt_rm_dat %>% filter(!is.na(user)) %>%
 
 ggsave("./figures/rel_mort.png", width = 10, height = 8) 
 
-wt_rm_dat %>% filter(wt_cv == 0)
+wt_rm %>% filter(wt_cv == 0)
+wt_rm %>% filter(sd_wt == 0)
+wt_rm %>% filter(sd_wtlbs == 0)
 
-with(wt_rm_dat, table(region,area))
+wt_rm <- wt_rm %>% mutate(wt_cv = ifelse(wt_cv == 0,1,wt_cv),
+                          sd_wt = ifelse(sd_wt == 0,1,sd_wt),
+                          sd_wtlbs = ifelse(sd_wtlbs == 0,1,sd_wtlbs))
 
-with(wt_rm_dat, table(region,year))
+with(wt_rm, table(region,area))
 
-saveRDS(wt_rm_dat %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
+with(wt_rm, table(region,year))
+
+saveRDS(wt_rm %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
 
 ##------------------------------------------------------------------------------
 # Get mean weights by species across all years for priors:
@@ -1607,6 +1532,288 @@ saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
 #-----------------------------------------------------------------------------------
 #----
 #Scrapola:
+
+#-------------------------------------------------------------------------------
+# Release mortality and Biomass data
+#-------------------------------------------------------------------------------
+# Note that the 2 regions approach things a bit differently.
+# Southcentral factors in long term estimates of depth-at-release data to adjust
+# their mortality esimtates while southeast applies a standard rate base on year
+# when dwr mechanisms were mandated. 
+# Secondly, southeast divides their slope numbers into large and small slope rf.
+ly_wt <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+  mutate(assemblage = factor(assemblage, 
+                             levels = c("black","yelloweye","pelnbrf","dsrlessye","slope"))) %>%
+  arrange(assemblage, user,region, area, year) 
+
+#Running 2023 numbers in 2024
+# Southcentral data:
+#sc_wt_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc.csv") %>% clean_names() %>%
+#  mutate(#cfmu = tolower(cfmu),
+#         user = tolower(user),
+#         assemblage = tolower(assemblage))
+
+#sc_wt_rm %>% group_by(year, cfmu, assemblage, user) %>%
+#  summarize(wt_kg = weighted.mean(avg_wt_kg,p_rel,na.rm=T),
+#            wt_cv = ifelse(is.na(weighted.mean(se_wt_kg) / wt_kg),1,
+#                           weighted.mean(se_wt_kg) / wt_kg),
+#            r_mort = weighted.mean(mort_rate, p_rel, na.rm = T)) -> sc_wt_rm
+
+# 2024 numbers in 2025:
+sc_wt <- read.csv("data/raw_dat/Species_comp_SC/rf_mean_wt_SC.csv") %>% clean_names() %>%
+  mutate(assemblage = ifelse(sp == 142,"black",
+                             ifelse(sp == 145,"yelloweye","other")),
+         wt_lbs = mean_wt * 2.20462262,
+         wt_cv = sd_wt * 2.20462262 / wt_lbs,
+         user = tolower(user)) %>%
+  rename(area = cfmu) %>%
+  right_join(lut %>% filter(region %in% c("Central","Kodiak")) %>%
+               mutate(area = toupper(area)),
+             by = "area") %>%
+  filter(boats >= 4 & n_fish > 5) %>%
+  select(-c(sp,mean_wt,sd_wt))
+
+head(sc_wt)
+unique(sc_wt$area)
+
+sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
+  rename(area = cfmu) %>%
+  select(year,assemblage,user,area,rel_cat,p_rel,pcat_surface,pcat_drm,mort_rate) %>%
+  mutate(assemblage = tolower(assemblage),
+         user = tolower(user)) %>% 
+  group_by(year, area, assemblage, user) %>%
+  summarize(r_mort = weighted.mean(mort_rate, p_rel, na.rm = T))
+
+head(sc_rm); unique(sc_rm$area)
+
+sc_rm %>% filter(is.na(r_mort))
+
+ggplot(sc_rm, aes(x= year, y = r_mort, col = area, type = user)) +
+  geom_line() +
+  facet_wrap(~assemblage)
+
+sc_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate = r_mort[which.min(year)]) -> sc_mrates_oldest
+
+sc_rm %>% group_by(user,assemblage,area) %>% 
+  summarize(mrate_dwr = r_mort[which.max(year)]) -> sc_mrates_dwr
+
+expand.grid(year = seq(1977,(max(sc_rm$year)),1),
+            area = unique(sc_rm$area),
+            assemblage = unique(sc_rm$assemblage),
+            user = unique(sc_rm$user)) %>%
+  left_join(sc_mrates_oldest, by = c("user","assemblage","area")) %>%
+  left_join(sc_mrates_dwr, by = c("user","assemblage","area")) %>%
+  full_join(sc_rm, by = c("user","assemblage","area","year")) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         area = toupper(area)) %>%
+  mutate(r_mort = ifelse(is.na(r_mort) & year < 2013,mrate,
+                         ifelse(is.na(r_mort) & year > 2012,mrate_dwr,r_mort)),
+         area = toupper(area)) %>%
+  select(year,area,assemblage,user,r_mort) %>%
+  right_join(lut %>% filter(region %in% c("Central","Kodiak")) %>%
+               mutate(area = toupper(area)),
+             by = "area") -> r2_rm
+
+r2_rm <- rbind(r2_rm %>%
+                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+                                      tolower(area),area)),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "BSAI"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "SOKO2SAP"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "WKMA"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "afognak"),
+               r2_rm %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "eastside")) -> r2_rm
+
+sc_wt <- rbind(sc_wt %>%
+                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
+                                      tolower(area),area)),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "BSAI"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "SOKO2SAP"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "WKMA"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "afognak"),
+               sc_wt %>% filter(area == "NORTHEAST") %>%
+                 mutate(area = "eastside")) %>%
+  mutate(wt_lbs = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                         NA,wt_lbs),
+         wt_cv = ifelse(area %in% c("BSAI","SOKO2SAP","WKMA","afognak","eastside"),
+                        1,wt_cv))
+
+full_join(sc_wt,r2_rm,by = c("year","area","assemblage","user","region")) %>%
+  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) -> r2_wt_rm
+
+r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> mismort; mismort
+
+ggplot(r2_wt_rm, aes(x= year, y = r_mort, col = area)) +
+  geom_line() + geom_point() +
+  facet_wrap(~assemblage + user)
+
+r2_wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> damnit; damnit
+
+r2_wt_rm %>% filter(user == damnit$user, area == damnit$area,year == damnit$year, assemblage == damnit$assemblage)
+
+r2_wt_rm %>% filter(area == "BSAI" & year == 2017)
+
+#Southeast data
+se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+                   #se_wt <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                   sheet = "Wt matrix",
+                   range = paste0("A1:G2000")) %>% clean_names() %>%
+  mutate(cfmu = rpt_area, #tolower(rpt_area),
+         user = tolower(user),
+         assemblage = tolower(assemblage)) %>%
+  select(-rpt_area) %>%
+  filter(rowSums(is.na(.)) < ncol(.))
+
+unique(se_wt$cfmu)
+unique(se_wt$assemblage)
+
+se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
+                   #se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+                   sheet = "Mortality Rates",
+                   range = paste0("A1:E2000")) %>% clean_names() %>%
+  mutate(year = as.numeric(year),
+         cfmu = rpt_area, #tolower(rpt_area),
+         user = tolower(user),
+         assemblage = tolower(assemblage)) %>%
+  select(-rpt_area) %>%
+  filter(rowSums(is.na(.)) < ncol(.))
+
+unique(se_rm$cfmu)
+unique(se_rm$assemblage)
+
+#se_rm %>% mutate(assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+#                                     "slope",assemblage)) %>%
+#  group_by(year,user,assemblage) %>%
+#  summarize(mrate = mean(mrate, na.rm=T)) ->mrates
+
+#se_slopes <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
+#                   sheet = "MHS num Fish",
+#                   range = paste0("A1:R300")) %>% clean_names() %>%
+#  mutate(year = as.numeric(year),
+#         cfmu = rpt_area, #tolower(rpt_area),
+#         user = tolower(user)) %>%
+#  select(year,cfmu,user,slope_lg_n,slope_sm_n) %>%
+#  pivot_longer(cols = c(slope_lg_n,slope_sm_n),
+#               values_to = "slope_n",
+#               names_to = "slope_size") %>%
+#  mutate(assemblage = str_remove(slope_size,"_n")) %>%
+#  select(-slope_size) %>%
+#  filter(rowSums(is.na(.)) < ncol(.))
+
+#print(se_slopes %>% filter(year > 2010) %>%
+#        arrange(year,cfmu,user),n = 50)
+
+mrates <- se_rm %>% group_by(year,user,assemblage) %>%
+  reframe(mrate = mrate)
+
+#with(sc_wt_rm, table(year,cfmu, assemblage, user))
+full_join(se_rm,se_wt,by = c("year","user","assemblage","cfmu")) %>%
+  #full_join(se_slopes,by = c("year","cfmu","user","assemblage")) %>%
+  #mutate(slope_cat = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+  #                          assemblage,NA)) %>%
+  mutate(#assemblage = ifelse(assemblage %in% c("slope_lg","slope_sm"),
+    #                     "slope",assemblage),
+    mean_wt_lbs = ifelse(num_wts < 5, NA, mean_wt_lbs),
+    std_error_m_wt = ifelse(num_wts < 5, NA, std_error_m_wt),
+    wt_cv = std_error_m_wt / mean_wt_lbs) %>%
+  left_join(mrates %>% mutate(mrate2 = mrate) %>% select(-mrate),
+            by = c("year","user","assemblage")) %>%
+  mutate(mrate = ifelse(is.na(mrate),mrate2,mrate)) %>%
+  group_by(assemblage,year,user,cfmu) %>%
+  #mutate(wt_lbs = ifelse(assemblage != "slope",mean_wt_lbs,
+  #                        weighted.mean(mean_wt_lbs,slope_n,na.rm=T)),
+  #       wt_cv = ifelse(assemblage != "slope",wt_cv,
+  #                       weighted.mean(wt_cv,slope_n,na.rm=T))) %>%
+  mutate(wt_lbs = mean_wt_lbs,
+         wt_cv = wt_cv) %>%
+  #mutate(wt_lbs = ifelse(is.nan(wt_lbs),# & mean_wt_lbs > 0,
+  #                       weighted.mean(mean_wt_lbs,num_wts,na.rm=T),
+  #                       wt_lbs),
+  #       wt_cv = ifelse(is.nan(wt_cv),# & mean_wt_lbs > 0,
+  #                       weighted.mean(std_error_m_wt / mean_wt_lbs,num_wts,na.rm=T),
+  #                      wt_cv)) %>%
+  ungroup() %>% #filter(!(is.na(wt_lbs) & slope_n == 0)) -> gack #%>% 
+  select(year,cfmu,assemblage,user,wt_lbs,wt_cv,mrate) %>%
+  unique() %>% filter(!is.na(user))-> se_wt_rm
+
+print(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT") %>%
+        arrange(user,year),n=80) 
+with(se_wt_rm %>% filter(assemblage == "slope" & cfmu == "EWYKT"),
+     table(year,user))
+
+#fill in release mortalities back to 1977
+
+se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate_old = mrate[which.min(year)]) -> se_mrates_oldest
+
+se_wt_rm %>% group_by(user,assemblage,cfmu) %>% 
+  summarize(mrate_dwr = mrate[which.max(year)]) -> se_mrates_dwr
+
+expand.grid(year = seq(1977,max(se_wt_rm$year,na.rm=T),1),
+            cfmu = unique(se_wt_rm$cfmu),
+            assemblage = unique(se_wt_rm$assemblage),
+            user = unique(se_wt_rm$user)) %>%
+  left_join(se_mrates_oldest, by = c("user","assemblage","cfmu")) %>%
+  left_join(se_mrates_dwr, by = c("user","assemblage","cfmu")) %>%
+  full_join(se_wt_rm, by = c("user","assemblage","cfmu","year")) %>%
+  mutate(r_mort = ifelse(is.na(mrate) & year < 2013,mrate_old,
+                         ifelse(is.na(mrate) & year > 2012,mrate_dwr,mrate)),
+         wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) %>%
+  select(year,cfmu,assemblage,user,wt_lbs ,wt_cv,r_mort) -> r1_wt_rm
+
+ggplot(r1_wt_rm, aes(x= year, y = r_mort, col = cfmu)) +
+  geom_line() + geom_point() +
+  facet_wrap(~assemblage + user)
+
+rbind(r1_wt_rm %>% rename(area = cfmu),
+      r2_wt_rm %>% select(colnames(r1_wt_rm %>% rename(area = cfmu)))) %>%
+  mutate(area = ifelse(area != "NORTHEAST",area,"northeast"),
+         wt_cv = ifelse(wt_cv == 0,1,wt_cv)) %>% 
+  #select(-cfmu) %>%
+  left_join(lut,by = "area") %>%
+  arrange(assemblage, region, area, year)-> wt_rm_dat
+
+pal <- c("darkorange","darkgrey")
+
+wt_rm_dat %>% filter(!is.na(user)) %>%
+  mutate(Species = ifelse(assemblage %in% c("dsrlessye","yelloweye","slope"),"Demersal shelf (yelloweye) and slope",
+                          ifelse(assemblage %in% c("pelnbrf","black"),"Pelagics (black)",assemblage)),
+         #area = factor(area, unique(H_ayg$area), ordered = TRUE)
+         area = factor(area, unique(lut$area), ordered = TRUE)) %>%
+  mutate(Species = str_wrap(Species, width = 21),
+         User = user) %>%
+  ggplot(aes(x = year, y = r_mort, col = Species, shape = User)) +
+  facet_wrap(~area) +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  geom_line(aes(linetype = User),size = 0.8) + #geom_point() +
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  labs(y = "Release Mortality", x = "Year") +
+  guides(linetype = guide_legend(nrow = 2))
+
+ggsave("./figures/rel_mort.png", width = 10, height = 8) 
+
+wt_rm_dat %>% filter(wt_cv == 0)
+
+with(wt_rm_dat, table(region,area))
+
+with(wt_rm_dat, table(region,year))
+
+saveRDS(wt_rm_dat %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
+
+
+
 int %>% filter(area == "CSEO") %>%
   select(year,user,pelagic_n,pelagic_n_rel,pH_pel)
 

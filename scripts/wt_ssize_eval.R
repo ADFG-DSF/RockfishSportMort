@@ -127,18 +127,18 @@ bootstrap_sd <- function(x, n_boot = 1000) {
   sd(boot_means)
 }
 
-wts <- read.csv("data/raw_dat/Species_Comp_SE/SE_RF_2006_2025_MHS_AWL_IntvID.csv") %>%
+wts1 <- read.csv("data/raw_dat/Species_Comp_SE/SE_RF_2006_2025_MHS_AWL_IntvID.csv") %>%
   clean_names() 
 
-str(wts)
+str(wts1)
 
-wts %>%
+wts1 %>%
   mutate(date = as.Date(date, format = "%d-%b-%y"),
          length = as.numeric(length),
          len_cm = as.numeric(len_cm),
-         weight_kg = as.numeric(weight_kg)) -> wts
+         weight_kg = as.numeric(weight_kg)) -> wts1
 
-unique(wts$analysis_grp)
+unique(wts1$analysis_grp)
 
 # Notes from Diana Tersteeg:
 #Starting in 2017 with the database, we had a shiftid and interviewid variable which 
@@ -158,30 +158,53 @@ unique(wts$analysis_grp)
 # 2011-2016 also interviewid
 # 2006-2010: nada:
 
-wts %>% filter(!is.na(weight_kg)) %>%
+wts1 %>% filter(!is.na(weight_kg)) %>%
+  mutate(gf_area = ifelse(gf_area %in% c("IBS","EYKT"),
+                          "EWYKT",gf_area)) %>%
   group_by(year,analysis_grp,gf_area,user_group) %>%
   summarise(n_samps = n(),
             n_ints = n_distinct(interview_id),
-            mean_wt = mean(weight_kg),
-            sd_weight = sd(weight_kg),
-            bootstrap_sd = bootstrap_sd(weight_kg)) %>%
+            mean_wtkg = mean(weight_kg),
+            sd_wt = sd(weight_kg),
+            boot_sd = bootstrap_sd(weight_kg)) %>%
   mutate(samp_p_int = n_samps / n_ints) %>%
   filter(user_group %in% c("Charter","Private"),
          gf_area != "",
-         gf_area != "UNKN") -> samps
+         gf_area != "UNKN") -> samps1
 
-unique(samps$gf_area)
+# Region 2 Data (weight in kgs)
+wts2 <- read.csv("data/raw_dat/Species_Comp_SC/rf_mean_wt_SC.csv") %>%
+  clean_names() %>%
+  mutate(samp_p_int = n_fish / boats)
 
-ggplot(samps,# %>% #filter(analysis_grp == "BLACK"),
-       aes(x= year,y = n_samps,col = analysis_grp)) +
+#Put Region 1 and 2 together
+wts <- rbind(samps1 %>% ungroup() %>%
+               mutate(spec = tolower(analysis_grp)) %>%
+               select(year,user = user_group, cfmu = gf_area, 
+                      spec, 
+                      n_samps, n_ints, samp_p_int,
+                      mean_wtkg, sd_wt, boot_sd),
+             wts2 %>% filter(mean_wt != "") %>%
+               mutate(spec = ifelse(sp == 145, "yelloweye",
+                                    ifelse(sp == 142,"black","other")),
+                      boot_sd = NA) %>%
+               select(year, user, cfmu,spec,
+                      n_samps = n_fish, n_ints = boats, samp_p_int,
+                      mean_wtkg = mean_wt, sd_wt, boot_sd))
+
+unique(wts$cfmu)
+unique(wts$spec)
+
+ggplot(wts,# %>% #filter(analysis_grp == "BLACK"),
+       aes(x= year,y = n_samps,col = spec)) +
   geom_line() +
-  facet_wrap(~gf_area + user_group, scale = "free") +
+  facet_wrap(~cfmu + user, scale = "free") +
   theme_bw()
 
-ggplot(samps,# %>% #filter(analysis_grp == "BLACK"),
-       aes(x= year,y = n_ints,col = analysis_grp)) +
+ggplot(wts,# %>% #filter(analysis_grp == "BLACK"),
+       aes(x= year,y = n_ints,col = spec)) +
   geom_line() +
-  facet_wrap(~gf_area + user_group, scale = "free") +
+  facet_wrap(~cfmu + user, scale = "free") +
   theme_bw()
 
 ggplot(samps %>% filter(year > 2010),
@@ -190,17 +213,98 @@ ggplot(samps %>% filter(year > 2010),
   facet_wrap(~gf_area + user_group, scale = "free") +
   theme_bw()
 
-samps %>% filter(year > 2010) %>% 
-  group_by(analysis_grp,gf_area,user_group) %>%
-  mutate(mean_n = mean(n_samps),
-         mean_int = mean(n_ints),
-         mean_spi = mean(samp_p_int)) -> int_sum
+# get mean sample sizes from 2011 onward 
 
-ggplot(int_sum,
-       aes(x= year,y = samp_p_int,col = analysis_grp)) +
+wts %>% filter(year > 2010) %>% 
+  group_by(spec,cfmu,user) %>%
+  mutate(mean_n = mean(n_samps, na.rm = T),
+         mean_int = mean(n_ints, na.rm = T),
+         mean_spi = mean(samp_p_int, na.rm = T)) -> wtsX
+
+wtsX %>% select(user, cfmu,spec,
+                   mean_n,mean_int,mean_spi) %>%
+  unique() -> int_sum
+
+# Add the mean sample sizes to full data set and for pre2011 data we will 
+# guestimate the number of interviews based on the mean number of samples
+# per interview (mean_spi) in the post2010 data
+
+full_join(wts,int_sum,
+          by = c("user","cfmu","spec")) %>%
+  mutate(n_ints2 = ifelse(year > 2010, n_ints,
+                          n_samps / mean_spi)) -> wts
+
+ggplot(wts, aes(n_ints2, colour = spec, fill = spec)) +
+  geom_histogram() +
+  facet_wrap(~cfmu + user, scale = "free") +
+  geom_vline(xintercept = 5, color = "red") +
+  theme_bw()
+  
+ggplot(wts, aes(n_samps, colour = spec, fill = spec)) +
+  geom_histogram() +
+  facet_wrap(~cfmu + user, scale = "free") +
+  geom_vline(xintercept = 10, color = "red") +
+  theme_bw()
+
+ggplot(wts,aes(x = year, y = n_ints2, col = spec)) +
+  #geom_line() +
+  geom_point() +
+  geom_smooth(size = 1, se = FALSE) +
+  facet_wrap(~cfmu+user, scale = "free") + 
+  theme_bw()
+
+wts %>%
+  group_by(user,cfmu,spec) %>%
+  summarise(psamp_gt10 = sum(n_samps >= 10) / n(),
+            pint_gt4 = sum(n_ints2 >= 4) / n(),
+            pint_gt5 = sum(n_ints2 >= 5) / n()) ->ss_eval
+
+
+ggplot(ss_eval, aes(x = cfmu, col = psamp_gt10, fill = psamp_gt10)) +
+  geom_col(aes(y = psamp_gt10),
+           position = "identity",
+           alpha = 1) +
+  facet_wrap(~spec + user, scale = "free") +
+  theme_bw() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+
+ggplot(ss_eval, aes(x = cfmu, col = pint_gt4, fill = pint_gt4)) +
+  geom_col(aes(y = pint_gt4),
+           position = "identity",
+           alpha = 1) +
+  facet_wrap(~spec + user, scale = "free") +
+  theme_bw() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+
+ggplot(ss_eval, aes(x = cfmu, col = pint_gt5, fill = pint_gt5)) +
+  geom_col(aes(y = pint_gt5),
+           position = "identity",
+           alpha = 1) +
+  facet_wrap(~spec + user, scale = "free") +
+  theme_bw() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+
+# Cutoff: 10 fish and 4 boats:
+
+wts_for_mod <- wts %>%
+  filter(!is.na(mean_wtkg),
+         n_samps > 9,
+         n_ints2 > 3)
+
+unique(wts$cfmu)
+unique(wts$spec)
+
+write.csv(wts_for_mod, "data/bayes_dat/wt_dat_processed.csv")
+
+
+
+#------------------------------------------------------------------------------
+
+ggplot(wts,
+       aes(x= year,y = samp_p_int,col = spec)) +
   geom_line() +
-  geom_hline(aes(yintercept = mean_spi, col = analysis_grp), lty = 2) +
-  facet_wrap(~gf_area + user_group, scale = "free") +
+  geom_hline(aes(yintercept = mean_spi, col = spec), lty = 2) +
+  facet_wrap(~cfmu + user, scale = "free") +
   theme_bw()
 
 ggplot(int_sum,
@@ -210,13 +314,68 @@ ggplot(int_sum,
   facet_wrap(~gf_area + user_group, scale = "free") +
   theme_bw()
 
+unique(samps$analysis_grp)
+
+ggplot(samps %>% filter(!is.na(sd_weight),
+                        !is.na(bootstrap_sd),
+                        !is.na(mean_wt),
+                        analysis_grp == "BLACK"),
+       aes(x= year,y = mean_wt ,col = user_group, fill = user_group)) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * bootstrap_sd,
+                  ymax = mean_wt + 1.96 * bootstrap_sd),
+              colour = NA, alpha = 0.2) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * sd_weight ,
+                  ymax = mean_wt + 1.96 * sd_weight ),
+              colour = NA, alpha = 0.2) +
+  geom_line() +
+  facet_wrap(~gf_area) +
+  theme_bw() #+ ylim(0,)
 
 
+ggplot(samps %>% filter(!is.na(sd_weight),
+                        !is.na(bootstrap_sd),
+                        !is.na(mean_wt),
+                        analysis_grp == "YELLOWEYE"),
+       aes(x= year,y = mean_wt ,col = user_group, fill = user_group)) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * bootstrap_sd,
+                  ymax = mean_wt + 1.96 * bootstrap_sd),
+              colour = NA, alpha = 0.2) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * sd_weight ,
+                  ymax = mean_wt + 1.96 * sd_weight ),
+              colour = NA, alpha = 0.2) +
+  geom_line() +
+  facet_wrap(~gf_area) +
+  theme_bw()
 
+ggplot(samps %>% filter(!is.na(sd_weight),
+                        !is.na(bootstrap_sd),
+                        !is.na(mean_wt),
+                        analysis_grp == "DSR_less_YE"),
+       aes(x= year,y = mean_wt ,col = user_group, fill = user_group)) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * bootstrap_sd,
+                  ymax = mean_wt + 1.96 * bootstrap_sd),
+              colour = NA, alpha = 0.2) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * sd_weight ,
+                  ymax = mean_wt + 1.96 * sd_weight ),
+              colour = NA, alpha = 0.2) +
+  geom_line() +
+  facet_wrap(~gf_area) +
+  theme_bw() + ylim(0,4)
 
-
-
-
+ggplot(samps %>% filter(!is.na(sd_weight),
+                        !is.na(bootstrap_sd),
+                        !is.na(mean_wt),
+                        analysis_grp == "Slope"),
+       aes(x= year,y = mean_wt ,col = user_group, fill = user_group)) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * bootstrap_sd,
+                  ymax = mean_wt + 1.96 * bootstrap_sd),
+              colour = NA, alpha = 0.2) +
+  geom_ribbon(aes(ymin = mean_wt - 1.96 * sd_weight ,
+                  ymax = mean_wt + 1.96 * sd_weight ),
+              colour = NA, alpha = 0.2) +
+  geom_line() +
+  facet_wrap(~gf_area) +
+  theme_bw() + ylim(0,10)
 
 
 

@@ -230,20 +230,26 @@ readinData <- function(spl_knts = 7,
   wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
     mutate(assemblage = factor(assemblage, 
                                levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
-           wt_sd = ifelse(is.na(wt_cv * wt_lbs),50,wt_cv * wt_lbs)) %>%
+           wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
     arrange(assemblage, user,region, area, year) 
+  
+#  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+#    mutate(assemblage = factor(assemblage, 
+#                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
+#           wt_sd = sd_wtlbs) %>%
+#    arrange(assemblage, user,region, area, year)
       
   wt_priors <- wt_rm %>%
     filter(!is.na(wt_lbs)) %>%
     group_by(assemblage) %>%
-    summarise(mean_wt = mean(wt_lbs),
-              med_wt = median(wt_lbs),
-              var_wt = var(wt_lbs),
-              sd_wt = sd(wt_lbs),
+    summarise(mean_wt = mean(wt_lbs,na.rm = T),
+              med_wt = median(wt_lbs,na.rm = T),
+              var_wt = var(wt_lbs,na.rm = T),
+              sd_wt = sd(wt_lbs,na.rm = T),
               cv_wt = sd_wt/mean_wt,
               tau_wt = 1/(sd_wt),
-              max_wt = max(wt_lbs),
-              min_wt = min(wt_lbs))
+              max_wt = max(wt_lbs,na.rm = T),
+              min_wt = min(wt_lbs,na.rm = T))
   #---------------------------------------
   # prep data for model
   H_ayg <- H_ayg %>% filter(year >= start_yr & year <= end_yr)
