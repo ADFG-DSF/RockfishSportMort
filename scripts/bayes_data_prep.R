@@ -452,6 +452,7 @@ Chat_ay %>%
 saveRDS(Chat_ay, ".\\data\\bayes_dat\\Chat_ay.rds")
 
 unique(Chat_ay$year)
+
 #-------------------------------------------------------------------------------
 # CONTEMPORARY SWHS DATA WITH USER GROUPS:
 #-------------------------------------------------------------------------------
@@ -842,6 +843,7 @@ wts <- read.csv("data/bayes_dat/wt_dat_processed.csv") %>%
   mutate(wt_lbs = mean_wtkg * 2.20462262,
          sd_wtlbs = sd_wt * 2.20462262,
          wt_cv = sd_wtlbs / wt_lbs,
+         bootsd_wtlbs = boot_sd * 2.20462262,
          user = tolower(user)) %>%
   right_join(lut %>% 
                mutate(area = toupper(area)),
@@ -849,6 +851,7 @@ wts <- read.csv("data/bayes_dat/wt_dat_processed.csv") %>%
   select(-X)
 
 unique(wts$area)
+with(wts,table(area,year))
 
 sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
   rename(area = cfmu) %>%
@@ -910,20 +913,6 @@ expand.grid(year = seq(1977,(max(sc_rm$year)),1),
 
 with(r2_rm, table(year,area,assemblage,user))
 
-#r2_rm <- rbind(r2_rm %>%
-#                 mutate(area = ifelse(area %in% c("AFOGNAK","EASTSIDE"),
-#                                      tolower(area),area)),
-#               r2_rm %>% filter(area == "NORTHEAST") %>%
-#                 mutate(area = "BSAI"),
-#               r2_rm %>% filter(area == "NORTHEAST") %>%
-#                 mutate(area = "SOKO2SAP"),
-#               r2_rm %>% filter(area == "NORTHEAST") %>%
-#                 mutate(area = "WKMA"),
-#               r2_rm %>% filter(area == "NORTHEAST") %>%
-#                 mutate(area = "afognak"),
-#               r2_rm %>% filter(area == "NORTHEAST") %>%
-#                 mutate(area = "eastside")) -> r2_rm
-
 se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
                    #se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
                    sheet = "Mortality Rates",
@@ -965,6 +954,9 @@ unique(wts$spec)
 unique(r1_rm$assemblage)
 unique(r2_rm$assemblage)
 
+unique(r2_rm$area)
+unique(wts$area)
+
 rbind(r1_rm,r2_rm) %>% 
   filter(!is.na(assemblage)) %>%
   full_join(wts %>% rename(assemblage = spec) %>%
@@ -972,7 +964,9 @@ rbind(r1_rm,r2_rm) %>%
               mutate(assemblage = ifelse(assemblage == "pelagic_less_blk","pelnbrf",
                                          ifelse(assemblage == "dsr_less_ye","dsrlessye",assemblage))),
             by = c("year","user","area","assemblage","region")) %>%
-  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv)) -> wt_rm
+  mutate(wt_cv = ifelse(is.na(wt_cv),1,wt_cv),
+         area = factor(area, toupper(lut$area), ordered = TRUE)) %>%
+  filter(!is.na(area)) -> wt_rm
 
 wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> mismort; mismort
 
@@ -981,14 +975,87 @@ ggplot(wt_rm, aes(x= year, y = r_mort, col = user)) +
   facet_wrap(~assemblage + area)
 
 ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)), 
-       aes(x= year, y = wt_lbs, col = user_sp, fill = user)) +
+       aes(x= year, y = wt_lbs, col = user_sp, fill = user_sp)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
   geom_line() + geom_point() +
   geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
-                    ymax = wt_lbs + 1.96 * sd_wtlbs)) +
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
   facet_wrap(~area, scale = "free") +
   xlim(2005,REP_YR) + theme_bw() +
   ylim(0,30)
 
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)) %>%
+         filter(assemblage == "black"), 
+       aes(x= year, y = wt_lbs, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
+  facet_wrap(~area) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,10)
+
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)) %>%
+         filter(assemblage == "pelnbrf"), 
+       aes(x= year, y = wt_lbs, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
+  facet_wrap(~area) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,7.5)
+
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)) %>%
+         filter(assemblage == "yelloweye"), 
+       aes(x= year, y = wt_lbs, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
+  facet_wrap(~area) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,20)
+
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)) %>%
+         filter(assemblage == "dsrlessye"), 
+       aes(x= year, y = wt_lbs, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
+  facet_wrap(~area) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,7)
+
+ggplot(wt_rm %>% mutate(user_sp = paste0(assemblage," - ",user)) %>%
+         filter(assemblage == "slope"), 
+       aes(x= year, y = wt_lbs, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = wt_lbs - 1.96 * bootsd_wtlbs,
+                  ymax = wt_lbs + 1.96 * bootsd_wtlbs),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = wt_lbs - 1.96 * sd_wtlbs,
+                    ymax = wt_lbs + 1.96 * sd_wtlbs),
+                alpha = 0.2) +
+  facet_wrap(~area) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,30)
 
 
 wt_rm %>% filter(is.na(r_mort) & year <= REP_YR) -> damnit; damnit
@@ -1029,6 +1096,12 @@ wt_rm <- wt_rm %>% mutate(wt_cv = ifelse(wt_cv == 0,1,wt_cv),
 with(wt_rm, table(region,area))
 
 with(wt_rm, table(region,year))
+
+wt_rm %>%
+  group_by(area, year, assemblage, user) %>%
+  summarize(n_wt = sum(!is.na(mean_wtkg))) -> check
+
+check %>% filter(n_wt != 0)
 
 saveRDS(wt_rm %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
 
