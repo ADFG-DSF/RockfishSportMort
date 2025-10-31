@@ -161,8 +161,8 @@ pHslope_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "re_pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-         period = ifelse(year < 1999, "a", 
-                         ifelse(year > 1998 & year < 2020, "b", "c")))
+         period = ifelse(year < 2006, "a", 
+                         ifelse(year > 2005 & year < 2020, "b", "c")))
 
 ggplot(pHslope_mod,
        aes(x = year,y = re_pH, colour = user)) +
@@ -171,8 +171,8 @@ ggplot(pHslope_mod,
   geom_hline(yintercept = 0, col = "black") +
   theme_bw()
 
-print(pHdsr_mod %>% group_by(user,area, period) %>%
-        summarise(re_sum = sum(re_pH)), n = 50)
+print(pHslope_mod %>% group_by(user,area, period) %>%
+        summarise(re_sum = sum(re_pH)), n = 100)
 
 print(pHdsr_mod %>% group_by(area) %>%
         summarise(re_sum = sum(re_pH)), n = 50)

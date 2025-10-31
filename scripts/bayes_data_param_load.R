@@ -228,11 +228,20 @@ readinData <- function(spl_knts = 7,
   
   #Weigth and release mortality data 
   wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+    group_by(assemblage,area,user) %>%
+    mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
+                          10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
+    ungroup() %>% 
     mutate(assemblage = factor(assemblage, 
                                levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
-           wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
+           wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
+                          ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))) %>%
+           #wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
     arrange(assemblage, user,region, area, year) 
   
+#  View(wt_rm)
+#  unique(wt_rm$maxsd) %>% arrange()
+#  wt_rm %>% filter(is.infinite(wt_sd))
 #  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
 #    mutate(assemblage = factor(assemblage, 
 #                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
@@ -247,7 +256,7 @@ readinData <- function(spl_knts = 7,
               var_wt = var(wt_lbs,na.rm = T),
               sd_wt = sd(wt_lbs,na.rm = T),
               cv_wt = sd_wt/mean_wt,
-              tau_wt = 1/(sd_wt),
+              tau_wt = 1/(sd_wt^2),
               max_wt = max(wt_lbs,na.rm = T),
               min_wt = min(wt_lbs,na.rm = T))
   #---------------------------------------
@@ -705,6 +714,7 @@ jags_params <- function(){
     #random effects on pH
     "re_pH", "re_pH2",
     "sd_pH", "mu_pH",
+    "eps_pH","mean_eps_pH",
     "sdR","mu_sdR","tau_sdR",
     
     #private:guided release ratio prior beta4 yadda yadda
@@ -772,6 +782,8 @@ jags_params <- function(){
     
     #random effects on species
     "re_pelagic", "re_black","re_yellow","re_dsr","re_slope","re_rslope",
+    "eps_pel", "eps_bl","eps_ye","eps_dsr","eps_sl",
+    "mean_eps_pel", "mean_eps_bl","mean_eps_ye","mean_eps_dsr","mean_eps_sl",
     "sd_comp", "tau_comp","re_comp",
     
     #harvest estimates and spline parts
@@ -805,11 +817,13 @@ jags_params <- function(){
     "mu_kap","sd_kap","kap",
     
     #weight
-    "mu_wt","sd_wt",
-    "mu2_wt","sd2_wt",
-    "mu3_wt","sd3_wt",
+    "mu_wt","sd_wt","mu_ay_wt",
+    "mu2_wt","sd2_wt","sd_a_wt","mu_a_wt",
+    "mu3_wt","sd3_wt","sd_r_wt","mu_r_wt",
+    "mu4_wt","sd4_wt","sd_sp_wt",
     "wt",
     "swt",
+    "wt_user","wt_user_reg","sd_wt_user",
     
     #release mortality
     "Rp_ayg_mort","Rp_ayu_mort","Rp_ay_mort",

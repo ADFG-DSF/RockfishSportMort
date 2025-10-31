@@ -187,13 +187,15 @@ wts <- rbind(samps1 %>% ungroup() %>%
              wts2 %>% filter(mean_wt != "") %>%
                mutate(spec = ifelse(sp == 145, "yelloweye",
                                     ifelse(sp == 142,"black","other")),
-                      boot_sd = NA) %>%
+                      boot_sd = bootstrap_sd) %>%
                select(year, user, cfmu,spec,
                       n_samps = n_fish, n_ints = boats, samp_p_int,
                       mean_wtkg = mean_wt, sd_wt, boot_sd))
 
 unique(wts$cfmu)
 unique(wts$spec)
+
+with(wts,table(year,cfmu))
 
 ggplot(wts,# %>% #filter(analysis_grp == "BLACK"),
        aes(x= year,y = n_samps,col = spec)) +
@@ -293,6 +295,79 @@ wts_for_mod <- wts %>%
 
 unique(wts$cfmu)
 unique(wts$spec)
+
+with(wts_for_mod, table(year,cfmu))
+
+ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+         filter(spec == "black"), 
+       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
+                  ymax = mean_wtkg + 1.96 * boot_sd),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = mean_wtkg - 1.96 * sd_wt,
+                    ymax = mean_wtkg + 1.96 * sd_wt),
+                alpha = 0.2) +
+  facet_wrap(~cfmu) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,4.2)
+
+ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+         filter(spec == "yelloweye"), 
+       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
+                  ymax = mean_wtkg + 1.96 * boot_sd),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = mean_wtkg - 1.96 * sd_wt,
+                    ymax = mean_wtkg + 1.96 * sd_wt),
+                alpha = 0.2) +
+  facet_wrap(~cfmu) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,10)
+
+ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+         filter(spec == "dsr_less_ye"), 
+       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
+                  ymax = mean_wtkg + 1.96 * boot_sd),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = mean_wtkg - 1.96 * sd_wt,
+                    ymax = mean_wtkg + 1.96 * sd_wt),
+                alpha = 0.2) +
+  facet_wrap(~cfmu) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,3)
+
+ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+         filter(spec == "slope"), 
+       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
+                  ymax = mean_wtkg + 1.96 * boot_sd),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = mean_wtkg - 1.96 * sd_wt,
+                    ymax = mean_wtkg + 1.96 * sd_wt),
+                alpha = 0.2) +
+  facet_wrap(~cfmu) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,10)
+
+ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+         filter(spec == "pelagic_less_blk"), 
+       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+  geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
+                  ymax = mean_wtkg + 1.96 * boot_sd),
+              alpha = 0.2, color = NA) +
+  geom_line() + geom_point() +
+  geom_errorbar(aes(ymin = mean_wtkg - 1.96 * sd_wt,
+                    ymax = mean_wtkg + 1.96 * sd_wt),
+                alpha = 0.2) +
+  facet_wrap(~cfmu) +
+  xlim(2005,2025) + theme_bw() +
+  ylim(0,3.5)
+
 
 write.csv(wts_for_mod, "data/bayes_dat/wt_dat_processed.csv")
 

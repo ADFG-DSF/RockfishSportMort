@@ -52,8 +52,8 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 4E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
-ni <- 3E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 8E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -69,6 +69,8 @@ mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d" #3e5 = 20 hours = 6.7 hours / 1e5
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt"
+
 mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0e" #3e5 = 13.12 hours = 4.4 / 1e5
 
 mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d" #15e5 - 3.2 days
@@ -81,8 +83,8 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHu2"
 use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHu2_thru2024_3e+05_2025-10-22"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -231,6 +233,24 @@ inits_to_use <- lapply(inits_to_use, function(chain_list) {
 inits_to_use <- lapply(inits_to_use, function(chain_list) {
   chain_list[names(chain_list) != "sd_comp"]
 })
+
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  if (!is.null(names(chain_list))) {
+    chain_list[!grepl("^sd_sp_wt", names(chain_list))]
+  } else {
+    chain_list
+  }
+})
+
+inits_to_use <- lapply(inits_to_use, function(chain_list) {
+  if (!is.null(names(chain_list))) {
+    chain_list[!grepl("^wt_user", names(chain_list))]
+  } else {
+    chain_list
+  }
+})
+
+grep("sd_sp_wt", unique(unlist(lapply(inits_to_use, names))), value = TRUE)
 
 for (i in 1:3){ #i <- 1
   #Central
@@ -421,7 +441,7 @@ saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_9e+05_2025-10-27"
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-28"
-results <- "Gen4int_indcomp_swhsR_FULL_pHu2_thru2024_4e+05_2025-10-22"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_2e+05_2025-10-30"
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
 #model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
@@ -446,7 +466,16 @@ names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
 prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.0115))/nrow(rhat_vals),4); prop_conv
 
-rhat
+all_rhat %>% filter(Rhat > 1.2)
+
+str(rhat)
+head(rhat[1])
+
+rhat[1] %>% data.frame() %>%
+  rownames_to_column(var = "param") -> rhatdf
+str(rhatdf)
+
+rhatdf %>% filter(Rhat > 1.2)
 
 head(rhat$Rhat_values %>% arrange(-Rhat))
 #jagsUI::traceplot(postH, Rhat_min = 1.1)
@@ -847,6 +876,19 @@ with(more_bad, table(variable,area)) %>% data.frame() %>%
 
 rhat_exam %>% filter(is.na(year)) -> check
 
+rhat[1] %>% data.frame() %>%
+  rownames_to_column(var = "param") -> rhatdf
+str(rhatdf)
+
+rhatdf %>% filter(Rhat > 1.25)
+
+jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 10)
+jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 2) 
+jagsUI::traceplot(postH, parameters = c("p_dsr"), Rhat_min = 2) 
+jagsUI::traceplot(postH, parameters = c("p_slope"), Rhat_min = 2) 
+jagsUI::traceplot(postH, parameters = c("re_dsr"), Rhat_min = 2)
+jagsUI::traceplot(postH, parameters = c("re_slope"), Rhat_min = 2)
+
 unconv %>% 
   filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
 
@@ -884,9 +926,16 @@ jagsUI::traceplot(postH, parameters = c("mu_kap","sd_kap","kap"))
 # main parameters
 
 jagsUI::traceplot(postH, parameters = c("swt"))
-jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt"))
-jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt"))
+jagsUI::traceplot(postH, parameters = c("sd4_wt","sd_sp_wt"))
+jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt","mu_r_wt","sd_r_wt"))
+jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt","mu_a_wt","sd_a_wt"))
 jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt"))
+jagsUI::traceplot(postH, parameters = c("wt"), Rhat_min = 1.1)
+
+jagsUI::traceplot(postH, parameters = c("wt_user"))
+jagsUI::traceplot(postH, parameters = c("wt_user_reg","sd_wt_user"))
+
+jagsUI::traceplot(postH, parameters = c("sd_sp_wt","sd_r_wt","sd_a_wt"))
 
 jagsUI::traceplot(postH, parameters = "lambda_H")
 
@@ -915,7 +964,7 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta2_pH","beta3_pH",
                                         "beta5_pH","beta6_pH"))
 
-jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.01)
 
 jagsUI::traceplot(postH, parameters = "tau_prigui_pre")
 
