@@ -822,7 +822,11 @@ jags_params <- function(){
     "mu3_wt","sd3_wt","sd_r_wt","mu_r_wt",
     "mu4_wt","sd4_wt","sd_sp_wt",
     "wt",
+<<<<<<< HEAD
     "swt",
+=======
+    "swt","sd4_wt","sd_sp_wt",
+>>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
     "wt_user","wt_user_reg","sd_wt_user",
     
     #release mortality

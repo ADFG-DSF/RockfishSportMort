@@ -52,7 +52,11 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
+<<<<<<< HEAD
 ni <- 8E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+=======
+ni <- 2E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+>>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -435,13 +439,17 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_9e+05_2025-10-27"
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-28"
+<<<<<<< HEAD
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_2e+05_2025-10-30"
+=======
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-29"
+>>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
 #model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
@@ -930,10 +938,14 @@ jagsUI::traceplot(postH, parameters = c("sd4_wt","sd_sp_wt"))
 jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt","mu_r_wt","sd_r_wt"))
 jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt","mu_a_wt","sd_a_wt"))
 jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt"))
+<<<<<<< HEAD
 jagsUI::traceplot(postH, parameters = c("wt"), Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, parameters = c("wt_user"))
 jagsUI::traceplot(postH, parameters = c("wt_user_reg","sd_wt_user"))
+=======
+jagsUI::traceplot(postH, parameters = c("wt_user","wt_user_reg","sd_wt_user"))
+>>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
 
 jagsUI::traceplot(postH, parameters = c("sd_sp_wt","sd_r_wt","sd_a_wt"))
 
