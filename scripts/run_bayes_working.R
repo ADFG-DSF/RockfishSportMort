@@ -52,11 +52,8 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-<<<<<<< HEAD
-ni <- 8E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
-=======
-ni <- 2E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
->>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
+
+ni <- 3E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -73,7 +70,8 @@ mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d" #3e5 = 20 hours = 6.7 hours / 1e5
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_FIX"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt"
 
 mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0e" #3e5 = 13.12 hours = 4.4 / 1e5
 
@@ -88,7 +86,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-29"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -444,12 +442,8 @@ saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_9e+05_2025-10-27"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05_2025-10-28"
-<<<<<<< HEAD
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_2e+05_2025-10-30"
-=======
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-29"
->>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
+
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
 #model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
@@ -888,7 +882,7 @@ rhat[1] %>% data.frame() %>%
   rownames_to_column(var = "param") -> rhatdf
 str(rhatdf)
 
-rhatdf %>% filter(Rhat > 1.25)
+rhatdf %>% filter(Rhat > 2)
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 10)
 jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 2) 
@@ -938,14 +932,11 @@ jagsUI::traceplot(postH, parameters = c("sd4_wt","sd_sp_wt"))
 jagsUI::traceplot(postH, parameters = c("mu3_wt","sd3_wt","mu_r_wt","sd_r_wt"))
 jagsUI::traceplot(postH, parameters = c("mu2_wt","sd2_wt","mu_a_wt","sd_a_wt"))
 jagsUI::traceplot(postH, parameters = c("mu_wt","sd_wt"))
-<<<<<<< HEAD
+
 jagsUI::traceplot(postH, parameters = c("wt"), Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, parameters = c("wt_user"))
 jagsUI::traceplot(postH, parameters = c("wt_user_reg","sd_wt_user"))
-=======
-jagsUI::traceplot(postH, parameters = c("wt_user","wt_user_reg","sd_wt_user"))
->>>>>>> 17d45b80e28a62c90ce2eb352eb9eda2c3b81562
 
 jagsUI::traceplot(postH, parameters = c("sd_sp_wt","sd_r_wt","sd_a_wt"))
 
@@ -977,6 +968,9 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
                                         "beta5_pH","beta6_pH"))
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.01)
+
+jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("mean_eps_pH"))
 
 jagsUI::traceplot(postH, parameters = "tau_prigui_pre")
 

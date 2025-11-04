@@ -49,7 +49,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen3ab_indcomp_swhsR_FULL_thru2023_3e+06_2025-10-04"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -238,25 +238,21 @@ The department's charter logbook program also provides data on guided sport fish
 
 SWHS estimates of harvests and releases are assumed to be biased based on the disagreement between SWHS estimates of guided trips and matching logbook totals of guided harvests and releases (Figure 6 DATA BIAS; Howard et al. 2020). Additionally, the bias in harvests and releases varies considerably in both direction and magnitude (Figure 6 DATA BIAS). The model treats the logbook data as a census with minimal uncertainty and thus SWHS bias estimation is a product of the difference between the survey and the logbook data. 
 
-The department’s port sampling program provides data on the species composition of the catch, provides length and otolith samples and provides data on the relative number of fish harvested and released. Port sampling data exists from Southcentral and Kodiak areas since 1996 and from Southeast Alaska areas since 2006 (Jaenicke et al. 2019; Failor 2016). Port sampling data in Southcentral and Kodiak areas is subdivided by user group (private or guided anglers) and the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska areas, the data is further subdivided into demersal shelf rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
+The department’s port sampling program provides data on the species composition of the catch, length, weight and otolith samples, and interview data on the relative number of fish harvested and released. Port sampling data exists from Southcentral and Kodiak areas since 1996 and from Southeast Alaska areas since 2006 (Jaenicke et al. 2019; Failor 2016). Port sampling data in Southcentral and Kodiak areas is subdivided by user group (private or guided anglers) and the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska areas, the data is further subdivided into demersal shelf rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
 
-*RELEASE MORTALITY DATA FROM WHERE?* Chris, Clay. Insert depth methods here.
+Estimating total removals from the population includes accounting for the number of fish that are expected to die after release. Release mortality estimates prior to 2013, the year DWR devices were mandated, assume that all fish were released on the surface and apply published mortality estimates (Hannah et al. 2008; Hochhalter et al. 2011; Hannah et a. 2012; Hochhalter et al. 2012) for pelagic and non-pelagic species (Figure RELEASE MORT). After 2013, release mortality rates assume the use of DWR devices and mortality rates commensurate with the literature. Southeast mortality rates do not account for the depth of release, but assume a phased in effect of the DWR devices for private users. Southcentral and Kodiak mortality rates factor in the depth-at-release information from port side interviews and calculate mortality rates based on the depth-of-relief data pooled across years. This data is not available in sufficient quantity for annual estimates but pooled across years provides an average depth profile of releases for each species assemblage and area. For each area, user group and species assemblage has pre- and post-DWR release mortality estimates calculated by averaging the mortality estimates from the difference depth strategy weighted by the estimated proportion released at depth (Table CLAYS TABLE). 
 
-Estimating total removals from the population includes accounting for the number of fish that are expected to die after release. Release mortality estimates prior to 2013, the year DWR devices were mandated, assume that all fish were released on the surface and apply published mortality estimates (Hannah et al. 2008; Hochhalter et al. 2011; Hannah et a. 2012; Hochhalter et al. 2012) for pelagic and non-pelagic species (Figure RELEASE MORT). After 2013, release mortality rates assume the use of DWR devices and assume rates commensurate with the literature . Southeast samples assume a flat rate whereas southcentral and Kodiak rates assume different rates based on the depth at which the fish was captured (Table CLAYS TABLE). The annual release mortality rates for each species are estimated by averaging the depth based release mortality estimates as weighted by the proportion of that year’s fish captured in each of the four depth categories in Table XX. 
-
-Annual release mortality estimates in Southcentral and Kodiak were then calculated by averaging the mortality-at-depth estimates weighted by the estimated proportion released at depth.
-
-*WEIGHT DATA FROM WHERE?* chris and Clay
-
-Port sampling programs also provide the data necessary to convert fish numbers to biomass. All rockfish are sampled for length which is converted to weights using a weight length regression. In southcentral and Kodiak regions the weight ~ length relationship for black and yelloweye rockfish is estimated from samples collected between 1996 and 2021 such that the predicted weight is related to the measured length, *L* such that
+Port sampling programs also provide the data necessary to convert fish numbers to biomass. All rockfish are sampled for length and in Southcentral Alaska a subsample are measured for weights. All measured fish that were not weighed have weights estimated using a weight length regression. In southcentral and Kodiak regions the weight ~ length relationship for black and yelloweye rockfish is estimated from samples collected between 1996 and 2021 such that the predicted weight is related to the measured length, *L* such that
 
 $W_{pred} = \alpha  \textrm{L}^{\beta}$
 
 where $\alpha$ and $\beta$ are estimated using least square methods (Table with estimates). Southeast rockfish weights are also estimated from weight length regressions but rely on published values (Love et al. 2002 ??; Table XX). 
 
-Converting the number of fish harvested or released into biomass was done by multiplying the average weight of the species or species complex by the estimated number. For each year and CFMU the average weight of each species or species complex is calculated from the weights as predicted by the lengths of sampled fish. A minimum of 5 fish from 4 unique vessels was used as cutoff to include in the data set used in the model. Although this is a small sample size, the hierarchical nature of the model means that annual estimates would regress towards the long term mean when sample sizes are small or absent in any given year.  
+Converting the number of fish harvested or released into biomass was done by multiplying the average weight of the species or species complex by the estimated number. For each year and CFMU the average weight of each species or species complex is calculated from the weights as predicted by the lengths of sampled fish. A minimum of 10 fish from 4 unique vessels was used as cutoff to include in the data set used in the model. Although this is a small sample size, the hierarchical nature of the model means that annual estimates would regress towards the long term mean when sample sizes are small or absent in any given year.  
 
-*KODIAK HYDROACOUSTIC HERE* Port sampling for outlying areas in Kodiak are unavailable to inform species compositions and thus are largely reliant on the hierarchichal structure of the model to derive estimates from the sampled areas. However, ADF&G commercial fisheries division has a robust hydroacoustic survey around the island to estimate black rockfish abundance and as part of that survey estimates species compositions of the pelagic rockfish communities in this area (Tschersich et al. 2023). This was used as supplemental data to further inform the species composition in the Kodiak CFMUs.
+The variance of the mean weight used in the model uses the bootstrap estimate of the standard deviation of the mean. Because the model uses the mean weight to convert from numbers to biomass it is the uncertainty in the estimate of the true mean that is relevant and not the spread of the individual fish weights that constitute a yearly sample. As such, the bootstrapped estimate of the mean’s standard deviation is applied rather than the standard deviation of the individual fish weights. 
+
+An auxiliary data set was used to further inform the species composition in Kodiak samples. Port sampling for outlying areas in Kodiak are unavailable to inform species compositions and thus are largely reliant on the hierarchichal structure of the model to derive estimates from the sampled areas. However, ADF&G commercial fisheries division has a robust hydroacoustic survey around the island to estimate black rockfish abundance and as part of that survey estimates species compositions of the pelagic rockfish communities in this area (Tschersich et al. 2023). This was used as supplemental data to further inform the species composition in the Kodiak CFMUs.
 
 ## Process equations
 
@@ -298,35 +294,33 @@ $H_{(black)ayu}~=~H_{ayu}*P_{(pelagic)ayu}*P_{(black|pelagic)ayu}$
 
 where $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.
 
-In southcentral and Kodiak regions yelloweye rockfish comprise a component of the non-pelagic assemblage such that the harvest of yelloweye
+Yelloweye rockfish comprise a component of the non-pelagic assemblage such that the harvest of yelloweye
 
 $H_{(yelloweye)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(yelloweye|non-pelagic)ayu}$
 
 where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish.
 
-The Southeast region  tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish. For the Southeast region the harvest of those two assemblages is thus
+The Southeast region tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish that are also components of the non-pelagic species assemblage such that
 
 $H_{(DSR)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(DSR|non-pelagic)ayu}$
 
 $H_{(slope)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(slope|non-pelagic)ayu}$
 
-where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. Yelloweye rockfish belong to the DSR complex so Southeast areas yelloweye harvests are a fraction of the DSR harvests such that
-
-$H_{(yelloweye)ayu}~=~H_{(DSR)ayu}*P_{(yelloweye|DSR)ayu}$
+where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. Yelloweye rockfish are technically part of the DSR assemblage, but in this analysis DSR do not include yelloweye rockfish.
 
 Species composition data is not available for the entire time series and as such it was necessary to assume some trend in the data to project backwards in time. To do so, we fit a logistic curve to the species composition data that would account for shifts in the species composition during the observed time period but would not extrapolate beyond the limits of the observed data when hindcasting. The logistic curve was fit to data through 2019 and ignored data after that point. In order to stabilize harvests, ADF&G began taking management action in 2020 that had a strong effect on the species composition of the harvest as well as the retention probability and thus data from those years would not be informative to pre-2020 patterns that had limited management action. This approach also allows for an easier estimation procedure in future years that can exclude the harvest reconstruction prior to 2020. Thus, the composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve such that:
 
 $\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)a} + \frac{\beta1_{(comp)a}}{(1 + exp(\beta2_{(comp)a}*(y - \beta3_{(comp)a})))} + \beta4_{(comp)a}*I(u=private)+re_{(comp)ayu}$
 
-where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise. The $re_{(comp)ayu}$ term is a random effect with a non-informative prior that estimates deviation from the fit line and sum to zero for each area, user group and species such that 
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise. The $re_{(comp)ayu}$ term is a random effect describing the deviation from the fitted line. The random effect terms were forced to sum to zero for discrete periods that align with the available data and the period used to inform the hindcasting portion of the model. Thus, for each time period between year $y_1$ and $y_2$ the random effect term for  each area, user group and species was 
 
-$re_{(comp)ayu} = \epsilon_{(comp)au} - \frac{1}{Y}\sum_{y=1}^{Y}\epsilon_{(comp)ayu}$
+$re_{(comp)ayu} = \epsilon_{(comp)au} - \frac{1}{y_{2}-y_{1}}\sum_{y=y_1}^{y_2}\epsilon_{(comp)ayu}$
 
 where 
 
 $\epsilon_{(comp)ayu} ~\sim~\textrm{Normal}(0,\tau)$
 
-As with the logistic curves, the random effect terms summed to zero for two separate time periods; pre-2020 before management actions changed angler behavior, and from 2020 through the current year.
+It was necessary to describe three time periods around which the random effects were divided. The first period started in 1977 and went through the period that lacked species composition data, which varied by region (Figure DATA). The second period consisted of the data informed time series through 2019. The third period consisted of 2020 through the present. It was necessary to divide the time series in this manner to ensure that the fit curves were forced through the data. The recent time period was separated to stay consistent with the rest of the model and ensure that the recent period that included management measures did not affect the hindcasting. The pre-2020 period necessitated separating the random effects between the periods with and without data to prevent the model from fitting a line that resulted in all of the random effects in the data period being positive or negative and balanced out by the reverse estimates in the pre-data period.  
 
 When there was no discernible change in composition over the observed time period $\beta$ parameters became inestimable. As such,  $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Tables 3 - 6 pComp_PRIORS). 
 
@@ -338,9 +332,9 @@ A uniform prior was applied to the inflection point ($\beta3$) bracketed by the 
 
 ### Releases
 
-The procedure for estimating releases differs from the Howard methods in that it relies on a process driven approach in contrast to the estimation methods employed in Howard et al. (2020; Figure 7 REL_SCHEMATICS) and further incorporates all sources of data, including SWHS estimates and port sampling interview data. Rather than making the assumption that the guided:unguided ratio of total rockfish releases in the SWHS data is an appropriate way to derive unguided releases of each species complex from the logbook record of releases, this approach models releases based on the harvests and the probability that a landed fish is retained separately for each of the regional species divisions while estimating and accounting for the bias in SWHS release estimates. Thus, the true number of released rockfish $R_{ayu}$ was based on the proportion of the total catch harvested (also referred to as retention probability), $pH_{(comp)ayu}$, by area, year, user group and species grouping. 
+The procedure for estimating releases differs from the Howard methods in that it relies on a process driven approach in contrast to the estimation methods employed in Howard et al. (2020; Figure 7 REL_SCHEMATICS) and further incorporates all sources of data, including SWHS estimates and port sampling interview data. Rather than making the assumption that the guided:unguided ratio of total rockfish releases in the SWHS data is an appropriate way to derive unguided releases of each species complex from the logbook record of releases, this approach models releases based on the harvests and the probability that a landed fish is retained separately for each of the regional species assemblages while estimating and accounting for the bias in SWHS release estimates. Thus, the true number of released rockfish $R_{ayu}$ was based on the proportion of the total catch harvested (also referred to as retention probability), $pH_{(comp)ayu}$, by area, year, user group and species grouping. 
 
-Release data from the SWHS is for all rockfish and the release data from logbooks is only subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye), $pH_{(comp)ayu}$ was only estimated for those categories. Port sampling data in southcentral and Kodiak is available for the same categories as the logbook data, and as such $pH_{(comp)ayu}$ and release estimates are only calculated for those categories. It was assumed that $pH_{(black)ayu}$ was equal to $pH_{(pelagic)ayu}$ given the dominance of that species within the assemblage. In Southeast Alaska port sampling programs also record harvest and release data for DSR and slope rockfish and allow $pH_{(comp)ayu}$ and release estimates for those groups, with the assumption that the sum of $R_{(DSR)ayu}$ and $R_{(slope)ayu}$ sum to $R_{(other)ayu}$. 
+Release data from the SWHS is for all rockfish combined and the release data from logbooks is  subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye). Port sampling data in southcentral and Kodiak is available for the same categories as the logbook data, and as such $pH_{(comp)ayu}$ and release estimates are only calculated for those categories. It was assumed that $pH_{(black)ayu}$ was equal to $pH_{(pelagic)ayu}$ given the dominance of that species within the assemblage. In Southeast Alaska port sampling programs also record harvest and release data for DSR and slope rockfish and allow $pH_{(comp)ayu}$ and release estimates for those groups, with the assumption that the sum of $R_{(DSR)ayu}$ and $R_{(slope)ayu}$ sum to $R_{(other)ayu}$. 
 
 Releases are related to total catch, $C_{(comp)ayu}$, and harvest, $H_{(comp)ayu}$, by user group, area and year such that
 
@@ -356,7 +350,7 @@ $\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(com
 
 $\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)a} - 1)) + re_{(pH)(comp)ayu}$
 
-where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and 1990. Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. Random effect terms were also forced to sum to one for eahc area, user group and species in an identical manner to that described in equation **XX** for species compositions.
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and whenever data became availabe (Figure DATA). Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. Random effect terms were also forced to sum to zero for each area, user group, species and time period in an identical manner to that described in equation **XX** for species compositions.
 
 Unlike the compositional trends, *pH* $\beta$ parameters were modeled hierarchically by region such that each area specific $\beta$ parameter was centered around region-specific hyperpriors of the mean and standard deviation (Tables 7 - 9). Prior development and reasoning followed the same logic as the species compositions logistic curves described above. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
 
@@ -378,21 +372,21 @@ where $\widehat{H}^{SWHS}_{ayu}$ and $\widehat{R}^{SWHS}_{ayu}$ are the SWHS est
 
 $se_{pHayu} = \sqrt{se_{H_{ay}}^2{\widehat{R}^{SWHS}_{ayu}}^2 + se_{R_{ay}}^2{\widehat{H}^{SWHS}_{ayu}}^2 - 2*{\widehat{R}^{SWHS}_{ayu}}*{\widehat{H}^{SWHS}_{ayu}}*cov*se_{H_{ay}}*se_{R_{ay}}}$
 
-**Complex B4 construction:** Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that
+*Complex B4 construction: Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that*
 
 $\beta4_{(pH)(comp)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
 
-where 
+*where* 
 
 $\sigma_{pH_{ay}^{ung:gui}}^2 = {\frac{se_{pHung}^2}{pH_{gui}^{SWHS^2}}+\frac{pH_{ung}^{SWHS^2}*se_{pHgui}^2}{pH_{gui}^{SWHS^4}}-(2*\frac{pH_{ung}^{SWHS}*cov*se_{pHung}*se_{pHgui}}{pH_{gui}^{SWHS^3}})}$
 
-and *cov* refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$. 
+*and cov refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$.* 
 
-For years between 1977 and 2010, the prior for each CFMU uses a prior centered around the mean of the area specific $\beta4_{(pH)(comp)ayu}$ values between 2011 and 2019 (later years are not used because management changes altered angler behavior after 2019) such that 
+*For years between 1977 and 2010, the prior for each CFMU uses a prior centered around the mean of the area specific $\beta4_{(pH)(comp)ayu}$ values between 2011 and 2019 (later years are not used because management changes altered angler behavior after 2019) such that* 
 
 $\beta4_{(pH)(comp)ay}~\sim~\textrm{Normal}\left((\frac{1}{n} \sum_{y=2011}^{2019} (\beta4_{(pH)(comp)ay})), \sigma_{\beta4_{(pH)(comp)ay}}^2\right)$
 
-The $\beta4_{(pH)(comp)ayu}$ from years 2011 to 2019 are used for the pre-2011 years rather than the $pH_{ay}^{ung:gui}$ ratios because the offset $\beta4$ term is also influenced by the interview data that provides estimates of the proportion harvested for both user groups . Structuring the priors for the early years using the recent $\beta4_{(pH)(comp)ayu}$ estimates allows both the $pH_{ay}^{ung:gui}$ estimates and the interview data to inform those estimates
+*The $\beta4_{(pH)(comp)ayu}$ from years 2011 to 2019 are used for the pre-2011 years rather than the $pH_{ay}^{ung:gui}$ ratios because the offset $\beta4$ term is also influenced by the interview data that provides estimates of the proportion harvested for both user groups . Structuring the priors for the early years using the recent $\beta4_{(pH)(comp)ayu}$ estimates allows both the $pH_{ay}^{ung:gui}$ estimates and the interview data to inform those estimates*
 
 **OR Simple B4 construction:** For each area the mean $pH_{ay}^{ung:gui}$ ratio was used as a prior on $\beta4_{(pH)(comp)ay}$ with the annual associated error of the $pH_{ay}^{ung:gui}$ estimates propagated through the prior such that
 
@@ -422,7 +416,7 @@ where $m_{R-(comp)ayu}$ is the release mortality rate by year, area, user and sp
 
 ### Biomass conversions
 
-Total removals in numbers of fish were converted to biomass in pounds using the average weight of fish **from port sampling?**. A minimum sample size per year of **X** fish was used as the cutoff for including in the data set. Weights were modeled hierarchically to estimate weights in years when data was missing. The total biomass of removals by year, area, user and species was thus
+Total removals in numbers of fish were converted to biomass in pounds using the average weight of fish as estimated from port sampling. A minimum sample size per year of 10 fish from a minimum of 4 boats was used as the cutoff for including in the data set. Weights were modeled hierarchically to estimate weights in years when data was missing. The total biomass of removals by year, area, user and species was thus
 
 $B_{(comp)ayu}~=~ \overline{wt}_{(comp)ayu} * M_{(comp)ayu}$
 
@@ -478,7 +472,7 @@ $\widehat{R}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
 
 $\widehat{R}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(non-pel,non-ye)ay1})$
 
-Releases are related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
+Releases are related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of harvested rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
 
 $x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ayu}^{int})$
 
@@ -491,8 +485,6 @@ $R_{ayu} = R_{(pelagic)ayu} + R_{(yelloweye)ayu} + R_{(non-pelagic, non-yellowey
 and for Southeast areas 
 
 $R_{(non-pelagic, non-yelloweye)ayu} = R_{(DSR)ayu} + R_{(slope)ayu}$
-
-*~This results in imprecise estimates of unguided releases as the mcmc algorithm explores the species-specific components of $R_{ay2}$ that satisfy the retention probability and harvest estimates. The lack of precision was regarded as appropriate given the lack of species specific release data for unguided anglers.~* 
 
 ### Species Composition Data (Port Sampling)
 
@@ -519,13 +511,23 @@ $x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
 
 ### Weight Data
 
-The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that the average weight by species, area, year and user group $wt_{(comp)ayu}$ is related to the average weight by area and year $wt_{(comp)ay}$ which is related to the average weight by area $wt_{(comp)a}$ which is related to the average weight by region $wt_{(comp)region}$ and by species only $wt_{(comp)}$ such that
+The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that the average weight by species, area, year and user group $wt_{(comp)ayu}$ is related to the average weight by area $wt_{(comp)a}$, which is related to the average weight by region $wt_{(comp)region}$, which is related to the average weight by species assemblage $wt_{(comp)}$ such that
 
-$wt_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)ay},\sigma_{wt_{(comp)ay}}) ~\sim~ \text{Normal}(wt_{(comp)a},\sigma_{wt_{(comp)a}}) ~\sim~ \text{Normal}(wt_{(comp)region},\sigma_{wt_{(comp)region}} ~\sim~ \text{Normal}(wt_{(comp)},\sigma_{wt_{(comp)}})$
+$wt_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)a} + I*\delta_{(comp)a},\sigma_{wt_{(comp)}}) ~\sim~ \text{Normal}(wt_{(comp)region},\sigma_{wt_{(comp)}}) ~\sim~ \text{Normal}(wt_{(comp)},\sigma_{wt_{(comp)}})$
 
-where *region* refers to Kodiak, Southcentral and Southeast. The prior for the species mean weight was centered on the mean of the data and corresponding variance and standard deviation. Observed mean weights assume a normal distribution such that
+where *region* refers to Kodiak, Southcentral and Southeast, $\sigma_{wt_{(comp)}}$ is the variance of the weight for each species assemblage, $\delta_{(comp)a}$ is an offset defining the difference in mean weights between user groups in each area and *I* is an index variable which is 1 when the user group is private and 0 when it is guided. The prior for the species mean weight was centered on the mean of the data and corresponding variance and standard deviation. 
+
+The $\delta_{(comp)a}$ was modeled hierarchically at the regional level such that
+
+$\delta_{(comp)a} ~\sim~ \text{Normal}(\delta_{(comp)region}, \sigma_{\delta_{(comp)region}})$
+
+where $\delta_{(comp)region}$ was given a weak prior centered around 0 and $\sigma_{\delta_{(comp)region}}$ was given an uninformative uniform prior between 0 and 5. Because the Kodiak region only has weight data from the Northeast CFMU $\delta_{(comp)region}$ was used in lieu of $\delta_{(comp)a}$ in equation XX above.
+
+Observed mean weights assume a normal distribution such that
 
 $\overline{wt}_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)ayu}, \sigma_{\overline{wt}_{(comp)ayu}})$
+
+where $\sigma_{\overline{wt}_{(comp)ayu}}$ is the bootstrapped variance of the mean.
 
 ### Kodiak Hydroacoustic Data
 

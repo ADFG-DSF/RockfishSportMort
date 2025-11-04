@@ -37,8 +37,8 @@ library(writexl)
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
 start_yr <- 1977
-end_yr <- 2023
-REP_YR <- 2023 #for Howard estimates
+end_yr <- 2024
+REP_YR <- 2024 #for Howard estimates
 list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
@@ -47,7 +47,7 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-res <- "Gen4int_indcomp_swhsR_FULL_thru2023_1e+05__2025-10-10"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -1732,7 +1732,9 @@ data_source_order <- c(
   "Logbook pelagic charter releases",
   "Logbook yelloweye charter releases",
   "Central and Kodiak species composition data",
-  "Southeast species composition data"
+  "Central and Kodiak interview release data",
+  "Southeast species composition data",
+  "Southeast interview release data"
 )
 
 rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
@@ -1764,12 +1766,28 @@ rbind(cbind(year = as.numeric(unique(Hhat_ay$year)),
       
       cbind(year = as.numeric(unique(R_ayg$year[!is.na(R_ayg$Rye)])),
       data = rep("Logbook yelloweye charter releases",length(unique(R_ayg$year[!is.na(R_ayg$Rye)])))),
-      #comp
+      
+      #comp & interviews
       cbind(year = as.numeric(unique(comp$year[comp$region != "Southeast"])),
       data = rep("Central and Kodiak species composition data",length(unique(comp$year[comp$region != "Southeast"])))),
       
+      cbind(year = as.numeric(unique(int$year[int$region != "Southeast"])),
+      data = rep("Central and Kodiak interview release data",length(unique(comp$year[comp$region != "Southeast"])))),
+      
+      #cbind(year = as.numeric(unique(comp$year[comp$region != "Southeast" & !is.na("yellow")])),
+      #data = rep("Central and Kodiak interview release data",length(unique(comp$year[comp$region != "Southeast"])))),
+      
       cbind(year = as.numeric(unique(comp$year[comp$region == "Southeast"])),
-      data = rep("Southeast species composition data",length(unique(comp$year[comp$region == "Southeast"]))))) %>% data.frame() -> data_available
+      data = rep("Southeast species composition data",length(unique(comp$year[comp$region == "Southeast"])))),
+      
+      #cbind(year = as.numeric(unique(comp$year[comp$region == "Southeast" & !is.na("yellow")])),
+      #data = rep("Southeast species composition data",length(unique(comp$year[comp$region == "Southeast"]))))
+      
+      cbind(year = as.numeric(unique(int$year[int$region == "Southeast"])),
+      data = rep("Southeast interview release data",length(unique(comp$year[comp$region == "Southeast"]))))
+      
+      ) %>% 
+  data.frame() -> data_available
   
   ggplot(data = data_available,
          aes(x = as.numeric(year), y = factor(data, levels = rev(data_source_order)))) + 
@@ -2081,7 +2099,7 @@ bc_obs <-
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
-         source = "observed") %>%
+         source = "observed LB") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
   mutate(data = "H") %>% 
   rbind((jags_dat$Rhat_ayg/jags_dat$Rlb_ayg)[,35:Y] %>%
@@ -2090,11 +2108,26 @@ bc_obs <-
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%
           mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
-                 source = "observed") %>%
+                 source = "observed LB") %>%
           pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
           mutate(data = "R")) %>%
   mutate(bc_lo95 = NA,
-         bc_hi95 = NA)
+         bc_hi95 = NA) 
+
+#jags_dat$inth_pel / jags_dat$intc_pel
+#jags_dat$intp_area
+#jags_dat$intp_user
+#jags_dat$intp_year
+
+#(jags_dat$Rhat_ayu/(jags_dat$Hhat_ayu + jags_dat$Hhat_ayu * ))[,35:Y] %>%
+  #rbind((jags_dat$Chat_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg))[,35:Y] %>%
+ #         t() %>%
+ #         as.data.frame() %>%
+#          setNames(nm = unique(H_ayg$area)) %>%
+#          mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+#                 source = "observed interview") %>%
+#          pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+#          mutate(data = "R")
 
 rbind(bc_mod2, bc_obs) %>%
   filter(data == "H") %>%
