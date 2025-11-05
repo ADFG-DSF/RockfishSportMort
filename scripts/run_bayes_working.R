@@ -70,8 +70,10 @@ mod <- "Gen4int_indcomp_swhsR_FULL_logpyel"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d" #3e5 = 20 hours = 6.7 hours / 1e5
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_FIX"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_slepsup"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsup"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn"
 
 mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0e" #3e5 = 13.12 hours = 4.4 / 1e5
 
@@ -86,7 +88,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -100,7 +102,7 @@ last_inits <- lapply(1:nc, function(chain) {
   as.list(colMeans(second_half))
 })
 
-halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 4)
+halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 10)
 
 other_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(initspost$samples[[chain]])
@@ -437,12 +439,12 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_9e+05_2025-10-27"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_FIX_thru2024_3e+05_2025-11-04"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -884,6 +886,8 @@ str(rhatdf)
 
 rhatdf %>% filter(Rhat > 2)
 
+jagsUI::traceplot(postH, Rhat_min = 2)
+
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 10)
 jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 2) 
 jagsUI::traceplot(postH, parameters = c("p_dsr"), Rhat_min = 2) 
@@ -969,7 +973,7 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.01)
 
-jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.5)
 jagsUI::traceplot(postH, parameters = c("mean_eps_pH"))
 
 jagsUI::traceplot(postH, parameters = "tau_prigui_pre")
