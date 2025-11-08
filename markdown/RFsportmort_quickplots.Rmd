@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Gen4_", "pHB4pars_swhsR_alwt_modsleps_",Sys.Date(),".html"))
+                          output_file = paste0("Gen4_", "pHB4pars_swhsR_alwt_r0full_modslepsdwn_",Sys.Date(),".html"))
       })
 ---
 
@@ -65,7 +65,7 @@ B4 <- "simp" #complex "simp", "none
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_FIX_thru2024_3e+05_2025-11-04"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_thru2024_3e+05__2025-11-06"
 
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 

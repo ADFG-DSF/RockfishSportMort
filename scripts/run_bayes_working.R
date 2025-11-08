@@ -52,8 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-
-ni <- 3E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 6E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -71,9 +70,11 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d" #3e5 = 20 hours = 6.7 hours / 1e5
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_slepsup"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_slepsdwn"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsup"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz"
 
 mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0e" #3e5 = 13.12 hours = 4.4 / 1e5
 
@@ -88,7 +89,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_thru2024_3e+05__2025-11-06"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -973,7 +974,8 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.01)
 
-jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.5)
+jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.1)
+
 jagsUI::traceplot(postH, parameters = c("mean_eps_pH"))
 
 jagsUI::traceplot(postH, parameters = "tau_prigui_pre")

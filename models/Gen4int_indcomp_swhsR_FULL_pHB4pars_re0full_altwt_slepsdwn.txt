@@ -159,7 +159,7 @@ for (r in 1:2){
 }
 
 mu_beta2_pH[1,1] ~ dnorm(0, 0.01)T(0.01,)
-mu_beta2_pH[2,1] ~ dnorm(0, 0.01)T(0.01,20)
+mu_beta2_pH[2,1] ~ dnorm(0, 0.01)T(0.01,18)
 
 mu_beta2_pH[3,1] ~ dnorm(0, 0.01)T(0,)
 mu_beta2_pH[3,2] ~ dnorm(0, 0.01)
@@ -388,7 +388,7 @@ for (a in 5:10){
 for (a in 5:6) { #BSAI and SOKO2SAP 
     beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1])T(-2.5,) #INTERCEPT
     beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1])T(,5) 
-    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(,20) # SLOPE 
+    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(,18) # SLOPE 
 
     beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
     beta1_pH[a,2] <- 0
@@ -421,7 +421,7 @@ for (a in 5:6) { #BSAI and SOKO2SAP
   for (a in 8:10) { #Afognak, eastside and northeast
     beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1])T(-3,) #INTERCEPT
     beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1])T(,5) 
-    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(,12) # SLOPE 
+    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(0.01,11) # SLOPE 
     beta3_pH[a,1] ~ dunif(23.5,44)
 
     beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
@@ -514,7 +514,7 @@ beta1_yellow[16] <- 0 #~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
 beta2_yellow[16] <- 0 #~ dnorm(0,0.01)T(-30,-0.01)
 beta3_yellow[16] <- 35 #~ dunif(23,Y-5) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 
-beta1_pelagic[11] ~ dlnorm(log(0.01), 0.1)T(0.1,2)
+beta1_pelagic[11] ~ dlnorm(log(0.01), 0.1)T(0.1,2.5)
 beta2_pelagic[11] ~ dnorm(0.1,0.1)T(0.1,)
 
 beta1_pelagic[12] <- 0
@@ -525,14 +525,14 @@ beta1_pelagic[14] ~ dlnorm(log(0.01), 0.1)T(0.01,3.25)
 beta1_pelagic[15] ~ dlnorm(log(0.01), 0.1)T(0.0001,0.75)
 beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.01,3.15)
 
-beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.05,0.9)
+beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.05,0.8)
 beta2_pelagic[14] ~ dnorm(0.1,0.1)T(0.05,8)
 beta2_pelagic[15] ~ dnorm(0.1,0.1)T(0.05,)
-beta2_pelagic[16] ~ dnorm(0.1,0.1)T(0.075,7)
+beta2_pelagic[16] ~ dnorm(0.1,0.1)T(0.075,6)
 
 beta3_pelagic[11] ~ dunif(23,36)
 beta3_pelagic[12] <- 30
-beta3_pelagic[13] ~ dunif(23,40)
+beta3_pelagic[13] ~ dunif(23,42)
 beta3_pelagic[14] ~ dunif(23,40.5)
 beta3_pelagic[15] ~ dunif(23,42)
 beta3_pelagic[16] ~ dunif(23,42)

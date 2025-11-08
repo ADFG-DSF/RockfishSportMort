@@ -493,7 +493,7 @@ for (a in 11:16){
 }
 
 beta1_yellow[11] ~ dlnorm(log(0.0000000001), 0.01)T(0.001,3.5)
-beta2_yellow[11] ~ dnorm(0,0.01)T(-30,-0.01)
+beta2_yellow[11] ~ dnorm(0,0.01)T(-30,-0.05)
 beta3_yellow[11] ~ dunif(30,44) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 
 beta1_yellow[12] <- 0 #~ dlnorm(log(0.0000000001), 0.01)T(0.01,5)
@@ -501,7 +501,7 @@ beta2_yellow[12] <- 0 #~ dnorm(0,0.01)T(-30,-0.01)
 beta3_yellow[12] <- 25 #~ dunif(23,Y-5) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 
 for (a in 13:14){
-  beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.01,6.5)
+  beta1_yellow[a] ~ dlnorm(log(0.0000000001), 0.01)T(0.05,7)
   beta2_yellow[a] ~ dnorm(0,0.01)T(-24,-0.05)
   beta3_yellow[a] ~ dunif(29,44) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 
 }
