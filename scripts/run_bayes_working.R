@@ -52,7 +52,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 6E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 4E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -94,7 +94,7 @@ use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_th
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
 #If you're using the last run:
-halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 5)
+halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 10)
 
 last_inits <- lapply(1:nc, function(chain) {
   chain_data <- as.matrix(postH$samples[[chain]])
@@ -440,12 +440,12 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- ""
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_FIX_thru2024_3e+05_2025-11-04"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05_2025-11-09"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -885,9 +885,9 @@ rhat[1] %>% data.frame() %>%
   rownames_to_column(var = "param") -> rhatdf
 str(rhatdf)
 
-rhatdf %>% filter(Rhat > 2)
+rhatdf %>% filter(Rhat > 1.2)
 
-jagsUI::traceplot(postH, Rhat_min = 2)
+jagsUI::traceplot(postH, Rhat_min = 1.11)
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 10)
 jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 2) 
