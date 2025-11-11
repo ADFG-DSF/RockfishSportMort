@@ -1,0 +1,1135 @@
+---
+title: "Rockfish Removals in Alaska Sport Fisheries 1977 - 2023"
+author: "Philip Joy, Clay McKean, Chris Hinds and Diana Tersteeg"
+output:
+  word_document:
+    reference_docx: "rep_temp_wtc.docx"
+    toc: true
+    toc_depth: 2
+fontsize: 12pt
+#date: "2025-05-23"
+
+#knit: (function(input_file, encoding) {
+#        rmarkdown::render(input_file, 
+#                          output_file = paste0("RFsportmort_update_", "AB_model_swhsR_",Sys.Date(),".html"))
+#      })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2023
+REP_YR <- 2023 #for Howard estimates
+list2env(readinData(start_yr = start_yr,
+                  end_yr = end_yr),
+         .GlobalEnv)
+
+mod<-"LB_fit_3pH"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0_altwt_thru2024_8e+05_2025-11-02"
+
+postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+
+summary_table <- postH$summary %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "Parameter") %>%
+  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
+  rename(
+    Lower_CI = `2.5%`,
+    Median = `50%`,
+    Upper_CI = `97.5%`
+  ) %>% 
+  filter(str_detect(Parameter, "^tau_comp\\[") |
+         str_detect(Parameter, "^tau_pH\\[") |
+          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
+           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow\\[")|
+           str_detect(Parameter, "^mu_beta0_black\\[")|
+           str_detect(Parameter, "^tau_beta0_black\\[")|
+           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
+           str_detect(Parameter, "^mu_bc_H\\[")|
+           str_detect(Parameter, "^tau_bc_H\\[")|
+           str_detect(Parameter, "^mu_bc_R\\[")|
+           str_detect(Parameter, "^tau_bc_R\\[")|
+           str_detect(Parameter, "^bc_R_offset\\[")|
+           str_detect(Parameter, "^beta0_pH\\[")|
+           str_detect(Parameter, "^beta1_pH\\[")|
+           str_detect(Parameter, "^beta2_pH\\[")|
+           str_detect(Parameter, "^beta3_pH\\[")|
+           str_detect(Parameter, "^beta0_pelagic\\[")|
+           str_detect(Parameter, "^beta1_pelagic\\[")|
+           str_detect(Parameter, "^beta2_pelagic\\[")|
+           str_detect(Parameter, "^beta3_pelagic\\[")|
+           str_detect(Parameter, "^beta0_yellow\\[")|
+           str_detect(Parameter, "^beta1_yellow\\[")|
+           str_detect(Parameter, "^beta2_yellow\\[")|
+           str_detect(Parameter, "^beta3_yellow\\[")|
+           str_detect(Parameter, "^beta0_black\\[")|
+           str_detect(Parameter, "^beta2_black\\[")|
+           str_detect(Parameter, "^beta3_black\\[")|
+           str_detect(Parameter, "^beta4_black\\[")|
+           str_detect(Parameter, "^beta0_dsr\\[")|
+           str_detect(Parameter, "^beta1_dsr\\[")|
+           str_detect(Parameter, "^beta2_dsr\\[")|
+           str_detect(Parameter, "^beta3_dsr\\[")|
+           str_detect(Parameter, "^beta4_dsr\\[")|
+           str_detect(Parameter, "^beta0_slope\\[")|
+           str_detect(Parameter, "^beta1_slope\\[")|
+           str_detect(Parameter, "^beta2_slope\\[")|
+           str_detect(Parameter, "^beta3_slope\\[")|
+           str_detect(Parameter, "^beta4_slope\\[")|
+           str_detect(Parameter, "^sigma_H\\[")|
+           str_detect(Parameter, "^beta_H\\[")|
+           str_detect(Parameter, "^beta0_H\\[")|
+           str_detect(Parameter, "^lambda_H\\[")|
+           str_detect(Parameter, "^mu_lambda_H\\[")|
+           str_detect(Parameter, "^sigma_lambda_H\\["))
+
+X <- 0
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+
+rhat <- get_Rhat(postH, cutoff = 1.11)
+names(rhat)[1] <- "Rhat_values"
+all_rhat <- get_Rhat(postH,cutoff = 0.01)
+names(all_rhat)[1] <- "Rhat_values"
+as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
+prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.11))/nrow(rhat_vals),4)
+prop_conv2 <- round(nrow(rhat_vals %>% filter(Rhat <= 1.011))/nrow(rhat_vals),4)
+
+max(rhat_vals) -> max_rhat
+
+rhat_exam <- rhat$Rhat_values %>%
+  rownames_to_column(var = "Parameter") %>%
+  separate(Parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", ""),
+         index_n = str_count(index, ","))
+  
+rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", fill = "right") %>%
+  mutate(year = ifelse(!str_detect(variable, "beta"),
+                       i2,NA),
+         user = ifelse(!str_detect(variable, "beta") & index_n %in% c(2,3),
+                       i3, NA),
+         species = ifelse(str_detect(variable, "beta"),i2,
+                          ifelse(index_n == 3, i4, NA))) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n") %>%
+  select(area, variable, year, user, species, Rhat) %>%
+  filter(!str_detect(variable, "Bb|By|Bs|_mort|Tb|Tp|Ty")) %>%
+  arrange(area, -Rhat, variable) -> unconverged
+
+BSAISOKO2SAP_prop <- round(nrow(unconverged %>% filter(area %in% c("BSAI","SOKO2SAP"))) / 
+  nrow(unconverged),3)
+
+unconverged %>% filter(str_detect(variable, "R") & str_detect(variable, "u"))
+  
+Ru_prop <- round(nrow(unconverged %>% filter(str_detect(variable, "R") & str_detect(variable, "u")))/
+                   nrow(unconverged),3)
+
+Ru_prop_nonK <- round(nrow(unconverged %>% filter(str_detect(variable, "R") & 
+                                                    str_detect(variable, "u") &
+                                                    !area %in% c("BSAI","SOKO2SAP")))/
+                   nrow(unconverged %>% filter(!area %in% c("BSAI","SOKO2SAP"))),
+                   3)
+
+p_lt_1p2 <- round(nrow(unconverged %>% filter(Rhat < 1.2 & !area %in% c("BSAI","SOKO2SAP"))) / 
+  nrow(unconverged %>% filter(!area %in% c("BSAI","SOKO2SAP"))),3)
+p_lt_1p15 <- round(nrow(unconverged %>% filter(Rhat < 1.15 & !area %in% c("BSAI","SOKO2SAP"))) / 
+  nrow(unconverged %>% filter(!area %in% c("BSAI","SOKO2SAP"))),3)
+
+# Format with commas
+iter_n <- as.numeric(str_extract(res, "\\d+e\\+\\d+"))
+iters <- comma(iter_n)
+burnin <- comma(0.25*iter_n)
+thin <- comma((iter_n - 0.25 * iter_n)/ 1000)
+
+area_codes <- comp %>% select(area,area_n) %>% unique() %>%
+  add_row(area = "BSAI", area_n = 5) %>%
+  add_row(area = "SOKO2SAP", area_n = 6) %>%
+  add_row(area = "WKMA", area_n = 7) %>%
+  mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
+
+```
+
+# Abstract
+
+Fishery stock assessments require defensible estimates of total extractions (commercial, sport, subsistence, personal use, and bycatch) throughout the history of exploitation and at appropriate spatial scales for management. This study provides updated estimates of total sport harvest and releases for black and yelloweye rockfishes as well as demersal shelf, slope and non-black pelagic rockfish in Southeast, in geographic units consistent with commercial fishery management units (CFMUs), and incorporates release mortalities and fish weights to estimate total fishing mortality in pounds. The new methods build on the foundational work of Howard et al. (2020) that developed the spatial relationsihip between sport and commercial fishery management units and provided estimates between 1999 and today. The Bayesian methods used here allow for estimation back through 1977, corrects some assumptions in the Howard methodology, and provides a unified and reproducible approach to estimating sport fishing mortalities. Guide logbooks have provided a census of guided sport harvest and release by statistical reporting areas and by pelagic and nonpelagic rockfish assemblages since 1998/1999, and a census of yelloweye rockfish harvest and releases since 2006. The Alaska Sport Fishing Survey (referred to as the statewide harvest survey or SWHS) has provided estimates of rockfish harvests since 1977, total catches since 1990 and a breakdown by guided and unguided anglers since 2011. Port sampling data provides estimates of species composition in the harvest as well as length and weight data. The Bayesian model calculates harvests very similar to the methods used in Howard et al. (2020) but differs in its approach to estimating unguided harvest and release numbers. Bias in the SWHS harvest and release numbers are estimated and corrected in the model and the Bayesian model applies a hierarchical approach such that information is more appropriately shared across areas within regions. Assumptions about key parameters and estimates before data collection began are made using logistic curves to estimate trends. Harvest estimates from the Bayesian model are very similar to the Howard et al. (2020) estimates but release estimates differ considerably as a result of bias correction and more informed estimates of release probability by species and species assemblage evident in the logbook data. Rockfish harvests and releases provided by this methodology are recommended for use in stock assessments.
+
+Keywords: sport fish, harvest, release, fishing mortality, black rockfish, yelloweye rockfish, demersal shelf rockfish, slope rockfish, pelagic rockfish, Gulf of Alaska, *Sebastes*, *Sebastes melanops*, *Sebastes ruberrimus*, rockfish
+
+# Introduction
+
+Rockfish (*Sebastes spp*) harvests in Alaskan waters have become an increasing concern as restrictions on halibut and salmon have led to increased pressure on rockfish stocks. In response to this pressure, the Alaska Department of Fish and Game (ADF&G) initiated an interdivisional, inter-regional strategic plan to develop long-term management and stock assessment strategies for black rockfish (*S. melanops*) and yelloweye rockfish (*S. ruberrimus*) across the Gulf of Alaska (GOA) (Howard et al. 2019a). The first step in assessing any fish stock is to have an accurate and complete history of fishery removals from the stock. While commercial fisheries relies on a fish ticketing system that censuses the harvest, Alaska sport fisheries rely on a number of programs, phased in over time, to account for rockfish removals in the sport fishery. 
+
+Sport fishery harvests are measured through a variety of programs, primarily the Alaska Sport Fishing Survey (commonly known as the statewide harvest survey or SWHS), the saltwater guide logbook program, and sampling programs at primary ports. The SWHS was initiated in 1977 as an annual mail-out survey (Romberg et al. 2018). Response to this survey is voluntary and the survey design provides estimates of statewide harvest and catch (since 1990) in numbers of fish for rockfish (all species combined) and effort in saltwater angler days (for all marine species combined) by unguided and guided anglers (since 2011) and by predefined geographical strata. SWHS strata are not geographically consistent with either sport rockfish fishery management areas or commercial fisheries management units (CFMUs) but have been assigned as such based on methods developed by Howard et al. (2020). 
+
+The guided logbook program was established in 1998 to acquire information on guided industry harvests and releases by species and effort (Powers 2015). In addition to other species such as salmon and halibut, this mandatory program provides a census of harvest and release in numbers of pelagic and nonpelagic rockfish species assemblages and, since 2006, yelloweye rockfishes. The logbook program also provides information on the statistical area where fishing occurred. 
+
+Sport harvest port sampling programs provide information on biological characteristics of the harvest, including species composition (Jaenicke et al. 2019; Failor 2016). Port sampling programs vary regionally in their design, history, and information collected. Post sampling data is used to estimate apportion harvests and releases by species in guided and unguided trips and provide length and weight data.    
+
+Stock assessments also require estimates of total mortalities in weight units. Rockfish can experience high levels of release mortality as a result of barotrauma (Jarvis and Lowe 2008; Hochhalter and Reed 2011), particularly before the mandating of deep-water release mechanism (DRM) devices in recent years.. This requires an accounting of rockfish releases and reliable estimates of mortality. Converting fish numbers to biomass also requires weight data by species and species complex. 
+
+Yelloweye and black rockfish removal estimation methods were originally developed by Howard et al. (2020; hereafter refered to as the Howard methods), which included spatial partitioning of the data, identifying bias in the SWHS survey estimates relative to the logbook census of guided anglers, and estimating unguided harvests and releases by expanding logbook catch and release data using the proportions of guided:unguided harvests and releases from SWHS data. This approach was both novel and critical in providing harvest and release estimates for managers to understand the magnitude of the catch and to allow accurate assessments of stocks. 
+
+While the Howard methods provide the baseline for understanding and reconstructing rockfish harvests in Alaska, the methods had several shortcomings and recommendations for reevaluation as more data and improved methodologies become available. The Howard methods were limited to the period since the logbook program was brought online in 1998 and thus only provides estimates since that time even though rockfish have been harvested by sport anglers since at least the 1960s. The Howard methods also rely on a "decision tree" approach to deal with missing data and inadequate sample sizes by using long term averages or proxy values from neighboring management areas. Furthermore, while the Howard methods address bias in the SWHS data, it is not implicitly estimated or corrected. In particular, the estimation of unguided harvests and releases relies on an expansion of logbook data based on the guided:unguided ratio in the SWHS data for all rockfish combined, regardless of species or species complex. 
+
+The methods presented here build on the foundational Howard methods by applying a Bayesian approach to expand the harvest and release time series back to 1977 when the SWHS was first implemented. The Bayesian model also makes improvements on the Howard methods by estimating and correcting bias in the SWHS harvest and release data, allowing release probabilities to vary by species / species assemblage, and replaces the decision tree approach with a hierachichal model that more accurately and efficiently shares information between areas within regions (Table 1 HOWARD_VS_BAYES). To generate estimates prior to 1999 the Bayesian model estimates trends in species proportions and harvest/release probability to project backwards in time while explicitly estimating bias in the SWHS harvest and release data. Furthermore, the model’s hierarchichal structure allows information on these trends, as well as overall harvest trends, to be shared among management areas within the three main regions (Southeast, Southcentral and Kodiak) without having to use proxy values while more effectively propagating error throughout the process. The model incorporates fish weight and release mortality probabilities (Jarvis and Lowe 2008; Hochhalter and Reed 2011; Blain and Sutton 2016; Blain-Roth and Sutton 2019) so that previously unpublished total removal estimates in biomass are also produced in one place. These methods provide a more streamlined and reproducible approach to deriving rockfish removal estimates.  
+
+# Objective
+
+1) Estimate annual sport harvests,releases and total removals in biomass of rockfishes in Gulf of Alaska CFMUs from 1977–2023. Estimates are for the following species / complexes in the following regions:
+
+    a) black rockfish (all regions)
+    b) yelloweye rockfish (all regions) 
+    c) non-black pelagic rockfish (dark *S. ciliates*, dusky *S. variabilis*, widow *entomelas*, yellowtail *S. flavidus*, and blue *S. mystinus* rockfish); Southeast only,
+    d) non-yelloweye demersal shelf (DSR) rockfish (canary *S. pinniger*, quillback *S. maliger*, china *S. nebulosus*, copper *S. caurinus*, rosethorn *S. helvomaculatus* and tiger *S. nigrocinctus* rockfish); Southeast only, and,
+    e) slope rockfish (redbanded *S. babcocki* , rougheye *S. aleutianus*, silvergray *S. brevispinis*, shortraker *S. borealis*, and vermillion *S. miniatus* rockfish); Southeast only. 
+
+# Study Area
+
+Harvest reconstructions were developed for CFMUs across the Gulf of Alaska, from Kodiak Island east to Southeast Alaska. CFMUs were divided into the Southeast, Southcentral and Kodiak regions. The Southcentral region contained Cook Inlet (CI), the North Gulf Coast (NG) (Figure 1 CING_CFMUs) and Prince William Sound Inside (PWSI) and Outside (PWSO) CFMU's (Figure 2 PWS_CFMUs) and Southeast region was comprised of the Central Southeast Outside (CSEO), North Southeast Outside (NSEO), South Southeast Outside (SSEO), North Southeast Inside (NSEI), South Southeast Inside (SSEI) and a sixth area that pooled the Icy Bay subdistrict (IBS) and East Yakutat section (EYKT) to comprise the East–West Yakutat management area (EWYKT) (Figure 3 SE_CFMUs). 
+
+Several of the westward and Kodiak subdistricts have little data and necessitated pooling for this analysis (Figure 4 KOD_CFMUs). In addition to the Afognak, Eastside and Northeast CFMUs which contained adequate data, the Westside and Mainland districts were pooled to form the Western Kodiak management area (WKMA) while the Southeast, Southwest, Chignik and South Alaska Peninsula (SAKPEN) districts were pooled into a CFMU called SOKO2PEN. Lastly the Aleatian and Bering Sea CFMUs were pooled into the BSAI CFMU and included in the Kodiak region.
+
+# Methods
+
+## Data
+
+Statewide harvest survey estimates of rockfish catch and harvest are available for 28 years (1996-2023) for all users and are broken down by guided and unguided trips since 2011 (Figure 5 DATA_SOURCES). Additionally, there are overall harvest estimates from 1977- 1995 and release estimates from 1990-1995 that required partitioning to ascribe to current management areas. Harvest and release estimates in unknown areas from this early period were apportioned based on harvest proportions in 1996. Variance estimates are not available for pre-1996 data and as such, the maximum observed coefficient of variation (cv) in each commercial fisheries management unit was applied to the pre-1996 values. 
+
+SWHS Rockfish release estimates are inferred from the difference between catch and harvest estimates. SWHS release estimates were assumed to equal the total catch minus the harvest and the standard deviation of the releases was derived from the standard deviation of the harvest and catch estimates such that 
+
+$\sigma_{SWHS_R} ~=~ \sqrt{\sigma_{SWHS_H}^2 + \sigma_{SWHS_C}^2}$
+
+The department's charter logbook program also provides data on guided sport fishing in state waters. Sport fishing guides have been required to report their harvest of rockfish for 26 years (1998-2023) and releases for 25 years (1999-2023) as part of the charter logbook program. Reported harvest and releases is also available by assemblage (pelagic vs. non-pelagic) for the entirety of the program while harvest and release of yelloweye and “other” (non-pelagic, non-yelloweye) rockfish were reported separately beginning in 2006. Logbook data is treated as a census of the true catch and release of rockfish in these categories. 
+
+SWHS estimates of harvests and releases are assumed to be biased based on the disagreement between SWHS estimates of guided trips and matching logbook totals of guided harvests and releases (Figure 6 DATA BIAS; Howard et al. 2020). Additionally, the bias in harvests and releases varies considerably in both direction and magnitude (Figure 6 DATA BIAS). The model treats the logbook data as a census with minimal uncertainty and thus SWHS bias estimation is a product of the difference between the survey and the logbook data. 
+
+The department’s port sampling program provides data on the species composition of the catch, length, weight and otolith samples, and interview data on the relative number of fish harvested and released. Port sampling data exists from Southcentral and Kodiak areas since 1996 and from Southeast Alaska areas since 2006 (Jaenicke et al. 2019; Failor 2016). Port sampling data in Southcentral and Kodiak areas is subdivided by user group (private or guided anglers) and the number of total rockfish, pelagic and non-pelagic rockfish, black rockfish and yelloweye rockfish. In Southeast Alaska areas, the data is further subdivided into demersal shelf rockfish (DSR, of which yelloweye are one species) and slope rockfish are also recorded.
+
+Estimating total removals from the population includes accounting for the number of fish that are expected to die after release. Release mortality estimates prior to 2013, the year DWR devices were mandated, assume that all fish were released on the surface and apply published mortality estimates (Hannah et al. 2008; Hochhalter et al. 2011; Hannah et a. 2012; Hochhalter et al. 2012) for pelagic and non-pelagic species (Figure RELEASE MORT). After 2013, release mortality rates assume the use of DWR devices and mortality rates commensurate with the literature. Southeast mortality rates do not account for the depth of release, but assume a phased in effect of the DWR devices for private users. Southcentral and Kodiak mortality rates factor in the depth-at-release information from port side interviews and calculate mortality rates based on the depth-of-relief data pooled across years. This data is not available in sufficient quantity for annual estimates but pooled across years provides an average depth profile of releases for each species assemblage and area. For each area, user group and species assemblage has pre- and post-DWR release mortality estimates calculated by averaging the mortality estimates from the difference depth strategy weighted by the estimated proportion released at depth (Table CLAYS TABLE). 
+
+Port sampling programs also provide the data necessary to convert fish numbers to biomass. All rockfish are sampled for length and in Southcentral Alaska a subsample are measured for weights. All measured fish that were not weighed have weights estimated using a weight length regression. In southcentral and Kodiak regions the weight ~ length relationship for black and yelloweye rockfish is estimated from samples collected between 1996 and 2021 such that the predicted weight is related to the measured length, *L* such that
+
+$W_{pred} = \alpha  \textrm{L}^{\beta}$
+
+where $\alpha$ and $\beta$ are estimated using least square methods (Table with estimates). Southeast rockfish weights are also estimated from weight length regressions but rely on published values (Love et al. 2002 ??; Table XX). 
+
+Converting the number of fish harvested or released into biomass was done by multiplying the average weight of the species or species complex by the estimated number. For each year and CFMU the average weight of each species or species complex is calculated from the weights as predicted by the lengths of sampled fish. A minimum of 10 fish from 4 unique vessels was used as cutoff to include in the data set used in the model. Although this is a small sample size, the hierarchical nature of the model means that annual estimates would regress towards the long term mean when sample sizes are small or absent in any given year.  
+
+The variance of the mean weight used in the model uses the bootstrap estimate of the standard deviation of the mean. Because the model uses the mean weight to convert from numbers to biomass it is the uncertainty in the estimate of the true mean that is relevant and not the spread of the individual fish weights that constitute a yearly sample. As such, the bootstrapped estimate of the mean’s standard deviation is applied rather than the standard deviation of the individual fish weights. 
+
+An auxiliary data set was used to further inform the species composition in Kodiak samples. Port sampling for outlying areas in Kodiak are unavailable to inform species compositions and thus are largely reliant on the hierarchichal structure of the model to derive estimates from the sampled areas. However, ADF&G commercial fisheries division has a robust hydroacoustic survey around the island to estimate black rockfish abundance and as part of that survey estimates species compositions of the pelagic rockfish communities in this area (Tschersich et al. 2023). This was used as supplemental data to further inform the species composition in the Kodiak CFMUs.
+
+## Process equations
+
+The model process is based around the guided logbook and SWHS estimates of total rockfish harvest by year and CFMU. Guided and unguided harvests are proportionally related to total harvests ($P_{user}$) while species specific harvests are related to the total harvest based on the proportions evident in the port sampling and logbook data ($P_{comp}$). Release estimates are based on the proportion of all catches that were harvested, also referred to as the retention probability or the proportion-harvested, *pH*. Numbers of fish are converted to biomass based on mean annual weights and total sport fish mortality is the sum of the harvest weights plus the proportion of releases that are expected to die based on release mortality rates (Jarvis and Lowe 2008; Hochhalter and Reed 2011; Blain and Sutton 2016; Blain-Roth and Sutton 2019). The equations describing this process are as follows.
+
+### Harvests
+
+The true harvest $H_{ay}$ of rockfish for area $a$ during year $y$ is assumed to follow a temporal trend defined by a penalized spline:
+
+$\textrm{log}(H_{ay})~\sim~\textrm{Normal}(f(a,y), {\sigma_{Ha}})$
+
+where $f(a,y)$ is a p-spline basis with 7 components (knots) and a second-degree penalty (Eiler and Marx 1996; Ruppert et al. 2003; Lang and Brezger 2004; Appendix A) and $\sigma_{Ha}$ is the variance (Table 2 PRIORS). The spline was modeled hierarchically within regions (Table 2 PRIORS, Appendix A).  
+
+Harvests were apportioned by user groups such that charter and private harvest $H_{ayu}$ (where *u* = 1 for charter anglers and *u* = 2 for private anglers) is a fraction of total annual harvest in each area:
+
+$H_{ay1}~=~H_{ay}P_{(user)ay1}$
+
+$H_{ay2}~=~H_{ay}(1-P_{(user)ay1})$
+
+where $P_{(user)ay1}$ is the fraction of the annual harvest in each area taken by charter anglers.  $P_{(user)ay1}$ was modeled hierarchically across years as:
+
+$P_{(user)ay1}~\sim~\textrm{beta}(\lambda1_a, \lambda2_a)$
+
+with non-informative priors on both parameters (Table 2 PRIORS).
+
+### Species Apportionment
+
+The total harvest of rockfish is apportioned to species and species complexes beginning with a partition into pelagic and non-pelagic categories such that
+
+$H_{(pelagic)ayu}~=~H_{ayu}*P_{(pelagic)ayu}$
+
+and
+
+$H_{(non-pelagic)ayu}~=~H_{ayu} - H_{(pelagic)ayu}$
+
+where $P_{(pelagic)ayu}$ is the fraction of the annual harvest for each area and user group that was pelagic rockfish. Black rockfish are a subset of the pelagic assemblage and as such annual black rockfish harvest $H_{(black)ayu}$ for each area and user group is:
+
+$H_{(black)ayu}~=~H_{ayu}*P_{(pelagic)ayu}*P_{(black|pelagic)ayu}$
+
+where $P_{(black|pelagic)ayu}$ is the fraction of the annual harvest of pelagic rockfish for each area and user group that was black rockfish.
+
+Yelloweye rockfish comprise a component of the non-pelagic assemblage such that the harvest of yelloweye
+
+$H_{(yelloweye)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(yelloweye|non-pelagic)ayu}$
+
+where $P_{(yellow|non-pelagic)ayu}$ is the fraction of the annual harvest of non-pelagic rockfish for each area and user group that was yelloweye rockfish.
+
+The Southeast region tracks two other non-pelagic rockfish assemblages, demersal shelf rockfish (DSR, which includes yelloweye) and slope rockfish that are also components of the non-pelagic species assemblage such that
+
+$H_{(DSR)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(DSR|non-pelagic)ayu}$
+
+$H_{(slope)ayu}~=~H_{ayu}*(1-P_{(pelagic)ayu})*P_{(slope|non-pelagic)ayu}$
+
+where $P_{(DSR|non-pelagic)ayu}$ and $P_{(slope|non-pelagic)ayu}$ are the fractions of the annual harvest of non-pelagic rockfish for each area and user group that were DSR and slope rockfish, respectively. Yelloweye rockfish are technically part of the DSR assemblage, but in this analysis DSR do not include yelloweye rockfish.
+
+Species composition data is not available for the entire time series and as such it was necessary to assume some trend in the data to project backwards in time. To do so, we fit a logistic curve to the species composition data that would account for shifts in the species composition during the observed time period but would not extrapolate beyond the limits of the observed data when hindcasting. The logistic curve was fit to data through 2019 and ignored data after that point. In order to stabilize harvests, ADF&G began taking management action in 2020 that had a strong effect on the species composition of the harvest as well as the retention probability and thus data from those years would not be informative to pre-2020 patterns that had limited management action. This approach also allows for an easier estimation procedure in future years that can exclude the harvest reconstruction prior to 2020. Thus, the composition parameters $P_{(comp)ayu}$, were modeled using a logistic curve such that:
+
+$\textrm{logit}(P_{(comp)ayu})~=~\beta0_{(comp)a} + \frac{\beta1_{(comp)a}}{(1 + exp(\beta2_{(comp)a}*(y - \beta3_{(comp)a})))} + \beta4_{(comp)a}*I(u=private)+re_{(comp)ayu}$
+
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), respectively, $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise. The $re_{(comp)ayu}$ term is a random effect describing the deviation from the fitted line. The random effect terms were forced to sum to zero for discrete periods that align with the available data and the period used to inform the hindcasting portion of the model. Thus, for each time period between year $y_1$ and $y_2$ the random effect term for  each area, user group and species was 
+
+$re_{(comp)ayu} = \epsilon_{(comp)au} - \frac{1}{y_{2}-y_{1}}\sum_{y=y_1}^{y_2}\epsilon_{(comp)ayu}$
+
+where 
+
+$\epsilon_{(comp)ayu} ~\sim~\textrm{Normal}(0,\tau)$
+
+It was necessary to describe three time periods around which the random effects were divided. The first period started in 1977 and went through the period that lacked species composition data, which varied by region (Figure DATA). The second period consisted of the data informed time series through 2019. The third period consisted of 2020 through the present. It was necessary to divide the time series in this manner to ensure that the fit curves were forced through the data. The recent time period was separated to stay consistent with the rest of the model and ensure that the recent period that included management measures did not affect the hindcasting. The pre-2020 period necessitated separating the random effects between the periods with and without data to prevent the model from fitting a line that resulted in all of the random effects in the data period being positive or negative and balanced out by the reverse estimates in the pre-data period.  
+
+When there was no discernible change in composition over the observed time period $\beta$ parameters became inestimable. As such,  $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was used for hindcasting (Tables 3 - 6 pComp_PRIORS). 
+
+The goal of the logistic curve was to produce reasonable curves that reflected changing species compositions over time, and generated defensible values for making historical assumptions. While a hierarchical approach was considered, it was decided that species composition likely reflected local habitat and that broad, regional-scale patterns would have minimal information in estimating these values. However, because there is a lack of port sampling in most Kodiak CFMU's the species $\beta$ logistic terms for the Kodiak CFMU's were modelled hierarchically around a mean and standard deviation (Table XXX). Model development began with vague and uninformative priors but slow convergence and occasional non-sensical results necessitated tuning and constraining priors. In many cases logistic curves were easily fit as the underlying data supported the fit. In other instances, it was necessary to constrain and modify priors to impose a logistic curve on data where a logistic trend was not strongly apparent, sample sizes were low, or when a particular area demonstrated distinct patterns from other areas in that region. While it is generally preferential to allow a data driven process in these kinds of estimations, the fitted curves only affect estimates in years where data is absent, or sample sizes are very low. When proportional data is adequate the random effect terms ($re_{(comp)ayu}$) allow estimates to accurately reflect the data regardless of the curve. The fitted curve functions primarily to inform estimates during the period when no data was available and during years and areas where sample sizes are low or absent.  
+
+The regional $\beta0$ and $\beta4$ terms were readily estimated and required only vague priors that were centered normally around 0. The scaler ($\beta1$) and slope ($\beta2$) terms required more informed priors to fit the logistic curves. The $\beta1$ and $\beta2$ terms interact such that when both have the same sign (positive or negative), the realized slope of the curve is positive. When the two terms have different signs, the realized slope is negative. To stabilize the model a lognormal prior was used applied to the $\beta1$ term to maintain a positive value so that only the sign of the $\beta2$ term determined the direction of the slope. If the slope of the curve was clearly positive or negative the $\beta2$ term was sometimes provided a prior that reflected the direction of the curve to speed convergence. When there was no discernable change in the compositional proportion over time, $\beta1$ and $\beta2$ became inestimable. In those instances, $\beta1$ and $\beta2$ were fixed to 0 so that the long-term mean was used for hindcasting (Tables 3 - 6 pComp_PRIORS).
+
+A uniform prior was applied to the inflection point ($\beta3$) bracketed by the time period during which data was available. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with $\beta1$ and $\beta2$, when there was no discernible change in the proportional data over time, $\beta3$ was inestimable and necessitated fixing the parameter so that only the $\beta0$ term was estimated to determine the long term mean of that proportion. 
+
+### Releases
+
+The procedure for estimating releases differs from the Howard methods in that it relies on a process driven approach in contrast to the estimation methods employed in Howard et al. (2020; Figure 7 REL_SCHEMATICS) and further incorporates all sources of data, including SWHS estimates and port sampling interview data. Rather than making the assumption that the guided:unguided ratio of total rockfish releases in the SWHS data is an appropriate way to derive unguided releases of each species complex from the logbook record of releases, this approach models releases based on the harvests and the probability that a landed fish is retained separately for each of the regional species assemblages while estimating and accounting for the bias in SWHS release estimates. Thus, the true number of released rockfish $R_{ayu}$ was based on the proportion of the total catch harvested (also referred to as retention probability), $pH_{(comp)ayu}$, by area, year, user group and species grouping. 
+
+Release data from the SWHS is for all rockfish combined and the release data from logbooks is  subdivided into pelagics, yelloweye and "other" (non-pelagic, non-yelloweye). Port sampling data in southcentral and Kodiak is available for the same categories as the logbook data, and as such $pH_{(comp)ayu}$ and release estimates are only calculated for those categories. It was assumed that $pH_{(black)ayu}$ was equal to $pH_{(pelagic)ayu}$ given the dominance of that species within the assemblage. In Southeast Alaska port sampling programs also record harvest and release data for DSR and slope rockfish and allow $pH_{(comp)ayu}$ and release estimates for those groups, with the assumption that the sum of $R_{(DSR)ayu}$ and $R_{(slope)ayu}$ sum to $R_{(other)ayu}$. 
+
+Releases are related to total catch, $C_{(comp)ayu}$, and harvest, $H_{(comp)ayu}$, by user group, area and year such that
+
+$R_{(comp)ayu}~=~ C_{(comp)ayu} - H_{(comp)ayu} ~=~ \frac{H_{(comp)ayu}}{pH_{(comp)ayu}} - H_{(comp)ayu}$
+
+with total releases equal to the sum of the compositional releases. 
+
+The proportion harvest parameters for $pH_{(comp)ayu}$ were modeled using a logistic curve that would allow hindcasting based on trends in the data without extrapolating beyond the range of observed values such that
+
+$\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)ay} - 1)) + re_{(pH)(comp)ayu}$
+
+**OR** (simple B4 construction)
+
+$\textrm{logit}(pH_{(comp)ayu})~=~(\beta0_{(pH)(comp)a} + \frac{\beta1_{(pH)(comp)a}}{(1 + exp(\beta2_{(pH)(comp)a}*(y - \beta3_{(pH)(comp)a})))}) * (1 + (I(u=private) - 1) * (\beta4_{(pH)(comp)a} - 1)) + re_{(pH)(comp)ayu}$
+
+where the $\beta$ parameters define the intercept ($\beta0$), scaling factor ($\beta1$), slope ($\beta2$), inflection point ($\beta3$) and private angler effect ($\beta4$), $y$ is the year index, $I(u=private)$ is an index variable which is 1 when the user groups is private and 0 otherwise and $re_{(pH)ayu}$ is a random effect with a non-informative prior that estimates deviation from the fit line. The random effect term allowed estimation during the historical period when data is available, but the curve defined by the above equation determined release estimates between 1977 and whenever data became availabe (Figure DATA). Similar to the species composition logistic curve, it was only fit to data through 2019 to avoid changes in harvest proportions that resulted from regulatory changes that began to take place in 2020. Random effect terms were also forced to sum to zero for each area, user group, species and time period in an identical manner to that described in equation **XX** for species compositions.
+
+Unlike the compositional trends, *pH* $\beta$ parameters were modeled hierarchically by region such that each area specific $\beta$ parameter was centered around region-specific hyperpriors of the mean and standard deviation (Tables 7 - 9). Prior development and reasoning followed the same logic as the species compositions logistic curves described above. When $\beta$ parameters were inestimable as a result of no discernable change in harvest probability over the observed time period, $\beta1$ (scaling factor) and $\beta2$ (slope) were fixed to 0 so that the long term mean value was applied. 
+
+The regional $\beta0$ hyperprior was readily estimated and only required vague priors on the regional means that were centered normally around 0. The hyperprior for the regional standard deviation, also modeled as precision, $\tau$ was
+
+$\tau = \frac{1}{sd^2}$
+
+and *sd* is the standard deviation, was somewhat constrained for the $\beta0$ term to maintain reasonable continuity within regions. Constraints on the standard deviations were based on examination of traceplots and an effort to limit extreme, but rare, values in the monte carlo chains that had little to no effect on the results but slowed convergence. 
+
+Although these methods do not apply the Howard methods of using guided:unguided ratio of total rockfish releases in the SWHS data to directly calculate unguided releases, the SWHS nevertheless offers information on the relative number of fish caught, retained and released for each user group. Because the proportion harvested is known for guided anglers via logbook data, the difference in the proportion harvested for each user group in the SWHS data suggests whether private anglers are more or less likely to retain a generic rockfish relative to guided anglers. As such the SWHS was used to develop a prior to inform the $\beta4_{(pH)(comp)ayu}$ terms that describe the offset of the *pH* logistic curve for unguided anglers (Tables 7 - 9 pH_PRIOR). SWHS data became stratified by user groups in 2011 and thus the prior for recent years for each CFMU uses values estimated from the data. The $\beta4_{(pH)(comp)ayu}$ term was given a prior informed by the ratio of the proportion harvested by private anglers, as estimated by the SWHS ($pH_{unguided}^{SWHS}$), to the proportion harvested by guided anglers, as estimated by the SWHS ($pH_{guided}^{SWHS}$), such that unguided:guided SWHS *pH* ratio in area *a* and year *y*, $pH_{ay}^{ung:gui}$ is defined as
+
+$pH_{ay}^{ung:gui}=\frac{pH_{unguided_{ay}}^{SWHS}}{pH_{guided_{ay}}^{SWHS}}$  
+
+such that the proportion harvested for each user group, *u*, is
+
+$pH_{ayu}^{SWHS}=\frac{\widehat{H}^{SWHS}_{ayu}}{\widehat{H}^{SWHS}_{ayu} + \widehat{R}^{SWHS}_{ayu}}$
+
+where $\widehat{H}^{SWHS}_{ayu}$ and $\widehat{R}^{SWHS}_{ayu}$ are the SWHS estimates of harvests and releases, respectively, and the standard error is
+
+$se_{pHayu} = \sqrt{se_{H_{ay}}^2{\widehat{R}^{SWHS}_{ayu}}^2 + se_{R_{ay}}^2{\widehat{H}^{SWHS}_{ayu}}^2 - 2*{\widehat{R}^{SWHS}_{ayu}}*{\widehat{H}^{SWHS}_{ayu}}*cov*se_{H_{ay}}*se_{R_{ay}}}$
+
+*Complex B4 construction: Thus for years 2011 onward $\beta4_{(pH)(comp)ayu}$ is modeled with a log normal prior to ensure positive values and centered on the $pH_{ay}^{ung:gui}$ ratio such that*
+
+$\beta4_{(pH)(comp)ay}~\sim~\textrm{LogNormal}\left(\textrm{log}(pH_{ay}^{ung:gui}), \sigma_{pH_{ay}^{ung:gui}}^2\right)$
+
+*where* 
+
+$\sigma_{pH_{ay}^{ung:gui}}^2 = {\frac{se_{pHung}^2}{pH_{gui}^{SWHS^2}}+\frac{pH_{ung}^{SWHS^2}*se_{pHgui}^2}{pH_{gui}^{SWHS^4}}-(2*\frac{pH_{ung}^{SWHS}*cov*se_{pHung}*se_{pHgui}}{pH_{gui}^{SWHS^3}})}$
+
+*and cov refers to the covariance of $pH_{guided}^{SWHS}$ and $pH_{unguided}^{SWHS}$.* 
+
+*For years between 1977 and 2010, the prior for each CFMU uses a prior centered around the mean of the area specific $\beta4_{(pH)(comp)ayu}$ values between 2011 and 2019 (later years are not used because management changes altered angler behavior after 2019) such that* 
+
+$\beta4_{(pH)(comp)ay}~\sim~\textrm{Normal}\left((\frac{1}{n} \sum_{y=2011}^{2019} (\beta4_{(pH)(comp)ay})), \sigma_{\beta4_{(pH)(comp)ay}}^2\right)$
+
+*The $\beta4_{(pH)(comp)ayu}$ from years 2011 to 2019 are used for the pre-2011 years rather than the $pH_{ay}^{ung:gui}$ ratios because the offset $\beta4$ term is also influenced by the interview data that provides estimates of the proportion harvested for both user groups . Structuring the priors for the early years using the recent $\beta4_{(pH)(comp)ayu}$ estimates allows both the $pH_{ay}^{ung:gui}$ estimates and the interview data to inform those estimates*
+
+**OR Simple B4 construction:** For each area the mean $pH_{ay}^{ung:gui}$ ratio was used as a prior on $\beta4_{(pH)(comp)ay}$ with the annual associated error of the $pH_{ay}^{ung:gui}$ estimates propagated through the prior such that
+
+$\beta4_{(pH)(comp)ay}~\sim~ \textrm{LogNormal}(log(\mu_{a}^{\beta4}),\tau_{\overline{pH}})$ 
+
+where modeled $\widehat{pH}_{ay}^{ung:gui}$ assumes a lognormal distribution relative to observed $pH_{ay}^{ung:gui}$ such that
+
+$pH_{ay}^{ung:gui} ~\sim~ \textrm{LogNormal} (log(\widehat{pH}_{ay}^{ung:gui}), se_{pHayu})$ 
+
+and
+
+$\widehat{pH}_{ay}^{ung:gui} ~\sim~ \textrm{LogNormal}(log(\mu_{a}^{\beta4}), \tau_{\overline{pH}})$
+
+where $\mu_{a}^{\beta4}$ and $\tau_{\overline{pH}}$ assume vague priors (Table PRIORS)
+
+The hyper priors for the regional $\beta1$ and $\beta2$ standard deviations used relatively constrained uniform priors on the standard deviation. Attempts to apply a gamma distribution directly to precision resulted in rare but extreme values that slowed convergence. Limiting the upper end of the standard deviation to values of 5 and 4 allowed for more influence of the regional hyperprior by limiting area specific deviations from the regional mean which stabilized the model and allowed data-poor areas to reach convergence. 
+
+Similar to the species composition logistic curve, a uniform prior was applied to the inflection point $\beta3$ bracketed by the time period during which data was available and did not use a hyper prior. In some instances where recent management decisions resulted in large shifts in species proportions it was necessary to constrain the prior such that the inflection point could not occur during the last two to three years of the time series. As with $\beta1$ and $\beta2$, when there was no discernible change in the proportional data over time, $\beta3$ was inestimable and necessitated fixing the parameter so that only the $\beta0$ term was estimated to determine the long term mean of that proportion.  
+
+Release mortality (i.e., the number of released rockfish expected to die) was calculated assuming fixed mortality rates developed in each of the regions (FIGURE 8 REL_MORT). Deep-water release mechanism (DRM) devices were mandated for charter fleets in 2013 and release mortality rates were reduced since then to match research results (Jarvis and Lowe 2008; Hochhalter and Reed 2011; Blain and Sutton 2016; Blain-Roth and Sutton 2019). Southeast applies basic rates estimated in these studies while Southcentral and Kodiak rates were derived by using historical depth-of-release data to adjust the rates based on area and user group.
+
+The total number of mortalities by year, area, user and species/species assemblage in numbers was calculated by summing harvests and release mortality such that
+
+$M_{(comp)ayu}~=~ H_{(comp)ayu} + m_{R-(comp)ayu} * R_{(comp)ayu}$
+
+where $m_{R-(comp)ayu}$ is the release mortality rate by year, area, user and species (Figure 8 REL_MORT). 
+
+### Biomass conversions
+
+Total removals in numbers of fish were converted to biomass in pounds using the average weight of fish as estimated from port sampling. A minimum sample size per year of 10 fish from a minimum of 4 boats was used as the cutoff for including in the data set. Weights were modeled hierarchically to estimate weights in years when data was missing. The total biomass of removals by year, area, user and species was thus
+
+$B_{(comp)ayu}~=~ \overline{wt}_{(comp)ayu} * M_{(comp)ayu}$
+
+where $\overline{wt}_{(comp)ayu}$ is the mean weight by species, area, user and year. 
+
+## Observation equations
+
+### Harvest Data
+
+The modeled process described above was fit to the SWHS, logbook and port sampling data using the following equations. SWHS estimates of annual rockfish harvest $\widehat{H}_{ay}^{SWHS}$ were assumed to index true harvest:
+
+$\widehat{H}_{ay}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay}b_H{ay}), \sigma_{SWHSHay}^2\right)$
+
+where bias in the SWHS harvest estimates $b_H{ay}$ is modeled hierarchically across years as:
+
+$b_H{ay}~\sim~\textrm{Normal}(\mu_H{(b)a}, \sigma_H{(b)a})$
+
+with non-informative priors on both parameters (Table 2 PRIORS). SWHS estimates of guided angler harvest $\widehat{H}_{ay1}^{SWHS}$ are thus related to total guided harvest by:
+
+$\widehat{H}_{ay1}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(H_{ay1}b_{ay}), \sigma_{SWHS_{ay1}}^2\right)$
+
+Reported guide logbook harvest $\widehat{H}_{ay}^{LB}$ are considered a census of the true harvest and is related to true harvest as:
+
+$\widehat{H}_{ay}^{LB}~\sim~\textrm{Poisson}(H_{ay1})$
+
+$\widehat{H}_{(pelagic)ay}^{LB}~\sim~\textrm{Poisson}(H_{ay1}P_{(pelagic)ay1})$
+
+$\widehat{H}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(H_{(yelloweye)ay1})$
+
+$\widehat{H}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(H_{(non-pel,non-ye)ay1})$
+
+Note that for Southcentral and Kodiak areas $H_{(non-pel,non-ye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For Southeast areas $H_{(non-pel,non-ye)ay1}$ is equal to the sum of the DSR and slope harvests *minus* yelloweye harvests.
+
+### Release Data
+
+SWHS estimates of annual rockfish releases $\widehat{R}_{ay}^{SWHS}$ were assumed to index true releases similarly to harvests and were modeled such that
+
+$\widehat{R}_{ay}^{SWHS}~\sim~\textrm{LogNormal}\left(\textrm{log}(R_{ay}b_R{ay}), \sigma_{SWHS_R{ay}}^2\right)$
+
+SWHS estimates of guided angler releases assumed an independent bias from that of the harvests such that
+
+$b_R{ay}~\sim~\textrm{Normal}(\mu_R{(b)a}, \sigma_R{(b)a})$
+
+where bias in the SWHS release estimates $b_R{ay}$ is modeled hierarchically across years with non-informative priors on both parameters (Table 2 PRIORS).
+
+Reported guide logbook releases $\widehat{R}_{ay}^{LB}$ are considered a census of the true releases and is related to true releases as:
+
+$\widehat{R}_{ay}^{LB}~\sim~\textrm{Poisson}(R_{ay1})$
+
+$\widehat{R}_{(pelagic)ay}^{LB}~\sim~\textrm{Poisson}(R_{ay1}P_{(pelagic)ay1})$
+
+$\widehat{R}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
+
+$\widehat{R}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(non-pel,non-ye)ay1})$
+
+Releases are related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of harvested rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
+
+$x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ayu}^{int})$
+
+where $r_{(comp)ayu}^{int}$ is the corresponding number of rockfish reported as released in portside angler interviews.
+
+Unguided release estimates by species thus reflect a balance of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ay1}$, 4) portside sampling estimates of $pH_{(comp)ayu}$ for both user groups, and 5) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific releases must sum to the bias corrected SWHS estimate of releases for both user groups such that
+
+$R_{ayu} = R_{(pelagic)ayu} + R_{(yelloweye)ayu} + R_{(non-pelagic, non-yelloweye)ayu}$
+
+and for Southeast areas 
+
+$R_{(non-pelagic, non-yelloweye)ayu} = R_{(DSR)ayu} + R_{(slope)ayu}$
+
+### Species Composition Data (Port Sampling)
+
+The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
+
+$x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})$
+
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ from user group $u$. The number of black rockfish sampled in harvest sampling programs was thus a proportion of the pelagic harvests
+
+$x_{(black)ayu}~\sim~\textrm{Binomial}(P_{(black)ayu}, N_{ayu}^{pel})$
+
+where $N_{ayu}^{pel}$ is the total number of pelagic rockfish. Yelloweye rockfish were modeled similarly as a proportion of the total number of non-pelagics such that 
+
+$x_{(yellow_{R2})ayu}~\sim~\textrm{Binomial}(P_{(yellow)ayu}, N_{ayu}^{nonpel})$
+
+Southeast areas have two other non-pelagic groupings such that non-yelloweye DSR and slope rockfish are a proportion of non-pelagics such that
+
+$x_{(DSR)ayu}~\sim~\textrm{Binomial}(P_{(DSR)ayu}, N_{ayu}^{nonpel})$
+
+and
+
+$x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
+
+
+### Weight Data
+
+The average weight of rockfish by species, user, area and year was modeled hierarchically at several levels within regions such that the average weight by species, area, year and user group $wt_{(comp)ayu}$ is related to the average weight by area $wt_{(comp)a}$, which is related to the average weight by region $wt_{(comp)region}$, which is related to the average weight by species assemblage $wt_{(comp)}$ such that
+
+$wt_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)a} + I*\delta_{(comp)a},\sigma_{wt_{(comp)}}) ~\sim~ \text{Normal}(wt_{(comp)region},\sigma_{wt_{(comp)}}) ~\sim~ \text{Normal}(wt_{(comp)},\sigma_{wt_{(comp)}})$
+
+where *region* refers to Kodiak, Southcentral and Southeast, $\sigma_{wt_{(comp)}}$ is the variance of the weight for each species assemblage, $\delta_{(comp)a}$ is an offset defining the difference in mean weights between user groups in each area and *I* is an index variable which is 1 when the user group is private and 0 when it is guided. The prior for the species mean weight was centered on the mean of the data and corresponding variance and standard deviation. 
+
+The $\delta_{(comp)a}$ was modeled hierarchically at the regional level such that
+
+$\delta_{(comp)a} ~\sim~ \text{Normal}(\delta_{(comp)region}, \sigma_{\delta_{(comp)region}})$
+
+where $\delta_{(comp)region}$ was given a weak prior centered around 0 and $\sigma_{\delta_{(comp)region}}$ was given an uninformative uniform prior between 0 and 5. Because the Kodiak region only has weight data from the Northeast CFMU $\delta_{(comp)region}$ was used in lieu of $\delta_{(comp)a}$ in equation XX above.
+
+Observed mean weights assume a normal distribution such that
+
+$\overline{wt}_{(comp)ayu} ~\sim~ \text{Normal}(wt_{(comp)ayu}, \sigma_{\overline{wt}_{(comp)ayu}})$
+
+where $\sigma_{\overline{wt}_{(comp)ayu}}$ is the bootstrapped variance of the mean.
+
+### Kodiak Hydroacoustic Data
+
+Kodiak has limited port sampling beyond the main harbors but has a robust hydroacoustic survey that is used to quantify black rockfish abundance across the management area and uses  stereocameras to derive species compositions of the hydroacoustic data (Tscherisch et al. 2023). This data was used as supplementary data to further inform the model on the proportion of pelagic rockfish that are black in Kodiak areas. Where angler landing data is available, they demonstrate a higher proportion of black rockfish relative to the hydroacoustic survey and thus the predicted proportion of black rockfish in the hydroacoustic sample related to the true proportion such that 
+
+$\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ P_{(black|pelagic)ayu} + ae_{au}$
+
+where $ae_{au}$ is the angler effect for each area and user group modeled hierarchically around a mean of 0. Predicted $P_{(black|pelagic)ayu}^{ha}$ assumed a beta distribution such that 
+
+$P_{(black|pelagic)ayu}^{ha} ~\sim~ beta(\alpha^{ha},\beta^{ha})$
+
+where
+
+$\alpha^{ha} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{ha})^2 * \frac{1 - \widehat{P}_{(black|pelagic)ayu}^{ha}}{\frac{var_{\widehat{P}_{ha}}-1}{\widehat{P}_{(black|pelagic)ayu}^{ha}}},$
+
+$\beta^{ha} ~=~ (\alpha^{ha}) * \frac{1}{\widehat{P}_{(black|pelagic)ayu}^{ha} - 1},$
+
+$var_{\widehat{P}^{ha}} ~=~ (\widehat{P}_{(black|pelagic)ayu}^{ha} * cv\widehat{P}_{(black|pelagic)ayu}^{ha})^2$
+
+where $cv\widehat{P}_{(black|pelagic)ayu}^{ha}$ is the coefficient of variation for the observed hydroacoustic proportions 
+
+$cv\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ \frac{\sqrt{var\widehat{P}_{(black|pelagic)ayu}^{ha}}}{\widehat{P}_{(black|pelagic)ayu}^{ha}}$
+
+and the variance is approximated using the delta method (Casella and Berger 2002) as 
+
+$var\widehat{P}_{(black|pelagic)ayu}^{ha} ~=~ (\frac{1}{n_{pel}})^2 * varN_{black}^{ha} + (\frac{n_{black}}{n_{pel}^2})^2 * varN_{pel}^{ha}$
+
+where $varN_{black}^{ha}$ and $varN_{pelagic}^{ha}$ are the variance of the estimated number of black and pelagic rockfish in the hydroacoustic survey, respectively (Tscherisch et al. 2023). The covariance term was omitted as it was at or near 0.
+
+## Model platform and diagnostics
+
+The model was run using JAGS version 4.3.1 using the jagsUI and rjags packages (Plummer et al. 2006, Lunn et al. 2009, Plummer 2024) on the statistical R Statistical Software (v4.4.3;R Core Team 2021). The model was run with 3 MCMC chains for `r iters` iterations with a burn-in of `r burnin` iterations and a thinning rate of `r thin` iterations. Model convergence was judged by examining traceplots and ensuring that $\hat{R}$ values were below 1.1 (Gelman and Rubin 1992).
+
+Model stability was also examined by running a retrospective analysis whereby the model was run on data with terminal years from 2014 to 2022. This allowed a review of how model estimates in a given year change as successive years of data become available. While guided estimates should remain stable owing to logbook data, unguided estimates are expected to change to some degree owing to changes in estimates of retention probability and species composition. 
+
+# Results
+
+```{r}
+with(rhat_exam, table(variable)) %>% data.frame() %>%
+  filter(!str_detect(variable, "Bb|By|Bs|Bd|Bs|_mort|Tb|Tp|Ty|Td|Ts")) -> unconverged1
+  
+rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", fill = "right") %>%
+  mutate(year = ifelse(!str_detect(variable, "beta"),
+                       i2,NA),
+         user = ifelse(!str_detect(variable, "beta") & index_n %in% c(2,3),
+                       i3, NA),
+         species = ifelse(str_detect(variable, "beta"),i2,
+                          ifelse(index_n == 3, i4, NA))) %>%
+  left_join(comp %>% select(area,area_n) %>% unique() %>%
+              add_row(area = "BSAI", area_n = 5) %>%
+              add_row(area = "SOKO2SAP", area_n = 6) %>%
+              add_row(area = "WKMA", area_n = 7) %>%
+              mutate(area_n = as.character(area_n)),
+            by = "area_n") %>%
+  select(area, variable, year, user, species, Rhat) %>%
+  filter(!str_detect(variable, "Bb|By|Bs|_mort|Tb|Tp|Ty")) %>%
+  arrange(area, -Rhat, variable) -> unconverged
+
+sumtab <- postH$summary
+bad_params <- rownames(sumtab[sumtab[,"Rhat"] > 1.01, , drop = FALSE])
+
+true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
+                 "lambda_H",
+                 #betas,
+                 #"re"
+                 "sd_prigui_pre",
+                 "mu_bc_H","sd_bc_H","logbc_H",
+                 "mu_bc_R","sd_bc_R","logbc_R",
+                 "b1_pG","b2_pG","pG")
+
+Rhat_cutoff = 1.01
+
+bad_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter) &
+                              !grepl("Bp_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+  filter(!is.na(year))
+
+bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) ) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_betas <- bad_df %>% filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
+  mutate(year = as.numeric('year/species'),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(variable))
+
+bad_true_params <- rbind(bad_betas,
+                         bad_df %>%
+                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+                           mutate(index = str_replace(index, "\\]", "")) %>%
+                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+                           mutate(year = NA,
+                                  area_n = as.character(area_n)) %>%
+                           full_join(area_codes,by = "area_n") %>%
+                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+                           filter(!is.na(variable)))
+
+bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+bad_Hs <- bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+bad_Rs %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
+bad_Rs %>% filter(!area_n %in% c(5,6)) -> other_R
+
+bad_Hs %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
+bad_Hs %>% filter(!area_n %in% c(5,6)) -> other_H
+
+prop_badR_BS <- nrow(bad_Rs %>% filter(area_n %in% c(5,6)))/nrow(bad_Rs)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt1 <- nrow(SOKO_Rp %>% filter(median < 1)) / nrow(SOKO_Rp)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt50 <- nrow(SOKO_Rp %>% filter(median < 50)) / nrow(SOKO_Rp)
+prop_badR_BS_lt100 <- nrow(SOKO_Rp %>% filter(median < 100)) / nrow(SOKO_Rp)
+minR_badR_BS <- min(SOKO_Rp$median)
+medR_badR_BS <- median(SOKO_Rp$median)
+mean_badR_BS <- mean(SOKO_Rp$median)
+skew_badR_BS <- mean(SOKO_Rp$skew)
+
+prop_badR_O_lt1 <- nrow(other_R %>% filter(median < 1)) / nrow(other_R)
+prop_badR_O_lt10 <- nrow(other_R %>% filter(median < 10)) / nrow(other_R)
+prop_badR_O_lt50 <- nrow(other_R %>% filter(median < 50)) / nrow(other_R)
+prop_badR_O_lt100 <- nrow(other_R %>% filter(median < 100)) / nrow(other_R)
+minR_badR_O <- min(other_R$median)
+medR_badR_O <- median(other_R$median)
+mean_badR_O <- mean(other_R$median)
+skew_badR_O <- mean(other_R$skew)
+
+prop_badH_BS <- nrow(bad_Hs %>% filter(area_n %in% c(5,6)))/nrow(bad_Hs)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt1 <- nrow(SOKO_Hp %>% filter(median < 1)) / nrow(SOKO_Hp)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt50 <- nrow(SOKO_Hp %>% filter(median < 50)) / nrow(SOKO_Hp)
+minH_badH_BS <- min(SOKO_Hp$median)
+medH_badH_BS <- median(SOKO_Hp$median)
+mean_badH_BS <- mean(SOKO_Hp$median)
+skew_badH_BS <- mean(SOKO_Hp$skew)
+
+prop_badH_O_lt1 <- nrow(other_H %>% filter(median < 1)) / nrow(other_H)
+prop_badH_O_lt10 <- nrow(other_H %>% filter(median < 10)) / nrow(other_H)
+prop_badH_O_lt50 <- nrow(other_H %>% filter(median < 50)) / nrow(other_H)
+minH_badH_O <- min(other_H$median)
+medH_badH_O <- median(other_H$median)
+mean_badH_O <- mean(other_H$median)
+skew_badH_O <- mean(other_H$skew)
+
+data.frame(Statistic = c(paste0("n unconverged at Rhat = ",Rhat_cutoff),
+                         "Prop. of total",
+                         "Prop. median less than 1",
+                         "Prop. median less than 10",
+                         "Prop. median less than 50",
+                         "Median of the median values",
+                         "Mean of the median values",
+                         "Mean skew of posteriors"),
+           # Harvests = c(nrow(bad_Hs),
+           #              round(prop_badH_BS,2),
+           #              rep("",6)),
+           'non-BSAI/SOKO Harv' = c(round(nrow(other_H),0),
+                                    round(1-prop_badH_BS,2),
+                                    round(prop_badH_O_lt1,2),
+                                    round(prop_badH_O_lt10,2),
+                                    round(prop_badH_O_lt50,2),
+                                    round(medH_badH_O,2),
+                                    round(mean_badH_O,2),
+                                    round(skew_badH_O,2)),
+           'BSAI/SOKO Harv' = c(round(nrow(SOKO_Hp),0),
+                                round(prop_badH_BS,2),
+                                round(prop_badH_BS_lt1,2),
+                                round(prop_badH_BS_lt10,2),
+                                round(prop_badH_BS_lt50,2),
+                                round(medH_badH_BS,2),
+                                round(mean_badH_BS,2),
+                                round(skew_badH_BS,2)),
+           'non-BSAI/SOKO Rel' = c(round(nrow(other_R),0),
+                                   round(1-prop_badR_BS,2),
+                                   round(prop_badR_O_lt1,2),
+                                   round(prop_badR_O_lt10,2),
+                                   round(prop_badR_O_lt50,2),
+                                   round(medR_badR_O,2),
+                                   round(mean_badR_O,2),
+                                   round(skew_badR_O,2)),
+           'BSAI/SOKO Rel' = c(round(nrow(SOKO_Rp),0),
+                               round(prop_badR_BS,2),
+                               round(prop_badR_BS_lt1,2),
+                               round(prop_badR_BS_lt10,2),
+                               round(prop_badR_BS_lt50,2),
+                               round(medR_badR_BS,2),
+                               round(mean_badR_BS,2),
+                               round(skew_badR_BS,2))) -> badRhat_sumstat
+
+Rhat_cutoff = 1.1
+
+bad_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) ) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+bad_Hs <- bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+bad_Rs %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
+bad_Rs %>% filter(!area_n %in% c(5,6)) -> other_R
+
+bad_Hs %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
+bad_Hs %>% filter(!area_n %in% c(5,6)) -> other_H
+
+prop_badR_BS <- nrow(bad_Rs %>% filter(area_n %in% c(5,6)))/nrow(bad_Rs)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt1 <- nrow(SOKO_Rp %>% filter(median < 1)) / nrow(SOKO_Rp)
+prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
+prop_badR_BS_lt50 <- nrow(SOKO_Rp %>% filter(median < 50)) / nrow(SOKO_Rp)
+prop_badR_BS_lt100 <- nrow(SOKO_Rp %>% filter(median < 100)) / nrow(SOKO_Rp)
+minR_badR_BS <- min(SOKO_Rp$median)
+medR_badR_BS <- median(SOKO_Rp$median)
+mean_badR_BS <- mean(SOKO_Rp$median)
+skew_badR_BS <- mean(SOKO_Rp$skew)
+
+prop_badR_O_lt1 <- nrow(other_R %>% filter(median < 1)) / nrow(other_R)
+prop_badR_O_lt10 <- nrow(other_R %>% filter(median < 10)) / nrow(other_R)
+prop_badR_O_lt50 <- nrow(other_R %>% filter(median < 50)) / nrow(other_R)
+prop_badR_O_lt100 <- nrow(other_R %>% filter(median < 100)) / nrow(other_R)
+minR_badR_O <- min(other_R$median)
+medR_badR_O <- median(other_R$median)
+mean_badR_O <- mean(other_R$median)
+skew_badR_O <- mean(other_R$skew)
+
+prop_badH_BS <- nrow(bad_Hs %>% filter(area_n %in% c(5,6)))/nrow(bad_Hs)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt1 <- nrow(SOKO_Hp %>% filter(median < 1)) / nrow(SOKO_Hp)
+prop_badH_BS_lt10 <- nrow(SOKO_Hp %>% filter(median < 10)) / nrow(SOKO_Hp)
+prop_badH_BS_lt50 <- nrow(SOKO_Hp %>% filter(median < 50)) / nrow(SOKO_Hp)
+minH_badH_BS <- min(SOKO_Hp$median)
+medH_badH_BS <- median(SOKO_Hp$median)
+mean_badH_BS <- mean(SOKO_Hp$median)
+skew_badH_BS <- mean(SOKO_Hp$skew)
+
+prop_badH_O_lt1 <- nrow(other_H %>% filter(median < 1)) / nrow(other_H)
+prop_badH_O_lt10 <- nrow(other_H %>% filter(median < 10)) / nrow(other_H)
+prop_badH_O_lt50 <- nrow(other_H %>% filter(median < 50)) / nrow(other_H)
+minH_badH_O <- min(other_H$median)
+medH_badH_O <- median(other_H$median)
+mean_badH_O <- mean(other_H$median)
+skew_badH_O <- mean(other_H$skew)
+
+data.frame(Statistic = c(paste0("n unconverged at Rhat = ",Rhat_cutoff),
+                         "Prop. of total",
+                         "Prop. median less than 1",
+                         "Prop. median less than 10",
+                         "Prop. median less than 50",
+                         "Median of the median values",
+                         "Mean of the median values",
+                         "Mean skew of posteriors"),
+           # Harvests = c(nrow(bad_Hs),
+           #              round(prop_badH_BS,2),
+           #              rep("",6)),
+           'non-BSAI/SOKO Harv' = c(round(nrow(other_H),0),
+                                    round(1-prop_badH_BS,2),
+                                    round(prop_badH_O_lt1,2),
+                                    round(prop_badH_O_lt10,2),
+                                    round(prop_badH_O_lt50,2),
+                                    round(medH_badH_O,2),
+                                    round(mean_badH_O,2),
+                                    round(skew_badH_O,2)),
+           'BSAI/SOKO Harv' = c(round(nrow(SOKO_Hp),0),
+                                round(prop_badH_BS,2),
+                                round(prop_badH_BS_lt1,2),
+                                round(prop_badH_BS_lt10,2),
+                                round(prop_badH_BS_lt50,2),
+                                round(medH_badH_BS,2),
+                                round(mean_badH_BS,2),
+                                round(skew_badH_BS,2)),
+           'non-BSAI/SOKO Rel' = c(round(nrow(other_R),0),
+                                   round(1-prop_badR_BS,2),
+                                   round(prop_badR_O_lt1,2),
+                                   round(prop_badR_O_lt10,2),
+                                   round(prop_badR_O_lt50,2),
+                                   round(medR_badR_O,2),
+                                   round(mean_badR_O,2),
+                                   round(skew_badR_O,2)),
+           'BSAI/SOKO Rel' = c(round(nrow(SOKO_Rp),0),
+                               round(prop_badR_BS,2),
+                               round(prop_badR_BS_lt1,2),
+                               round(prop_badR_BS_lt10,2),
+                               round(prop_badR_BS_lt50,2),
+                               round(medR_badR_BS,2),
+                               round(mean_badR_BS,2),
+                               round(skew_badR_BS,2))) -> badRhat_sumstat1p1
+
+#print(paste0("Number of unconverged proportional estimates = ", nrow(bad_ps %>% filter(median > 0.95 | median < 0.05)) / nrow(bad_ps)))
+
+#print(paste0("Proportion of unconverged true parameters with Rhat > 1.01 that are also > 1.1 is ",
+#            round( nrow(bad_true_params %>% filter(Rhat > 1.1))/nrow(bad_true_params),2)))
+
+bad_ps_true <- bad_ps %>% filter(median < 0.95 & median > 0.05)
+true_params_rha_gt1p1 <- bad_true_params %>% filter(Rhat > 1.1)
+
+
+```
+
+The estimation model was able to estimate harvests, releases and total removals (harvests plus release mortalities) with near complete convergence of model parameters. Harvest estimates were very similar to Howard et al. (2020) estimates, but differed more in areas where private anglers were the dominant user group. Release estimates were also very similar to guided estimates from the Howard estimates which is not surprising given that both methods rely on the census derived from the logbook program. However, estimates of unguided releases differed substantially from the Howard estimates, although the Bayesian credibility intervals frequently overlapped with the Howard estimates. The large difference is unsurprising given the bias correction undertaken in the Bayesian model and the more appropriate use of the proportion harvested data from the logbook program.  
+
+The model was `r prop_conv * 100`% converged based on $\hat{R}$ values below 1.1 and `r prop_conv2 * 100`% converged based on $\hat{R}$ values below 1.01 (Gelman and Rubin 1992). The maximum $\hat{R}$ was `r round(max_rhat,2)` and `r BSAISOKO2SAP_prop * 100`% of unconverged parameters and derived quantities were associated with the BASI and SOKO2SAP Kodiak CFMU's that had the least amount of data to inform them, as well as very high and variable bias estimates in the SWHS data. `r p_lt_1p2 * 100`% of the unconverged parameters not associated with those two Kodiak areas were below an $\hat{R}$ of 1.2 and `r p_lt_1p15 * 100`% were below 1.15. Of the non-BSAI and SOKO2SAP unconverged parameters, `r Ru_prop * 100`% were associated with unguided release estimates. Several other parameters were slow to converge and are detailed below in the review of parameters, but in general were usually associated with proportional parameters being near the bounds of 0 or 1.  
+
+Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). Parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values that would likely converge with longer runs. The `r nrow(bad_true_params %>% filter(Rhat > 1.1))` parameters with $\hat{R}$ values in excess of 1.1 produced $\hat{R}$ values of XX and XX and trace plots did not reveal any pathological patterns other than occasional spikiness. The $\beta2_{pH}$ parameter had a very skewed distribution with occasional excessive values while the unconverged $\beta0_{pH}$ parameter BLAH BLAH. 
+
+Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although some of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1 (Table XXX). $H_{(comp)ayu}$ estimates were generally well converged and most of those that did not converge were either associated with the BSAI and SOKO2SAP Kodiak CFMU's or were very near to 0, causing spiky trace plot patterns that produce higher $\hat{R}$ values that are not necessarily problematic (Table XXX). In general, $H_{(comp)ayu}$ estimates that fell short of full convergence demonstrated highly skewed posterior distributions. $R_{(comp)ayu}$ estimates failed to converge with much more frequency than $H_{(comp)ayu}$ estimates, but many of the same patterns were evident. Most of the unconverged $R_{(comp)ayu}$ estimates were at or near zero and also demonstrated highly skewed posterior distributions (Table XXX).
+
+## Residual Patterns
+
+Residual patterns of the fit of the data to the SWHS data were generally satisfactory, with a few exceptions. Large harvest residuals (Figure 9 SWHS_H_RESIDS) were often associated with poor precision in the SWHS estimates in all regions. PWSO demonstrated odd residual patterns associated with large uncertainty prior to 2000 with the model predicting higher harvests than demonstrated in the SWHS. Kodiak areas demonstrated some strange residual patterns in the WKMA and eastside CFMU's, but were generally associated with poor precision in the estimates. Southeast harvests showed generally satisfactory residual patterns, although SSEO model results were consistently higher than survey estimates prior to 1992. 
+
+Residual patterns for the SWHS release data showed much larger residuals as would be expected from the much less precise release estimates (Figure 10 SWHS_R_RESIDS). Overall, the release residuals tended to be more positive than negative. PWSO releases demonstrated the same pattern as that of the harvests. 
+
+Residual patterns of the fit to the logbook data show some patterns but are minor with respect to the overall number of fish being estimated (Figure 11 LB_RESIDS). Logbook data is fit with a poisson distribution which assumes a very small error and thus the model estimates are usually within 1% of the logbook value for both harvests and releases. There were some odd patterns in the North Gulf and both Prince William Sound CFMUs where the model predicted less harvests than logbook entries in the early years of the program and across all of southcentral and Kodiak CFMU's the residuals are larger during that time period. These instances mirror the residual patterns in the SWHS and are the result of the model balancing the disagreement between the two data sources.  
+
+## Bias Estimation
+
+Model predicted bias in SWHS harvest and release data tracked the observed bias well across years and CFMUs (Figure 12 and 13 YEARAREA_BIAS) and demonstrated that SWHS estimates were generally biased low while release estimates were biased high (Figure 14 MEAN_BIAS). Observed and estimated harvest bias were very consistent with the exception of the very data poor BSAI CFMU (Figure 12 YEARAREA_BIAS). Estimated release bias tracked observed release bias but generally smoothed the more variable release bias observed in the data (Figure 13 YEARAREA_BIAS). This is likely the result of far less precision in the SWHS release estimates which would result in the model more closely adhering to the harvest data in fitting the overall model. Nevertheless, the observed release bias are generally within the 95% credibility intervals of the model estimates.   
+
+## Proportion Harvested
+
+DISCUSS HOW LOGBOOK AND INTERVIEW DATA ALIGNED. DON’T NEED SEPARATE PLOT BECAUSE CAN INCLUDE BOTH DATA SOURCES WITH MODEL FIT.
+
+Estimates of the proportion harvested (*pH*) for guided pelagic rockfish accurately tracked the logbook data and the logistic curve fit to that data demonstrated reasonable patterns and uncertainty for hindcasting (Figure 15 pH_PEL). All CFMUs demonstrated a similar pattern where retention of pelagic rockfish has increased since the logbook program began in 1998, with very few black rockfish being released in recent years. 
+
+Hyper priors and beta parameters of the fitted logistic curve for pelagics were converged with the exception of the WKMA Kodiak CFMU. This was the only CFMU in  the Kodiak region that did not exhibit an increase in the pelagic *pH* over time and the model required constraints on the WKMA parameters to achieve a fit line that was distinct from the rest of the region (Table PRIORS_pH, Figure 15 pH_PEL). Nevertheless, $\hat{R}$ values were only slightly above 1.1 and traceplots showed the parameters were close to convergence. 
+
+The proportion harvested for unguided anglers was assumed to track the same patterns as guided anglers, which the model captures satisfactorily. The confidence intervals around unguided *pH* were appropriately large given the lack of data specific to unguided releases other than the SWHS estimates for all rockfish releases. Instances where *pH* of guided and unguided anglers diverge were the result of the model's balancing of all the data such that the sum of species and complex specific rockfish releases in each area equal the bias corrected SWHS estimates of total releases.
+
+The proportion harvested of yelloweye rockfish demonstrated a very different pattern from pelagics whereby guided anglers have retained almost all landed fish until recent years when management restrictions came into effect (Figure 16 pH_YE). This is most obvious in the Southeast CFMU's where yelloweye retention was prohibited beginning in 2020 and to a lesser degree in Prince William Sound (CFMU PWSI and PWSO) where restrictions also came into effect. The model tracked this data well and the hindcasting logistic curve tracks the high retention probability back in time.
+
+The proportion harvested of unguided yelloweye rockfish was generally estimated to be lower than for guided anglers across CFMUs, but captures the same dynamic as guided anglers and reflects management restrictions that have come into play in recent years. As expected, credibility intervals for unguided anglers were significantly larger and encompassed guided angler estimates. 
+
+Parameters associated with yelloweye *pH* were converged with the exception of the Prince William Sound CFMUs and some minor issues with the CSEO. The *pH* values for the CSEO were just shy of convergence for unguided anglers in the last three years of the time series, but this is simply a result of *pH* being at 0 during those years due to management closures and the model parameter being at the lower bound of 0. For Prince William Sound guided retention probabilities are almost 100% for most of the time series, but there is a slight drop in the last few years as management restrictions have been put in place (Figure 16 pH_YE). Achieving full convergence at this stage would require fixing the $\beta_1$ and $\beta_2$ parameters so that a long term average is applied, however, it was desirable to maintain model flexibility as yelloweye *pH* should decline in coming years in response to increased restrictions. The results are reasonable and capture the apparent dynamics of the system.
+
+For non-pelagic / non-yelloweye rockfish ($pH_{other}$) the proportion harvested demonstrated variable patterns across regions (Figure 17 pH_OTHER). Central regions demonstrated a static pattern with the exception of Cook Inlet where retention probabilities increased over the course of observed time periods. Kodiak demonstrated increasing retention probabilities with the exception of the WKMA CFMUs which were static. In contrast, Southeast CFMU's show a pattern similar to that of yelloweye rockfish with very high retention until management restrictions came into effect in recent years. As with the pelagic and yelloweye categories, unguided *pH* tracked the guided estimates as model design intended. The only poorly converged parameters associated with "other" *pH* were asociated with the BSAI and SOKO2SAP CFMU's of Kodiak.
+
+## Species Composition
+
+The species composition of the harvests tracked the observed data well and produced reasonable logistic curves for hindcasting. The pelagic proportion demonstrated either an increasing trend in the harvests (Southeast and Prince William Sound) or a static trend (Kodiak, Cook Inlet and North Gulf)(Figure 18 P_PEL). Model estimates tracked the observed data well and fell towards the trend line when sample sizes were small or absent. The logistic hindcasting curve appeared to match the trends in the data and encompassed the uncertainty derived from the random effect estimates. The $\beta4_{(P_{comp})ayuc}$ term had a much less informative prior than applied to $\beta4_{(pH)ayuc}$ terms but nevertheless resulted in fairly minor differences between guided and unguided anglers with the exception of PWSI and, to a lesser extent, SSEI. 
+
+The parameters associated with $P_{(pelagic)}$ were generally converged with the exception of the Prince William Sound areas, which were slow to converge. In these areas the port sampling data and the logbook data differ significantly and the model struggled to fit both of these data sources (Figure 18 P_PEL). Port sampling programs in this region are not proportional to the effort and thus the proportions are weighted to account for that issue (Howard et al. 2020). However, event the adjusted values do not align with the logbook data and thus remains an outstanding issue. As it stands, the model favors the logbook data over the port sampling data (Figure 18 P_Pel).
+
+The proportion of pelagic rockfish that were black proved to be static, with the exception of Cook Inlet, which showed an increase, and NSEI, which showed a decrease (Figure 19 P_BLACK). The model tracked observed values well and applied the uncertainty derived from the random effects in the hindcast values. Applying the hydroacoustic survey data to Kodiak $P_{(black)ayu}$ proved to be both informative and useful in estimating those values. Without that data the estimates tended toward the hyperprior values as informed by the Northeast data and resulted in credibility intervals that stretched from 0 to 1. The hydroacoustic data clearly demonstrates higher black rockfish proportions in these other areas and the model was able to generate far more precise and realistic estimates of these parameters. 
+
+The yelloweye proportion demonstrated a static portion of the harvest in Kodiak, a subtle decline in Southcentral areas and a precipitous drop in Southeast where management restrictions were in place in recent years (Figure 20 P_YE). Southcentral data is noisy but the fitted logistic curve appeared to capture the change in species composition during the observed time period and provided acceptable values for hindcasting with the appropriate level of uncertainty. Kodiak yelloweye trends were poorly informed due to a lack of data associated with historically low harvests of yelloweye in this region. Southeast yelloweye proportions (relative to the DSR assemblage) were also somewhat noisy, but the trends in the data were adequately captured by the fitted logistic curve. 
+
+The proportion of the Southeast harvest that were DSR and slope rockfish also appeared to track the data well and provide reasonable predictions for hindcasting (Figure P_DSR 21, P_SLOPE 22, P_SLOPE_REL 23). The trends in these two assemblages indicate that prior to restrictions being placed on yelloweye and DSR, the vast bulk of the non-pelagic harvests in Southeast were DSR species with slope species comprising only a minor proportion. However, with the closure of yelloweye and restrictions on DSR the proportion of the harvest that were slope rose precipitously in recent years. There was a slight lack of convergence for $P_{DSR}$ in the EWYKT where the proportion was at the bound of 1. 
+
+## Proportion Guided
+
+Data on the proportion of total rockfish catches that were guided is lacking and there was no trend estimated for hindcasting these parameters. The model captured the observed estimates within the credibility intervals, but tended to smooth the observed estimates (Figure 24 pG). Without a modeled trend, the model essentially uses a long-term average as described by the estimated beta distribution of the pG parameters to hindcast the guided proportion in the model. Credibility in the hindcasted values reflect the variability occuring during the observed time period.
+
+## Weight 
+
+The model estimated weights matched the observations as would be expected and tended to the hyperprior means when data was absent or sample sizes were small (Appendix B). 
+
+## Harvest, Release and Total Removal Estimates
+
+### Harvests 
+
+Total rockfish harvests demonstrate a generally increasing trend across the time series with some plateauing in recent years as a result of management restrictions (Figure 25 H_ALL; Appendix C1). Prior to 1998 when the logbook program went into effect, there is greater uncertainty in estimates and harvests were generally low. Some areas such as Cook Inlet (CI), North Gulf (NG), Northeast Kodiak and many of the Southeast CFMUs demonstrate consistent harvests during that time period. Harvest estimates from the Bayesian model are very consistent with Howard method estimates with some exceptions. There are some differences in the 1998-2001 period when the Howard methods made assumptions to deal with data limitations that were more appropriately handled with the hierarchical approach in the Bayesian model. There are also differences in some of the Kodiak areas where the Howard methods borrowed values from the most data rich Kodiak CFMUs whereas the Bayes model applies a hierarchical approach to leverage all of the data.  
+
+Black rockfish harvests demonstrate an increasing trend over the time series that is dominated by guided anglers with the exception of PWSI and Northeast Kodiak (Figure 26 H_BLACK, Appendix C2). Harvests prior to 1998 are generally low, but the North Gulf (NG), Northeast Kodiak, and the SSEI, NSEI and CSEO CFMU's in Southeast had significant harvests during that time period. Guided estimates are very precise since the logbook program went into effect and port sampling programs provide robust samples for understanding the black rockfish proportion of the pelagic harvest. Unguided harvests are more uncertain as would be expected given their reliance on the SWHS estimates. Unguided estimates are similar to the Howard estimates and where they differ the credibility intervals of the Bayesian estimates include Howard estimates in most cases. They differ significantly in the PWSI where unguided harvests are the same magnitude as guided harvests and thus bias corrections made in the Bayesian model would be expected to have a larger effect on those estimates.  
+
+Yelloweye rockfish harvests also demonstrate increasing trends but with reductions in recent years that reflect management actions taken by the department (Figure 27 H_YE, Appendix C3). The Bayesian model demonstrates consistent and steady harvests in many CFMU's prior to 1998 with the Southeast SSEI and CSEO demonstrating appreciable harvests. As with black rockfish, yelloweye rockfish guided harvests estimates agree with Howard estimates. Unguided yelloweye harvests were also similar to Howard estimates with the exception of the PWSI CFMU. This is the only area where private harvests significantly outnumber guided harvests and thus the effect of bias correction in the model has a more pronounced effect. 
+ 
+Non-yelloweye DSR harvests in Southeast show very similar patterns to yelloweye and strong agreement with Howard estimates (Figure 28 H_DSR and Appendix C4) and slope rockfish harvests show an increasing trend that is less pronounced than the other species and complexes (Figure 29 H_SLOPE and Appendix C5). Although slope *pH* increased dramatically in recent years, overall harvests did not as overall non-pelagic harvests fell during recent years in Southeast. The slope estimates show some differences from Howard estimates in EWKT CFMU because the Howard methods borrowed values from other areas whereas the Bayesian model uses hierarchical modelling to deal with low or absent samples. 
+
+### Releases
+
+The release estimates for all rockfish are substantially less than harvests and demonstrate variable trends over the course of the time series with substantial uncertainty in the estimates (Figure 30 R_ALL and Appendix C1). Estimates from the pre-1998 period were sometimes similar to the low end of the post-1998 period or demonstrate an increase as the fishery in that CFMU developed. The trends in the Bayesian model follow the trends in the Howard estimates, but are generally lower and exhibit less variability. In particular, the Bayes estimates are significantly lower in the early 2000s when the Howard methods relied on assumptions and long term averages to compensate for the lack of logbook data on yelloweye releases (Figure DATA).  
+
+Releases of black rockfish demonstrate a relatively steady trend with an increase in the early 2000s as anglers began to target the species and then a decline as angler retention increased (Figure 31 R_BLACK, Figure 15 PEL_pH, Appendix C2). Estimates of guided releases are very precise since 1998 owing to logbook records of pelagic releases and the port sampling program's estimates of black rockfish in the pelagic species complex. Prior to 1998, guided release estimates demonstrate significant uncertainty. Estimates of unguided releases have substantial uncertainty as a result of data specific to unguided release numbers and the reliance on the *pH* demonstrated by guided anglers. Unguided black rockfish release estimates were substantially lower than the Howard estimates, although the upper credibility of the Bayes estimates often included the Howard estimates. 
+
+Yelloweye release estimates demonstrate fairly steady trends with pronounced uncertainty around the unguided estimates (Figure 32 R_YE and Appendix C3). The lack of unguided angler specific release estimates coupled with large variances in the SWHS total rockfish release estimates and relatively small release numbers result in the large variances. However, retention of yelloweye rockfish has historically been high (Figure 16 YE_pH) and the overall release estimates are generally low. Unguided release estimates also differ substantially from the Howard estimates but, unlike black rockfish, are sometime higher and sometimes lower. In almost all cases the credibility intervals from the Bayes model include the Howard estimates. 
+
+Non-yelloweye DSR demonstrate similar release patterns to yelloweye rockfish and lower unguided estimates than Howard (Figure R_DSR 33 and Appendix C4) while slope rockfish show very low release numbers for most of the time series and a large, uptick in recent years with substantial uncertainty (R_SLOPE 34 and Appendix C5). 
+ 
+### Total Removals in Biomass
+
+After factoring in release mortalities and converting to biomass total removals of rockfish in sport fisheries were calculated. The release mortality rate for pelagic and black rockfish is relatively low even before the introduction of DWRs and coupled with high retention in recent years, release mortalities represent a trivial component of overall fishery removals (Figure 35 BRF_M, 37 PEL_M, Appendix B1 and B6). DSR (including yelloweye) and slope rockfish assemblages experienced high release mortality prior to DRM requirements and even with DRM experience appreciable mortality rates (Figure 8 REL_M). As such, release mortalities comprised a modest but appreciable contribution to overall mortalities for these species (Figure 36, 38 and 39 YE_M, DRS_M and SLOPE_M, Appendix C3, C4 and C5). 
+
+## Retrospective Patterns
+
+Retrospective patterns for total removals of black and yelloweye rockfish were very stable during historical times but show some variability in periods before species composition data was collected. The largest source of shifting estimates in the retrospective analysis was the retention probability for guided and unguided anglers (Figure 40, 41 and 42 pH_RETRO x3). As would be expected, the logistic curves that were tailored to the data through 2023 changed as data is removed, although all curves stay within the credibility intervals of the full data set. Guided estimates were much more stable than unguided estimates as a result of the logbook data and estimates since 1999 do not change in the retrospective exam. Prior to 1999 unguided estimates show very minor shifts that are well within the credibility intervals. Unguided retention probabilies show considerably more change in the retrospective exam as would be expected given the vague nature of the estimation methods. Nevertheless, all estimates are well within credibility intervals and trends remain mostly consistent with some minor deviations in Southeast where abrupt changes to management in 2000 cause a shift in the logistic curve in retrospectives with terminal years prior to 2000. 
+
+Species composition curves were more stable than retention probability curves and changes in the retrospective estimates were all well within the credibility intervals of the full data set model (Figure How many? COMP_RETROs). As with the retention probability curves, guided estimates were more stable than unguided estimates. Estimates are extremely stable once port sampling programs were initiated and changes in pre-data periods are minor. 
+
+Retrospective patterns of black rockfish removals (harvests plus release mortality) were very stable and display only minor shifts in the Kodiak areas where there is less data (Figure 40, GUI_BRF_RETRO). Release mortality for black rockfish is low (Figure RELEASE MORT) and as such uncertainty in retention probability and the number of fish released has only minor effect on total mortality.
+
+retrospective patterns of yelloweye rockfish also show consistent estimates for guided anglers but unguided anglers are less consistent that unguided removals of black rockfish. This is primarily the result of uncertainty in the retention probability for unguided anglers and the substantially higher mortality rates for released yelloweye, and especially prior to the adoption of DRM mandates. There is particular drift in the Southeast unguided estimates as the retention probability curve developed for the full data set reflect an abrupt change in management when retention became prohibited in 2000 (Figure BLALHBLAH) 
+
+
+# Discussion
+
+This Bayesian approach to reconstructing historical rockfish removals and calculating current rockfish removals build and improve on the foundation established by Howard et al. (2020). This new approach offers a unified methods that encompasses all of the necessary steps to go from the SWHS, logbook and port sampling data to produce estimates of harvests, releases and total biomass removal estimates necessary to conduct stock assessments. These methods are reproducible and offer the first documentation of the biomass and mortality calculations that have been used since the Howard methods were first adopted. This will provide greater consistency and transparency in accounting for rockfish removals in Alaska waters. These methods improve on the Howard methodology by accurately addressing bias in the SWHS data, models the release data in a more realistic process, uses hierarchical modelling to deal with low or absent samples, and generates a time series back to 1977 by utilizing all of the available data. 
+
+Retro section: Pretty good all in all. Hindcast estimates should be fixed to these values because logistic curves developed on this data set. Unguided estimates should be evaluated annually and model adapted as management actions change and underlying retention probabilities change. 
+
+Harvest estimates produced with these methods are very consistent with the Howard estimates and differ only where the Bayesian methods offer improvements on a key, but flawed, assumption about the use of SWHS data. The Howard methods rely on the SWHS ratio of guided:unguided harvests to expand guided logbook harvests to generate unguided estimates thus making the assumption that the guided:unguided ratio applies equally to all species and species complexes. Most CFMUs have considerably higher harvests by guided users and thus this flaw is less significant as the Bayesian estimates of unguided harvests align well with Howard estimates. However, where guided anglers are in the minority (i.e., PWSI) we see larger differences in the unguided harvests that demonstrate the limitations of that approach.   
+
+The Bayesian approach to estimating releases produces very different estimates from the Howard approach, and in particular unguided releases. The Howard approach uses the same methods for estimating unguided releases as it does for harvests as it applies the SWHS ratio of guided:unguided release of all rockfish to the logbook release data. However, the Howard methods do not address bias in those estimates and assumes the ratio is equal for all species. In contrast to SWHS harvest estimates, SWHS release estimates are biased high (i.e., anglers over-report their releases relative to logbook data) with a much larger magnitude in the bias relative to harvests. Rather than multiplying the logbook release estimates by the unguided:guided ratio of releases in the SWHS data, the Bayesian model corrects the SWHS release estimates and ensures that releases of the three logbook categories sum to that value, ensuring a more process and data driven estimation procedure. In many cases the Howard method results in unguided release estimates that are at or above guided release estimates even when the harvest of unguided anglers is substantially less (Figures 26 H_BLACK and 31 R_BLACK). This would imply that unguided anglers are discarding fish at a far higher rate than guided anglers . 
+
+The flaw in the Howard methods is apparent when examining release estimates of rockfish in Southeast CFMU’s since 2020 when yelloweye retention was prohibited and DSR retention restricted. During these years the logbook data demonstrates almost 100% retention of black rockfish while regulations reduce yelloweye retention to zero and limited DSR retention to 1 per day. In most of Southeast guided harvests are significantly higher than unguided harvests but the SWHS unguided:guided release ratio suggests more releases by unguided anglers. Thus, the Howard methods expand the guided release estimates to derive unguided estimates, resulting in estimates of unguided black rockfish releases far above the guided estimates while the harvest estimates display the opposite pattern. The CSEO is particularly indicative of this inconsistency where guided harvests of black rockfish are over 4 times that of the unguided anglers while the Howard methods generate unguided release estimates 2 to 3 times that of guided anglers. Because the SWHS data is for all rockfish combined it does not address the different retention probabilities by species complexes which are particularly divergent in Southeast since 2000 due to management action.
+
+The Bayesian approach is not without flaws and required making the key assumption that retention probabilities have followed similar trends in both user groups. Projecting release estimates back in time required relating releases to the harvest data and necessitated estimating retention probability (*pH*). However, initial efforts to maintain consistency with the Howard methods and model *pH* for all rockfish proved to be untenable given the underlying inconsistency in retention probabilities of pelagic, yelloweye and "other" rockfish in the logbook data. As such, the approach was altered to estimating *pH* by species complex. This worked well for guided anglers because of the logbook data but was challenging to deal with for unguided anglers.
+
+Estimating unguided releases thus required an assumption that retention probabilities for unguided anglers followed similar trends to that of unguided anglers. On the face of it this seemed reasonable but there are some estimates that give pause. The assumption seemed reasonable for yelloweye given that yelloweye are prized by anglers and one would expect unguided anglers to also retain most of their catch. Similarly, the popularity of black rockfish increased as halibut and salmon restrictions increased resulting in the charter fleet targeting them as part of their business model and it was expected that unguided angler tendencies would be similar as the public developed an appreciation for the fish. Estimating unguided releases was thus a combination of adhering to the retention probabilities evident in the logbook data and adjusting those rates such that the estimated unguided releases by species sum to the total rockfish release estimate from the bias corrected SWHS estimate of total rockfish releases. This results in *pH* estimates with much larger credibility intervals for unguided anglers when compared to guided anglers which was deemed appropriate given the lack of information. However, some of the flaws in this assumption were apparent in some CFMUs where yelloweye harvests and releases occur in low numbers such as Cook Inlet (CI) and Northeast Kodiak. In these areas the models attempt to balance release estimates of the different species results in *pH* estimates for yelloweye that seem suspiciously low given the value anglers typically place on this species (Figure 16 YE_pH). Overall yelloweye harvests and releases are minimal in those areas and thus the estimates are not likely to have serious implications, but they do highlight a potential weekness in the new approach. Similarly, the Bayes model estimates near complete retention of black rockfish by unguided anglers in recent years and hence minimal release estimates. While these estimates may seem suspect, there are large credibility intervals associated with the estimates and, moreover, release mortality rates are very low for black rockfish and thus the effects on total removals from the population would be minimal.
+
+Release estimates were also restricted to the three categories collected in logbook data; pelagic, yelloweye and “other” (non-pelagic, no-yelloweye) and it was necessary to base the species apportionment on sampling of the port sampling of the harvest. Deriving black rockfish from the pelagic species complex using harvest samples were reasonable given that management treats all pelagics the same and there is no information suggesting anglers preferentially retain one pelagic species over another. In Southeast Alaska, it was also necessary to apply the species composition of the harvest to estimate the number of non-yelloweye DSR and slope rockfish released from the estimates of “other” rockfish releases. This also seemed a reasonable assumption given that these species would be encountered during similar fishing practices (jigging on the bottom) and that anglers would value these species to a similar extent.
+
+All release estimates are based on the assumption that charter captains accurately report the number of fish they release and under-reported releases in logbook data would have the effect of inflating the model estimates of release bias in the SWHS. While law enforcement provides incentives for the accurate recording of harvests, enforcement of release reporting is near impossible. Estimated bias of SWHS release estimates is extremely high, suggesting that anglers overestimate the number of fish released by a factor of 2 or more while underestimating the number of fish harvested. Recall bias, which may be worse with released fish relative to harvests, may partially explain these results but it cannot be ruled out that release estimates from the logbook data are not entirely accurate. Models were explored to loosen the assumption that logbook releases act as a census, but thus far no viable model has been developed that produces reasonable release estimates. The SWHS is currently undergoing a modernization project that may shed more light on how to resolve some of these issues in the future.
+
+One key parameter in the model that is poorly informed prior to 2011 is the proportion guided, $P_{user}$. There is limited data on this parameter and was thus modeled as a long-term average using a beta distribution when data was absent (Figure 24 pG). Ideally, this would be estimated as a trend similar to how retention probability and species proportions were handled in the model, however the available data did not suggest obvious trends that would support that approach. If $P_{user}$ has changed significantly it would affect the estimates in the model and thus remains a question mark in the approach. If data were to become available the model could be updated to produce more accurate estimates, but in the absence of that data it is hoped that credibility intervals capture the true values.
+
+The data used to estimate the proportion of rockfish harvests that were pelagic is consistent between port samples and logbook data in all areas except Prince William Sound where port samples suggest a lower proportion than the logbook data (Figure 18 P_PEL). Howard et al. (2020) identified issues with the representativeness of the port samples in relation to the harvests and that data has been weighted according to their methods, however the issue remains even with the adjusted data. The model favors the logbook data as a result of model construction that treats the logbook data as a census and the logistic curve appears to capture the uncertainty in pre-logbook estimates. However, the cause of the discrepancy remains unclear and a reevaluation of the Prince William Sound port sampling estimates is recommended.       
+
+This report provides the first harvest, release and mortality estimates for the BSAI and SOKO2SAP Kodiak CFMU's. Many of these estimates and associated parameters were the slowest to converge and constitute a substantial portion of parameters that failed to converge. Nevertheless, trace plots show consistent exploration of the parameter space and estimates include large credibility intervals that reflect the lack of data from these areas. The hierarchical nature of the model allows inferences to be made based on data from the rest of the Kodiak region and these estimates provide managers with reasonable, if imprecise, information about the scale and trend of rockfish harvests in these areas.
+
+## Conclusions and Recommendations
+
+Managers understandably prefer harvest estimates to remain static once published but for sport fisheries these numbers are all estimated quantities that can change with improved science that reflects our understanding of the system. As data is updated annually estimates are likely to shift to some degree. The retrospective exam showed that estimates from the pre-1998 period can change substantially as the shape of the species composition and retention probability curves change with the addition of data. The priors used to develop those curves are based on the data through 2023 and pre-1998 values should remain fixed to the estimates provided in this report. 
+
+With regard to contemporary estimates, the retrospective exam showed that harvest estimates are very stable and as harvest mortalities constitute the bulk of total removals those estimates will also remain mostly stable. Similarly, guided release estimates are  extremely stable given the logbook data acting as a census. The one quantity that is least stable are the unguided release estimates which are ultimately reliant on the *pH* parameter. Although unguided removal estimates are likely to change to **retro results degree** the overall removal estimates should be fairly stable given that total release mortality is a minor component of overall removals. Given these results, **it is recommended that estimates be updated for a period of 5 years after which they should remain fixed** barring new science that requires recalculating removals. 
+
+In conclusion, these new estimates of rockfish harvest, release and removals offer an improved and more repeatable approach to catch accounting for this highly targeted and vulnerable group of fish. These methods build on the location accounting system built by Howard et al. (2020) as well as the validation of the port sampling representativeness. In addition to extending the time series, the new methods are more reflective of the angling process, better capture the uncertainty in the data, more appropriately share information within regions, and provide a unified and centralized approach to calculating, reporting and archiving rockfish harvests, releases and removals in Alaska waters. 
+
+# Acknowledgments
+
+Sport harvest reconstructions provided in this document were made possible by the devoted time and effort of many people administering the data collection projects used in these analyses. First and foremost, it needs to be acknowledged that although this report may seem critical of the Howard methods, this effort does not exist without the foundational work undertaken by Katie Howard and her coauthors in developing these methods, establishing and validating the relevancy of the data, and developing a system of accurately assigning data to appropriate CFMUs that are now available annually from the SWHS and logbook programs. Similarly, those overseeing and running those programs deserve special thanks for the high quality work and products produced including Nick Smith and Jacob Bozzini from the SWHS program and Ben Jevons and Kyla Buster from the Saltwater Guide Logbook program. This project also highlight the high value of the port sampling programs with particular thanks going to **LIST from Chris and Clay**. We would also like to thank Tyler Polum and Philip Tschersich for the Kodiak hydroacoustic data and advice. We would like to thank Adam Reimer for developing the initial approach to this model and Hamachan Hamazaki for his review of this work. 
+
+# Literature Cited
+
+Blain, B. J. and T. M. Sutton. 2016. Reproductive status and blood-plasma indicators of sex and gonad maturation status for yelloweye rockfish following barotrauma and recompression events. Transactions of the American Fisheries Socociety 145: 1234-1240.
+
+Blain-Roth, B. J., and T. M. Sutton. 2019. Effects of barotrauma and recompression events on subsequent embryo condition of yelloweye rockfish. Fisheries Research 211: 212-216.
+
+Casella, G., & Berger, R. L. (2002). Statistical Inference (2nd ed.). Duxbury.
+
+Eilers, Paul H. C., and Brian D. Marx. 1996. “Flexible Smoothing with B-Splines and Penalties.” Statistical Science 11: 89–121.
+
+Failor, B. 2016. Operational plan: Assessment of Pacific halibut and groundfish sport harvest in Southcentral Alaska, 2016-2018. Alaska Department of Fish and Game, Regional Operational Plan ROP.SF.2A.2016.20, Anchorage.
+
+Gelman, A.. Prior distributions for variance parameters in hierarchical models. Bayesian
+Analysis, 1:515–533, 2006.
+
+Gelman, A. and D. Rubin. Inference from iterative simulation using multiple sequences.
+Statistical Science 7:457–511, 1992.
+
+Hannah, R. W., P. S. Rankin, and M. T. O. Blume. 2012. Use of a novel cage system to measure postrecompression survival of northeast Pacific rockfish. Marine and Coastal Fisheries: Dynamics, Management, and
+Ecosystem Science, 4:1, 46-56.
+
+Hannah, R. W., S. J. Parker, and K. M. Matteson. 2008. Escaping the surface: the effect of capture depth on submergence success of surface-released Pacific rockfish. North American Journal of Fisheries Management, 28:694-700.
+
+Hochhalter, S. J. 2012. Modeling submergence success of discarded yelloweye rockfish (Sebastes ruberrimus) and quillback rockfish (Sebastes maliger): Towards improved estimation of total fishery removals: Fisheries Research 127-128.
+
+Hochhalter, S. J., and D. J. Reed. 2011. The effectiveness of deepwater release at improving the survival of discarded yelloweye rockfish. North American Journal of Fisheries Management 31: 852-860.
+
+Howard, K. G., S. Campen, F. R. Bowers, R. E. Chadwick, J. W. Erickson, J. J. Hasbrouck, T. R. McKinley, J. Nichols, N. Nichols, A. Olson, J. Rumble, T. T. Taube, and B. Williams. 2019a. ADF&G Statewide Rockfish Initiative: Strategic plan 2017–2020. Alaska Department of Fish and Game, Division of Commercial Fisheries, Regional Information Report 5J19-05, Anchorage.
+
+Howard, K. G., D. Evans, and A. St. Saviour. 2020. Reconstructed sport harvests and releases of black and yelloweye rockfishes in the Gulf of Alaska, 1998–2018. Alaska Department of Fish and Game, Fishery Data Series No. 20-25, Anchorage.
+
+Jaenicke, M., D. Tersteeg, and J. Huang. 2019. Operational Plan: Southeast Alaska marine boat sport fishery harvest studies, 2019. Alaska Department of Fish and Game, Regional Operational Plan SF.1J.2019.05, Anchorage.
+
+Jarvis, E. T. and C. G. Lowe. 2008. The effects of barotrauma on the catch-and-release survival of southern California nearshore and shelf rockfish (Scorpaenidae, *Sebastes* spp.). Canadian Journal of Fisheries and Aquatic Science 65: 1286-1296.
+
+Lang, Stefan, and Andreas Brezger. 2004. “Bayesian P-Splines.” Journal of Computational and Graphical Statistics 13 (1): 183–212.
+
+Lunn D, Spiegelhalter D, Thomas A, Best N. (2009) The BUGS project: Evolution, critique and future directions. Statistics in Medicine, 28:3049-67.
+
+Plummer M (2024). _rjags: Bayesian Graphical Models using MCMC_. R package version 4-16,
+  <https://CRAN.R-project.org/package=rjags>.
+
+Plummer M, Best N, Cowles K, Vines K (2006). CODA: Convergence Diagnosis and Output Analysis for MCMC, R News, 6:7-11.
+
+Powers, B. 2015. Alaska Department of Fish and Game statewide saltwater guided sport fishing logbook reporting program, 2015–2017. Alaska Department of Fish and Game, Division of Sport Fish, Regional Operational Plan ROP.SF.4A.2015.02, Anchorage.
+
+R Core Team (2021). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+
+Romberg, W. J., I. Rafferty, and M. Martz. 2018. Alaska Statewide Sport Fish Harvest Survey, 2018. Alaska Department of Fish and Game, Division of Sport Fish, Regional Operational Plan ROP.SF.4A.2018.07, Anchorage.
+
+Ruppert, David, Matt P. Wand, and Raymond J. Carroll. 2003. Semiparametric Regression. Cambridge University Press.
+
+Tschersich, P., J. Dissen, and W. Gaeuman. 2023. Westward Region hydroacoustic survey for black rockfish Sebastes melanops abundance, 2007–2022. Alaska Department of Fish and Game, Fishery Data Series No. 23-31, Anchorage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

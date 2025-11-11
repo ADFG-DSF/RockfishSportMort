@@ -397,6 +397,7 @@ readinData <- function(spl_knts = 7,
   #Create JAGs data and then bundle it up
   jags_dat <- 
     list(
+      start_yr = start_yr,
       A = A, Y = Y, C = C,
       #Harvest
       Hhat_ay = matrix_Hhat_ay,
