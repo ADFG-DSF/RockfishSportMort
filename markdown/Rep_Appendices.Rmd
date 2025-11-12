@@ -43,15 +43,15 @@ library(readxl)
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
 start_yr <- 1977
-end_yr <- 2023
-REP_YR <- 2023 #for Howard estimates
+end_yr <- 2024
+REP_YR <- 2024 #for Howard estimates
 list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
 
 
 mod<-"LB_fit_3pH"
-res <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

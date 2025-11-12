@@ -45,15 +45,15 @@ library(writexl)
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
 start_yr <- 1977
-end_yr <- 2023
-REP_YR <- 2023 #for Howard estimates
+end_yr <- 2024
+REP_YR <- 2024 #for Howard estimates
 list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
 
-res <- "rf_harvest_est_nm_wt_thru2023_5e+06__2025-06-23"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -163,7 +163,7 @@ my_table <- data.frame(
              "Uses sample size threshholds such that when areas fall below those threshholds values are borrowed from nearby areas.",
              "Error is propogated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases, are not dealt with."),
   Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
-              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data and bias corrected SWHS data",
+              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data, portside interview data, and bias corrected SWHS data",
             "Uses a hierarchichacal modelling approach that shares information between areas in the same region. Thus all data is used, even with small sample sizes. This is a more sound method that avoids assumptions and uses all of the data. ",
             "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.")
 )

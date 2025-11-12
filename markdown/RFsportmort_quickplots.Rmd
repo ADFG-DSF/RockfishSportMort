@@ -65,7 +65,7 @@ B4 <- "simp" #complex "simp", "none
 #bestish
 #res <- "Gen3ab_indcomp_pH33B2share_swhsR_FULL_thru2023_3e+06__2025-10-04"
 
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05_2025-11-09"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
 
 #res <- "rf_harvest_est_nm_wt_loose_b4pH_thru2023_5e+06__2025-07-14"
 
@@ -4991,6 +4991,8 @@ bad_df <- as.data.frame(postH$summary) %>%
          skew = round((mean - median)/sd,3),
          sd = round(sd,3))
 
+bad_df01 <- bad_df
+
 bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
                               !grepl("Hp_",parameter) &
                               !grepl("Rp_",parameter) &
@@ -5005,6 +5007,8 @@ bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
   full_join(area_codes,by = "area_n") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
   filter(!is.na(year))
+
+bad_ps01 <- bad_ps
 
 bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
                               grepl("Rp_",parameter) |
@@ -5022,6 +5026,8 @@ bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
 
+bad_Rs01 <- bad_Rs
+
 bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
                               grepl("Hp_",parameter) |
                               grepl("Hb_",parameter) |
@@ -5037,6 +5043,8 @@ bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
 
+bad_Hs01 <- bad_Hs
+
 bad_betas <- bad_df %>% filter(grepl("beta", parameter)) %>%
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
@@ -5047,6 +5055,8 @@ bad_betas <- bad_df %>% filter(grepl("beta", parameter)) %>%
   full_join(area_codes,by = "area_n") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(variable))
+
+bad_betas01 <- bad_betas
 
 bad_true_params <- rbind(bad_betas,
                          bad_df %>%
@@ -5169,6 +5179,8 @@ bad_df <- as.data.frame(postH$summary) %>%
          skew = round((mean - median)/sd,3),
          sd = round(sd,3))
 
+bad_df1<- bad_df
+
 bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
                               grepl("Rp_",parameter) |
                               grepl("Rb_",parameter) |
@@ -5185,6 +5197,8 @@ bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
 
+bad_Rs1 <- bad_Rs
+
 bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
                               grepl("Hp_",parameter) |
                               grepl("Hb_",parameter) |
@@ -5199,6 +5213,8 @@ bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
   full_join(area_codes,by = "area_n") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
+
+bad_Hs1 <- bad_Hs
 
 bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
                                              "R_ayu","R_ayg"))
