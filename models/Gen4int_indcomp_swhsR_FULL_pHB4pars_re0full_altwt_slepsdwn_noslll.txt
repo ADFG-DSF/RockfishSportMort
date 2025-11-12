@@ -58,9 +58,9 @@ for (n in 1:Nint_pel){
     inth_dsr[n] ~ dbin(pH[intd_area[n], intd_year[n], intd_user[n] + 1, 4], intc_dsr[n])    
  } 
  #Do we need slope? slope = other - dsr by default?
- for (n in 1:Nint_slope){ 
-    inth_slope[n] ~ dbin(pH[ints_area[n], ints_year[n], ints_user[n] + 1, 5], intc_slope[n])    
- } 
+ #for (n in 1:Nint_slope){ 
+ #   inth_slope[n] ~ dbin(pH[ints_area[n], ints_year[n], ints_user[n] + 1, 5], intc_slope[n])    
+ #} 
 
 #LOGBOOK and SWHS likelihoods
 for (a in 1:A){

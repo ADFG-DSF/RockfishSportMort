@@ -38,6 +38,11 @@ list2env(readinData(spl_knts = 7,
                     end_yr = end_yr),
          .GlobalEnv)
 
+list2env(readinData_alt(spl_knts = 7,
+                    start_yr = start_yr,
+                    end_yr = end_yr),
+         .GlobalEnv)
+
 #load parameters
 params <- jags_params()
 
@@ -52,7 +57,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 4E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -76,6 +81,9 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsup"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz"
 
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_noslll"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_noslll"
+
 mod <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0e" #3e5 = 13.12 hours = 4.4 / 1e5
 
 mod <- "Gen4int_indcomp_swhsR_FULL_logpyel_re0d" #15e5 - 3.2 days
@@ -89,7 +97,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_thru2024_3e+05__2025-11-06"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05_2025-11-09"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -437,11 +445,11 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- ""
+other_label <- "noSEoR"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
