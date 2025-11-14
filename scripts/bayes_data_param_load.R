@@ -718,6 +718,9 @@ jags_params <- function(){
     "sd_pH", "mu_pH",
     "eps_pH","mean_eps_pH",
     "sdR","mu_sdR","tau_sdR",
+    "sig_a_sl","re_area","mu_sl","p_obs_sl","yrep",
+    "sig_a","re_area",
+    "mu_dsr","p_obs_dsr","yrepd","mu_sl","p_obs_sl","yreps",
     
     #private:guided release ratio prior beta4 yadda yadda
     "mu_prigui","tau_prigui_pre","tau_prigui",
