@@ -1076,9 +1076,13 @@ Jaenicke, M., D. Tersteeg, and J. Huang. 2019. Operational Plan: Southeast Alask
 
 Jarvis, E. T. and C. G. Lowe. 2008. The effects of barotrauma on the catch-and-release survival of southern California nearshore and shelf rockfish (Scorpaenidae, *Sebastes* spp.). Canadian Journal of Fisheries and Aquatic Science 65: 1286-1296.
 
+Kassahun, W., Neyens, T., Molenberghs, G. et al. Modeling overdispersed longitudinal binary data using a combined beta and normal random-effects model. Arch Public Health 70, 7 (2012). https://doi.org/10.1186/0778-7367-70-7
+
 Lang, Stefan, and Andreas Brezger. 2004. “Bayesian P-Splines.” Journal of Computational and Graphical Statistics 13 (1): 183–212.
 
 Lunn D, Spiegelhalter D, Thomas A, Best N. (2009) The BUGS project: Evolution, critique and future directions. Statistics in Medicine, 28:3049-67.
+
+Molenberghs, G., Verbeke, G., Demétrio, C. G. B., & Vieira, A. M. C. (2010). A Family of Generalized Linear Models for Repeated Measures with Normal and Conjugate Random Effects. Statistical Science, 25(3), 325–347. http://www.jstor.org/stable/41058951
 
 Plummer M (2024). _rjags: Bayesian Graphical Models using MCMC_. R package version 4-16,
   <https://CRAN.R-project.org/package=rjags>.
