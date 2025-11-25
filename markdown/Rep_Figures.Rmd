@@ -47,7 +47,7 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -2359,23 +2359,29 @@ rbind(beta0_pH <- postH$q50$beta0_pH[,1],
          user = ifelse(u == 1, "charter","private")) %>% 
   filter(!is.na(pH))-> pHpel_trend
 
+#unique(pHpel_obs$source)
+
 pHpel_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   ggplot(aes(x = year, y = pH, color = user)) +
   scale_fill_manual(values = pal) +
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHpel_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source),size = pointSIZE) +
+  geom_point(aes(shape = source, fill = user, alpha = source),size = pointSIZE) +
   geom_line(data = pHpel_mod, aes(color = user)) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = baseTXT)+
+  #scale_shape_manual(values = c(19, 1)) + 
+  theme_bw(base_size = baseTXT)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          legend.title = element_text(size = axTiTXT),  # Adjust legend title size
           legend.text = element_text(size = axTXT)) +
   labs(y = "Proportion of pelagic catches that were harvested", x = "Year") +
-  scale_shape_manual(values = c(19, 5))
+  scale_shape_manual(values = c(19, 23)) +
+  #scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.7)) +
+  scale_alpha_manual(values = c('Logbook' = 1, 'Portside interviews' = 0.5))
+  
 
 Fig_N <- Fig_N+1
 ``` 
@@ -2494,20 +2500,21 @@ pHye_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHye_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75,size = pointSIZE) +
+  geom_point(aes(shape = source, fill = user, alpha = source), size = pointSIZE) +
   #geom_point(data  = pHye_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHye_mod, aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = baseTXT)+
+  theme_bw(base_size = baseTXT)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          legend.title = element_text(size = axTiTXT),  # Adjust legend title size
           legend.text = element_text(size = axTXT)) +
   labs(y = "Proportion of yelloweye catches that were harvested", x = "Year")+
-  scale_shape_manual(values = c(19, 5))
+  scale_shape_manual(values = c(19, 23)) +
+  scale_alpha_manual(values = c('Logbook' = 1, 'Portside interviews' = 0.5))
 
 Fig_N <- Fig_N+1
 ``` 
@@ -2628,20 +2635,21 @@ pHnpny_obs %>% filter(user != "all" & source != "SWHS (all RF)") %>%
   scale_color_manual(values = pal) +
   geom_ribbon(data = pHnpny_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source), fill = "lightgrey", alpha = 0.75,size = pointSIZE) +
+  geom_point(aes(shape = source, fill = user, alpha = source),size = pointSIZE) +
   #geom_point(data  = pHnpny_obs %>% filter(user == "all"), color = "darkgrey", shape = 8, alpha = 0.5) +
   geom_line(data = pHnpny_mod, aes(color = user)) +
   #geom_line(data = pHye_trend, aes(color = user)) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   coord_cartesian(ylim = c(0, 1)) +
   facet_wrap(. ~ area) +
-  scale_shape_manual(values = c(19, 1)) + theme_bw(base_size = baseTXT)+
+  theme_bw(base_size = baseTXT)+
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
          legend.position = "bottom",
          legend.title = element_text(size = axTiTXT),  # Adjust legend title size
           legend.text = element_text(size = axTXT)) +
   labs(y = "Proportion of non-pelagic, non-yelloweye catches that were harvested", x = "Year")+
-  scale_shape_manual(values = c(19, 5))
+  scale_shape_manual(values = c(19, 23)) +
+  scale_alpha_manual(values = c('Logbook' = 1, 'Portside interviews' = 0.5))
 
 Fig_N <- Fig_N+1
 ``` 
@@ -2771,7 +2779,7 @@ pHdsr_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO","S
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of DSR catches harvested", x = "Year")+
   scale_shape_manual(values = c(19, 25)) +
-  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.7))
+  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.5))
 }
 Fig_N <- Fig_N+1
 ``` 
@@ -2901,7 +2909,7 @@ pHslope_obs %>% filter(user != "all" & area %in% c("CSEO","EWYKT","NSEI","NSEO",
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   labs(y = "Proportion of slope catches harvested", x = "Year")+
   scale_shape_manual(values = c(19, 25)) +
-  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.7))
+  scale_alpha_manual(values = c('Logbook (DSR & Slope)' = 0.1, 'Portside interviews' = 0.5))
 }
 
 Fig_N <- Fig_N+1
@@ -2980,7 +2988,7 @@ p_pelagic_obs %>%
   scale_color_manual(values = pal) +
   geom_ribbon(data = p_pelagic_mod, aes(ymin = p_lo95, ymax = p_hi95, fill = user), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(shape = source),size = pointSIZE) +
+  geom_point(aes(shape = source, alpha = source, fill = user),size = pointSIZE) +
   geom_line(data = p_pelagic_mod, linetype = 1) +
   #geom_hline(data = p_pelagic_trend, aes(yintercept = p_pelagic), linetype = 2) +
   #geom_line(data=pel_trend) +
@@ -2991,7 +2999,8 @@ p_pelagic_obs %>%
          legend.title = element_text(size = axTiTXT),  # Adjust legend title size
           legend.text = element_text(size = axTXT)) +
   labs(y = "Proportion of rockfish that were pelagic", x = "Year") +
-  scale_shape_manual(values = c(19, 2))
+  scale_shape_manual(values = c(19, 24)) +
+  scale_alpha_manual(values = c('logbook' = 1, 'sample' = 0.5))
 
 Fig_N <- Fig_N+1
 ``` 
@@ -3133,12 +3142,13 @@ rbind(p_black_obs %>% select(year,p_black,user,area),
                                         "ha p black","ha charter adj.","ha private adj."))),
               aes(ymin = p_lo95, ymax = p_hi95), 
               alpha = 0.2, color = NA) +
-  geom_point(aes(size = user)) +
+  geom_point(aes(shape = user, size = user, alpha = user)) +
+  #geom_point(aes(size = user, shape = source, alpha = source, fill = user)) +
   geom_point(data = p_black_obs) +
   geom_line(data = p_black_mod %>%
                 mutate(user = factor(user, levels = c("charter", "private", 
                                         "ha p black","ha charter adj.","ha private adj."))),
-            linetype = 1, aes(color = user)) +
+            linetype = 1, aes(color = user),size = 1.1) +
   #geom_line(data=black_trend,aes(color = user)) +
   scale_alpha_manual(values = c(0.2, 1)) +
   coord_cartesian(ylim = c(0, 1)) +
@@ -3149,7 +3159,8 @@ rbind(p_black_obs %>% select(year,p_black,user,area),
           legend.text = element_text(size = axTXT)) +
   labs(y = "Proportion of pelagic rockfish that were black", x = "Year") +
   scale_shape_manual(values = c(18, 18,10,17,17)) +
-  scale_size_manual(values = c(2,2,3,2,2))
+  scale_size_manual(values = c(pointSIZE*1.5,pointSIZE*1.5,pointSIZE*2,pointSIZE*1.5,pointSIZE*1.5)) +
+  scale_alpha_manual(values = c(0.75,0.75,1,0.5,0.5))
 
 Fig_N <- Fig_N+1
 ``` 

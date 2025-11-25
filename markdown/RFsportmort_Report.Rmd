@@ -49,7 +49,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -448,6 +448,28 @@ $\widehat{H}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(H_{(non-pel,non-ye)
 
 Note that for Southcentral and Kodiak areas $H_{(non-pel,non-ye)ay1}$ is equal to the total harvest minus pelagic and yelloweye harvests. For Southeast areas $H_{(non-pel,non-ye)ay1}$ is also equal to the sum of the DSR and slope harvests.Although yelloweye rockfish are technically part of the DSR complex, the DSR estimates in this report do not include yelloweye rockfish.
 
+### Species Composition Data (Port Sampling)
+
+The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
+
+$x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})$
+
+where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ from user group $u$. The number of black rockfish sampled in harvest sampling programs was thus a proportion of the pelagic harvests
+
+$x_{(black)ayu}~\sim~\textrm{Binomial}(P_{(black)ayu}, N_{ayu}^{pel})$
+
+where $N_{ayu}^{pel}$ is the total number of pelagic rockfish. Yelloweye rockfish were modeled similarly as a proportion of the total number of non-pelagics such that 
+
+$x_{(yellow_{R2})ayu}~\sim~\textrm{Binomial}(P_{(yellow)ayu}, N_{ayu}^{nonpel})$
+
+Southeast areas have two other non-pelagic groupings such that non-yelloweye DSR and slope rockfish are a proportion of non-pelagics such that
+
+$x_{(DSR)ayu}~\sim~\textrm{Binomial}(P_{(DSR)ayu}, N_{ayu}^{nonpel})$
+
+and
+
+$x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
+
 ### Release Data
 
 SWHS estimates of annual rockfish releases $\widehat{R}_{ay}^{SWHS}$ were assumed to index true releases similarly to harvests and were modeled such that
@@ -470,11 +492,23 @@ $\widehat{R}_{(yelloweye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(yelloweye)ay1})$
 
 $\widehat{R}_{(non-pel,non-ye)ay}^{LB}~\sim~\textrm{Poisson}(R_{(non-pel,non-ye)ay1})$
 
-Releases are related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of harvested rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
+Releases are also related to harvests through the $pH_{(comp)ayu}$ quantity describing the proportion of landed fish that are retained and harvested by species, area, year and user. This quantity is informed by portside sampling and interviews where $x_{(comp)ayu}$ is the number of harvested rockfish of species *comp* sampled dockside in area *a* and year *y* by user group *u*, and assumes a binomial distribution in relation to $pH_{(comp)ayu}$ such that 
 
-$x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ayu}^{int})$
+$x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ayu})$
 
-where $r_{(comp)ayu}^{int}$ is the corresponding number of rockfish reported as released in portside angler interviews.
+where $r_{(comp)ayu}$ is the corresponding number of rockfish reported as released in portside angler interviews and when summed with $x_{(comp)ayu}$ represents the total number of that species assemblage landed.
+
+Angler interview data in Southeast showed discrepancies in the number of “other” rockfish released relative to the numbers reported in charter logbooks. To accommodate apparent overdispersion in the angler interview data for the slope and DSR assemblages (which combined, comprise the “other” category recorded in logbooks) a logistic-normal random effect was used to inflate the variance (Molenberghs et al. 2010; Kassahun et al. 2012) such that the observed probability of being harvested in the interview data, $pH_{(slope/DSR)ayu}^{int}$, relates to the true underlying probability of being harvested, $pH_{(slope/DSR)ayu}$, with area-specific overdispersion such that
+
+$\textrm{logit}(pH_{(slope/DSR)ayu}^{int})~=~\textrm{logit}(pH_{(slope/DSR)ayu})+\eta_{(slope/DSR)a}$
+
+where $\eta_{(slope/DSR)a}$ is the area-specific random effect   
+
+$\eta_{(slope/DSR)a}~\sim~ \textrm{Normal}(0,\sigma_{\eta(slope/DSR)a})$
+
+and $\sigma_{\eta(slope/DSR)a}$ was modelled with a uniform prior, resulting in an adjusted binomial likelihood that accommodates the overdispersed probability as
+
+$x_{(slope/DSR)ayu}~\sim~\textrm{Binomial}(pH_{(slope/DSR)ayu}^{int}, (x_{(slope/DSR)ayu}+r_{(slope/DSR)ayu}))$
 
 Unguided release estimates by species thus reflect a balance of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ay1}$, 4) portside sampling estimates of $pH_{(comp)ayu}$ for both user groups, and 5) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific releases must sum to the bias corrected SWHS estimate of releases for both user groups such that
 
@@ -483,28 +517,6 @@ $R_{ayu} = R_{(pelagic)ayu} + R_{(yelloweye)ayu} + R_{(non-pelagic, non-yellowey
 and for Southeast areas 
 
 $R_{(non-pelagic, non-yelloweye)ayu} = R_{(DSR)ayu} + R_{(slope)ayu}$
-
-### Species Composition Data (Port Sampling)
-
-The number of pelagic rockfish sampled in harvest sampling programs $x_{(pelagic)ayu}$ follow a binomial distribution:
-
-$x_{(pelagic)ayu}~\sim~\textrm{Binomial}(P_{(pelagic)ayu}, N_{ayu})$
-
-where $N_{ayu}$ is the total number of rockfish sampled in area $a$ during year $y$ from user group $u$. The number of black rockfish sampled in harvest sampling programs was thus a proportion of the pelagic harvests
-
-$x_{(black)ayu}~\sim~\textrm{Binomial}(P_{(black)ayu}, N_{ayu}^{pel})$
-
-where $N_{ayu}^{pel}$ is the total number of pelagic rockfish. Yelloweye rockfish were modeled similarly as a proportion of the total number of non-pelagics such that 
-
-$x_{(yellow_{R2})ayu}~\sim~\textrm{Binomial}(P_{(yellow)ayu}, N_{ayu}^{nonpel})$
-
-Southeast areas have two other non-pelagic groupings such that non-yelloweye DSR and slope rockfish are a proportion of non-pelagics such that
-
-$x_{(DSR)ayu}~\sim~\textrm{Binomial}(P_{(DSR)ayu}, N_{ayu}^{nonpel})$
-
-and
-
-$x_{(slope)ayu}~\sim~\textrm{Binomial}(P_{(slope)ayu}, N_{ayu}^{nonpel})$
 
 
 ### Weight Data
@@ -1076,18 +1088,18 @@ Jaenicke, M., D. Tersteeg, and J. Huang. 2019. Operational Plan: Southeast Alask
 
 Jarvis, E. T. and C. G. Lowe. 2008. The effects of barotrauma on the catch-and-release survival of southern California nearshore and shelf rockfish (Scorpaenidae, *Sebastes* spp.). Canadian Journal of Fisheries and Aquatic Science 65: 1286-1296.
 
-Kassahun, W., Neyens, T., Molenberghs, G. et al. Modeling overdispersed longitudinal binary data using a combined beta and normal random-effects model. Arch Public Health 70, 7 (2012). https://doi.org/10.1186/0778-7367-70-7
+Kassahun, W., Neyens, T., Molenberghs, G. et al. 2012. Modeling overdispersed longitudinal binary data using a combined beta and normal random-effects model. Arch Public Health 70, 7. https://doi.org/10.1186/0778-7367-70-7
 
 Lang, Stefan, and Andreas Brezger. 2004. “Bayesian P-Splines.” Journal of Computational and Graphical Statistics 13 (1): 183–212.
 
-Lunn D, Spiegelhalter D, Thomas A, Best N. (2009) The BUGS project: Evolution, critique and future directions. Statistics in Medicine, 28:3049-67.
+Lunn D, Spiegelhalter D, Thomas A, Best N. 2009. The BUGS project: Evolution, critique and future directions. Statistics in Medicine, 28:3049-67.
 
-Molenberghs, G., Verbeke, G., Demétrio, C. G. B., & Vieira, A. M. C. (2010). A Family of Generalized Linear Models for Repeated Measures with Normal and Conjugate Random Effects. Statistical Science, 25(3), 325–347. http://www.jstor.org/stable/41058951
+Molenberghs, G., Verbeke, G., Demétrio, C. G. B., & Vieira, A. M. C. 2010. A Family of Generalized Linear Models for Repeated Measures with Normal and Conjugate Random Effects. Statistical Science, 25(3), 325–347. http://www.jstor.org/stable/41058951
 
 Plummer M (2024). _rjags: Bayesian Graphical Models using MCMC_. R package version 4-16,
   <https://CRAN.R-project.org/package=rjags>.
 
-Plummer M, Best N, Cowles K, Vines K (2006). CODA: Convergence Diagnosis and Output Analysis for MCMC, R News, 6:7-11.
+Plummer M, Best N, Cowles K, Vines K 2006. CODA: Convergence Diagnosis and Output Analysis for MCMC, R News, 6:7-11.
 
 Powers, B. 2015. Alaska Department of Fish and Game statewide saltwater guided sport fishing logbook reporting program, 2015–2017. Alaska Department of Fish and Game, Division of Sport Fish, Regional Operational Plan ROP.SF.4A.2015.02, Anchorage.
 
@@ -1099,6 +1111,13 @@ Ruppert, David, Matt P. Wand, and Raymond J. Carroll. 2003. Semiparametric Regre
 
 Tschersich, P., J. Dissen, and W. Gaeuman. 2023. Westward Region hydroacoustic survey for black rockfish Sebastes melanops abundance, 2007–2022. Alaska Department of Fish and Game, Fishery Data Series No. 23-31, Anchorage.
 
+#### Extra Stuff not ready to delete:
+
+$Var(x_{(slope/DSR)ayu} | pH_{(slope/DSR)ayu}) = pH_{(slope/DSR)ayu}*(1-pH_{(slope/DSR)ayu})*(x_{(slope/DSR)ayu}+r_{(slope/DSR)ayu})$
+
+incorporates marginal variance such that variance of $x_{(slope/DSR)ayu}$ allows for extra uncertainty in the interview estimates of harvest probabilities, $pH_{(slope/DSR)ayu}^{int}$ such that
+
+$Var(x_{(slope/DSR)ayu}) = pH_{(slope/DSR)ayu}^{int}*(1-pH_{(slope/DSR)ayu}^{int})*(x_{(slope/DSR)ayu}+r_{(slope/DSR)ayu}) + Var(pH_{(slope/DSR)ayu}^{int})*(x_{(slope/DSR)ayu}+r_{(slope/DSR)ayu})^2$
 
 
 

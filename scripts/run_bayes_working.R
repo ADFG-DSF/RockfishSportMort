@@ -81,7 +81,7 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt"
 #mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn"
 #mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz"
 
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_xcvSEo"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_1xcvSEo"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepsdwn_noslll"
@@ -100,7 +100,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -429,13 +429,22 @@ if (use_inits == "no") {
       store.data = TRUE)
   runtime <- Sys.time() - tstart; runtime
 } 
+
 if (use_inits == "yes") {
+  inits_clean <- lapply(inits_to_use, function(chain_list) {
+    # keep only the *first* occurrence of each name
+    if (!is.null(names(chain_list))) {
+      chain_list[!duplicated(names(chain_list))]
+    } else {
+      chain_list
+    }
+  })
   tstart <- Sys.time()
   postH <- jagsUI::jags(
     parameters.to.save = params,
     model.file = paste0(".\\models\\",mod,".txt"),
     data = jags_dat, 
-    inits = inits_to_use,
+    inits = inits_clean,
     parallel = TRUE, 
     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  # no burn-in for the second run
     store.data = TRUE, verbose = TRUE
@@ -451,12 +460,12 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- "noSEoR"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_thru2024_2e+05_2025-11-04"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_5e+05_noSEoR_2025-11-14"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -985,9 +994,15 @@ jagsUI::traceplot(postH, parameters = c("beta0_pH","beta1_pH",
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.1)
 
-jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.01)
 
 jagsUI::traceplot(postH, parameters = c("mean_eps_pH"))
+
+jagsUI::traceplot(postH, parameters = c("sig_a_sl",
+                                        "sig_a_dsr",
+                                        "re_area","re_area_dsr","re_area_sl"))
+jagsUI::traceplot(postH, parameters = c("mu_sl","p_obs_sl",
+                                        "mu_dsr","p_obs_dsr"))
 
 jagsUI::traceplot(postH, parameters = "tau_prigui_pre")
 
