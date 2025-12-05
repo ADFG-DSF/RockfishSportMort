@@ -57,7 +57,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 15E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -100,7 +100,7 @@ use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhs_gR_FULL_pHB4pars_re0d_thru2024_4e+05_2025-10-23"
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0d_thru2024_3e+05__2025-10-28"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_1xcvSEo_thru2024_1500000_noSEoR_2025-12-02"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -905,16 +905,16 @@ rhat[1] %>% data.frame() %>%
   rownames_to_column(var = "param") -> rhatdf
 str(rhatdf)
 
-rhatdf %>% filter(Rhat > 1.2)
+rhatdf %>% filter(Rhat > 1.1)
 
 jagsUI::traceplot(postH, Rhat_min = 1.11)
 
-jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 10)
-jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 2) 
-jagsUI::traceplot(postH, parameters = c("p_dsr"), Rhat_min = 2) 
-jagsUI::traceplot(postH, parameters = c("p_slope"), Rhat_min = 2) 
-jagsUI::traceplot(postH, parameters = c("re_dsr"), Rhat_min = 2)
-jagsUI::traceplot(postH, parameters = c("re_slope"), Rhat_min = 2)
+jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.01)
+jagsUI::traceplot(postH, parameters = c("re_pH"), Rhat_min = 1.1) 
+jagsUI::traceplot(postH, parameters = c("p_dsr"), Rhat_min = 1.1) 
+jagsUI::traceplot(postH, parameters = c("p_slope"), Rhat_min = 1.1) 
+jagsUI::traceplot(postH, parameters = c("re_dsr"), Rhat_min = 1.1)
+jagsUI::traceplot(postH, parameters = c("re_slope"), Rhat_min = 1.1)
 
 unconv %>% 
   filter(str_detect(variable, str_c(c("R","H","p"), collapse = "|"))) %>% data.frame-> unconv
@@ -923,15 +923,15 @@ jagsUI::traceplot(postH,
                   parameters = c("beta3_pelagic")) 
 
 jagsUI::traceplot(postH, 
-                  parameters = c("Ry_ayu"), Rhat_min = 1.01) 
+                  parameters = c("Ry_ayu"), Rhat_min = 1.1) 
 
 jagsUI::traceplot(postH, 
-                  parameters = c("Ry_ayg"), Rhat_min = 1.01)
+                  parameters = c("Ry_ayg"), Rhat_min = 1.1)
 jagsUI::traceplot(postH, 
-                  parameters = c("Hy_ayu"), Rhat_min = 1.01)
+                  parameters = c("Hy_ayu"), Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, 
-                  parameters = c("Ro_ayg"), Rhat_min = 1.01) 
+                  parameters = c("Ro_ayg"), Rhat_min = 1.1) 
 jagsUI::traceplot(postH, 
                   parameters = c("Rs_ayu"), Rhat_min = 1.01) 
 jagsUI::traceplot(postH, 
@@ -939,9 +939,15 @@ jagsUI::traceplot(postH,
 jagsUI::traceplot(postH, 
                   parameters = c("Rb_ayg"), Rhat_min = 1.01)
 jagsUI::traceplot(postH, 
-                  parameters = c("Hb_ayu"), Rhat_min = 1.01)
+                  parameters = c("Hb_ayu"), Rhat_min = 1.1)
 jagsUI::traceplot(postH, 
                   parameters = c("Rp_ayu"), Rhat_min = 1.1) 
+
+jagsUI::traceplot(postH, 
+                  parameters = c("Rd_ayu"), Rhat_min = 1.1) 
+
+jagsUI::traceplot(postH, 
+                  parameters = c("Rs_ayu"), Rhat_min = 1.1) 
 
 jagsUI::traceplot(postH, 
                   parameters = c("beta1_pH"))
@@ -1081,6 +1087,9 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_black","tau_beta0_black",
                                         "beta2_black","beta3_black","beta4_black",
                                         "beta5_black","beta6_black"))
 
+jagsUI::traceplot(postH, parameters = "re_black", , Rhat_min = 1.01)
+jagsUI::traceplot(postH, parameters = "eps_black", , Rhat_min = 1.01)
+
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pelagic_kod","mu_beta1_pelagic_kod",
                                         "mu_beta2_pelagic_kod","mu_beta4_pelagic_kod",
                                         "mu_beta5_pelagic_kod",
@@ -1099,6 +1108,8 @@ jagsUI::traceplot(postH, parameters = c("mu_beta0_black_kod","mu_beta1_black_kod
                                         "tau_beta0_black_kod","tau_beta1_black_kod",
                                         "tau_beta2_black_kod","tau_beta4_black_kod",
                                         "tau_beta5_black_kod"))
+
+jagsUI::traceplot(postH, parameters = "p_black", , Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, parameters = c("mu_bc_H","tau_bc_H","sd_bc_H"))
 jagsUI::traceplot(postH, parameters = "logbc_H")

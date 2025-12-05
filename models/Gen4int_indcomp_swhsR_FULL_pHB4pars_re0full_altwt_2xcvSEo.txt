@@ -55,11 +55,11 @@ for (n in 1:Nint_pel){
     inth_other[n] ~ dbin(pH[into_area[n], into_year[n], into_user[n] + 1, 3], intc_other[n])    
  } 
 
-sig_a_dsr ~ dunif(0, 4)            # adjust upper bound if needed
+sig_a_dsr ~ dunif(0, 6)            # adjust upper bound if needed
 tau_a_dsr <- 1 / pow(sig_a_dsr, 2)
 
 for (a in 11:16) {
-  re_area_dsr[a] ~ dnorm(0, tau_a_dsr)
+  re_area_dsr[a] ~ dnorm(0, tau_a_dsr)T(-8,6.5)
 }
 
  for (n in 1:Nint_dsr){ 
@@ -77,7 +77,7 @@ tau_a_sl <- 1 / pow(sig_a_sl, 2)
 
 # Random effect for each area
 for (a in 11:16) {
-  re_area_sl[a] ~ dnorm(0, tau_a_sl)
+  re_area_sl[a] ~ dnorm(0, tau_a_sl)T(-8,6.5)
 }
  for (n in 1:Nint_slope){ 
   mu_sl[n] <- pH[ints_area[n], ints_year[n], ints_user[n] + 1, 5]  # model mean prob

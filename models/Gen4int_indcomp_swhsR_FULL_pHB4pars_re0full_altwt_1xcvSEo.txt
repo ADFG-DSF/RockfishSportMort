@@ -451,7 +451,7 @@ for (a in 5:6) { #BSAI and SOKO2SAP
 
   for (a in 8:10) { #Afognak, eastside and northeast
     beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1])T(-3,) #INTERCEPT
-    beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1])T(,5) 
+    beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1])T(,4.75) 
     beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(0.05,11) # SLOPE 
     beta3_pH[a,1] ~ dunif(23.5,44)
 
@@ -530,7 +530,7 @@ for (a in 11:16){
 #beta1_pH[15,4] ~ dlnorm(log(mu_beta1_pH[regions[15],4]), tau_beta1_pH[regions[15],4])T(0.1,20) 
 #beta1_pH[16,4] ~ dlnorm(log(mu_beta1_pH[regions[16],4]), tau_beta1_pH[regions[16],4])T(0.1,20) 
 
-beta0_yellow[11] ~ dnorm(0, 0.001)T(-2.25,)
+beta0_yellow[11] ~ dnorm(0, 0.001)T(-1,)
 beta1_yellow[11] ~ dlnorm(log(0.0000000001), 0.01)T(0.001,3.5)
 beta2_yellow[11] ~ dnorm(0,0.01)T(-30,-0.01)
 beta3_yellow[11] ~ dunif(30,44) #~ dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1) 

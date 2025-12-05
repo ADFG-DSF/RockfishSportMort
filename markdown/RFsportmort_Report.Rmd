@@ -49,7 +49,7 @@ list2env(readinData(start_yr = start_yr,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_2025-11-21"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_1xcvSEo_thru2024_1500000_noSEoR_2025-12-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -498,17 +498,19 @@ $x_{(comp)ayu}~\sim~\textrm{Binomial}(pH_{(comp)ayu}, (x_{(comp)ayu}+r_{(comp)ay
 
 where $r_{(comp)ayu}$ is the corresponding number of rockfish reported as released in portside angler interviews and when summed with $x_{(comp)ayu}$ represents the total number of that species assemblage landed.
 
-Angler interview data in Southeast showed discrepancies in the number of “other” rockfish released relative to the numbers reported in charter logbooks. To accommodate apparent overdispersion in the angler interview data for the slope and DSR assemblages (which combined, comprise the “other” category recorded in logbooks) a logistic-normal random effect was used to inflate the variance (Molenberghs et al. 2010; Kassahun et al. 2012) such that the observed probability of being harvested in the interview data, $pH_{(slope/DSR)ayu}^{int}$, relates to the true underlying probability of being harvested, $pH_{(slope/DSR)ayu}$, with area-specific overdispersion such that
+Angler interview data in Southeast showed discrepancies in the number of “other” rockfish released relative to the numbers reported in charter logbooks. Southeast “other” rockfish are comprised of slope and DSR assemblages, both of which may contribute to these discrepancies. However, the DSR assemblage has generally received more attention from the department and the DSR data is regarded as more reliable. Thus, to accommodate apparent overdispersion in the angler interview data for the slope assemblages a logistic-normal random effect was used to inflate the variance (Molenberghs et al. 2010; Kassahun et al. 2012) such that the observed probability of being harvested in the interview data, $pH_{(slope)ayu}^{int}$, relates to the true underlying probability of being harvested, $pH_{(slope)ayu}$, with area-specific overdispersion such that
 
-$\textrm{logit}(pH_{(slope/DSR)ayu}^{int})~=~\textrm{logit}(pH_{(slope/DSR)ayu})+\eta_{(slope/DSR)a}$
+$\textrm{logit}(pH_{(slope)ayu}^{int})~=~\textrm{logit}(pH_{(slope)ayu})+\eta_{(slope)a}$
 
-where $\eta_{(slope/DSR)a}$ is the area-specific random effect   
+where $\eta_{(slope)a}$ is the area-specific random effect   
 
-$\eta_{(slope/DSR)a}~\sim~ \textrm{Normal}(0,\sigma_{\eta(slope/DSR)a})$
+$\eta_{(slope)a}~\sim~ \textrm{Normal}(0,\sigma_{\eta(slope)a})$
 
-and $\sigma_{\eta(slope/DSR)a}$ was modelled with a uniform prior, resulting in an adjusted binomial likelihood that accommodates the overdispersed probability as
+and $\sigma_{\eta(slope)a}$ was modelled with a uniform prior, resulting in an adjusted binomial likelihood that accommodates the overdispersed probability as
 
-$x_{(slope/DSR)ayu}~\sim~\textrm{Binomial}(pH_{(slope/DSR)ayu}^{int}, (x_{(slope/DSR)ayu}+r_{(slope/DSR)ayu}))$
+$x_{(slope)ayu}~\sim~\textrm{Binomial}(pH_{(slope)ayu}^{int}, (x_{(slope)ayu}+r_{(slope)ayu}))$
+
+Initial modelling efforts included inflated variation for both DSR and slope assemblages, but those models were unable to discriminate between overdispersion in the two assemblages. In addition to the greater attention paid to DSR, sample sizes were also greater and the model performed well when overdispersion was only invoked for the slope assemblage.
 
 Unguided release estimates by species thus reflect a balance of several information sources that include, 1) an estimate of all rockfish released by unguided anglers, $\widehat{R}_{ay}^{SWHS}$, 2) species specific estimates of unguided angler harvests, $H_{(comp)ayu}$, 3) species-specific retention probabilities of guided anglers as estimated from logbook data, $pH_{(comp)ay1}$, 4) portside sampling estimates of $pH_{(comp)ayu}$ for both user groups, and 5) the $pH_{ay}^{ung:gui}$ ratios from the SWHS indicating unguided angler predilection for releasing fish relative to guided anglers. The SWHS provides biased estimates of unguided releases for all rockfish while unguided harvests by species are estimated from the SWHS harvest data and port sampling programs. The retention probability is informed by the retention probabilities in the guided sector as well as the $pH_{ay}^{ung:gui}$ ratios derived from the SWHS data. These estimates interact such that the model estimates of species-specific releases must sum to the bias corrected SWHS estimate of releases for both user groups such that
 
@@ -595,6 +597,59 @@ rhat_exam %>%  separate(index, into = c("area_n", "i2", "i3","i4"), sep = ",", f
   arrange(area, -Rhat, variable) -> unconverged
 
 sumtab <- postH$summary
+
+Hs <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter) |
+                              grepl("Hd_",parameter) |
+                                grepl("Hs_",parameter) ) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+Rs <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) |
+                               grepl("Rd_",parameter) |
+                                grepl("Rs_",parameter) ) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
 bad_params <- rownames(sumtab[sumtab[,"Rhat"] > 1.01, , drop = FALSE])
 
 true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
@@ -639,7 +694,9 @@ bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
                               grepl("Rp_",parameter) |
                               grepl("Rb_",parameter) |
                               grepl("Ry_",parameter) |
-                              grepl("Ro_",parameter) ) %>%
+                              grepl("Ro_",parameter) |
+                              grepl("Rd_",parameter) |
+                                grepl("Rs_",parameter)) %>%
   filter(!grepl("_mort",parameter)) %>% 
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
@@ -655,7 +712,9 @@ bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
                               grepl("Hp_",parameter) |
                               grepl("Hb_",parameter) |
                               grepl("Hy_",parameter) |
-                              grepl("Ho_",parameter)) %>% 
+                              grepl("Ho_",parameter) | 
+                              grepl("Hd_",parameter) |
+                                grepl("Hs_",parameter)) %>% 
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
   separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
@@ -798,11 +857,13 @@ bad_df <- as.data.frame(postH$summary) %>%
          skew = round((mean - median)/sd,3),
          sd = round(sd,3))
 
-bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
+bad_Rs_1p1 <- bad_df %>% filter(grepl("R_", parameter) |
                               grepl("Rp_",parameter) |
                               grepl("Rb_",parameter) |
                               grepl("Ry_",parameter) |
-                              grepl("Ro_",parameter) ) %>%
+                              grepl("Ro_",parameter) |
+                                grepl("Rd_",parameter) |
+                                grepl("Rs_",parameter)) %>%
   filter(!grepl("_mort",parameter)) %>% 
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
@@ -814,11 +875,13 @@ bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
 
-bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
+bad_Hs_1p1 <- bad_df %>% filter(grepl("H_", parameter) |
                               grepl("Hp_",parameter) |
                               grepl("Hb_",parameter) |
                               grepl("Hy_",parameter) |
-                              grepl("Ho_",parameter)) %>% 
+                              grepl("Ho_",parameter) |
+                                grepl("Hd_",parameter) |
+                                grepl("Hs_",parameter)) %>% 
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
   separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
@@ -829,17 +892,17 @@ bad_Hs <- bad_df %>% filter(grepl("H_", parameter) |
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
   filter(!is.na(year))
 
-bad_Rs <- bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+bad_Rs_1p <- bad_Rs_1p1 %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
                                              "R_ayu","R_ayg"))
 
-bad_Hs <- bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+bad_Hs_1p <- bad_Hs_1p1 %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
                                              "H_ayu","H_ayg"))
 
-bad_Rs %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
-bad_Rs %>% filter(!area_n %in% c(5,6)) -> other_R
+bad_Rs_1p1 %>% filter(area_n %in% c(5,6)) -> SOKO_Rp
+bad_Rs_1p1 %>% filter(!area_n %in% c(5,6)) -> other_R
 
-bad_Hs %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
-bad_Hs %>% filter(!area_n %in% c(5,6)) -> other_H
+bad_Hs_1p1 %>% filter(area_n %in% c(5,6)) -> SOKO_Hp
+bad_Hs_1p1 %>% filter(!area_n %in% c(5,6)) -> other_H
 
 prop_badR_BS <- nrow(bad_Rs %>% filter(area_n %in% c(5,6)))/nrow(bad_Rs)
 prop_badR_BS_lt10 <- nrow(SOKO_Rp %>% filter(median < 10)) / nrow(SOKO_Rp)
@@ -936,11 +999,15 @@ true_params_rha_gt1p1 <- bad_true_params %>% filter(Rhat > 1.1)
 
 The estimation model was able to estimate harvests, releases and total removals (harvests plus release mortalities) with near complete convergence of model parameters. Harvest estimates were very similar to Howard et al. (2020) estimates, but differed more in areas where private anglers were the dominant user group. Release estimates were also very similar to guided estimates from the Howard estimates which is not surprising given that both methods rely on the census derived from the logbook program. However, estimates of unguided releases differed substantially from the Howard estimates, although the Bayesian credibility intervals frequently overlapped with the Howard estimates. The large difference is unsurprising given the bias correction undertaken in the Bayesian model, the use of the proportion harvested data from the logbook program, and the integration of the portside interview data.  
 
-The model was `r prop_conv * 100`% converged based on $\hat{R}$ values below 1.1 and `r prop_conv2 * 100`% converged based on $\hat{R}$ values below 1.01 (Gelman and Rubin 1992). **SENTENCE ABOUT MODERN POST2019 ESTIMATES!!** The maximum $\hat{R}$ was `r round(max_rhat,2)` and `r BSAISOKO2SAP_prop * 100`% of unconverged parameters and derived quantities were associated with the BASI and SOKO2SAP Kodiak CFMU's that had the least amount of data to inform them, as well as very high and variable bias estimates in the SWHS data. `r p_lt_1p2 * 100`% of the unconverged parameters not associated with those two Kodiak areas were below an $\hat{R}$ of 1.2 and `r p_lt_1p15 * 100`% were below 1.15. Of the non-BSAI and SOKO2SAP unconverged parameters, `r Ru_prop * 100`% were associated with unguided release estimates. Several other parameters were slow to converge and are detailed below in the review of parameters, but in general were usually associated with proportional parameters being near the bounds of 0 or 1.  
+The model was `r prop_conv * 100`% converged based on $\hat{R}$ values below 1.1 and `r prop_conv2 * 100`% converged based on $\hat{R}$ values below 1.01 (Gelman and Rubin 1992). All contemporary estimates from 2020 onward were well converged and demonstrate this model will be reliable for annual estimation of rockfish harvests. The maximum $\hat{R}$ was `r round(max_rhat,2)`.  
 
-Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). Parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values that would likely converge with longer runs. The `r nrow(bad_true_params %>% filter(Rhat > 1.1))` parameters with $\hat{R}$ values in excess of 1.1 produced $\hat{R}$ values of XX and XX and trace plots did not reveal any pathological patterns other than occasional spikiness. The $\beta2_{pH}$ parameter had a very skewed distribution with occasional excessive values while the unconverged $\beta0_{pH}$ parameter BLAH BLAH. 
+Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). The beta parameters used in the logistic curve were generally slow to converge given the combination of values that could describe plausible curves fit to the data. However, parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values that would likely converge with longer runs. One of the unconverged true parameters was a $\lambda_a$ from the spline fit to the harvest trend (Appendix A) that demonstrated a very narrow posterior distribution with occasional spikes in the value, but that otherwise demonstrated satisfactory exploration of the posterior parameter space. The `r nrow(bad_true_params %>% filter(Rhat > 1.1))` parameters with $\hat{R}$ values in excess of 1.1 produced $\hat{R}$ values of `r min(bad_true_params %>% filter(Rhat > 1.1 & variable != "lambda_H") %>% select(Rhat))` and `r max(bad_true_params %>% filter(Rhat > 1.1 & variable != "lambda_H") %>% select(Rhat))` and trace plots did not reveal any pathological patterns other than skewed distributions and the need to run longer chains.  
 
-Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although some of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1 (Table XXX). $H_{(comp)ayu}$ estimates were generally well converged and most of those that did not converge were either associated with the BSAI and SOKO2SAP Kodiak CFMU's or were very near to 0, causing spiky trace plot patterns that produce higher $\hat{R}$ values that are not necessarily problematic (Table XXX). In general, $H_{(comp)ayu}$ estimates that fell short of full convergence demonstrated highly skewed posterior distributions. $R_{(comp)ayu}$ estimates failed to converge with much more frequency than $H_{(comp)ayu}$ estimates, but many of the same patterns were evident. Most of the unconverged $R_{(comp)ayu}$ estimates were at or near zero and also demonstrated highly skewed posterior distributions (Table XXX).
+Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although some of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1. 
+
+$H_{(comp)ayu}$ estimates were generally well converged with `r nrow(bad_Hs)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Hs)/nrow(Hs),2)`%) above 1.01 and `r nrow(bad_Hs_1p1)` (`r round(100*nrow(bad_Hs_1p1)/nrow(Hs),2)`%) demonstrating values above 1.1. Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions near the lower bound. Of the `r nrow(bad_Hs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Hs_1p1 %>% filter(median < 1))` estimates (`r round(100*nrow(bad_Hs_1p1 %>% filter(median < 1))/nrow(bad_Hs_1p1),0)`%) had medians less than 1 and `r nrow(bad_Hs_1p1 %>% filter(median < 10))` (`r round(100*nrow(bad_Hs_1p1 %>% filter(median < 10))/nrow(bad_Hs_1p1),0)`%) had medians less than 10. The other `r nrow(bad_Hs_1p1 %>% filter(median >= 10))` estimates (`r round(100*nrow(bad_Hs_1p1 %>% filter(median >=10))/nrow(bad_Hs_1p1),0)`%) were associated with highly skewed distributions.   
+
+$R_{(comp)ayu}$ estimates were less well converged with `r format(nrow(bad_Rs), big.mark = ",", scientific = FALSE)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Rs)/nrow(Rs),2)`%) above 1.01 and `r nrow(bad_Rs_1p1)` (`r round(100*nrow(bad_Rs_1p1)/nrow(Rs),2)`%) demonstrating values above 1.1. Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions near the lower bound. Of the `r nrow(bad_Rs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Rs_1p1 %>% filter(median < 1))` estimates (`r round(100*nrow(bad_Rs_1p1 %>% filter(median < 1))/nrow(bad_Rs_1p1),0)`%) had medians less than 1 and `r nrow(bad_Rs_1p1 %>% filter(median < 10))` (`r round(100*nrow(bad_Rs_1p1 %>% filter(median < 10))/nrow(bad_Rs_1p1),0)`%) had medians less than 10. The other `r nrow(bad_Rs_1p1 %>% filter(median >= 10))` estimates (`r round(100*nrow(bad_Rs_1p1 %>% filter(median >=10))/nrow(bad_Rs_1p1),0)`%) were associated with highly skewed distributions.
 
 ## Residual Patterns
 
