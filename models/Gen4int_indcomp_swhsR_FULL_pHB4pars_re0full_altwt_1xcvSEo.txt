@@ -572,7 +572,7 @@ beta0_pelagic[14] ~ dnorm(0, 0.001)T(-1.75,)
 beta0_pelagic[15] ~ dnorm(0, 0.001)T(-0.5,)
 beta0_pelagic[16] ~ dnorm(0, 0.001)T(-1.5,)
 
-beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(1,5)
+beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(1,)
 beta1_pelagic[14] ~ dlnorm(log(0.01), 0.1)T(0.01,3.25)
 beta1_pelagic[15] ~ dlnorm(log(0.01), 0.1)T(0.0001,0.75)
 beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.01,3.15)

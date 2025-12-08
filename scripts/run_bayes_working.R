@@ -57,7 +57,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 15E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E5; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
