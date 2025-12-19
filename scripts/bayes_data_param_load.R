@@ -969,7 +969,8 @@ load_raw <- function(start_yr = 1977,
 # Alternative data setup to see if NOT fitting to others in SE helps things out...
 readinData_alt <- function(spl_knts = 7,
                        start_yr = 1977,
-                       end_yr = 2024){
+                       end_yr = 2024,
+                       SE06 = "exclude"){
   # Logbook harvests by area, year for guided trips
   H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
     mutate(H_lb = ifelse(H == 0, 1, H))
@@ -1058,6 +1059,10 @@ readinData_alt <- function(spl_knts = 7,
                          dsr_n = NA, slope_n = NA)) %>%
     filter(year >= 1996) %>%
     arrange(user, area, year) 
+  
+  if(SE06 == "exclude"){
+    S_ayu <- S_ayu %>% filter(!(region == "Southeast" & year < 2006))
+  }
   
   #Interview data on kept and released 
   I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%

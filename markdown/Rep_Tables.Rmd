@@ -184,7 +184,173 @@ Tab_N <- Tab_N + 1
 
 **Table `r Tab_N`.** Model priors for parameters associated with species composition, retention probability, the harvest trend spline, SWHS bias and proportion guided.
 
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
+```{r, echo=FALSE}
+fmt_2nd_term <- function(x) {
+  ifelse(
+    x %% 1 == 0,
+    as.character(as.integer(x)),                 # whole numbers
+    formatC(x, format = "g", digits = 1)          # < 1 → 1 significant digit
+  )
+}
+
+priors_tbl <- tibble::tibble(
+  `Model Component` = c(
+    "Species Composition",
+    "Proportion Harvested (pH)",
+    "Harvest trend spline",
+    "",
+    "",
+    "",
+    "SWHS harvest bias",
+    "",
+    "SWHS release bias",
+    "",
+    "Proportion Guided",
+    ""
+  ),
+  Parameter = c(
+    "σcomp",
+    "σpH",
+    "μλ",
+    "σλ",
+    "σHa",
+    "β0H",
+    "μHb",
+    "σHb",
+    "μRb",
+    "σRb",
+    "λ1a",
+    "λ2a"
+  ),
+  Strata = c(
+    "by species complex",
+    "by species complex",
+    "by region",
+    "by region",
+    "by area",
+    "by area",
+    "by area",
+    "by area",
+    "by area",
+    "by area",
+    "by area",
+    "by area"
+  ),
+  Distribution = c(
+    "uniform",
+    "uniform",
+    "normal",
+    "uniform",
+    "normal",
+    "normal",
+    "normal",
+    "gamma",
+    "normal",
+    "gamma",
+    "uniform",
+    "uniform"
+  ),
+  `1st term` = c(
+    0, 0, 1, 0, 0.25, 0, 0, 2, 0, 2, 1, 1
+  ),
+  `2nd term` = c(
+    10, 5, 0.1, 20, 1, 0.000001, 0.001, 2, 0.001, 2, 50, 50
+  )
+)
+
+priors_tbl <- priors_tbl |>
+  mutate(`2nd term` = fmt_2nd_term(`2nd term`),
+         `1st term` = fmt_2nd_term(`1st term`))
+
+param <- priors_tbl$Parameter
+
+# Function to create a flextable paragraph with subscript
+format_param <- function(x) {
+  # Exceptions: last character subscript
+  if (x %in% c("beta0H", "λ1a", "λ2a")) {
+    main <- substr(x, 1, nchar(x)-1)
+    sub  <- substr(x, nchar(x), nchar(x))
+    as_paragraph(main, as_sub(sub))
+  } else {
+    # everything after first character subscript
+    main <- substr(x, 1, 1)
+    sub  <- substr(x, 2, nchar(x))
+    as_paragraph(main, as_sub(sub))
+  }
+}
+
+#priors_tbl$Parameter <- lapply(param, format_param)
+exceptions <- c("beta0H", "λ1a", "λ2a")
+
+group_rows <- which(priors_tbl$`Model Component` != "")
+
+# Shift by 1 to target the row *below* the merged label row
+group_separator_rows <- group_rows[group_rows != 1]  # skip first row if you want
+group_separator_rows <- group_separator_rows - 1     # apply line to the row above the body
+group_separator_rows <- group_separator_rows[group_separator_rows > 0]  # remove zero
+
+# Border styles
+top_bottom_border <- fp_border(width = 1.5)
+header_border     <- fp_border(width = 1.25)
+group_border      <- fp_border(width = 1.0)
+
+ft <- flextable(priors_tbl) |>
+  theme_vanilla() |>
+  font(fontname = "Times New Roman", part = "all") |>
+  fontsize(size = 11, part = "all") |>
+  align(align = "center", part = "all") |>
+  align(j = 1:4, align = "left") |>
+  valign(valign = "top", part = "body") |>
+  merge_v(j = 1) |>
+  width(j = 1, width = 1.7) |>
+  width(j = 2, width = 0.9) |>
+  width(j = 3, width = 1.6) |>
+  width(j = 4, width = 1.0) |>
+  width(j = 5, width = 0.6) |>
+  width(j = 6, width = 0.7) |>
+  set_header_labels(
+    `1st term` = "1st\nterm",
+    `2nd term` = "2nd\nterm"
+  ) |>
+  set_table_properties(layout = "fixed") |>
+  border_remove() |>
+  # Top border above headers
+  border(part = "header", border.top = top_bottom_border) |>
+  # Header bottom line
+  border(part = "header", border.bottom = header_border) |>
+  # Table bottom line
+  border(i = nrow(priors_tbl), border.bottom = top_bottom_border, part = "body") |>
+  # Horizontal lines for groups
+  border(i = group_separator_rows, border.bottom = group_border, part = "body") |>
+  # First column left-aligned (both header and body)
+  align(j = 1, align = "left", part = "all") |>
+  # All other columns center-aligned (both header and body)
+  align(j = 2:6, align = "center", part = "all")
+
+for (i in seq_len(nrow(priors_tbl))) {
+  p <- param[i]
+  if (p %in% exceptions) {
+    main <- substr(p, 1, nchar(p)-1)
+    sub  <- substr(p, nchar(p), nchar(p))
+    ft <- compose(ft, i = i, j = "Parameter",
+                  value = as_paragraph(main, as_sub(sub)))
+  } else {
+    main <- substr(p, 1, 1)
+    sub  <- substr(p, 2, nchar(p))
+    ft <- compose(ft, i = i, j = "Parameter",
+                  value = as_paragraph(main, as_sub(sub)))
+  }
+}
+
+ft
+
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+
+**Table `r Tab_N`.** Tables summarizing unconverged parameters...
 
 ```{r, echo=FALSE}
 Tab_N <- Tab_N + 1
@@ -192,77 +358,6 @@ Tab_N <- Tab_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion pelagic in all rockfish, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion black in pelagic rockfish, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion yelloweye rockfish in non-pelagic (Southcentral and Kodiak) or demersal shelf rockfish (Southeast region) including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.$\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the species composition of the proportion demersal shelf and slope rockfish in non-pelagic rockfish in Southeast region, including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions. $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for pelagic rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for yelloweye rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-**Table `r Tab_N`.** Priors used for the logistic curve fit to the retention probability, *pH*, for “other” (non-pelagic, non-yelloweye)  rockfish including the hyper priors and area specific priors derived from the hyper priors and the distribution (dist.) and terms defining the distributions.  $\tau$ is related to the standard deviation (SD) as $\tau$ = 1 / SD / SD. Y represents the terminal year of the time series.
-
-***PASTE TABLEs HERE FROM Prior_Tab.docx***
-
-```{r, echo=FALSE}
-Tab_N <- Tab_N + 1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
 
 
 
