@@ -313,7 +313,7 @@ beta3_yellow[1] <- 25
 beta0_yellow[2] ~ dnorm(0, 0.001)T(-1,)
 beta1_yellow[2] ~ dlnorm(log(0.01), 0.01)T(0.01,2.25)
 beta2_yellow[2] ~ dnorm(0,0.01)T(-30,-0.01)
-beta3_yellow[2] ~ dunif(30,43) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
+beta3_yellow[2] ~ dunif(31,43) #dlnorm(log(mu_beta3_yellow[regions[a]]), tau_beta3_yellow[regions[a]])T(18,Y-1)
 
 beta0_yellow[3] ~ dnorm(0, 0.001)T(-0.8,)
 beta0_yellow[4] ~ dnorm(0, 0.001)T(-0.25,)
@@ -525,7 +525,7 @@ for (a in 11:16){
   beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-25,-0.01) # SLOPE 
   beta3_pH[a,3] ~ dunif(34,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 
-  beta0_pH[a,4] ~ dnorm(mu_beta0_pH[regions[a],4], tau_beta0_pH[regions[a],4])T(-3,) #INTERCEPT
+  beta0_pH[a,4] ~ dnorm(mu_beta0_pH[regions[a],4], tau_beta0_pH[regions[a],4])T(-2.5,) #INTERCEPT
   beta1_pH[a,4] ~ dlnorm(log(mu_beta1_pH[regions[a],4]), tau_beta1_pH[regions[a],4])T(0.1,25) 
   beta2_pH[a,4] ~ dnorm(mu_beta2_pH[regions[a],4], tau_beta2_pH[regions[a],4])T(-25,-0.5) # SLOPE 
   beta3_pH[a,4] ~ dunif(36.5,44) 
@@ -580,27 +580,27 @@ beta0_pelagic[12] ~ dnorm(0, 0.001)T(-1.75,)
 beta1_pelagic[12] <- 0
 beta2_pelagic[12] <- 0
 
-beta0_pelagic[13] ~ dnorm(0, 0.001)T(-5,)
+beta0_pelagic[13] ~ dnorm(0, 0.001)T(-4.5,)
 beta0_pelagic[14] ~ dnorm(0, 0.001)T(-1.75,)
 beta0_pelagic[15] ~ dnorm(0, 0.001)T(-0.5,)
-beta0_pelagic[16] ~ dnorm(0, 0.001)T(-5,)
+beta0_pelagic[16] ~ dnorm(0, 0.001)T(-2.5,)
 
-beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(1,10)
+beta1_pelagic[13] ~ dlnorm(log(0.01), 0.1)T(1,8.2)
 beta1_pelagic[14] ~ dlnorm(log(0.01), 0.1)T(0.01,3.25)
 beta1_pelagic[15] ~ dlnorm(log(0.01), 0.1)T(0.0001,0.75)
-beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.05,6)
+beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.05,4.75)
 
-beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.05,1.65)
+beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.05,)
 beta2_pelagic[14] ~ dnorm(0.1,0.1)T(0.05,7)
 beta2_pelagic[15] ~ dnorm(0.1,0.1)T(0.05,)
 beta2_pelagic[16] ~ dnorm(0.1,0.1)T(0.075,6)
 
 beta3_pelagic[11] ~ dunif(26,35)
 beta3_pelagic[12] <- 30
-beta3_pelagic[13] ~ dunif(25,38)
+beta3_pelagic[13] ~ dunif(29,42.5)
 beta3_pelagic[14] ~ dunif(23,40.5)
 beta3_pelagic[15] ~ dunif(23,42)
-beta3_pelagic[16] ~ dunif(23,42)
+beta3_pelagic[16] ~ dunif(24,35)
 
 beta1_black[13] ~ dlnorm(log(0.01), 0.1)T(0.01,5)
 beta2_black[13] ~ dnorm(0,0.1)T(-10,0) 
@@ -698,14 +698,14 @@ for (a in 1:10) {
   #  }
 
     for(u in 1:2){
-      mean_eps_pel0[a,u] <- mean(eps_pel[a,1:42,u])
-      mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:42,u])
-      mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:42,u])
-      mean_eps_dsr0[a,u] <- mean(eps_dsr[a,1:42,u])
-      mean_eps_sl0[a,u]  <- mean(eps_sl[a,1:42,u])
+      mean_eps_pel0[a,u] <- mean(eps_pel[a,1:22,u])
+      mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:29,u])
+      mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:22,u])
+      mean_eps_dsr0[a,u] <- mean(eps_dsr[a,1:29,u])
+      mean_eps_sl0[a,u]  <- mean(eps_sl[a,1:29,u])
 
       mean_eps_pel[a,u] <- mean(eps_pel[a,23:43,u])
-      mean_eps_ye[a,u]  <- mean(eps_ye[a,23:43,u])
+      mean_eps_ye[a,u]  <- mean(eps_ye[a,30:43,u])
       mean_eps_bl[a,u]  <- mean(eps_bl[a,23:43,u])
       mean_eps_dsr[a,u] <- mean(eps_dsr[a,30:43,u])
       mean_eps_sl[a,u]  <- mean(eps_sl[a,30:43,u])
@@ -718,20 +718,20 @@ for (a in 1:10) {
 
       for (y in 1:22){
         re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel0[a,u]
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye0[a,u]
         re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl0[a,u]
       }
       for(y in 1:29){
+        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye0[a,u]
         re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr0[a,u]
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl0[a,u]
       }
 
       for (y in 23:43){
         re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel[a,u]
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye[a,u]
         re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u]
       }
       for(y in 30:43){
+        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye[a,u]
         re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr[a,u]
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl[a,u]
       }
@@ -825,7 +825,7 @@ for (a in 16){
 }
 
  for (a in 11:A) {
-  mean_eps_pH0[a,1,1] <- mean(eps_pH[a,1:22,1,1])
+  mean_eps_pH0[a,1,1] <- mean(eps_pH[a,1:22,1,1]) #pelagic
   mean_eps_pH0[a,2,1] <- mean(eps_pH[a,1:29,2,1])
   mean_eps_pH[a,1,1] <- mean(eps_pH[a,23:43,1,1])
   mean_eps_pH[a,2,1] <- mean(eps_pH[a,30:43,2,1])
@@ -864,14 +864,14 @@ for (a in 16){
     
     for(u in 1:2){
       mean_eps_pel0[a,u] <- mean(eps_pel[a,1:22,u])
-      mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:22,u])
-      mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:22,u])
+      mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:29,u])
+      mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:29,u])
       mean_eps_dsr0[a,u] <- mean(eps_dsr[a,1:29,u])
       mean_eps_sl0[a,u]  <- mean(eps_sl[a,1:29,u])
 
       mean_eps_pel[a,u] <- mean(eps_pel[a,23:43,u])
-      mean_eps_ye[a,u]  <- mean(eps_ye[a,23:43,u])
-      mean_eps_bl[a,u]  <- mean(eps_bl[a,23:43,u])
+      mean_eps_ye[a,u]  <- mean(eps_ye[a,30:43,u])
+      mean_eps_bl[a,u]  <- mean(eps_bl[a,30:43,u])
       mean_eps_dsr[a,u] <- mean(eps_dsr[a,30:43,u])
       mean_eps_sl[a,u]  <- mean(eps_sl[a,30:43,u])
 
@@ -883,19 +883,20 @@ for (a in 16){
 
       for (y in 1:22){
         re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel0[a,u]
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye0[a,u]
-        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl0[a,u]
       }
       for(y in 1:29){
+        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye0[a,u]
+        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl0[a,u]
         re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr0[a,u]
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl0[a,u]
       }
       for (y in 23:43){
         re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel[a,u]
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye[a,u]
-        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u]
+        
       }
       for(y in 30:43){
+        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye[a,u]
+        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u]
         re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr[a,u]
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl[a,u]
       }

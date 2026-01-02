@@ -41,7 +41,7 @@ REP_YR <- 2024 #for bringing in Howard estimats
 list2env(readinData_alt(spl_knts = 7,
                     start_yr = start_yr,
                     end_yr = end_yr,
-                    SE06 = "include"), #SE06 = "exclude"
+                    SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
 #load parameters
@@ -58,7 +58,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 30E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
 ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -73,7 +73,7 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo"
 use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_1xcvSEo_thru2024_1e+06_noSEoR_2025-12-18"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_noSEoR_2025-12-18"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_2e+06_SE06ex_2026-01-02"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -430,7 +430,7 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "All_SE" #"SE06ex"
+other_label <- "SE06ex" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))

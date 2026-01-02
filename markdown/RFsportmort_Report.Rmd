@@ -44,12 +44,18 @@ source("../scripts/mkdwn_functions.R", echo = FALSE)
 start_yr <- 1977
 end_yr <- 2023
 REP_YR <- 2023 #for Howard estimates
-list2env(readinData(start_yr = start_yr,
-                  end_yr = end_yr),
+#list2env(readinData(start_yr = start_yr,
+#                  end_yr = end_yr),
+#         .GlobalEnv)
+
+list2env(readinData_alt(spl_knts = 7,
+                    start_yr = start_yr,
+                    end_yr = end_yr,
+                    SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1e+06_noSEoR_2025-12-18"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_2e+06_SE06ex_2026-01-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
