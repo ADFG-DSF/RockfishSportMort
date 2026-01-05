@@ -53,7 +53,8 @@ mod<-"LB_fit_3pH"
 
 intdat <- "yes"
 
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_2e+06_SE06ex_2026-01-02"
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_2e+06_SE06ex_2026-01-02"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_5e+05_SE06ex_2026-01-05"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -3266,8 +3267,9 @@ rbind(beta0_ye <- postH$q50$beta0_yellow,
 
 southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
 central <- c("CI","NG","PWSI","PWSO","BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
-  
-rbind(p_yellow_obs %>% filter(year > 2005)) %>%
+
+rbind(p_yellow_obs) %>% 
+#rbind(p_yellow_obs %>% filter(year > 2005)) %>%
   ggplot(aes(x = year, y = p_yellow, color = user)) +
   #ggplot(aes(x = year, y = use_p_ye, color = user)) +
   scale_fill_manual(values = pal) +
