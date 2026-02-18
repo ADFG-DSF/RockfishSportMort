@@ -54,7 +54,7 @@ mod<-"LB_fit_3pH"
 intdat <- "yes"
 
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_2e+06_SE06ex_2026-01-02"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_5e+05_SE06ex_2026-01-05"
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_3e+06_SE06ex_2026-02-02"
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
