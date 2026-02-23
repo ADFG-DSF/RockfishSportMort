@@ -380,7 +380,9 @@ for (a in 3:4){ #PWSI and PWSO
 
   tau_beta0_pelagic_kod <- 1 / sd_beta0_pelagic_kod / sd_beta0_pelagic_kod
   sd_beta0_pelagic_kod ~ dunif(0.1, 5)
-  tau_beta4_pelagic_kod ~ dgamma(0.1, 0.1)
+  #tau_beta4_pelagic_kod ~ dgamma(0.1, 0.1)
+  tau_beta4_pelagic_kod <- 1 / sd_beta4_pelagic_kod / sd_beta4_pelagic_kod
+  sd_beta4_pelagic_kod ~ dunif(0.1, 10)
   tau_beta5_pelagic_kod <- 1 / sd_beta5_pelagic_kod / sd_beta5_pelagic_kod
   sd_beta5_pelagic_kod ~ dunif(0.1, 5)
 
