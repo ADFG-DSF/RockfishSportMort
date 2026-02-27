@@ -472,6 +472,10 @@ for (a in 5:6) { #BSAI and SOKO2SAP
   beta0_pH[9,3] ~ dnorm(mu_beta0_pH[regions[9],3], tau_beta0_pH[regions[9],3])T(-6,)
   beta0_pH[10,3] ~ dnorm(mu_beta0_pH[regions[10],3], tau_beta0_pH[regions[10],3])T(-5.5,)
 
+  beta2_pH[8,1] ~ dnorm(mu_beta2_pH[regions[8],1], tau_beta2_pH[regions[8],1])T(0.075,6)
+  beta2_pH[9,1] ~ dnorm(mu_beta2_pH[regions[9],1], tau_beta2_pH[regions[9],1])T(0.075,10)
+  beta2_pH[10,1] ~ dnorm(mu_beta2_pH[regions[10],1], tau_beta2_pH[regions[10],1])T(0.075,10)
+
   beta2_pH[8,3] ~ dnorm(mu_beta2_pH[regions[8],3], tau_beta2_pH[regions[8],3])T(0.01,10)
   beta2_pH[9,3] ~ dnorm(mu_beta2_pH[regions[9],3], tau_beta2_pH[regions[9],3])T(0.01,2.5)
   beta2_pH[10,3] ~ dnorm(mu_beta2_pH[regions[10],3], tau_beta2_pH[regions[10],3])T(0.05,6)
@@ -479,7 +483,7 @@ for (a in 5:6) { #BSAI and SOKO2SAP
   for (a in 8:10) { #Afognak, eastside and northeast
     beta0_pH[a,1] ~ dnorm(mu_beta0_pH[regions[a],1], tau_beta0_pH[regions[a],1])T(-2.5,) #INTERCEPT
     beta1_pH[a,1] ~ dlnorm(log(mu_beta1_pH[regions[a],1]), tau_beta1_pH[regions[a],1])T(,6) 
-    beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(0.075,10) # SLOPE 
+  #  beta2_pH[a,1] ~ dnorm(mu_beta2_pH[regions[a],1], tau_beta2_pH[regions[a],1])T(0.075,10) # SLOPE 
     beta3_pH[a,1] ~ dunif(23.5,44)
 
     beta0_pH[a,2] ~ dnorm(mu_beta0_pH[regions[a],2], tau_beta0_pH[regions[a],2]) #INTERCEPT
@@ -539,9 +543,9 @@ for (a in 11:16){
   beta2_pH[a,3] ~ dnorm(mu_beta2_pH[regions[a],3], tau_beta2_pH[regions[a],3])T(-25,-0.01) # SLOPE 
   beta3_pH[a,3] ~ dunif(34,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 
-  beta0_pH[a,4] ~ dnorm(mu_beta0_pH[regions[a],4], tau_beta0_pH[regions[a],4])T(-2.5,5) #INTERCEPT
-  beta1_pH[a,4] ~ dlnorm(log(mu_beta1_pH[regions[a],4]), tau_beta1_pH[regions[a],4])T(0.1,8.5) 
-  beta2_pH[a,4] ~ dnorm(mu_beta2_pH[regions[a],4], tau_beta2_pH[regions[a],4])T(-25,-0.5) # SLOPE 
+#  beta0_pH[a,4] ~ dnorm(mu_beta0_pH[regions[a],4], tau_beta0_pH[regions[a],4])T(-2.5,5) #INTERCEPT
+#  beta1_pH[a,4] ~ dlnorm(log(mu_beta1_pH[regions[a],4]), tau_beta1_pH[regions[a],4])T(0.1,8.5) 
+  beta2_pH[a,4] ~ dnorm(mu_beta2_pH[regions[a],4], tau_beta2_pH[regions[a],4])T(-21,-0.5) # SLOPE 
   beta3_pH[a,4] ~ dunif(36.5,44) 
 
   beta0_pH[a,5] ~ dnorm(mu_beta0_pH[regions[a],5], tau_beta0_pH[regions[a],5]) #INTERCEPT
@@ -550,12 +554,19 @@ for (a in 11:16){
   beta3_pH[a,5] <- 25 #~ dunif(29,43) #dlnorm(log(mu_beta3_pH[regions[a],3]), tau_beta3_pH[regions[a],3])T(29,Y-1)
 }
 
-#beta1_pH[11,4] ~ dlnorm(log(mu_beta1_pH[regions[11],4]), tau_beta1_pH[regions[11],4])T(0.1,) 
-#beta1_pH[12,4] ~ dlnorm(log(mu_beta1_pH[regions[12],4]), tau_beta1_pH[regions[12],4])T(0.1,) 
-#beta1_pH[13,4] ~ dlnorm(log(mu_beta1_pH[regions[13],4]), tau_beta1_pH[regions[13],4])T(0.1,) 
-#beta1_pH[14,4] ~ dlnorm(log(mu_beta1_pH[regions[14],4]), tau_beta1_pH[regions[14],4])T(0.1,) 
-#beta1_pH[15,4] ~ dlnorm(log(mu_beta1_pH[regions[15],4]), tau_beta1_pH[regions[15],4])T(0.1,) 
-#beta1_pH[16,4] ~ dlnorm(log(mu_beta1_pH[regions[16],4]), tau_beta1_pH[regions[16],4])T(0.1,) 
+beta0_pH[11,4] ~ dnorm(mu_beta0_pH[regions[11],4], tau_beta0_pH[regions[11],4])T(-2.5,4.5) #INTERCEPT
+beta0_pH[12,4] ~ dnorm(mu_beta0_pH[regions[12],4], tau_beta0_pH[regions[12],4])T(-2.5,4.5) #INTERCEPT
+beta0_pH[13,4] ~ dnorm(mu_beta0_pH[regions[13],4], tau_beta0_pH[regions[13],4])T(-2.5,4.5) #INTERCEPT
+beta0_pH[14,4] ~ dnorm(mu_beta0_pH[regions[14],4], tau_beta0_pH[regions[14],4])T(-2.5,4.5) #INTERCEPT
+beta0_pH[15,4] ~ dnorm(mu_beta0_pH[regions[15],4], tau_beta0_pH[regions[15],4])T(-1.5,4.5) #INTERCEPT
+beta0_pH[16,4] ~ dnorm(mu_beta0_pH[regions[16],4], tau_beta0_pH[regions[16],4])T(-2.5,4.5) #INTERCEPT
+
+beta1_pH[11,4] ~ dlnorm(log(mu_beta1_pH[regions[11],4]), tau_beta1_pH[regions[11],4])T(0.1,8.5) 
+beta1_pH[12,4] ~ dlnorm(log(mu_beta1_pH[regions[12],4]), tau_beta1_pH[regions[12],4])T(0.1,8.5) 
+beta1_pH[13,4] ~ dlnorm(log(mu_beta1_pH[regions[13],4]), tau_beta1_pH[regions[13],4])T(0.1,8.5) 
+beta1_pH[14,4] ~ dlnorm(log(mu_beta1_pH[regions[14],4]), tau_beta1_pH[regions[14],4])T(0.1,8.5) 
+beta1_pH[15,4] ~ dlnorm(log(mu_beta1_pH[regions[15],4]), tau_beta1_pH[regions[15],4])T(0.1,3.75) 
+beta1_pH[16,4] ~ dlnorm(log(mu_beta1_pH[regions[16],4]), tau_beta1_pH[regions[16],4])T(0.1,8.5) 
 
 beta0_yellow[11] ~ dnorm(0, 0.001)T(-1,)
 beta1_yellow[11] ~ dlnorm(log(0.0000000001), 0.01)T(0.001,3.5)
@@ -604,7 +615,7 @@ beta1_pelagic[14] ~ dlnorm(log(0.01), 0.1)T(0.01,3.25)
 beta1_pelagic[15] ~ dlnorm(log(0.01), 0.1)T(0.0001,0.75)
 beta1_pelagic[16] ~ dlnorm(log(0.01), 0.1)T(0.05,3.75)
 
-beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.1,4)
+beta2_pelagic[13] ~ dnorm(0.1,0.1)T(0.1,1.75)
 beta2_pelagic[14] ~ dnorm(0.1,0.1)T(0.05,7)
 beta2_pelagic[15] ~ dnorm(0.1,0.1)T(0.05,)
 beta2_pelagic[16] ~ dnorm(0.1,0.1)T(0.075,6)
