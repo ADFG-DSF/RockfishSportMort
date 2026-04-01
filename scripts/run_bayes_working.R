@@ -70,6 +70,8 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4"
 
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning"
+
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
