@@ -40,6 +40,7 @@ library(openxlsx2)
 library(scales)
 library(xlsx)
 library(writexl)
+library(flextable)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
@@ -57,7 +58,8 @@ list2env(readinData_alt(spl_knts = 7,
          .GlobalEnv)
 
 mod<-"LB_fit_3pH"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1500000_SE06ex_2026-03-10"
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4_thru2024_1500000_SE06ex_2026-03-10" # Pretty good!
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning_thru2024_1500000_SE06ex_2026-04-07" #even better!
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -1087,7 +1089,7 @@ The estimation model was able to estimate harvests, releases and total removals 
 
 The model was `r prop_conv * 100`% converged based on $\hat{R}$ values below 1.1 and `r prop_conv2 * 100`% converged based on $\hat{R}$ values below 1.01 (Gelman and Rubin 1992). All contemporary estimates from 2020 onward were well converged and demonstrate this model will be reliable for annual estimation of rockfish harvests. The maximum $\hat{R}$ was `r round(max_rhat,2)`.  
 
-Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). The $\beta$ parameters used in the logistic curve were generally slow to converge given the combination of values that could describe plausible curves fit to the data. However, parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values that would likely converge with longer runs. **Describe unconverged beta parameters:** Two of the unconverged parameters were $\beta_{pH}$ parameters. One was the $\sigma_{(pH)(other)Kodiak}^{\beta0}$ parameter that had a spike in an otherwise uniform trace plot while the other unconverged $\beta_{pH}$ parameter was $\beta1_{(pH)(pelagic)PWSO}$ which had an $\hat{R}$ of `r bad_true_params %>% filter(Rhat > 1.1, variable == "beta1_pH") %>% select(Rhat)`.
+Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). The $\beta$ parameters used in the logistic curve were generally slow to converge given the combination of values that could describe plausible curves fit to the data. However, parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values that would likely converge with longer runs. **Describe unconverged beta parameters:** <!--Two of the unconverged parameters were $\beta_{pH}$ parameters. One was the $\sigma_{(pH)(other)Kodiak}^{\beta0}$ parameter that had a spike in an otherwise uniform trace plot while the other unconverged $\beta_{pH}$ parameter was $\beta1_{(pH)(pelagic)PWSO}$ which had an $\hat{R}$ of `r #bad_true_params %>% filter(Rhat > 1.1, variable == "beta1_pH") %>% select(Rhat)`.-->
 
 The other unconverged true parameters was a $\lambda_a$ from the spline fit to the harvest trend (Appendix A) that demonstrated a very narrow posterior distribution with occasional spikes in the value, but otherwise demonstrated satisfactory exploration of the posterior parameter space with an $\hat{R}$ of `r bad_true_params %>% filter(Rhat > 1.1, variable == "lambda_H") %>% select(Rhat)`.
 
@@ -1097,13 +1099,46 @@ The `r nrow(bad_true_params %>% filter(Rhat > 1.1))` parameters with $\hat{R}$ v
 
 Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although some of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1. 
 
-$H_{(comp)ayu}$ estimates were generally well converged with `r nrow(bad_Hs)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Hs)/nrow(Hs),2)`%) above 1.01 and `r nrow(bad_Hs_1p1)` (`r round(100*nrow(bad_Hs_1p1)/nrow(Hs),2)`%) demonstrating values above 1.1. Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. Of the `r nrow(bad_Hs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Hs_1p1 %>% filter(median <= 1))` estimates (`r round(100*nrow(bad_Hs_1p1 %>% filter(median <= 1))/nrow(bad_Hs_1p1),0)`%) had medians less than 1 and `r nrow(bad_Hs_1p1 %>% filter(median <= 10))` (`r round(100*nrow(bad_Hs_1p1 %>% filter(median <= 10))/nrow(bad_Hs_1p1),0)`%) had medians less than 10. Of the `r nrow(bad_Hs_1p1 %>% filter(median > 10))` unconverged $H_{(comp)ayu}$ estimates with medians greater than 10, both <!--`r nrow(bad_Hs_1p1 %>% filter(median > 10, year < 23))`-->were from pre-1999 years when logbook data became available<!-- and all `r nrow(bad_Hs_1p1 %>% filter(median > 10, year < 35))` were from before 2011 when the SWHS began tracking private and charter harvests separately-->. The highest unconverged harvest estimate had a median and mean value of `r max(bad_Hs_1p1 %>% filter(median > 10) %>% select(median))` and `r max(bad_Hs_1p1 %>% filter(median > 10) %>% select(mean))`, respectively, indicating that these questionable estimates represent negligible harvests from a management perspective.
+$H_{(comp)ayu}$ estimates were generally well converged with `r nrow(bad_Hs)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Hs)/nrow(Hs),2)`%) above 1.01 and `r nrow(bad_Hs_1p1)` (`r round(100*nrow(bad_Hs_1p1)/nrow(Hs),2)`%) demonstrating values above 1.1. Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. Of the `r nrow(bad_Hs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Hs_1p1 %>% filter(median <= 1))` estimates (`r round(100*nrow(bad_Hs_1p1 %>% filter(median <= 1))/nrow(bad_Hs_1p1),0)`%) had medians less than 1 and `r nrow(bad_Hs_1p1 %>% filter(median <= 10))` (`r round(100*nrow(bad_Hs_1p1 %>% filter(median <= 10))/nrow(bad_Hs_1p1),0)`%) had medians less than 10. <!--Of the `r nrow(bad_Hs_1p1 %>% filter(median > 10))` unconverged $H_{(comp)ayu}$ estimates with medians greater than 10, both `r nrow(bad_Hs_1p1 %>% filter(median > 10, year < 23))`were from pre-1999 years when logbook data became available and all `r nrow(bad_Hs_1p1 %>% filter(median > 10, year < 35))` were from before 2011 when the SWHS began tracking private and charter harvests separately.--> <!--The highest unconverged harvest estimate had a median and mean value of `r max(bad_Hs_1p1 %>% filter(median > 10) %>% select(median))` and `r max(bad_Hs_1p1 %>% filter(median > 10) %>% select(mean))`, respectively, indicating that these questionable estimates represent negligible harvests from a management perspective.-->
 
 <!--
 The other `r nrow(bad_Hs_1p1 %>% filter(median >= 10))` estimates (`r round(100*nrow(bad_Hs_1p1 %>% filter(median >=10))/nrow(bad_Hs_1p1),0)`%) were associated with highly skewed distributions.
 -->
 
-$R_{(comp)ayu}$ estimates were less well converged relative to $H_{(comp)ayu}$ estimates with `r format(nrow(bad_Rs), big.mark = ",", scientific = FALSE)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Rs)/nrow(Rs),2)`%) above 1.01 and `r nrow(bad_Rs_1p1)` (`r round(100*nrow(bad_Rs_1p1)/nrow(Rs),2)`%) demonstrating values above 1.1. Unconverged estimates demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. Of the `r nrow(bad_Rs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Rs_1p1 %>% filter(median <= 1))` estimates (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 1))/nrow(bad_Rs_1p1),0)`%) had medians less than 1 and `r nrow(bad_Rs_1p1 %>% filter(median <= 10))` (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 10))/nrow(bad_Rs_1p1),0)`%) had medians less than 10. Of the `r nrow(bad_Rs_1p1 %>% filter(median > 10))` unconverged $R_{(comp)ayu}$ estimates with medians greater than 10, `r nrow(bad_Rs_1p1 %>% filter(median > 10, year < 23))` were from pre-1999 years when logbook data became available and all `r nrow(bad_Rs_1p1 %>% filter(median > 10, year < 35))` were from before 2011 when the SWHS began tracking private and charter harvests separately. The highest unconverged release estimate had a median and mean value of `r max(bad_Rs_1p1 %>% filter(median > 10) %>% select(median))` and `r max(bad_Rs_1p1 %>% filter(median > 10) %>% select(mean))`, respectively, indicating that these questionable estimates concern relatively low numbers of released fish.
+$R_{(comp)ayu}$ estimates were less well converged relative to $H_{(comp)ayu}$ estimates with `r format(nrow(bad_Rs), big.mark = ",", scientific = FALSE)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_Rs)/nrow(Rs),2)`%) above 1.01 and `r nrow(bad_Rs_1p1)` (`r round(100*nrow(bad_Rs_1p1)/nrow(Rs),2)`%) demonstrating values above 1.1. Unconverged estimates demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. Of the `r nrow(bad_Rs_1p1)` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_Rs_1p1 %>% filter(median <= 1))` estimates (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 1))/nrow(bad_Rs_1p1),0)`%) had medians less than 1, `r nrow(bad_Rs_1p1 %>% filter(median <= 10))` (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 10))/nrow(bad_Rs_1p1),0)`%) had medians less than 10, 
+`r nrow(bad_Rs_1p1 %>% filter(median <= 50))` (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 50))/nrow(bad_Rs_1p1),0)`%) had medians less than 50, and 
+`r nrow(bad_Rs_1p1 %>% filter(median <= 100))` (`r round(100*nrow(bad_Rs_1p1 %>% filter(median <= 100))/nrow(bad_Rs_1p1),0)`%) had medians less than 100. 
+Of the `r nrow(bad_Rs_1p1 %>% filter(median > 100))` unconverged $R_{(comp)ayu}$ estimates with medians greater than 100, `r nrow(bad_Rs_1p1 %>% filter(median > 100, year < 23))` were from pre-1999 years when logbook data became available and all `r nrow(bad_Rs_1p1 %>% filter(median > 100, year < 35))` were from before 2011 when the SWHS began tracking private and charter harvests separately. 
+The $\hat{R}$ values of these `r nrow(bad_Rs_1p1 %>% filter(median > 100, year < 23))` release estimates ranged from 
+`r min(bad_Rs_1p1 %>% filter(median > 100, Rhat > 1.1) %>% select(Rhat))`
+to 
+`r max(bad_Rs_1p1 %>% filter(median > 100, Rhat > 1.1) %>% select(Rhat))` 
+indicating that these estimates would be likely to converge with longer runs (Table UNCONV RELEASE > 100). 
+<!--The highest unconverged release estimate had a median and mean value of `r max(bad_Rs_1p1 %>% filter(median > 100) %>% select(median))` and `r max(bad_Rs_1p1 %>% filter(median > 100) %>% select(mean))`, respectively, indicating that these questionable estimates concern relatively low numbers of released fish.-->
+
+**Table Xa.** Unconverged release estimates with median posteriors that were greater than 100. **Remove from document once described!**
+
+```{r}
+bad_Rs_1p1 %>% filter(median > 100) %>% select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
+  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
+         mean = round(mean,0),
+         median = round(median,0),
+         lower = round(lower,0),
+         upper = round(upper, 0),
+         sd = round(sd,1)) -> bad_releases
+
+colnames(bad_releases) <- c("Area", "Year", "Release Est.", "Mean", "Median", "Lower CI", "Upper CI", "SD", "Rhat")
+
+flextable(bad_releases) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
 
 ## Residual Patterns
 
