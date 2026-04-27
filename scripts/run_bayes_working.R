@@ -58,8 +58,8 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
-ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 25E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+#ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
@@ -72,13 +72,13 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4"
 
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning2"
-
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning3"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4"
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4_thru2024_1e+06_SE06ex_2026-02-26"
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1500000_SE06ex_2026-03-10"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning3_thru2024_2e+06_SE06ex_2026-04-16"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -443,7 +443,7 @@ saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_thru2024_1500000_SE06ex_2026-03-10"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4_thru2024_1500000_SE06ex_2026-03-10"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning3_thru2024_2e+06_SE06ex_2026-04-16"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -967,7 +967,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH","mu_beta0_pH","tau_beta0_pH",
 
 jagsUI::traceplot(postH, parameters = c("sd_pH"))
 jagsUI::traceplot(postH, parameters = c("mu_beta0_pH","tau_beta0_pH","beta0_pH"))
-jagsUI::traceplot(postH, parameters = c("mu_beta1_pH","tau_beta1_pH","beta1_pH"))
+jagsUI::traceplot(postH, parameters = c("mu_beta1_pH","tau_beta1_pH","beta1_pH"), Rhat_min = 1.1)
 jagsUI::traceplot(postH, parameters = c("mu_beta2_pH","tau_beta2_pH","beta2_pH"))
 jagsUI::traceplot(postH, parameters = c("beta3_pH"))
 jagsUI::traceplot(postH, parameters = c("beta4_pH"))
