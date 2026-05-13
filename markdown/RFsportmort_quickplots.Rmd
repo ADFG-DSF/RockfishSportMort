@@ -76,6 +76,7 @@ B4 <- "simp" #complex "simp", "none
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning_thru2024_1500000_SE06ex_2026-04-07" #even better!
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning3_thru2024_2e+06_SE06ex_2026-04-16" #oooh!
 res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2e+06_SE06ex_2026-05-04" #oo la la... even better!
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2500000_SE06ex_2026-05-06" #blechish... 
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
