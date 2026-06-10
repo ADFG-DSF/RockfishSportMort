@@ -1,10 +1,10 @@
-<img align="left" src="https://github.com/commfish/cr_brf/blob/main/figures/SRIlogo.jfif" width="140">
+<img align="left" src="https://github.com/ADFG-DSF/RockfishSportMort/blob/main/figures/SRI_logo.gif" width="140">
 
 # Gulf of Alaska Rockfish Sport Fish Harvest Reconstruction
 
 #### Author: Phil Joy (philip.joy@alaska.gov)
 
-#### Last updated: Novemeber 2024
+#### Last updated: June 2026
 
 #### Local Directory
 The local directory will contain files that are not available in the git repository:
@@ -26,18 +26,23 @@ In development...
 1. **SWHS data**: from Jake Bozzini (jake.bozzini@alaska.gov): Available in late September when SWHS estimates are finalized. Save to [`data/raw_dat/YEAR/`] folder.
    1. *rf_byMgmtUnit_sentDATE.xlsx*
    2. *IPHC_YEAR_guipri_all_sentYEAR.xlsx* (NOTE: This is currently in Southcentral port sample data folder and needs to be moved) 
-3. **eLogbookdata**: *YEARLogbookDataDATE.csv* or *statewide_YEAR_DATA.csv* depending on what they are calling from Kyla Buster (kayla.buster@alaska.gov) and saved to [`data/raw_dat/YEAR/`] folder. 
-4. **Southcentral port sampling data** from Clay Mckean (clay.mckean@alaska.gov, [git repository](https://github.com/ADFG-DSF/GOAB)) saved to [`data/raw_dat/Species_comp_SC/`]:
+2. **eLogbookdata**: *YEARLogbookDataDATE.csv* or *statewide_YEAR_DATA.csv* depending on what they are calling from Kyla Buster (kayla.buster@alaska.gov) and saved to [`data/raw_dat/YEAR/`] folder. 
+3. **Southcentral port sampling data** from Clay Mckean (clay.mckean@alaska.gov, [git repository](https://github.com/ADFG-DSF/GOAB)) saved to [`data/raw_dat/Species_comp_SC/`]:
    1. *Spcomp_guided_SENTDATE*
    2. *Spcomp_unguided_SENTDATE*
-6. **Southeast port sampling data** from Diana Tersteeg (diana.tersteeg@alaska.gov) and Chris Hinds (chris.hinds@alaska.gov) and saved to [`data/raw_dat/Species_comp_SE/`]:
-   1. *Species_comp_Region1_forR_YEAR.Final*
+4. **Southeast port sampling data** from Diana Tersteeg (diana.tersteeg@alaska.gov) and Chris Hinds (chris.hinds@alaska.gov) and saved to [`data/raw_dat/Species_comp_SE/`]:
+   1. *Species_comp_MHS_Region1_forR_YEAR_RUN_DATESTAMP.xlsx*
+5. **Kodiak stereocamera species apportionment data** from Philip Tschersich (philip.tschersich@alaska.gov) and Tyler Polum (tyler.polum@alaska.gov) and saved to  [`data/raw_dat/kodiak_stereocom_dat.csv`]
+6. **Release mortality data** I don't think these will change but worth checking with Chris and Clay either way. This data resides here [`data/raw_dat/Species_comp_SC/rf_mort_sc24`] and  [`data/raw_dat/Species_comp_SE/Species_comp_MHS_Region1_forR_2024_RUN_TIMESTAMP.xlsx`].
+7. **Weight data**. This data also comes from the port sampling teams in the form of [`data/raw_dat/Species_comp_SC/sample_size_rf_SC_Port_Sampling.csv`] from Region 2 and [`data\raw_dat\Species_comp_SE\SE_2011_2025_number of vessels with sampled RF_TIMESTAMP.xlsx`'] from region 1. Weight data for region 1 is undergoing revisions as of this writing.
+8. **Interview data**: This is used to inform releases for unguided anglers and comes from the port sampling programs as [`data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx`] for Region 1 and 
+[`data/raw_dat/Species_comp_SC/sc_rf_release.csv`] for Region 2.
 
 ## Estimation instructions
 
 #### Due date: early October
 
-### Work flow
+### Work flow for data processing:
 
 1. Collect data from various sources.
    1. Species compostional data and logbook data are available anytime after the new year.
@@ -46,11 +51,17 @@ In development...
 4. Process the logbook data in [`lb_processing.R`].
 5. Weight and process the SC port sampling data in [`SC_apportionment_calcs.R`].
    * Note that the southeast group has developed code for apportionments in Region 1.
-6. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
+  
+#### Howard methods: 
+
+1. Generate Howard estimates in [`BRF_Howard.R`], [`YE_Howard.R`], [`DSR_Howard.R`], [`SLOPE_Howard.R`], and [`PEL_Howard.R`].
    * Note that DSR, SLOPE and PEL are for Southeast Region only unless otherwise requested by Region 2.
-7. Howard estimates get sent to Chris and Clay to generate release mortality estimates and biomass estimates. That is also being done in the Bayes model. 
-7. Prepare the data for the Bayesian model using [`scripts/bayes_data_prep.R`]. 
-8. Generate Bayesian Reimer estimates in [`scripts/bayes_est.R`].
+2. Howard estimates get sent to Chris and Clay to generate release mortality estimates and biomass estimates. 
+
+#### Bayesian methods: 
+
+1. Prepare the data for the Bayesian model using [`scripts/bayes_data_prep.R`]. 
+2. Generate Bayesian Reimer estimates in [`scripts/run_bayes_working.R`]. This script is for th whole time series starting in 1977 but once this is complete we will develop a simpler, faster model, for completing contemporary estimates without the hindcasting.
 
 ## Repository Directory
 
