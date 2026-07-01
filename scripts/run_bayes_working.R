@@ -60,7 +60,7 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 20E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 25E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -75,9 +75,9 @@ mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_simppHB4"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning2"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning3"
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning5"
-mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6"
+mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6.1"
 mod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7"
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -443,12 +443,12 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- "SE06ex" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2e+06_SE06ex_2026-05-04"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
+results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged

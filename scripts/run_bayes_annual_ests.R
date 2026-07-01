@@ -63,7 +63,7 @@ jags_dat$r1_gwtcv_b
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 10E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E6; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -75,7 +75,7 @@ mod <- "annual_est_mod"
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2e+06_SE06ex_2026-05-04"
+use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
@@ -287,15 +287,14 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "SE06ex" #"SE06ex"  "All_SE"
+other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2e+06_SE06ex_2026-05-04"
-results <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
+results <- "annual_est_mod_thru2024_1e+06_SE06ex_2026-06-29"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -816,7 +815,7 @@ jagsUI::traceplot(postH, parameters = c("sd_pH",
 
 jagsUI::traceplot(postH, parameters = c("sd_pH"))
 jagsUI::traceplot(postH, parameters = c("beta4_pH"))
-jagsUI::traceplot(postH, parameters = c("beta5_pH"))
+jagsUI::traceplot(postH, parameters = c("mu_beta5_pH","tau_beta5_pH","beta5_pH"))
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.1)
 
@@ -858,7 +857,7 @@ jagsUI::traceplot(postH, parameters = c("p_dsr"))
 jagsUI::traceplot(postH, parameters = c("mu_beta4_slope","tau_beta4_slope",
                                         "mu_beta5_slope","tau_beta5_slope",
                                         "beta4_slope", 
-                                        "beta5_rslope"))
+                                        "beta5_slope"))
 
 jagsUI::traceplot(postH, parameters = c("pr_slope"))
 jagsUI::traceplot(postH, parameters = c("p_slope"))

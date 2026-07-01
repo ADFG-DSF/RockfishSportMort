@@ -159,8 +159,8 @@ for (a in 1:A){
 for (r in 1:3){
 	for (s in 1:5){
 		mu_beta5_pH[r,s] ~ dnorm(0, 0.001)
-  		tau_beta5_pH[r,s] <- 1 / sd_beta5_pH[r,s] / sd_beta5_pH[r,s]
-    	sd_beta5_pH[r,s] ~ dunif(0.1, 5)
+  	tau_beta5_pH[r,s] <- 1 / sd_beta5_pH[r,s] / sd_beta5_pH[r,s]
+    sd_beta5_pH[r,s] ~ dunif(0.1, 5)
 	}
 }
 
@@ -169,15 +169,20 @@ for (a in 1:16){
   
   mu_log[a] ~ dnorm(0, 1.0E-3)          # prior for log-mean (tune as needed)
   tau_between[a] ~ dgamma(0.1, 0.1)    # between-year precision (or choose other hyperprior)
-  for (y in 35:Y){
+  for (y in 1:Y){
     tau_obs[a,y] <- 1 / log(1 + cv_prigui_ay[a,y]^2)
     #log(prigui_ay[a,y]) ~ dnorm(log_prigui_true[a,y], tau_obs[a,y])
     prigui_ay[a,y] ~ dlnorm(log_prigui_true[a,y], tau_obs[a,y])
     log_prigui_true[a,y] ~ dnorm(mu_log[a], tau_between[a])
   }
-  for (s in 1:5){
+  for (s in 1:3){
     #beta4_pH[a,s] ~ dnorm(mu_prigui_ay[a],tau_prigui[a])T(0,)
     log_beta4_pH[a,s] ~ dnorm(mu_log[a], tau_between[a])T(,3.218876) #T(,4.60517)
+    beta4_pH[a,s] <- exp(log_beta4_pH[a,s])  # if you want beta4_pH on original scale
+  }
+  for (s in 4:5){
+    #beta4_pH[a,s] ~ dnorm(mu_prigui_ay[a],tau_prigui[a])T(0,)
+    log_beta4_pH[a,s] ~ dnorm(mu_log[a], tau_between[a])T(,3) #T(,4.60517)
     beta4_pH[a,s] <- exp(log_beta4_pH[a,s])  # if you want beta4_pH on original scale
   }
  }
@@ -199,9 +204,9 @@ for (a in 1:A){
   # COMPOSITIONAL PRIORS --------------------------------------------------
   # logit parameters for proportion estimates defined by intercept(B0), scaleing factor(B1), slope(B2), inflection point (B3) and user effect (B4) 
   
-  for (s in 1:5){
-  	beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s]) #dunif(0,1)
-  }
+#  for (s in 1:5){
+#  	beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s]) #dunif(0,1)
+#  }
 
   # HARVEST TREND SPLINE PARAMETERS
   prec_H[a] <- pow(sigma_H[a], -2)
@@ -221,6 +226,25 @@ for (a in 1:A){
    pG[a, y] ~ dbeta(b1_pG[a], b2_pG[a])        
  }
 }
+
+for (a in 1:16){
+  for (s in 1:3){
+   beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s]) #dunif(0,1)
+  }
+}
+
+for (a in 1:10){
+  for (s in 4:5){
+   beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s]) #dunif(0,1)
+  }
+}
+
+for (a in 11:16){
+  for (s in 4:5){
+   beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s])T(-4.5,4) #dunif(0,1)
+  }
+}
+
 
 #SOUTHCENTRAL: 
 for (a in 1:4){
@@ -295,16 +319,16 @@ for (a in 11:16){
 
 #When we have data, we want the random effects to deviate from a mean of 0
 for (a in 1:10) {
-  for(y in 1:Y){
-    for(s in 2:5){
-      eps_pH[a,y,1,s] ~ dnorm(0, tau_pH[s])
-    }
-  }
-  for(y in 1:Y){
-    for(s in 2:5){
-      eps_pH[a,y,2,s] ~ dnorm(0, tau_pH[s])
-    }
-  }
+#  for(y in 1:Y){
+#    for(s in 2:5){
+#      eps_pH[a,y,1,s] ~ dnorm(0, tau_pH[s])
+#    }
+#  }
+#  for(y in 1:Y){
+#    for(s in 2:5){
+#      eps_pH[a,y,2,s] ~ dnorm(0, tau_pH[s])
+#    }
+#  }
     for (y in 1:Y){ #1999 on
       for(u in 1:2){
         eps_pel[a,y,u] ~ dnorm(0, tau_comp[1])
@@ -312,7 +336,7 @@ for (a in 1:10) {
         eps_bl[a,y,u] ~ dnorm(0, tau_comp[3])
         eps_dsr[a,y,u] ~ dnorm(0, tau_comp[4])
         eps_sl[a,y,u] ~ dnorm(0, tau_comp[5])
-        for(s in 1){
+        for(s in 1:5){
           eps_pH[a,y,u,s] ~ dnorm(0, tau_pH[s])   # raw, unconstrained
         }
       }
@@ -334,13 +358,13 @@ for (a in 1:10) {
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl2[a,u]
       }
 
-      for(s in 1){
-        mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s]) #mean(eps_pH[a,44:Y,u,s])
-        for(y in 1:Y){ #for(y in 44:Y){
-          re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
-        }
-      }
-      for(s in 2:5){
+#      for(s in 1){
+#        mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s]) #mean(eps_pH[a,44:Y,u,s])
+#        for(y in 1:Y){ #for(y in 44:Y){
+#          re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
+#        }
+#      }
+      for(s in 1:5){
         mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s])
         for(y in 1:Y){ #for(y in 44:Y){
           re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
@@ -400,13 +424,13 @@ for (a in 16){
         re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl2[a,u]
       }
 
-      for(s in 1){
-        mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s]) #mean(eps_pH[a,44:Y,u,s])
-        for(y in 1:Y){ #for(y in 44:Y){
-          re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
-        }
-      }
-      for(s in 2:5){
+#      for(s in 1){
+#        mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s]) #mean(eps_pH[a,44:Y,u,s])
+#        for(y in 1:Y){ #for(y in 44:Y){
+#          re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
+#        }
+#      }
+      for(s in 1:5){
         mean_eps_pH2[a,u,s] <- mean(eps_pH[a,1:Y,u,s]) #mean(eps_pH[a,44:Y,u,s])
         for(y in 1:Y){ #for(y in 44:Y){
           re_pH[a,y,u,s] <- eps_pH[a,y,u,s] - mean_eps_pH2[a,u,s]
@@ -494,7 +518,7 @@ for (a in 1:10) {
 for (a in 11:16) {	
 	for (y in 1:Y){
 		Hy_ayg[a, y] <- max(0,H_ayg[a, y] * (1 - p_pelagic[a, y, 1]) * p_yellow[a, y, 1])
-    	Hy_ayu[a, y] <- max(0,H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2])
+    Hy_ayu[a, y] <- max(0,H_ayu[a, y] * (1 - p_pelagic[a, y, 2]) * p_yellow[a, y, 2])
 
 		Ry_ayg[a, y] <- max(0,(Hy_ayg[a, y] / max(0.000001,pH[a,y,1,2])) - Hy_ayg[a, y])  
 		Ry_ayu[a, y] <- max(0,(Hy_ayu[a, y] / max(0.000001,pH[a,y,2,2])) - Hy_ayu[a, y])
@@ -520,8 +544,8 @@ for (a in 11:16) {
 		Ho_ayu[a, y] <- Hs_ayu[a, y] + Hd_ayu[a, y] # - Hy_ayu[a, y] 
 		Ho_ay[a, y] <- Ho_ayg[a, y] + Ho_ayu[a, y]
 
-    	Ro_ayg[a, y] <- Rs_ayg[a, y] + Rd_ayg[a, y] #max(0.00,(Ho_ayg[a, y] / max(0.000001,pH[a,y,1,3])) - Ho_ayg[a, y])  
-    	Ro_ayu[a, y] <- Rs_ayu[a, y] + Rd_ayu[a, y] #max(0.00,(Ho_ayu[a, y] / max(0.000001,pH[a,y,2,3])) - Ho_ayu[a, y] ) 
+    Ro_ayg[a, y] <- Rs_ayg[a, y] + Rd_ayg[a, y] #max(0.00,(Ho_ayg[a, y] / max(0.000001,pH[a,y,1,3])) - Ho_ayg[a, y])  
+    Ro_ayu[a, y] <- Rs_ayu[a, y] + Rd_ayu[a, y] #max(0.00,(Ho_ayu[a, y] / max(0.000001,pH[a,y,2,3])) - Ho_ayu[a, y] ) 
 		Ro_ay[a, y] <- Ro_ayg[a, y] + Ro_ayu[a, y]
 	}
 
@@ -531,17 +555,17 @@ for (a in 11:16) {
 		for (u in 1:2){
 			logit(p_pelagic[a, y, u]) <- beta5_pelagic[a] + beta4_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
 			logit(p_yellow[a, y, u]) <- beta5_yellow[a] + beta4_yellow[a] * (u - 1) + re_yellow[a, y, u]
-    		logit(p_black[a, y, u]) <- beta5_black[a] + beta4_black[a] * (u - 1) + re_black[a, y, u]
+    	logit(p_black[a, y, u]) <- beta5_black[a] + beta4_black[a] * (u - 1) + re_black[a, y, u]
 
-    		logit(p_dsr[a, y, u]) <- beta5_dsr[a] + beta4_dsr[a] * (u - 1) + re_dsr[a, y, u]
+    	logit(p_dsr[a, y, u]) <- beta5_dsr[a] + beta4_dsr[a] * (u - 1) + re_dsr[a, y, u]
 			logit(p_slope[a, y, u]) <- beta5_slope[a] + beta4_slope[a] * (u - 1) + re_slope[a, y, u]
 
 	 		for (s in 1:2){
-        		logit(pH[a, y, u, s]) <- beta5_pH[a,s]  * (1 + (u - 1) * (beta4_pH[a,s] - 1)) + re_pH[a, y, u, s] 
+        	logit(pH[a, y, u, s]) <- beta5_pH[a,s]  * (1 + (u - 1) * (beta4_pH[a,s] - 1)) + re_pH[a, y, u, s] 
 			}
-      		for (s in 4:5){
-        		logit(pH[a, y, u, s]) <- beta5_pH[a,s]  * (1 + (u - 1) * (beta4_pH[a,s] - 1)) + re_pH[a, y, u, s] 
-      		}
+      for (s in 4:5){
+        	logit(pH[a, y, u, s]) <- beta5_pH[a,s]  * (1 + (u - 1) * (beta4_pH[a,s] - 1)) + re_pH[a, y, u, s] 
+      }
 		}
 	}
 }
