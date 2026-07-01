@@ -248,7 +248,6 @@ for (a in 1:A){
   
   for (s in 1:5){
   	beta5_pH[a,s] ~ dnorm(mu_beta5_pH[regions[a],s], tau_beta5_pH[regions[a],s]) #dunif(0,1)
-#  	beta6_pH[a,s] ~ dnorm(0,0.001)
   }
 
   # HARVEST TREND SPLINE PARAMETERS
