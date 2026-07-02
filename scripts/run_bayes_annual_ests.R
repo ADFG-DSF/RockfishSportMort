@@ -26,18 +26,30 @@ library(rjags)
 source(".\\scripts//bayes_data_param_load.R")
 
 #year to run model through
-start_yr <- 2020
+start_yr <- 1977
 end_yr <- 2024
 
 #most recent Howard estimates: 
 REP_YR <- 2024 #for bringing in Howard estimats
 
 #load the data:
-#list2env(readinData(spl_knts = 7,
-#                    start_yr = start_yr,
-#                    end_yr = end_yr),
-#         .GlobalEnv)
+mod <- "annual_est_mod_take3"
+mod <- "annual_est_mod_take2"
+list2env(readinData_alt(spl_knts = 7,
+                                 start_yr = start_yr,
+                                 end_yr = end_yr,
+                                 SE06 = "exclude"), #SE06 = "exclude"
+         .GlobalEnv)
 
+mod <- "annual_est_mod_take3"
+list2env(readinData_alt(spl_knts = 4,
+                        start_yr = start_yr,
+                        end_yr = end_yr,
+                        SE06 = "exclude"), #SE06 = "exclude"
+         .GlobalEnv)
+
+
+mod <- "annual_est_mod"
 list2env(readinData_contemporary(spl_knts = 4,
                     start_yr = start_yr,
                     end_yr = end_yr,
@@ -56,21 +68,37 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 set.seed(8645)
 
-jags_dat$r1_gwtcv_b
+histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
+histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
+
+as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
+as.matrix((histdat$q50$H_ayu)) -> jags_dat$H_ayu_Hest
+as.matrix((histdat$q50$H_ay)) -> jags_dat$H_ay_Hest
+as.matrix((histdat$q50$Hy_ayg)) -> jags_dat$Hy_ayg_Hest
+as.matrix((histdat$q50$Ho_ayg)) -> jags_dat$Ho_ayg_Hest
+as.matrix((histdat$q50$R_ay)) -> jags_dat$R_ay_Hest
+as.matrix((histdat$q50$R_ayg)) -> jags_dat$R_ayg_Hest
+as.matrix((histdat$q50$Ry_ayg)) -> jags_dat$Ry_ayg_Hest
+as.matrix((histdat$q50$Ro_ayg)) -> jags_dat$Ro_ayg_Hest
+as.matrix((histdat$q50$Rp_ayg)) -> jags_dat$Rp_ayg_Hest
 
 
+jags_dat$Hhat_ayu
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 5E6; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
 
 #model to run; see /models folder
-mod <- "Annual_model"
+mod <- "annual_est_mod_take3"
+mod <- "annual_est_mod_take2"
 mod <- "annual_est_mod"
+
+
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
@@ -294,7 +322,7 @@ saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSpor
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_mod_thru2024_1e+06_SE06ex_2026-06-29"
+results <- "annual_est_mod_thru2024_50000__2026-06-30"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
@@ -819,7 +847,7 @@ jagsUI::traceplot(postH, parameters = c("mu_beta5_pH","tau_beta5_pH","beta5_pH")
 
 jagsUI::traceplot(postH, parameters = c("pH"), Rhat_min = 1.1)
 
-jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.01)
+jagsUI::traceplot(postH, parameters = c("eps_pH"), Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, parameters = c("eps_dsr"), Rhat_min = 1.01)
 jagsUI::traceplot(postH, parameters = c("eps_sl"))
