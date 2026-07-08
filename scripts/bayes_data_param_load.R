@@ -806,6 +806,7 @@ jags_params <- function(){
     "logHhat_ay",
     #with hierarchichal pline lambda
     "mu_lambda_H","sigma_lambda_H","beta_H","beta0_H",
+    "Hhat_ay","logH_ay","beta_H","sigma_H","lambda_H",
 
     #releases
     "logRhat_ay","logRhat_ayg",
@@ -855,7 +856,11 @@ jags_params <- function(){
     "By_ayg","By_ayu","By_ay",
     "Bdnye_ayg","Bdnye_ayu","Bdnye_ay",
     "Bd_ayg","Bd_ayu","Bd_ay",
-    "Bs_ayg","Bs_ayu","Bs_ay")
+    "Bs_ayg","Bs_ayu","Bs_ay",
+    
+    #params to save for use in contemporary model
+    "log_prigui_true","mu_log","tau_between")
+  
   return(params)
 }
 
@@ -1558,6 +1563,7 @@ readinData_alt <- function(spl_knts = 7,
 ################################################################################
 
 readinData_contemporary <- function(spl_knts = 7,
+                                    start_comp_yr = 2020,
                            start_yr = 2020,
                            end_yr = 2024,
                            SE06 = "exclude"){
@@ -1752,10 +1758,10 @@ readinData_contemporary <- function(spl_knts = 7,
   Z <- bspline(1:Y, K = C) #bspline(1:24, K = C)
   
   #COMP DATA
-  comp <- S_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+  comp <- S_ayu %>% filter(year >= start_comp_yr & year <= end_yr) %>%
     mutate(area_n = as.numeric(area), 
            user_n = ifelse(user == "charter", 0, 1), 
-           year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+           year_n = 43 + year - (start_comp_yr - 1),  #year - 1995, changed with the addition of the old data...
            #region_n = ifelse()
            source = 1) %>% 
     select(year, year_n, area_n, user_n, source, N = totalrf_n, 
@@ -1771,10 +1777,10 @@ readinData_contemporary <- function(spl_knts = 7,
            slope = ifelse(region == "Southeast" & year < 2006,
                           NA,slope)) #,
   
-  int <- I_ayu %>% filter(year >= start_yr & year <= end_yr) %>%
+  int <- I_ayu %>% filter(year >= start_comp_yr & year <= end_yr) %>%
     mutate(area_n = as.numeric(as.factor(area)), 
            user_n = ifelse(user == "charter", 0, 1), 
-           year_n = year - (start_yr - 1),  #year - 1995, changed with the addition of the old data...
+           year_n = 43 + year - (start_comp_yr - 1),  #year - 1995, changed with the addition of the old data...
            #region_n = ifelse()
            source = 1) %>%
     select(year, year_n, area_n, user_n, source, # N = totalrf_n, 
@@ -1818,7 +1824,8 @@ readinData_contemporary <- function(spl_knts = 7,
   
   S_ayu %>% mutate(area_n = as.numeric(area)) %>%
     select(area,area_n) %>% unique() %>% #-> area_ns
-    right_join(kha, by = "area") %>% filter(year >= start_yr & year <= end_yr) %>%
+    right_join(kha, by = "area") %>% 
+    filter(year >= start_comp_yr & year <= end_yr) %>%
     mutate(#area_n = , 
       #user_n = ifelse(user == "charter", 0, 1), 
       year_n = year - (start_yr - 1)) %>% 

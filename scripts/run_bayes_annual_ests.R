@@ -33,8 +33,11 @@ end_yr <- 2024
 REP_YR <- 2024 #for bringing in Howard estimats
 
 #load the data:
-mod <- "annual_est_mod_take3"
 mod <- "annual_est_mod_take2"
+mod <- "annual_est_take5"
+mod <- "annual_est_take5.1"
+mod <- "annual_est_take5.1.1"
+
 list2env(readinData_alt(spl_knts = 7,
                                  start_yr = start_yr,
                                  end_yr = end_yr,
@@ -42,6 +45,7 @@ list2env(readinData_alt(spl_knts = 7,
          .GlobalEnv)
 
 mod <- "annual_est_mod_take3"
+
 list2env(readinData_alt(spl_knts = 4,
                         start_yr = start_yr,
                         end_yr = end_yr,
@@ -50,10 +54,22 @@ list2env(readinData_alt(spl_knts = 4,
 
 
 mod <- "annual_est_mod"
-list2env(readinData_contemporary(spl_knts = 4,
+mod <- "annual_est_mod_take4"
+mod <- "annual_est_take6"
+mod <- "annual_est_take5.1.1.a"
+list2env(readinData_contemporary(spl_knts = 7,
+                                 start_comp_yr = 2020,
                     start_yr = start_yr,
                     end_yr = end_yr,
                     SE06 = "exclude"), #SE06 = "exclude"
+         .GlobalEnv)
+
+mod <- "annual_est_take5.1.1.a2"
+list2env(readinData_contemporary(spl_knts = 4,
+                                 start_comp_yr = 2020,
+                                 start_yr = start_yr,
+                                 end_yr = end_yr,
+                                 SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
 #load parameters
@@ -69,6 +85,7 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 set.seed(8645)
 
 histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
+histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
 histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
 
 as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
@@ -76,19 +93,90 @@ as.matrix((histdat$q50$H_ayu)) -> jags_dat$H_ayu_Hest
 as.matrix((histdat$q50$H_ay)) -> jags_dat$H_ay_Hest
 as.matrix((histdat$q50$Hy_ayg)) -> jags_dat$Hy_ayg_Hest
 as.matrix((histdat$q50$Ho_ayg)) -> jags_dat$Ho_ayg_Hest
+as.matrix((histdat$q50$Hy_ayu)) -> jags_dat$Hy_ayu_Hest
+as.matrix((histdat$q50$Ho_ayu)) -> jags_dat$Ho_ayu_Hest
+
+#as.matrix((histdat$q50$Hhat_ay)) -> jags_dat$Hhat_ay_Hest
+#as.matrix((histdat$q50$logH_ay)) -> jags_dat$logH_ay_Hest
+
 as.matrix((histdat$q50$R_ay)) -> jags_dat$R_ay_Hest
 as.matrix((histdat$q50$R_ayg)) -> jags_dat$R_ayg_Hest
 as.matrix((histdat$q50$Ry_ayg)) -> jags_dat$Ry_ayg_Hest
 as.matrix((histdat$q50$Ro_ayg)) -> jags_dat$Ro_ayg_Hest
 as.matrix((histdat$q50$Rp_ayg)) -> jags_dat$Rp_ayg_Hest
+as.matrix((histdat$q50$Ry_ayu)) -> jags_dat$Ry_ayu_Hest
+as.matrix((histdat$q50$Ro_ayu)) -> jags_dat$Ro_ayu_Hest
+as.matrix((histdat$q50$Rp_ayu)) -> jags_dat$Rp_ayu_Hest
+
+as.array(histdat$q50$p_pelagic) -> jags_dat$p_pel_Hest
+as.array(histdat$q50$p_black) -> jags_dat$p_bl_Hest
+as.array(histdat$q50$p_yellow) -> jags_dat$p_ye_Hest
+as.array(histdat$q50$p_dsr) -> jags_dat$p_dsr_Hest
+as.array(histdat$q50$p_slope) -> jags_dat$p_sl_Hest
+
+as.array(histdat$q50$pH) -> jags_dat$pH_Hest
+
+c(histdat$q50$beta0_pelagic) -> jags_dat$beta0_pel_Hest
+c(histdat$q50$beta1_pelagic) -> jags_dat$beta1_pel_Hest
+c(histdat$q50$beta2_pelagic) -> jags_dat$beta2_pel_Hest
+c(histdat$q50$beta3_pelagic) -> jags_dat$beta3_pel_Hest
+
+c(histdat$q50$beta0_black) -> jags_dat$beta0_bl_Hest
+c(histdat$q50$beta1_black) -> jags_dat$beta1_bl_Hest
+c(histdat$q50$beta2_black) -> jags_dat$beta2_bl_Hest
+c(histdat$q50$beta3_black) -> jags_dat$beta3_bl_Hest
+
+c(histdat$q50$beta0_yellow) -> jags_dat$beta0_ye_Hest
+c(histdat$q50$beta1_yellow) -> jags_dat$beta1_ye_Hest
+c(histdat$q50$beta2_yellow) -> jags_dat$beta2_ye_Hest
+c(histdat$q50$beta3_yellow) -> jags_dat$beta3_ye_Hest
+
+c(histdat$q50$beta0_dsr) -> jags_dat$beta0_dsr_Hest
+c(histdat$q50$beta1_dsr) -> jags_dat$beta1_dsr_Hest
+c(histdat$q50$beta2_dsr) -> jags_dat$beta2_dsr_Hest
+c(histdat$q50$beta3_dsr) -> jags_dat$beta3_dsr_Hest
+
+c(histdat$q50$beta0_slope) -> jags_dat$beta0_sl_Hest
+c(histdat$q50$beta1_slope) -> jags_dat$beta1_sl_Hest
+c(histdat$q50$beta2_slope) -> jags_dat$beta2_sl_Hest
+c(histdat$q50$beta3_slope) -> jags_dat$beta3_sl_Hest
+
+as.matrix(histdat$q50$beta0_pH) -> jags_dat$beta0_pH_Hest
+as.matrix(histdat$q50$beta1_pH) -> jags_dat$beta1_pH_Hest
+as.matrix(histdat$q50$beta2_pH) -> jags_dat$beta2_pH_Hest
+as.matrix(histdat$q50$beta3_pH) -> jags_dat$beta3_pH_Hest
+
+as.matrix(histdat$q50$logbc_H) -> jags_dat$logbc_H_Hest
+as.matrix(histdat$q50$logbc_R) -> jags_dat$logbc_R_Hest
+
+as.matrix(histdat$q50$pG) -> jags_dat$pG_Hest
+
+as.array(histdat$q50$eps_pH) -> jags_dat$eps_pH_Hest
+as.array(histdat$q50$re_pH) -> jags_dat$re_pH_Hest
+
+as.array(histdat$q50$eps_pel) -> jags_dat$eps_pel_Hest
+as.array(histdat$q50$eps_ye) -> jags_dat$eps_ye_Hest
+as.array(histdat$q50$eps_bl) -> jags_dat$eps_bl_Hest
+as.array(histdat$q50$eps_dsr) -> jags_dat$eps_dsr_Hest
+as.array(histdat$q50$eps_sl) -> jags_dat$eps_sl_Hest
+
+as.array(histdat$q50$re_pelagic) -> jags_dat$re_pelagic_Hest
+as.array(histdat$q50$re_black) -> jags_dat$re_black_Hest
+as.array(histdat$q50$re_yellow) -> jags_dat$re_yellow_Hest
+as.array(histdat$q50$re_dsr) -> jags_dat$re_dsr_Hest
+as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest
 
 
-jags_dat$Hhat_ayu
+dim(as.array(histdat$q50$pH))
+jags_dat$pH_Hest[1,1,1,4]
+jags_dat$p_dsr_Hest[1,1,1]
+
+histdat$q50$beta3
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -315,7 +403,7 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "" #"SE06ex"  "All_SE"
+other_label <- "tst" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))

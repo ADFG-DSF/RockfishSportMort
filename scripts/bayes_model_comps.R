@@ -49,51 +49,57 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 set.seed(8645)
 
-histresults <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
+histresults <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
 
-contresults1 <- "annual_est_mod_take2_thru2024_2e+05__2026-07-01"
-contresults2 <- "annual_est_mod_take3_thru2024_60000__2026-07-01"
+contresults1 <- "annual_est_take5_thru2024_1e+05__2026-07-07"
+contresults2 <- "annual_est_take5.1_thru2024_40000_tst_2026-07-07"
+contresults3 <- "annual_est_take5.1.1.a_thru2024_10000_tst_2026-07-07"
+contresults4 <- "annual_est_take5.1.1.a2_thru2024_10000_tst_2026-07-07"
 
 Historical <- readRDS(paste0(".\\output\\bayes_posts\\",histresults,".rds"))
 
 Contemporary_a1 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults1,".rds"))
 Contemporary_a2 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults2,".rds"))
+Contemporary_a3 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults3,".rds"))
+Contemporary_a4 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults4,".rds"))
 
 modlist <- list(Historical=Historical,
                 Contemporary_a1 = Contemporary_a1,
-                Contemporary_a2 = Contemporary_a2)
+                Contemporary_a2 = Contemporary_a2,
+                Contemporary_a3 = Contemporary_a3,
+                Contemporary_a4 = Contemporary_a4)
 
 #-------------------------------------------------------------------------------
 # Compare all harvests
 
-for (i in 1:length(modlist)){ #i <- 3
+for (i in 1:length(modlist)){ #i <- 1
   postH <- modlist[[i]]
   
   #start_yr <- ifelse(names(modlist[i])== "Historical",1977,2020)
   
-  if (names(modlist[i])== "Historical"){
-    list2env(readinData_alt(spl_knts = 7,
-                                     start_yr = start_yr,
-                                     end_yr = end_yr,
-                                     SE06 = "exclude"), #SE06 = "exclude"
-             .GlobalEnv)
-  } 
+#  if (names(modlist[i])== "Historical"){
+#    list2env(readinData_alt(spl_knts = 7,
+#                                     start_yr = start_yr,
+#                                     end_yr = end_yr,
+#                                     SE06 = "exclude"), #SE06 = "exclude"
+#             .GlobalEnv)
+#  } 
   
-  if (names(modlist[i])== "Contemporary_a1"){
-    list2env(readinData_alt(spl_knts = 7,
-                            start_yr = start_yr,
-                            end_yr = end_yr,
-                            SE06 = "exclude"), #SE06 = "exclude"
-             .GlobalEnv)
-  }
+#  if (names(modlist[i])== "Contemporary_a1"){
+#    list2env(readinData_alt(spl_knts = 7,
+#                            start_yr = start_yr,
+#                            end_yr = end_yr,
+#                            SE06 = "exclude"), #SE06 = "exclude"
+#             .GlobalEnv)
+#  }
   
-  if (names(modlist[i])== "Contemporary_a2"){
-    list2env(readinData_alt(spl_knts = 4,
-                            start_yr = start_yr,
-                            end_yr = end_yr,
-                            SE06 = "exclude"), #SE06 = "exclude"
-             .GlobalEnv)
-  }
+#  if (names(modlist[i])== "Contemporary_a2"){
+#    list2env(readinData_alt(spl_knts = 4,
+#                            start_yr = start_yr,
+#                            end_yr = end_yr,
+#                            SE06 = "exclude"), #SE06 = "exclude"
+#             .GlobalEnv)
+#  }
   
   as.data.frame(
     rbind(t(postH$q50$H_ayg),
@@ -247,6 +253,102 @@ for (i in 1:length(modlist)){ #i <- 3
     ye_plotdat = yetemp
   } else {
     ye_plotdat = rbind(ye_plotdat,yetemp)
+  }
+  
+  as.data.frame(
+    rbind(t(postH$q50$Hd_ayg),
+          t(postH$q50$Hd_ayu),
+          t(postH$q50$Hd_ay))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 3),
+           user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+    pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$q2.5$Hd_ayg),
+            t(postH$q2.5$Hd_ayu),
+            t(postH$q2.5$Hd_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$q97.5$Hd_ayg),
+            t(postH$q97.5$Hd_ayu),
+            t(postH$q97.5$Hd_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$sd$Hd_ayg),
+            t(postH$sd$Hd_ayu),
+            t(postH$sd$Hd_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+    mutate(model = names(modlist[i])) -> dsrtemp
+  
+  if (i == 1){
+    dsr_plotdat = dsrtemp
+  } else {
+    dsr_plotdat = rbind(dsr_plotdat,dsrtemp)
+  }
+  
+  as.data.frame(
+    rbind(t(postH$q50$Hs_ayg),
+          t(postH$q50$Hs_ayu),
+          t(postH$q50$Hs_ay))) %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = rep(start_yr:end_yr, times = 3),
+           user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+    pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$q2.5$Hs_ayg),
+            t(postH$q2.5$Hs_ayu),
+            t(postH$q2.5$Hs_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$q97.5$Hs_ayg),
+            t(postH$q97.5$Hs_ayu),
+            t(postH$q97.5$Hs_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    left_join(as.data.frame(
+      rbind(t(postH$sd$Hs_ayg),
+            t(postH$sd$Hs_ayu),
+            t(postH$sd$Hs_ay))) %>%
+        setNames(nm = unique(H_ayg$area)) %>%
+        mutate(year = rep(start_yr:end_yr, times = 3),
+               user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+        pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
+        mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+      by = c("year","user","area")) %>%
+    mutate(area = toupper(as.character(area))) %>% #filter(!is.na(area)) %>%
+    mutate(model = names(modlist[i])) -> sltemp
+  
+  if (i == 1){
+    sl_plotdat = sltemp
+  } else {
+    sl_plotdat = rbind(sl_plotdat,sltemp)
   }
   
   pHpel_mod_tmp <- 
@@ -781,7 +883,8 @@ rf_plotdat %>% filter(model == "Contemporary_a2")
 
 rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
   filter(user == "guided",
-         model != "Contemporary_a1") %>%
+         #model != "Contemporary_a1",
+         year > 2010) %>%
   ggplot(aes(x = year, y = H, color = model, fill = model)) +
 #  facet_wrap(~user) + 
   geom_line() + 
@@ -794,7 +897,8 @@ rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Total Rockfish Harvests (numbers)", x = "Year")
 
 rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "unguided") %>%
+  filter(user == "unguided",
+         year > 2010) %>%
   ggplot(aes(x = year, y = H, color = model, fill = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -807,7 +911,8 @@ rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Total Rockfish Harvests (numbers)", x = "Year")
 
 brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "unguided") %>%
+  filter(user == "unguided",
+         year > 2010) %>%
   ggplot(aes(x = year, y = H, color = model, fill = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -820,7 +925,36 @@ brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   labs(y = "Total Rockfish Harvests (numbers)", x = "Year")
 
 ye_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "unguided") %>%
+  filter(user == "unguided",
+         year > 2010) %>%
+  ggplot(aes(x = year, y = H, color = model, fill = model)) +
+  #  facet_wrap(~user) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(shape = 13) + 
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Total Rockfish Harvests (numbers)", x = "Year")
+
+dsr_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(user == "unguided",
+         year > 2010) %>%
+  ggplot(aes(x = year, y = H, color = model, fill = model)) +
+  #  facet_wrap(~user) + 
+  geom_line() + 
+  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(shape = 13) + 
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "Total Rockfish Harvests (numbers)", x = "Year")
+
+sl_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(user == "unguided",
+         year > 2010) %>%
   ggplot(aes(x = year, y = H, color = model, fill = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -841,7 +975,8 @@ pHpel_mod %>% filter(is.na(area))
 unique(pHpel_mod$area)
 
 pHpel_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -854,7 +989,8 @@ pHpel_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Proportion harvested", x = "Year")
 
 pHye_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -867,7 +1003,8 @@ pHye_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = 
   labs(y = "Proportion harvested", x = "Year")
 
 pHye_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "charter") %>%
+  filter(user == "charter",
+         year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -885,7 +1022,8 @@ pHye_mod %>% filter(model == "Contemporary_a2",
 
 
 pHnpny_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -898,7 +1036,8 @@ pHnpny_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   labs(y = "Proportion harvested", x = "Year")
 
 pHdsr_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-#  filter(user == "private") %>%
+#  filter(user == "private",
+#  year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
@@ -910,7 +1049,8 @@ pHdsr_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Proportion harvested", x = "Year")
 
 pHslope_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-#  filter(user == "private") %>%
+#  filter(user == "private",
+#  year > 2010) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
@@ -928,7 +1068,8 @@ p_dsr
 p_slope
 
 p_pelagic %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = p_pelagic, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -941,7 +1082,8 @@ p_pelagic %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Proportion harvested", x = "Year")
 
 p_black %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = p_black, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -954,7 +1096,8 @@ p_black %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = T
   labs(y = "Proportion harvested", x = "Year")
 
 p_yellow %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = p_yellow, color = model, fill = model, shape = model)) +
   #  facet_wrap(~user) + 
   geom_line() + 
@@ -967,7 +1110,8 @@ p_yellow %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = 
   labs(y = "Proportion harvested", x = "Year")
 
 p_dsr %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = p_dsr, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
@@ -979,7 +1123,8 @@ p_dsr %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRU
   labs(y = "Proportion harvested", x = "Year")
 
 p_slope %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(user == "private") %>%
+  filter(user == "private",
+         year > 2010) %>%
   ggplot(aes(x = year, y = p_slope, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
@@ -1003,7 +1148,8 @@ pG %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE))
   labs(y = "Proportion harvested", x = "Year")
 
 bias_ests %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(data == "H") %>%
+  filter(data == "H",
+         year > 2010) %>%
   ggplot(aes(x = year, y = bc, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = bc_lo95, ymax = bc_hi95), alpha = 0.25, color = NA) +
@@ -1015,7 +1161,8 @@ bias_ests %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered =
   labs(y = "Proportion harvested", x = "Year")
 
 bias_ests %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
-  filter(data == "R") %>%
+  filter(data == "R",
+         year > 2010) %>%
   ggplot(aes(x = year, y = bc, color = model, fill = model, shape = model)) +
   geom_line() + 
   geom_ribbon(aes(x=year,ymin = bc_lo95, ymax = bc_hi95), alpha = 0.25, color = NA) +

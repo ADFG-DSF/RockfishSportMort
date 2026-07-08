@@ -39,7 +39,7 @@ library(flextable)
 
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("../scripts/bayes_data_param_load.R", echo = FALSE)
-start_yr <- 2020
+start_yr <- 1977
 end_yr <- 2024
 REP_YR <- 2024 #for Howard estimates
 #list2env(readinData(start_yr = start_yr,
@@ -47,9 +47,9 @@ REP_YR <- 2024 #for Howard estimates
 #         .GlobalEnv)
 
 list2env(readinData_alt(spl_knts = 7,
-                    start_yr = start_yr,
-                    end_yr = end_yr,
-                    SE06 = "exclude"), #SE06 = "exclude"
+                                 start_yr = start_yr,
+                                 end_yr = end_yr,
+                                 SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
 #...............................................................................
@@ -68,7 +68,7 @@ intdat <- "yes"
 
 B4 <- "simp" #complex "simp", "none
 
-res <- "annual_est_mod_thru2024_1e+06_SE06ex_2026-06-29" #notso bad
+res <- "annual_est_take5_thru2024_1e+05__2026-07-07" #notso bad
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -5612,7 +5612,7 @@ rep_wb$add_data("Slope",SLOPE_wb %>% filter(area %in% southeast))
 
 ### Save it all!!
 #wb_save(rep_wb, file = "RF_Sport_Removals.xlsx", overwrite = TRUE, path = NULL, flush = FALSE)
-wb_save(rep_wb, file = "RF_Sport_Removals.xlsx", overwrite = TRUE, path = NULL)
+wb_save(rep_wb, file = "RF_Sport_Removals_annual_update.xlsx", overwrite = TRUE, path = NULL)
 if (interactive()) rep_wb$open()
 #saveWorkbook(res_wb, paste0("SF_Rockfish_Catch_Removal_Ests_thru",end_yr,".xlsx"), overwrite = TRUE)
 ```
