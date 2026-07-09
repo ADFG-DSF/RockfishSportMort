@@ -32,6 +32,8 @@ end_yr <- 2024
 #most recent Howard estimates: 
 REP_YR <- 2024 #for bringing in Howard estimats
 
+#-------------------------------------------------------------------------------
+
 #load the data:
 mod <- "annual_est_mod_take2"
 mod <- "annual_est_take5"
@@ -57,12 +59,16 @@ mod <- "annual_est_mod"
 mod <- "annual_est_mod_take4"
 mod <- "annual_est_take6"
 mod <- "annual_est_take5.1.1.a"
+mod <- "annual_est_take5.1.1.a_simpB4pH"
+
 list2env(readinData_contemporary(spl_knts = 7,
                                  start_comp_yr = 2020,
                     start_yr = start_yr,
                     end_yr = end_yr,
                     SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
+
+jags_dat$prigui_ay
 
 mod <- "annual_est_take5.1.1.a2"
 list2env(readinData_contemporary(spl_knts = 4,
@@ -71,6 +77,16 @@ list2env(readinData_contemporary(spl_knts = 4,
                                  end_yr = end_yr,
                                  SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
+
+mod <- "annual_est_take5.1.1.c_fixH"
+list2env(readinData_contemporary2(spl_knts = 4,
+                                 start_comp_yr = 1977,
+                                 start_yr = 2020,
+                                 end_yr = end_yr,
+                                 SE06 = "exclude"), #SE06 = "exclude"
+         .GlobalEnv)
+jags_dat$Z
+end_yr - 1976
 
 #load parameters
 params <- jags_params()
@@ -88,7 +104,7 @@ histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltu
 histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
 histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
 
-as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
+{as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
 as.matrix((histdat$q50$H_ayu)) -> jags_dat$H_ayu_Hest
 as.matrix((histdat$q50$H_ay)) -> jags_dat$H_ay_Hest
 as.matrix((histdat$q50$Hy_ayg)) -> jags_dat$Hy_ayg_Hest
@@ -164,7 +180,7 @@ as.array(histdat$q50$re_pelagic) -> jags_dat$re_pelagic_Hest
 as.array(histdat$q50$re_black) -> jags_dat$re_black_Hest
 as.array(histdat$q50$re_yellow) -> jags_dat$re_yellow_Hest
 as.array(histdat$q50$re_dsr) -> jags_dat$re_dsr_Hest
-as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest
+as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest}
 
 
 dim(as.array(histdat$q50$pH))
@@ -176,22 +192,17 @@ histdat$q50$beta3
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 2E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
-
-#model to run; see /models folder
-mod <- "annual_est_mod_take3"
-mod <- "annual_est_mod_take2"
-mod <- "annual_est_mod"
-
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
 use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
+use_this_model <- "annual_est_take5.1.1.a_thru2024_10000_tst_2026-07-08"
 
 initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
 
