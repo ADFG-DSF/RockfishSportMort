@@ -854,7 +854,25 @@ modelcomp <- function(modlist,start_yr,Y=48){
     } else {
       bias_ests = rbind(bias_ests,bc_mod2)
     }
+    
+    postH$q50$beta4_pH %>%
+      t() %>%
+      data.frame() %>%
+      setNames(nm = unique(H_ayg$area)) %>%
+      mutate(year = unique((end_yr - ncol(postH$q50$beta4_pH) + 1):end_yr)) %>%
+      pivot_longer(cols = unique(H_ayg$area),
+                   names_to = "area",
+                   values_to = "B4_pH") %>%
+      mutate(model = names(modlist[i])) -> b4_pHtmp
+    
+    if (i == 1){
+      b4_pH = b4_pHtmp
+    } else {
+      b4_pH = rbind(b4_pH,b4_pHtmp)
+    }
+    
   }
+  
   results <- list(rf_plotdat=rf_plotdat,
                   brf_plotdat=brf_plotdat,
                   ye_plotdat = ye_plotdat,
@@ -871,7 +889,8 @@ modelcomp <- function(modlist,start_yr,Y=48){
                   p_dsr = p_dsr,
                   p_slope = p_slope,
                   pG = pG,
-                  bias_ests = bias_ests)
+                  bias_ests = bias_ests,
+                  b4_pH = b4_pH)
   return(results)
 }
 

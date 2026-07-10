@@ -1807,6 +1807,9 @@ readinData_contemporary <- function(spl_knts = 7,
     filter(!is.na(intc_other),
            intc_other != 0,
            !area_n %in% c(11,12,13,14,15,16))
+  
+  
+  
   int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
     filter(!is.na(intc_dsr),
            intc_dsr != 0)
@@ -2165,10 +2168,11 @@ readinData_contemporary <- function(spl_knts = 7,
 
 #-------------------------------------------------------------------------------
 
-readinData_contemporary2 <- function(spl_knts = 3,
+readinData_contemporary2 <- function(spl_knts = 4,
                                     start_comp_yr = 2020,
                                     start_yr = 2020,
                                     end_yr = 2024,
+                                    b4_start = 2011,
                                     SE06 = "exclude"){
   # Logbook harvests by area, year for guided trips
   H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
@@ -2351,10 +2355,10 @@ readinData_contemporary2 <- function(spl_knts = 3,
   wt_rm %>% filter(region == "Central", !is.na(n_samps)) 
   wt_rm %>% filter(region == "Central", is.na(n_samps), year > 2008)
   
-  pri_rel_pr <- pri_rel_pr %>% filter(year >= start_yr & year <= end_yr)
+  pri_rel_pr <- pri_rel_pr %>% filter(year >= b4_start & year <= end_yr)
   
   A = length(unique(Hhat_ay$area))
-  Y_ts = end_yr - min(start_yr,start_comp_yr) + 1 #length(unique(Hhat_ay$year))
+  Y_ts = end_yr - 1977 + 1 #end_yr - min(start_yr,start_comp_yr) + 1 #length(unique(Hhat_ay$year))
   Y_Hdat <- length(unique(Hhat_ay$year))
   
   #SPLINE COMPONENTS: 
@@ -2363,6 +2367,7 @@ readinData_contemporary2 <- function(spl_knts = 3,
   
   #COMP DATA
   comp <- S_ayu %>% filter(year >= start_comp_yr & year <= end_yr) %>%
+  #  filter(!(user == "private" & area == "afognak" & year > 2019)) %>%
     mutate(area_n = as.numeric(area), 
            user_n = ifelse(user == "charter", 0, 1), 
            year_n = (start_comp_yr - 1977) + year - (start_comp_yr - 1),  #year - 1995, changed with the addition of the old data...
@@ -2372,7 +2377,8 @@ readinData_contemporary2 <- function(spl_knts = 3,
            pelagic = pelagic_n, black = black_n, yellow = ye_n, 
            other = notye_nonpel_n, dsr = dsr_n, slope = slope_n,
            region,area) %>%
-    filter(N != 0) %>%
+    filter(N != 0,
+           N != 1) %>%
     mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) %>%
     mutate(yellow = ifelse(region == "Southeast" & year < 2006,
                            NA,yellow),
@@ -2401,6 +2407,19 @@ readinData_contemporary2 <- function(spl_knts = 3,
            region,area) %>%
     filter(!is.na(inth_pel))
   
+  int2 <- I_ayu %>% filter(year >= 2006 & year <= end_yr) %>%
+    mutate(area_n = as.numeric(as.factor(area)), 
+           user_n = ifelse(user == "charter", 0, 1), 
+           year_n = (2006 - 1977) + year - (2006 - 1),  #year - 1995, changed with the addition of the old data...
+           #region_n = ifelse()
+           source = 1) %>%
+    select(year, year_n, area_n, user_n, source, # N = totalrf_n, 
+           inth_dsr = dsr_n, 
+           inth_slope = slope_n,
+           intc_dsr = dsr_c, 
+           intc_slope = slope_c,
+           region,area) 
+  
   int_pel <- int %>% select(year,year_n,area_n,user_n,inth_pel,intc_pel) %>%
     filter(!is.na(intc_pel),
            intc_pel != 0)
@@ -2411,10 +2430,11 @@ readinData_contemporary2 <- function(spl_knts = 3,
     filter(!is.na(intc_other),
            intc_other != 0,
            !area_n %in% c(11,12,13,14,15,16))
-  int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
+  
+  int_dsr <- int2 %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
     filter(!is.na(intc_dsr),
            intc_dsr != 0)
-  int_slope <- int %>% select(year,year_n,area_n,user_n,inth_slope,intc_slope) %>%
+  int_slope <- int2 %>% select(year,year_n,area_n,user_n,inth_slope,intc_slope) %>%
     filter(!is.na(intc_slope),
            intc_slope != 0)
   
@@ -2527,13 +2547,13 @@ readinData_contemporary2 <- function(spl_knts = 3,
       Rlby_ayg_bound = cbind(matrix(NA, nrow = A, 
                                     ncol = Y_ts - length(unique(R_ayg$year))),
                              matrix(R_ayg$Rye, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlby_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlby_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y_ts ),
       #non-pelagic, non-yelloweye
       Rlbo_ayg = cbind(matrix(NA, nrow = A, 
                               ncol = Y_ts - length(unique(R_ayg$year))),
                        matrix(R_ayg$Ro, nrow = A, 
                               ncol = length(unique(R_ayg$year)), byrow = TRUE)),
-      Rlbo_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
+      Rlbo_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y_ts ),
       
       #SWHS DATA:
       # SWHS estimates of rockfish harvests
@@ -2542,14 +2562,14 @@ readinData_contemporary2 <- function(spl_knts = 3,
                       matrix(Hhat_ay$Hhat, nrow = A, ncol = length(unique(Hhat_ay$year)), byrow = TRUE)),
       cvHhat_ay = cbind(matrix(1, nrow = A, 
                                ncol = Y_ts - length(unique(Hhat_ay$year))),
-                        matrix(Hhat_ay$seH, nrow = A, ncol = length(unique(Hhat_ay$year)), byrow = TRUE)),
+                        matrix(Hhat_ay$seH/Hhat_ay$Hhat, nrow = A, ncol = length(unique(Hhat_ay$year)), byrow = TRUE)),
       
       Rhat_ay = cbind(matrix(NA, nrow = A, 
                              ncol = Y_ts - length(unique(Rhat_ay$year))),
                       matrix(Rhat_ay$Rhat, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE)),
       cvRhat_ay = cbind(matrix(1, nrow = A, 
                                ncol = Y_ts - length(unique(Rhat_ay$year))),
-                        matrix(Rhat_ay$seR, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE)),
+                        matrix(Rhat_ay$seR/Rhat_ay$Rhat, nrow = A, ncol = length(unique(Rhat_ay$year)), byrow = TRUE)),
       
       Hhat_ayg = cbind(matrix(NA, nrow = A, 
                               ncol = Y_ts - length(unique(Hhat_ayg$year))),
@@ -2813,8 +2833,470 @@ readinData_contemporary2 <- function(spl_knts = 3,
               comp = comp,
               compX = compX,
               int = int,
-              Y = Y, A = A))
+              Y = Y_ts, A = A))
 }
+
+#-------------------------------------------------------------------------------
+# Function to get historical reconstruction values to use in the contemporary
+# estimation model:
+# This will grab the historical estimates, including Kodiak priors, and add them
+# to jags_dat that is produced by the readinData_contemporary2() function
+
+get_hist_ests <- function(histdatmod = ""){
+  histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
+  
+  {
+    histdat$q50$mu_beta0_pelagic_kod -> jags_dat$kod_ppel5
+    histdat$q50$mu_beta4_pelagic_kod -> jags_dat$kod_ppel4
+    
+    1/histdat$sd$mu_beta0_pelagic_kod/histdat$sd$mu_beta0_pelagic_kod -> jags_dat$kod_ppel5_tau
+    1/histdat$sd$mu_beta4_pelagic_kod/histdat$sd$mu_beta4_pelagic_kod -> jags_dat$kod_ppel4_tau
+    
+    histdat$q50$mu_beta0_yellow_kod -> jags_dat$kod_pye5
+    histdat$q50$mu_beta4_yellow_kod -> jags_dat$kod_pye4
+    1/histdat$sd$mu_beta0_yellow_kod/histdat$sd$mu_beta0_yellow_kod -> jags_dat$kod_pye5_tau
+    1/histdat$sd$mu_beta4_yellow_kod/histdat$sd$mu_beta4_yellow_kod -> jags_dat$kod_pye4_tau
+    
+    histdat$q50$mu_beta0_black_kod -> jags_dat$kod_pbl5
+    histdat$q50$mu_beta4_black_kod -> jags_dat$kod_pbl4
+    1/histdat$sd$mu_beta0_black_kod/histdat$sd$mu_beta0_black_kod -> jags_dat$kod_pbl5_tau
+    1/histdat$sd$mu_beta4_black_kod/histdat$sd$mu_beta4_black_kod -> jags_dat$kod_pbl4_tau
+    
+    as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
+    as.matrix((histdat$q50$H_ayu)) -> jags_dat$H_ayu_Hest
+    as.matrix((histdat$q50$H_ay)) -> jags_dat$H_ay_Hest
+    as.matrix((histdat$q50$Hy_ayg)) -> jags_dat$Hy_ayg_Hest
+    as.matrix((histdat$q50$Ho_ayg)) -> jags_dat$Ho_ayg_Hest
+    as.matrix((histdat$q50$Hy_ayu)) -> jags_dat$Hy_ayu_Hest
+    as.matrix((histdat$q50$Ho_ayu)) -> jags_dat$Ho_ayu_Hest
+    
+    #as.matrix((histdat$q50$Hhat_ay)) -> jags_dat$Hhat_ay_Hest
+    #as.matrix((histdat$q50$logH_ay)) -> jags_dat$logH_ay_Hest
+    
+    as.matrix((histdat$q50$R_ay)) -> jags_dat$R_ay_Hest
+    as.matrix((histdat$q50$R_ayg)) -> jags_dat$R_ayg_Hest
+    as.matrix((histdat$q50$Ry_ayg)) -> jags_dat$Ry_ayg_Hest
+    as.matrix((histdat$q50$Ro_ayg)) -> jags_dat$Ro_ayg_Hest
+    as.matrix((histdat$q50$Rp_ayg)) -> jags_dat$Rp_ayg_Hest
+    as.matrix((histdat$q50$Ry_ayu)) -> jags_dat$Ry_ayu_Hest
+    as.matrix((histdat$q50$Ro_ayu)) -> jags_dat$Ro_ayu_Hest
+    as.matrix((histdat$q50$Rp_ayu)) -> jags_dat$Rp_ayu_Hest
+    
+    as.array(histdat$q50$p_pelagic) -> jags_dat$p_pel_Hest
+    as.array(histdat$q50$p_black) -> jags_dat$p_bl_Hest
+    as.array(histdat$q50$p_yellow) -> jags_dat$p_ye_Hest
+    as.array(histdat$q50$p_dsr) -> jags_dat$p_dsr_Hest
+    as.array(histdat$q50$p_slope) -> jags_dat$p_sl_Hest
+    
+    as.array(histdat$q50$pH) -> jags_dat$pH_Hest
+    
+    c(histdat$q50$beta0_pelagic) -> jags_dat$beta0_pel_Hest
+    c(histdat$q50$beta1_pelagic) -> jags_dat$beta1_pel_Hest
+    c(histdat$q50$beta2_pelagic) -> jags_dat$beta2_pel_Hest
+    c(histdat$q50$beta3_pelagic) -> jags_dat$beta3_pel_Hest
+    
+    c(histdat$q50$beta0_black) -> jags_dat$beta0_bl_Hest
+    c(histdat$q50$beta1_black) -> jags_dat$beta1_bl_Hest
+    c(histdat$q50$beta2_black) -> jags_dat$beta2_bl_Hest
+    c(histdat$q50$beta3_black) -> jags_dat$beta3_bl_Hest
+    
+    c(histdat$q50$beta0_yellow) -> jags_dat$beta0_ye_Hest
+    c(histdat$q50$beta1_yellow) -> jags_dat$beta1_ye_Hest
+    c(histdat$q50$beta2_yellow) -> jags_dat$beta2_ye_Hest
+    c(histdat$q50$beta3_yellow) -> jags_dat$beta3_ye_Hest
+    
+    c(histdat$q50$beta0_dsr) -> jags_dat$beta0_dsr_Hest
+    c(histdat$q50$beta1_dsr) -> jags_dat$beta1_dsr_Hest
+    c(histdat$q50$beta2_dsr) -> jags_dat$beta2_dsr_Hest
+    c(histdat$q50$beta3_dsr) -> jags_dat$beta3_dsr_Hest
+    
+    c(histdat$q50$beta0_slope) -> jags_dat$beta0_sl_Hest
+    c(histdat$q50$beta1_slope) -> jags_dat$beta1_sl_Hest
+    c(histdat$q50$beta2_slope) -> jags_dat$beta2_sl_Hest
+    c(histdat$q50$beta3_slope) -> jags_dat$beta3_sl_Hest
+    
+    as.matrix(histdat$q50$beta0_pH) -> jags_dat$beta0_pH_Hest
+    as.matrix(histdat$q50$beta1_pH) -> jags_dat$beta1_pH_Hest
+    as.matrix(histdat$q50$beta2_pH) -> jags_dat$beta2_pH_Hest
+    as.matrix(histdat$q50$beta3_pH) -> jags_dat$beta3_pH_Hest
+    
+    as.matrix(histdat$q50$logbc_H) -> jags_dat$logbc_H_Hest
+    as.matrix(histdat$q50$logbc_R) -> jags_dat$logbc_R_Hest
+    
+    as.matrix(histdat$q50$pG) -> jags_dat$pG_Hest
+    
+    as.array(histdat$q50$eps_pH) -> jags_dat$eps_pH_Hest
+    as.array(histdat$q50$re_pH) -> jags_dat$re_pH_Hest
+    
+    as.array(histdat$q50$eps_pel) -> jags_dat$eps_pel_Hest
+    as.array(histdat$q50$eps_ye) -> jags_dat$eps_ye_Hest
+    as.array(histdat$q50$eps_bl) -> jags_dat$eps_bl_Hest
+    as.array(histdat$q50$eps_dsr) -> jags_dat$eps_dsr_Hest
+    as.array(histdat$q50$eps_sl) -> jags_dat$eps_sl_Hest
+    
+    as.array(histdat$q50$re_pelagic) -> jags_dat$re_pelagic_Hest
+    as.array(histdat$q50$re_black) -> jags_dat$re_black_Hest
+    as.array(histdat$q50$re_yellow) -> jags_dat$re_yellow_Hest
+    as.array(histdat$q50$re_dsr) -> jags_dat$re_dsr_Hest
+    as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest}
+  
+  return(jags_dat)
+}
+
+#-------------------------------------------------------------------------------
+# Function for getting starting values from old model
+
+get_inits <- function(model){
+  initspost <- readRDS(paste0(".\\output\\bayes_posts\\",model,".rds"))
+  
+  halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 10)
+  
+  other_inits <- lapply(1:nc, function(chain) {
+    chain_data <- as.matrix(initspost$samples[[chain]])
+    #as.list(chain_data[nrow(chain_data), ])
+    second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
+    as.list(colMeans(second_half))
+  })
+  
+  last_inits <- other_inits
+  
+  # Name the initial values you want to use:
+  inits_to_use <- last_inits
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_comp"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_pH"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "sd_pH"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_yellow_kod"]
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "sd_comp"]
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    if (!is.null(names(chain_list))) {
+      chain_list[!grepl("^sd_sp_wt", names(chain_list))]
+    } else {
+      chain_list
+    }
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    if (!is.null(names(chain_list))) {
+      chain_list[!grepl("^wt_user", names(chain_list))]
+    } else {
+      chain_list
+    }
+  })
+  
+  return(inits_to_use)
+}
+
+get_inits_justrun <- function(postH){
+  initspost <- postH
+  
+  halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 10)
+  
+  other_inits <- lapply(1:nc, function(chain) {
+    chain_data <- as.matrix(initspost$samples[[chain]])
+    #as.list(chain_data[nrow(chain_data), ])
+    second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
+    as.list(colMeans(second_half))
+  })
+  
+  last_inits <- other_inits
+  
+  # Name the initial values you want to use:
+  inits_to_use <- last_inits
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_comp"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_pH"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "sd_pH"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_pelagic"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_yellow"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_black"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_dsr"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta3_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_slope"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta0_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta1_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta2_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta5_yellow_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_yellow_kod"]
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_black_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "tau_beta4_pelagic_kod"]
+  })
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    chain_list[names(chain_list) != "sd_comp"]
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    if (!is.null(names(chain_list))) {
+      chain_list[!grepl("^sd_sp_wt", names(chain_list))]
+    } else {
+      chain_list
+    }
+  })
+  
+  inits_to_use <- lapply(inits_to_use, function(chain_list) {
+    if (!is.null(names(chain_list))) {
+      chain_list[!grepl("^wt_user", names(chain_list))]
+    } else {
+      chain_list
+    }
+  })
+  
+  return(inits_to_use)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

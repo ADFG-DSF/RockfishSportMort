@@ -55,9 +55,12 @@ histresults <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finalt
 #contresults1 <- "annual_est_take5_thru2024_1e+05__2026-07-07"
 contresults2 <- "annual_est_take5.1.1_thru2024_10000_tst_2026-07-07"
 contresults3 <- "annual_est_take5.1.1.a_thru2024_30000_tst_2026-07-08"
-contresults4 <- "annual_est_take5.1.1.a2_thru2024_1e+05_2026-07-07"
-contresults5 <- "annual_est_take5.1.1.a_simpB4pH_thru2024_40000_tst_2026-07-08"
-contresults6 <- "annual_est_take5.1.1.c_fixH_thru2024_20000_tst_2026-07-08"
+contresults4 <- "annual_est_take5.1.1.a2_thru2024_1e+05_tst_2026-07-07"
+#contresults5 <- "annual_est_take5.1.1.c_fixH_thru2024_50000_tst_2026-07-09"
+#contresults6 <- "annual_est_take5.1.1.c_fixH.1_thru2024_50000_tst_2026-07-09"
+#contresults7 <-"annual_est_take5.1.1.c_fixH.2_thru2024_120000_tst_2026-07-09"
+contresults8 <-"annual_est_take5.1.1.c_fixH.2_thru2024_50000_fixdat_2026-07-09"
+contresults9 <-"annual_est_take5.1.1.c_fixH.2_thru2024_50000_fullother_2026-07-09"
 
 Historical <- readRDS(paste0(".\\output\\bayes_posts\\",histresults,".rds"))
 
@@ -65,16 +68,22 @@ Historical <- readRDS(paste0(".\\output\\bayes_posts\\",histresults,".rds"))
 Contemporary_a2 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults2,".rds"))
 Contemporary_a3 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults3,".rds"))
 Contemporary_a4 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults4,".rds"))
-Contemporary_a5 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults5,".rds"))
-Contemporary_a6 <- postH #readRDS(paste0(".\\output\\bayes_posts\\",contresults6,".rds"))
+#Contemporary_a5 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults5,".rds"))
+#Contemporary_a6 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults6,".rds"))
+#Contemporary_a7 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults7,".rds"))
+Contemporary_a8 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults8,".rds"))
+Contemporary_a9 <- readRDS(paste0(".\\output\\bayes_posts\\",contresults9,".rds"))
 
 modlist <- list(Historical=Historical,
                 #Contemporary_a1 = Contemporary_a1,
                 take5.1.1 = Contemporary_a2,
                 take5.1.1.a = Contemporary_a3,
                 take5.1.1.a2 = Contemporary_a4,
-                take5.1.1.a_simpB4pH = Contemporary_a5,
-                take5.1.1.c_fixH = Contemporary_a6
+                #take5.1.1.c_fixH = Contemporary_a5,
+                #take5.1.1.c_fixH.1 = Contemporary_a6,
+                #take5.1.1.c_fixH.2 = Contemporary_a7,
+                take5.1.1.c_fixH.2_fixdat = Contemporary_a8,
+                take5.1.1.c_fixH.2_fullother = Contemporary_a8
                 )
 
 #-------------------------------------------------------------------------------
@@ -86,7 +95,7 @@ results <- modelcomp(modlist,start_yr = 1977,Y=48)
 
 #names(wes_palettes)
 
-pal <- c("black",wes_palette("Darjeeling1"))
+pal <- c("black",wes_palette("Darjeeling1"),"blue","forestgreen")
 
 results$rf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
   filter(user == "guided",
@@ -136,7 +145,7 @@ results$brf_plotdat %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), 
   scale_fill_manual(values = pal) +
   #  facet_wrap(~user) + 
   geom_line() + 
-  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95), alpha = 0.25, color = NA) +
+#  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95), alpha = 0.25, color = NA) +
   geom_line() +
   facet_wrap(. ~ area, scales = "free") +
   geom_point() + 
@@ -271,7 +280,7 @@ pHye_mod %>% filter(model == "Contemporary_a2",
 
 results$pHnpny_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
   filter(user == "private",
-         year > 2010) %>%
+         year > 1876) %>%
   mutate(model = fct_relevel(model,"Historical",
                              unique(results$rf_plotdat$model[results$rf_plotdat$model != "Historical"]))) %>%
   ggplot(aes(x = year, y = pH, color = model, fill = model, shape = model)) +
@@ -279,7 +288,7 @@ results$pHnpny_mod %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), 
   scale_fill_manual(values = pal) +
   #  facet_wrap(~user) + 
   geom_line() + 
-  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
+#  geom_ribbon(aes(x=year,ymin = p_lo95, ymax = p_hi95), alpha = 0.25, color = NA) +
   facet_wrap(. ~ area, scales = "free") +
   geom_point() + 
   theme_bw(base_size = 14) +
@@ -439,6 +448,25 @@ results$pG %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered 
   scale_y_continuous(labels = comma) +
   labs(y = "Proportion guided", x = "Year")+
   ylim(0,1)
+
+results$b4_pH %>% mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
+  filter(#user == "guided",
+         #model != "Contemporary_a1",
+         year > 2010) %>%
+  mutate(model = fct_relevel(model,"Historical",
+                             unique(results$rf_plotdat$model[results$rf_plotdat$model != "Historical"]))) %>%
+  ggplot(aes(x = year, y = B4_pH, color = model, fill = model)) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal) +
+  #  facet_wrap(~user) + 
+  geom_line() + 
+#  geom_ribbon(aes(x=year,ymin = H_lo95, ymax = H_hi95), alpha = 0.25, color = NA) +
+  facet_wrap(. ~ area, scales = "free") +
+  geom_point(shape = 13) + 
+  theme_bw(base_size = 14) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  scale_y_continuous(labels = comma) +
+  labs(y = "B4 pH", x = "Year")
 
 results$bias_ests %>% #mutate(area = factor(area, toupper(unique(H_ayg$area)), ordered = TRUE)) %>%
   filter(data == "H",

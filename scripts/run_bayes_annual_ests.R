@@ -35,58 +35,80 @@ REP_YR <- 2024 #for bringing in Howard estimats
 #-------------------------------------------------------------------------------
 
 #load the data:
-mod <- "annual_est_mod_take2"
-mod <- "annual_est_take5"
-mod <- "annual_est_take5.1"
-mod <- "annual_est_take5.1.1"
+#mod <- "annual_est_mod_take2"
+#mod <- "annual_est_take5"
+#mod <- "annual_est_take5.1"
+#mod <- "annual_est_take5.1.1"
 
-list2env(readinData_alt(spl_knts = 7,
-                                 start_yr = start_yr,
-                                 end_yr = end_yr,
-                                 SE06 = "exclude"), #SE06 = "exclude"
-         .GlobalEnv)
+#list2env(readinData_alt(spl_knts = 7,
+#                                 start_yr = start_yr,
+#                                 end_yr = end_yr,
+#                                 SE06 = "exclude"), #SE06 = "exclude"
+#         .GlobalEnv)
 
-mod <- "annual_est_mod_take3"
+#mod <- "annual_est_mod_take3"
 
-list2env(readinData_alt(spl_knts = 4,
-                        start_yr = start_yr,
-                        end_yr = end_yr,
-                        SE06 = "exclude"), #SE06 = "exclude"
-         .GlobalEnv)
+#list2env(readinData_alt(spl_knts = 4,
+#                        start_yr = start_yr,
+#                        end_yr = end_yr,
+#                        SE06 = "exclude"), #SE06 = "exclude"
+#         .GlobalEnv)
 
 
-mod <- "annual_est_mod"
-mod <- "annual_est_mod_take4"
-mod <- "annual_est_take6"
-mod <- "annual_est_take5.1.1.a"
-mod <- "annual_est_take5.1.1.a_simpB4pH"
+#mod <- "annual_est_mod"
+#mod <- "annual_est_mod_take4"
+#mod <- "annual_est_take6"
+#mod <- "annual_est_take5.1.1.a"
+#mod <- "annual_est_take5.1.1.a_simpB4pH"
 
-list2env(readinData_contemporary(spl_knts = 7,
-                                 start_comp_yr = 2020,
-                    start_yr = start_yr,
-                    end_yr = end_yr,
-                    SE06 = "exclude"), #SE06 = "exclude"
-         .GlobalEnv)
+#list2env(readinData_contemporary(spl_knts = 7,
+#                                 start_comp_yr = 2020,
+#                    start_yr = start_yr,
+#                    end_yr = end_yr,
+#                    SE06 = "exclude"), #SE06 = "exclude"
+#         .GlobalEnv)
 
-jags_dat$prigui_ay
+#jags_dat$prigui_ay
 
-mod <- "annual_est_take5.1.1.a2"
-list2env(readinData_contemporary(spl_knts = 4,
-                                 start_comp_yr = 2020,
-                                 start_yr = start_yr,
-                                 end_yr = end_yr,
-                                 SE06 = "exclude"), #SE06 = "exclude"
-         .GlobalEnv)
+#mod <- "annual_est_take5.1.1.a2"
+#list2env(readinData_contemporary(spl_knts = 4,
+#                                 start_comp_yr = 2020,
+#                                 start_yr = start_yr,
+#                                 end_yr = end_yr,
+#                                 SE06 = "exclude"), #SE06 = "exclude"
+#         .GlobalEnv)
 
-mod <- "annual_est_take5.1.1.c_fixH"
+#mod <- "annual_est_take5.1.1.c_fixH"
+#list2env(readinData_contemporary2(spl_knts = 4,
+#                                 start_comp_yr = 1977,
+#                                 start_yr = 2020,
+#                                 end_yr = end_yr,
+#                                 SE06 = "exclude"), #SE06 = "exclude"
+#         .GlobalEnv)
+#jags_dat$Z
+#end_yr - 1976
+
+#mod <- "annual_est_take5.1.1.c_fixH.1"
+mod <- "annual_est_take5.1.1.c_fixH.2"
+mod <- "annual_est_working"
+mod <- "annual_est_working_kodpr"
+mod <- "annual_est_working_kodpr.1"
 list2env(readinData_contemporary2(spl_knts = 4,
-                                 start_comp_yr = 1977,
-                                 start_yr = 2020,
-                                 end_yr = end_yr,
-                                 SE06 = "exclude"), #SE06 = "exclude"
+                                  start_comp_yr = 2020,
+                                  start_yr = 2020,
+                                  end_yr = end_yr,
+                                  b4_start = 2011,
+                                  SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
-jags_dat$Z
-end_yr - 1976
+
+histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
+jags_dat <- get_hist_ests(histdatmod)
+
+jags_dat$H_ayg_Hest
+jags_dat$kod_pye5
+jags_dat$Rlb_ayg
+
+jags_dat$kod_ppel4 <- histdat$q50$beta4_pelagic[10] 
 
 #load parameters
 params <- jags_params()
@@ -100,99 +122,11 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 set.seed(8645)
 
-histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17"
-histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
-histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
-
-{as.matrix((histdat$q50$H_ayg)) -> jags_dat$H_ayg_Hest
-as.matrix((histdat$q50$H_ayu)) -> jags_dat$H_ayu_Hest
-as.matrix((histdat$q50$H_ay)) -> jags_dat$H_ay_Hest
-as.matrix((histdat$q50$Hy_ayg)) -> jags_dat$Hy_ayg_Hest
-as.matrix((histdat$q50$Ho_ayg)) -> jags_dat$Ho_ayg_Hest
-as.matrix((histdat$q50$Hy_ayu)) -> jags_dat$Hy_ayu_Hest
-as.matrix((histdat$q50$Ho_ayu)) -> jags_dat$Ho_ayu_Hest
-
-#as.matrix((histdat$q50$Hhat_ay)) -> jags_dat$Hhat_ay_Hest
-#as.matrix((histdat$q50$logH_ay)) -> jags_dat$logH_ay_Hest
-
-as.matrix((histdat$q50$R_ay)) -> jags_dat$R_ay_Hest
-as.matrix((histdat$q50$R_ayg)) -> jags_dat$R_ayg_Hest
-as.matrix((histdat$q50$Ry_ayg)) -> jags_dat$Ry_ayg_Hest
-as.matrix((histdat$q50$Ro_ayg)) -> jags_dat$Ro_ayg_Hest
-as.matrix((histdat$q50$Rp_ayg)) -> jags_dat$Rp_ayg_Hest
-as.matrix((histdat$q50$Ry_ayu)) -> jags_dat$Ry_ayu_Hest
-as.matrix((histdat$q50$Ro_ayu)) -> jags_dat$Ro_ayu_Hest
-as.matrix((histdat$q50$Rp_ayu)) -> jags_dat$Rp_ayu_Hest
-
-as.array(histdat$q50$p_pelagic) -> jags_dat$p_pel_Hest
-as.array(histdat$q50$p_black) -> jags_dat$p_bl_Hest
-as.array(histdat$q50$p_yellow) -> jags_dat$p_ye_Hest
-as.array(histdat$q50$p_dsr) -> jags_dat$p_dsr_Hest
-as.array(histdat$q50$p_slope) -> jags_dat$p_sl_Hest
-
-as.array(histdat$q50$pH) -> jags_dat$pH_Hest
-
-c(histdat$q50$beta0_pelagic) -> jags_dat$beta0_pel_Hest
-c(histdat$q50$beta1_pelagic) -> jags_dat$beta1_pel_Hest
-c(histdat$q50$beta2_pelagic) -> jags_dat$beta2_pel_Hest
-c(histdat$q50$beta3_pelagic) -> jags_dat$beta3_pel_Hest
-
-c(histdat$q50$beta0_black) -> jags_dat$beta0_bl_Hest
-c(histdat$q50$beta1_black) -> jags_dat$beta1_bl_Hest
-c(histdat$q50$beta2_black) -> jags_dat$beta2_bl_Hest
-c(histdat$q50$beta3_black) -> jags_dat$beta3_bl_Hest
-
-c(histdat$q50$beta0_yellow) -> jags_dat$beta0_ye_Hest
-c(histdat$q50$beta1_yellow) -> jags_dat$beta1_ye_Hest
-c(histdat$q50$beta2_yellow) -> jags_dat$beta2_ye_Hest
-c(histdat$q50$beta3_yellow) -> jags_dat$beta3_ye_Hest
-
-c(histdat$q50$beta0_dsr) -> jags_dat$beta0_dsr_Hest
-c(histdat$q50$beta1_dsr) -> jags_dat$beta1_dsr_Hest
-c(histdat$q50$beta2_dsr) -> jags_dat$beta2_dsr_Hest
-c(histdat$q50$beta3_dsr) -> jags_dat$beta3_dsr_Hest
-
-c(histdat$q50$beta0_slope) -> jags_dat$beta0_sl_Hest
-c(histdat$q50$beta1_slope) -> jags_dat$beta1_sl_Hest
-c(histdat$q50$beta2_slope) -> jags_dat$beta2_sl_Hest
-c(histdat$q50$beta3_slope) -> jags_dat$beta3_sl_Hest
-
-as.matrix(histdat$q50$beta0_pH) -> jags_dat$beta0_pH_Hest
-as.matrix(histdat$q50$beta1_pH) -> jags_dat$beta1_pH_Hest
-as.matrix(histdat$q50$beta2_pH) -> jags_dat$beta2_pH_Hest
-as.matrix(histdat$q50$beta3_pH) -> jags_dat$beta3_pH_Hest
-
-as.matrix(histdat$q50$logbc_H) -> jags_dat$logbc_H_Hest
-as.matrix(histdat$q50$logbc_R) -> jags_dat$logbc_R_Hest
-
-as.matrix(histdat$q50$pG) -> jags_dat$pG_Hest
-
-as.array(histdat$q50$eps_pH) -> jags_dat$eps_pH_Hest
-as.array(histdat$q50$re_pH) -> jags_dat$re_pH_Hest
-
-as.array(histdat$q50$eps_pel) -> jags_dat$eps_pel_Hest
-as.array(histdat$q50$eps_ye) -> jags_dat$eps_ye_Hest
-as.array(histdat$q50$eps_bl) -> jags_dat$eps_bl_Hest
-as.array(histdat$q50$eps_dsr) -> jags_dat$eps_dsr_Hest
-as.array(histdat$q50$eps_sl) -> jags_dat$eps_sl_Hest
-
-as.array(histdat$q50$re_pelagic) -> jags_dat$re_pelagic_Hest
-as.array(histdat$q50$re_black) -> jags_dat$re_black_Hest
-as.array(histdat$q50$re_yellow) -> jags_dat$re_yellow_Hest
-as.array(histdat$q50$re_dsr) -> jags_dat$re_dsr_Hest
-as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest}
-
-
-dim(as.array(histdat$q50$pH))
-jags_dat$pH_Hest[1,1,1,4]
-jags_dat$p_dsr_Hest[1,1,1]
-
-histdat$q50$beta3
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 2E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 5E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 #ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 # 15e5 = 1.6 - 1.7 days
 # 25e5 = 2.9 days
@@ -201,175 +135,10 @@ ni <- 2E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-use_this_model <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
-use_this_model <- "annual_est_take5.1.1.a_thru2024_10000_tst_2026-07-08"
+inits_to_use <- get_inits(histdatmod)
 
-initspost <- readRDS(paste0(".\\output\\bayes_posts\\",use_this_model,".rds"))
-
-#If you're using the last run:
-halfway <- floor(nrow(as.matrix(postH$samples[[1]])) / 10)
-
-last_inits <- lapply(1:nc, function(chain) {
-  chain_data <- as.matrix(postH$samples[[chain]])
-  #as.list(chain_data[nrow(chain_data), ])
-  second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
-  as.list(colMeans(second_half))
-})
-
-halfway <- floor(nrow(as.matrix(initspost$samples[[1]])) / 10)
-
-other_inits <- lapply(1:nc, function(chain) {
-  chain_data <- as.matrix(initspost$samples[[chain]])
-  #as.list(chain_data[nrow(chain_data), ])
-  second_half <- chain_data[(halfway + 1):nrow(chain_data), , drop = FALSE]  # Extract second half
-  as.list(colMeans(second_half))
-})
-
-last_inits <- other_inits
-
-# Name the initial values you want to use:
-inits_to_use <- last_inits
-
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_comp"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_pH"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "sd_pH"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_pelagic"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_yellow"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_black"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_dsr"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_slope"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_pelagic"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_yellow"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_black"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_dsr"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_slope"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_pelagic"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_yellow"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_black"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_dsr"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_slope"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta3_pelagic"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta3_yellow"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta3_black"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta3_dsr"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta3_slope"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta5_slope"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_black_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_black_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_black_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta5_black_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_pelagic_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_pelagic_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_pelagic_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta5_pelagic_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta0_yellow_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta1_yellow_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta2_yellow_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta5_yellow_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta4_yellow_kod"]
-})
-
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta4_black_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "tau_beta4_pelagic_kod"]
-})
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  chain_list[names(chain_list) != "sd_comp"]
-})
-
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  if (!is.null(names(chain_list))) {
-    chain_list[!grepl("^sd_sp_wt", names(chain_list))]
-  } else {
-    chain_list
-  }
-})
-
-inits_to_use <- lapply(inits_to_use, function(chain_list) {
-  if (!is.null(names(chain_list))) {
-    chain_list[!grepl("^wt_user", names(chain_list))]
-  } else {
-    chain_list
-  }
-})
-
-grep("sd_sp_wt", unique(unlist(lapply(inits_to_use, names))), value = TRUE)
-
+#or, if just run 
+inits_to_use <- get_inits_justrun(postH)
 
 #-------------------------------------------------------------------------------
 #Run the model
@@ -414,14 +183,14 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "tst" #"SE06ex"  "All_SE"
+other_label <- "origprior" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_mod_thru2024_50000__2026-06-30"
+results <- "annual_est_working_kodpr_thru2024_50000__2026-07-10"
 
 #model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
 #model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
