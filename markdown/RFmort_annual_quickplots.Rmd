@@ -68,12 +68,8 @@ intdat <- "yes"
 
 B4 <- "simp" #complex "simp", "none
 
-#res <- "annual_est_take5.1.1.c_fixH.2_thru2024_50000_fullother_2026-07-09" #good start
-#res <-  "annual_est_working_kodpr_thru2024_50000__2026-07-10"
-#res <- "annual_est_working_kodpr.1_thru2024_50000__2026-07-10"
-#res <- "annual_est_working_kodpr_thru2024_50000_bigsd_2026-07-10"
-#res <- "annual_est_working_kodpr.1_thru2024_50000_dropafog_2026-07-10"
-res <- "annual_est_working_kodpr.3_thru2024_50000_eps9_2026-07-13"
+res <- "annual_est_model_thru2024_50000__2026-07-14"
+#res <- "annual_est_working_kodpr.3hist_thru2024_50000__2026-07-14" 
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

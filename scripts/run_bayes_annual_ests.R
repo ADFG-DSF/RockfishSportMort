@@ -35,58 +35,6 @@ REP_YR <- 2024 #for bringing in Howard estimats
 #-------------------------------------------------------------------------------
 
 #load the data:
-#mod <- "annual_est_mod_take2"
-#mod <- "annual_est_take5"
-#mod <- "annual_est_take5.1"
-#mod <- "annual_est_take5.1.1"
-
-#list2env(readinData_alt(spl_knts = 7,
-#                                 start_yr = start_yr,
-#                                 end_yr = end_yr,
-#                                 SE06 = "exclude"), #SE06 = "exclude"
-#         .GlobalEnv)
-
-#mod <- "annual_est_mod_take3"
-
-#list2env(readinData_alt(spl_knts = 4,
-#                        start_yr = start_yr,
-#                        end_yr = end_yr,
-#                        SE06 = "exclude"), #SE06 = "exclude"
-#         .GlobalEnv)
-
-
-#mod <- "annual_est_mod"
-#mod <- "annual_est_mod_take4"
-#mod <- "annual_est_take6"
-#mod <- "annual_est_take5.1.1.a"
-#mod <- "annual_est_take5.1.1.a_simpB4pH"
-
-#list2env(readinData_contemporary(spl_knts = 7,
-#                                 start_comp_yr = 2020,
-#                    start_yr = start_yr,
-#                    end_yr = end_yr,
-#                    SE06 = "exclude"), #SE06 = "exclude"
-#         .GlobalEnv)
-
-#jags_dat$prigui_ay
-
-#mod <- "annual_est_take5.1.1.a2"
-#list2env(readinData_contemporary(spl_knts = 4,
-#                                 start_comp_yr = 2020,
-#                                 start_yr = start_yr,
-#                                 end_yr = end_yr,
-#                                 SE06 = "exclude"), #SE06 = "exclude"
-#         .GlobalEnv)
-
-#mod <- "annual_est_take5.1.1.c_fixH"
-#list2env(readinData_contemporary2(spl_knts = 4,
-#                                 start_comp_yr = 1977,
-#                                 start_yr = 2020,
-#                                 end_yr = end_yr,
-#                                 SE06 = "exclude"), #SE06 = "exclude"
-#         .GlobalEnv)
-#jags_dat$Z
-#end_yr - 1976
 
 #mod <- "annual_est_take5.1.1.c_fixH.1"
 mod <- "annual_est_take5.1.1.c_fixH.2"
@@ -95,23 +43,26 @@ mod <- "annual_est_working_kodpr"
 mod <- "annual_est_working_kodpr.1"
 mod <- "annual_est_working_kodpr.2"
 mod <- "annual_est_working_kodpr.3"
+mod <- "annual_est_working_kodpr.3hist"
+mod <- "annual_est_model"
+
+# Get base data for estimates:
+# Tell the model where you want to start estimating and not used fixed data
+# Make sure start_ests matches start
+start_ests <- 2020
+
 list2env(readinData_contemporary2(spl_knts = 4,
-                                  start_comp_yr = 2020,
-                                  start_kodcomp_yr = 1998,
-                                  start_yr = 2020,
+                                  start_comp_yr = start_ests,
+                                  start_kodcomp_yr = 1998, #don't change
+                                  start_yr = start_ests,
                                   end_yr = end_yr,
-                                  b4_start = 2011,
+                                  b4_start = 2011, #don't change
                                   SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
+# Get historical estimates to fix in this model
 histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10"
-jags_dat <- get_hist_ests(histdatmod)
-
-jags_dat$H_ayg_Hest
-jags_dat$kod_pye5
-jags_dat$Rlb_ayg
-
-jags_dat$kod_ppel4 <- histdat$q50$beta4_pelagic[10] 
+jags_dat <- get_hist_ests(histdatmod,start_ests = 2020)
 
 #load parameters
 params <- jags_params()
@@ -125,14 +76,13 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 set.seed(8645)
 
+saveRDS(jags_dat, "jags_dat_example.rds")
+
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 5E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
-#ni <- 1E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
-# 15e5 = 1.6 - 1.7 days
-# 25e5 = 2.9 days
+ni <- 15E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -140,7 +90,7 @@ use_inits = "yes"
 
 inits_to_use <- get_inits(histdatmod)
 
-#or, if just run 
+#or, if using a model that was just run
 inits_to_use <- get_inits_justrun(postH)
 
 #-------------------------------------------------------------------------------
@@ -153,7 +103,6 @@ if (use_inits == "no") {
       model.file = paste0(".\\models\\",mod,".txt"),
       data = jags_dat, 
       parallel = TRUE, verbose = TRUE,
-      #inits = list(list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2)), list(muHhat_ay = log(jags_dat$H_ayg * 1.2))),
       n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, 
       store.data = TRUE)
   runtime <- Sys.time() - tstart; runtime
@@ -186,7 +135,7 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "eps9" #"SE06ex"  "All_SE"
+other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
@@ -195,21 +144,10 @@ saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
 results <- "annual_est_working_kodpr_thru2024_50000__2026-07-10"
 
-#model_HCR_censLBR_xspline_thru2019_6e+06_2024-11-24; 98% converged
-#model_HCR_censLBR_1bc_xspline_thru2019_6e+06_2024-11-24; 99% converged
-#model_HCR_yeLBR_xspline_thru2019_6e+06_2024-11-24; ~98.5% converged
-#model_HCR_allLBR_xspline_thru2019_6e+06_2024-11-24; yuck <96% converged.
-
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
 #-------------------------------------------------------------------------------
 # Examine results!
-library(shinystan)
-
-mcmc_list <- mcmc.list(postH$samples)
-
-sso <- as.shinystan(mcmc_list)
-launch_shinystan(sso)
 
 rhat <- get_Rhat(postH, cutoff = 1.01)
 names(rhat)[1] <- "Rhat_values"

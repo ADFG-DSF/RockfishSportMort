@@ -2865,10 +2865,11 @@ readinData_contemporary2 <- function(spl_knts = 4,
 # This will grab the historical estimates, including Kodiak priors, and add them
 # to jags_dat that is produced by the readinData_contemporary2() function
 
-get_hist_ests <- function(histdatmod = ""){
+get_hist_ests <- function(histdatmod = "", start_ests = 2020){
   histdat <- readRDS(paste0(".\\output\\bayes_posts\\",histdatmod,".rds"))
   
-  {
+  {jags_dat$start_ests <- start_ests - 1976
+    
     histdat$q50$mu_beta0_pelagic_kod -> jags_dat$kod_ppel5
     histdat$q50$mu_beta4_pelagic_kod -> jags_dat$kod_ppel4
     
@@ -2961,7 +2962,11 @@ get_hist_ests <- function(histdatmod = ""){
     as.array(histdat$q50$re_black) -> jags_dat$re_black_Hest
     as.array(histdat$q50$re_yellow) -> jags_dat$re_yellow_Hest
     as.array(histdat$q50$re_dsr) -> jags_dat$re_dsr_Hest
-    as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest}
+    as.array(histdat$q50$re_slope) -> jags_dat$re_slope_Hest
+    
+    c(histdat$q50$beta0_pelagic) -> jags_dat$beta0_pelagic_Hest
+    c(histdat$q50$beta0_black) -> jags_dat$beta0_black_Hest
+    c(histdat$q50$beta0_yellow) -> jags_dat$beta0_yellow_Hest}
   
   return(jags_dat)
 }
