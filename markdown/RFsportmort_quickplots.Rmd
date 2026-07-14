@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Gen4_", "pHB4pars_re0full_altwt_2xcvSEo_simppHB4_finaltuning6_",Sys.Date(),".html"))
+                          output_file = paste0("Gen4_", "pHB4pars_re0full_altwt_2xcvSEo_simppHB4_finaltuning4.1_",Sys.Date(),".html"))
       })
 ---
 
@@ -79,9 +79,9 @@ B4 <- "simp" #complex "simp", "none
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4_thru2024_2500000_SE06ex_2026-05-06" #blechish... 
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning5_thru2024_2e+06_SE06ex_2026-06-08" #pretty good
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning5_thru2024_2e+06_SE06ex_2026-06-10" #pretty good, but with different leaky parameter ;P
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17" # pretty pretty good
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning6_thru2024_2e+06_SE06ex_2026-06-17" # pretty pretty good
 #res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29" #notso bad
-
+res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10"
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
 rhat <- get_Rhat(postH, cutoff = 1.11)

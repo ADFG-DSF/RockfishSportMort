@@ -2170,6 +2170,7 @@ readinData_contemporary <- function(spl_knts = 7,
 
 readinData_contemporary2 <- function(spl_knts = 4,
                                     start_comp_yr = 2020,
+                                    start_kodcomp_yr = 2000,
                                     start_yr = 2020,
                                     end_yr = 2024,
                                     b4_start = 2011,
@@ -2366,8 +2367,9 @@ readinData_contemporary2 <- function(spl_knts = 4,
   Z <- bspline(1:Y_Hdat, K = C) #bspline(1:24, K = C); bspline(1:Y, K = C)
   
   #COMP DATA
-  comp <- S_ayu %>% filter(year >= start_comp_yr & year <= end_yr) %>%
-  #  filter(!(user == "private" & area == "afognak" & year > 2019)) %>%
+  comp <- S_ayu %>% 
+    filter(year >= start_comp_yr & year <= end_yr,
+           region %in% c("Southeast","Central")) %>%
     mutate(area_n = as.numeric(area), 
            user_n = ifelse(user == "charter", 0, 1), 
            year_n = (start_comp_yr - 1977) + year - (start_comp_yr - 1),  #year - 1995, changed with the addition of the old data...
@@ -2385,7 +2387,28 @@ readinData_contemporary2 <- function(spl_knts = 4,
            dsr = ifelse(region == "Southeast" & year < 2006,
                         NA,dsr),
            slope = ifelse(region == "Southeast" & year < 2006,
-                          NA,slope)) #,
+                          NA,slope)) %>%
+    rbind(S_ayu %>% 
+            filter(year >= start_kodcomp_yr & year <= end_yr, #start_kodcomp_yr = 2000,
+                 region == "Kodiak") %>%
+            mutate(area_n = as.numeric(area), 
+                   user_n = ifelse(user == "charter", 0, 1), 
+                   year_n = (start_kodcomp_yr - 1977) + year - (start_kodcomp_yr - 1),  #year - 1995, changed with the addition of the old data...
+                   #region_n = ifelse()
+                   source = 1) %>% 
+            select(year, year_n, area_n, user_n, source, N = totalrf_n, 
+                   pelagic = pelagic_n, black = black_n, yellow = ye_n, 
+                   other = notye_nonpel_n, dsr = dsr_n, slope = slope_n,
+                   region,area) %>%
+            filter(N != 0,
+                   N != 1) %>%
+            mutate(yellow = ifelse(N - pelagic == 0, NA, yellow)) %>%
+            mutate(yellow = ifelse(region == "Southeast" & year < 2006,
+                                   NA,yellow),
+                   dsr = ifelse(region == "Southeast" & year < 2006,
+                                NA,dsr),
+                   slope = ifelse(region == "Southeast" & year < 2006,
+                                  NA,slope)))
   
   int <- I_ayu %>% filter(year >= start_comp_yr & year <= end_yr) %>%
     mutate(area_n = as.numeric(as.factor(area)), 
@@ -2449,10 +2472,10 @@ readinData_contemporary2 <- function(spl_knts = 4,
   S_ayu %>% mutate(area_n = as.numeric(area)) %>%
     select(area,area_n) %>% unique() %>% #-> area_ns
     right_join(kha, by = "area") %>% 
-    filter(year >= start_comp_yr & year <= end_yr) %>%
+    filter(year >= start_kodcomp_yr & year <= end_yr) %>%
     mutate(#area_n = , 
       #user_n = ifelse(user == "charter", 0, 1), 
-      year_n = year - (start_comp_yr - 1)) %>% 
+      year_n = year - (start_kodcomp_yr - 1)) %>% 
     select(year, year_n, area_n, #N = rf_tot, 
            pelagic = rf_tot, black = brf_tot, 
            pel_cv = rf_cv, black_cv = brf_cv,

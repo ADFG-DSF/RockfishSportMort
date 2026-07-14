@@ -93,15 +93,18 @@ mod <- "annual_est_take5.1.1.c_fixH.2"
 mod <- "annual_est_working"
 mod <- "annual_est_working_kodpr"
 mod <- "annual_est_working_kodpr.1"
+mod <- "annual_est_working_kodpr.2"
+mod <- "annual_est_working_kodpr.3"
 list2env(readinData_contemporary2(spl_knts = 4,
                                   start_comp_yr = 2020,
+                                  start_kodcomp_yr = 1998,
                                   start_yr = 2020,
                                   end_yr = end_yr,
                                   b4_start = 2011,
                                   SE06 = "exclude"), #SE06 = "exclude"
          .GlobalEnv)
 
-histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning7_thru2024_2e+06_SE06ex_2026-06-29"
+histdatmod <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10"
 jags_dat <- get_hist_ests(histdatmod)
 
 jags_dat$H_ayg_Hest
@@ -183,7 +186,7 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "origprior" #"SE06ex"  "All_SE"
+other_label <- "eps9" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
