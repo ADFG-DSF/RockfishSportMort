@@ -82,7 +82,7 @@ saveRDS(jags_dat, "jags_dat_example.rds")
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 15E4; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 4E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -156,6 +156,14 @@ all_rhat <- get_Rhat(postH,cutoff = 0.01)
 names(all_rhat)[1] <- "Rhat_values"
 as.vector(all_rhat$Rhat_values) %>% data.frame()-> rhat_vals
 prop_conv <- round(nrow(rhat_vals %>% filter(Rhat <= 1.0115))/nrow(rhat_vals),4); prop_conv
+
+rhat2 <- get_Rhat(postH, cutoff = 1.101)
+names(rhat2)[1] <- "Rhat_values"
+
+all_rhat2 <- get_Rhat(postH,cutoff = 0.1)
+names(all_rhat2)[1] <- "Rhat_values"
+as.vector(all_rhat2$Rhat_values) %>% data.frame()-> rhat_vals2
+prop_conv2 <- round(nrow(rhat_vals2 %>% filter(Rhat <= 1.0115))/nrow(rhat_vals2),4); prop_conv2
 
 all_rhat %>% filter(Rhat > 1.2)
 
