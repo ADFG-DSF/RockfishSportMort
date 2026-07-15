@@ -45,6 +45,7 @@ mod <- "annual_est_working_kodpr.2"
 mod <- "annual_est_working_kodpr.3"
 mod <- "annual_est_working_kodpr.3hist"
 mod <- "annual_est_model"
+mod <- "annual_est_model_effdev"
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -76,13 +77,13 @@ area_codes <- comp %>% select(area,area_n) %>% unique() %>%
 
 set.seed(8645)
 
-saveRDS(jags_dat, "jags_dat_example.rds")
+#saveRDS(jags_dat, "jags_dat_example.rds")
 
 #-------------------------------------------------------------------------------
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 4E5; nb <- ni*.5; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E4; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -142,7 +143,7 @@ saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSpor
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_working_kodpr_thru2024_50000__2026-07-10"
+results <- "annual_est_model_thru2024_4e+05__2026-07-14"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -163,9 +164,11 @@ names(rhat2)[1] <- "Rhat_values"
 all_rhat2 <- get_Rhat(postH,cutoff = 0.1)
 names(all_rhat2)[1] <- "Rhat_values"
 as.vector(all_rhat2$Rhat_values) %>% data.frame()-> rhat_vals2
-prop_conv2 <- round(nrow(rhat_vals2 %>% filter(Rhat <= 1.0115))/nrow(rhat_vals2),4); prop_conv2
+prop_conv2 <- round(nrow(rhat_vals2 %>% filter(Rhat <= 1.10115))/nrow(rhat_vals2),4); prop_conv2
 
-all_rhat %>% filter(Rhat > 1.2)
+jagsUI::traceplot(postH, Rhat_min = 1.11)
+jagsUI::traceplot(postH, Rhat_min = 1.01)
+jagsUI::traceplot(postH, Rhat_min = 1.0)
 
 str(rhat)
 head(rhat[1])
