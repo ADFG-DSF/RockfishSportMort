@@ -38,17 +38,18 @@ model{
 } 
 
 for(a in 5:10){
-  for(y in 1:22){
+  for(y in 1:21){
     for(u in 1:2){      
       p_pelagic[a,y,u] <- p_pel_Hest[a,y,u] #~ dunif(0.01,0.99)
       p_black[a,y,u] <- p_bl_Hest[a,y,u] #~ dunif(0.01,0.99)
+      p_yellow[a,y,u] <- p_ye_Hest[a,y,u] #~ dunif(0.01,0.99)
     }    
   }
-  for (y in 1:29){
-    for(u in 1:2){      
-      p_yellow[a,y,u] <- p_ye_Hest[a,y,u] #~ dunif(0.01,0.99)
-    }
-  }
+#  for (y in 1:29){
+#    for(u in 1:2){      
+#      p_yellow[a,y,u] <- p_ye_Hest[a,y,u] #~ dunif(0.01,0.99)
+#    }
+#  }
 } 
 
 for(a in 11:16){
@@ -379,25 +380,9 @@ for (a in 1:10) {
             re_pH[a,y,u,s] <- re_pH_Hest[a,y,u,s]
           }
         }
-
       }
-#    for(y in 1:43){
-#      for(u in 1:2){
-#        eps_pel[a,y,u] <- eps_pel_Hest[a,y,u] #~ dnorm(0, tau_comp[1])
-#        eps_ye[a,y,u] <- eps_ye_Hest[a,y,u] #~ dnorm(0, tau_comp[2])
-#        eps_bl[a,y,u] <- eps_bl_Hest[a,y,u] #~ dnorm(0, tau_comp[3])
-#        eps_dsr[a,y,u] <- eps_dsr_Hest[a,y,u] #~ dnorm(0, tau_comp[4])
-#        eps_sl[a,y,u] <- eps_sl_Hest[a,y,u] #~ dnorm(0, tau_comp[5])
-#      }
-#    }
-
     for (y in 44:Y){ #for (y in 1:Y){
       for(u in 1:2){
-#        eps_pel[a,y,u] ~ dnorm(0, tau_comp[1])
-#        eps_ye[a,y,u] ~ dnorm(0, tau_comp[2])
-#        eps_bl[a,y,u] ~ dnorm(0, tau_comp[3])
-#        eps_dsr[a,y,u] ~ dnorm(0, tau_comp[4])
-#        eps_sl[a,y,u] ~ dnorm(0, tau_comp[5])
         for(s in 1){
           eps_pH[a,y,u,s] ~ dnorm(0, tau_pH[s])   # raw, unconstrained
         }
@@ -405,28 +390,6 @@ for (a in 1:10) {
     }
 
     for(u in 1:2){
-#      mean_eps_pel2[a,u] <- mean(eps_pel[a,44:Y,u])
-#      mean_eps_ye2[a,u]  <- mean(eps_ye[a,44:Y,u])
-#      mean_eps_bl2[a,u]  <- mean(eps_bl[a,44:Y,u])
-#      mean_eps_dsr2[a,u] <- mean(eps_dsr[a,44:Y,u])
-#      mean_eps_sl2[a,u]  <- mean(eps_sl[a,44:Y,u])
-
-#      for (y in 1:43){
-#        re_pelagic[a,y,u] <- re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel0[a,u]
-#        re_black[a,y,u] <- re_black_Hest[a,y,u] #- mean_eps_bl0[a,u]
-#        re_yellow[a,y,u] <- re_yellow_Hest[a,y,u] #- mean_eps_ye0[a,u]
-#        re_dsr[a,y,u] <- re_dsr_Hest[a,y,u] #- mean_eps_dsr0[a,u]
-#        re_slope[a,y,u] <- re_slope_Hest[a,y,u] #- mean_eps_sl0[a,u]
-#      }
-
-#      for (y in 44:Y){
-#        re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel2[a,u]
-#        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye2[a,u]
-#        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl2[a,u]
-#        re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr2[a,u]
-#        re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl2[a,u]
-#      }
-
       for(s in 1){
         mean_eps_pH0[a,u,s] <- mean(eps_pH[a,1:22,u,s])
         mean_eps_pH[a,u,s] <- mean(eps_pH[a,23:43,u,s])
@@ -498,7 +461,7 @@ for (a in 1:4){
 }
 
 for (a in 5:10){
-  for(y in 1:22){
+  for(y in 1:21){
       for(u in 1:2){
         eps_pel[a,y,u] ~ dnorm(0, tau_comp[1]) #<- eps_pel_Hest[a,y,u] #
         eps_ye[a,y,u] ~ dnorm(0, tau_comp[2]) #<- eps_ye_Hest[a,y,u] #~ dnorm(0, tau_comp[2])
@@ -508,7 +471,7 @@ for (a in 5:10){
       }
     }
 
-    for (y in 23:Y){ #for (y in 1:Y){
+    for (y in 22:Y){ #for (y in 1:Y){
       for(u in 1:2){
         eps_pel[a,y,u] ~ dnorm(0, tau_comp[1])
         eps_ye[a,y,u] ~ dnorm(0, tau_comp[2])
@@ -537,24 +500,24 @@ for (a in 5:10){
       mean_eps_dsr2[a,u] <- mean(eps_dsr[a,44:Y,u])
       mean_eps_sl2[a,u]  <- mean(eps_sl[a,44:Y,u])
 
-      for (y in 1:22){
-        re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel0[a,u] #re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel0[a,u]
-        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl0[a,u] #re_black_Hest[a,y,u] 
+      for (y in 1:21){
+        re_pelagic[a,y,u] <- re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel0[a,u] #re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel0[a,u]
+        re_black[a,y,u] <- re_black_Hest[a,y,u] #eps_bl[a,y,u] - mean_eps_bl0[a,u] #re_black_Hest[a,y,u] 
       }
       for(y in 1:29){
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye0[a,u] #re_yellow_Hest[a,y,u] #- mean_eps_ye0[a,u]
+        re_yellow[a,y,u] <- re_yellow_Hest[a,y,u] #eps_ye[a,y,u] - mean_eps_ye0[a,u] #re_yellow_Hest[a,y,u] #- mean_eps_ye0[a,u]
         re_dsr[a,y,u] <- re_dsr_Hest[a,y,u] #- mean_eps_dsr0[a,u]
         re_slope[a,y,u] <- re_slope_Hest[a,y,u]
       }
 
-      for (y in 23:43){
-        re_pelagic[a,y,u] <- eps_pel[a,y,u] - mean_eps_pel[a,u]
-        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u]
+      for (y in 22:43){
+        re_pelagic[a,y,u] <- re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel[a,u]
+        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u] #re_black_Hest[a,y,u] #
       }
       for(y in 30:43){
-        re_yellow[a,y,u] <- eps_ye[a,y,u] - mean_eps_ye[a,u]
-        re_dsr[a,y,u] <- eps_dsr[a,y,u] - mean_eps_dsr[a,u]
-        re_slope[a,y,u] <- eps_sl[a,y,u] - mean_eps_sl[a,u]
+        re_yellow[a,y,u] <- re_yellow_Hest[a,y,u] #eps_ye[a,y,u] - mean_eps_ye[a,u]
+        re_dsr[a,y,u] <- re_dsr_Hest[a,y,u] #eps_dsr[a,y,u] - mean_eps_dsr[a,u]
+        re_slope[a,y,u] <- re_slope_Hest[a,y,u] #eps_sl[a,y,u] - mean_eps_sl[a,u]
       }
 
       for (y in 44:Y){
@@ -808,27 +771,19 @@ for (a in 1:4){
 }
 
 for (a in 5:10){ #Kodiak species comp uses all years of data
-  for (y in 23:43){ #after regulations came into play, general underlying trend line
-    for (u in 1:2){
+  for(y in 22:43){
+    for(u in 1:2){
       logit(p_pelagic[a, y, u]) <- beta0_pelagic_Hest[a] +  beta4_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
-      logit(p_black[a, y, u]) <- beta0_black_Hest[a] + beta4_black[a] * (u - 1) + re_black[a, y, u]
-    }
-  }
-  for (y in 30:43){ #after regulations came into play, general underlying trend line
-    for (u in 1:2){
+      logit(p_black[a, y, u]) <- beta5_black[a] + beta4_black[a] * (u - 1) + re_black[a, y, u]
       logit(p_yellow[a, y, u]) <- beta0_yellow_Hest[a] + beta4_yellow[a] * (u - 1) + re_yellow[a, y, u]
-    }
+    }    
   }
-  for (y in 44:Y){ #after regulations came into play, general underlying trend line
-    for (u in 1:2){
+  for(y in 44:Y){
+    for(u in 1:2){
       logit(p_pelagic[a, y, u]) <- beta5_pelagic[a] +  beta4_pelagic[a] * (u - 1) + re_pelagic[a, y, u]
       logit(p_black[a, y, u]) <- beta5_black[a] + beta4_black[a] * (u - 1) + re_black[a, y, u]
-    }
-  }
-  for (y in 44:Y){ #after regulations came into play, general underlying trend line
-    for (u in 1:2){
       logit(p_yellow[a, y, u]) <- beta5_yellow[a] + beta4_yellow[a] * (u - 1) + re_yellow[a, y, u]
-    }
+    }    
   }
 }
 
@@ -854,8 +809,6 @@ for (a in 11:16) {
 
 		Rs_ayg[a, y] <- min(10*Hs_ayg[a, y], max(0,(Hs_ayg[a, y] / max(0.000001,pH[a,y,1,5])) - Hs_ayg[a, y])) 
 		Rs_ayu[a, y] <- min(10*Hs_ayu[a, y], max(0,(Hs_ayu[a, y] / max(0.000001,pH[a,y,2,5])) - Hs_ayu[a, y]) )
-    #Rs_ayg[a, y] <- Ro_ayg[a, y] - Rd_ayg[a,y]
-    #Rs_ayu[a, y] <- Ro_ayg[a, y] - Rd_ayg[a,y]
 		Rs_ay[a, y] <- Rs_ayg[a, y] + Rs_ayu[a, y]
 
 		Ho_ayg[a, y] <- Hs_ayg[a, y] + Hd_ayg[a, y] # - Hy_ayg[a, y] 

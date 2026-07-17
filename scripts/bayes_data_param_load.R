@@ -1807,9 +1807,6 @@ readinData_contemporary <- function(spl_knts = 7,
     filter(!is.na(intc_other),
            intc_other != 0,
            !area_n %in% c(11,12,13,14,15,16))
-  
-  
-  
   int_dsr <- int %>% select(year,year_n,area_n,user_n,inth_dsr,intc_dsr) %>%
     filter(!is.na(intc_dsr),
            intc_dsr != 0)
@@ -1828,7 +1825,7 @@ readinData_contemporary <- function(spl_knts = 7,
   S_ayu %>% mutate(area_n = as.numeric(area)) %>%
     select(area,area_n) %>% unique() %>% #-> area_ns
     right_join(kha, by = "area") %>% 
-    filter(year >= start_comp_yr & year <= end_yr) %>%
+    filter(year >= start_kodcomp_yr & year <= end_yr) %>%
     mutate(#area_n = , 
       #user_n = ifelse(user == "charter", 0, 1), 
       year_n = year - (start_yr - 1)) %>% 

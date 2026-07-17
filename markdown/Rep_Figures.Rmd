@@ -59,7 +59,7 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
-res_c <- "annual_est_model_thru2024_4e+05__2026-07-14"
+res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 

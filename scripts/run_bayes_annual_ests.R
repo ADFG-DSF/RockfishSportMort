@@ -45,7 +45,7 @@ mod <- "annual_est_working_kodpr.2"
 mod <- "annual_est_working_kodpr.3"
 mod <- "annual_est_working_kodpr.3hist"
 mod <- "annual_est_model"
-mod <- "annual_est_model_effdev"
+mod <- "annual_est_model_kodalt2"
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -83,7 +83,12 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E4; nb <- ni*.2; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 6E6; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+
+#ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
+#ni = 1E5 = 1 hour... mostly converged
+#ni = 1E6 = 10 hours
+
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
@@ -143,7 +148,7 @@ saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSpor
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_model_thru2024_4e+05__2026-07-14"
+results <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
