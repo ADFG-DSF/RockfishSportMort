@@ -51,68 +51,21 @@ list2env(readinData(start_yr = start_yr,
 
 
 mod<-"LB_fit_3pH"
-res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
 
-postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+#postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
-rhat <- get_Rhat(postH, cutoff = 1.11)
+res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10" #oooh!
 
-summary_table <- postH$summary %>%
-  as.data.frame() %>%
-  tibble::rownames_to_column(var = "Parameter") %>%
-  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
-  rename(
-    Lower_CI = `2.5%`,
-    Median = `50%`,
-    Upper_CI = `97.5%`
-  ) %>% 
-  filter(str_detect(Parameter, "^tau_comp\\[") |
-         str_detect(Parameter, "^tau_pH\\[") |
-          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
-           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
-           str_detect(Parameter, "^mu_beta0_yellow\\[")|
-           str_detect(Parameter, "^tau_beta0_yellow\\[")|
-           str_detect(Parameter, "^mu_beta0_black\\[")|
-           str_detect(Parameter, "^tau_beta0_black\\[")|
-           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
-           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
-           str_detect(Parameter, "^mu_bc_H\\[")|
-           str_detect(Parameter, "^tau_bc_H\\[")|
-           str_detect(Parameter, "^mu_bc_R\\[")|
-           str_detect(Parameter, "^tau_bc_R\\[")|
-           str_detect(Parameter, "^bc_R_offset\\[")|
-           str_detect(Parameter, "^beta0_pH\\[")|
-           str_detect(Parameter, "^beta1_pH\\[")|
-           str_detect(Parameter, "^beta2_pH\\[")|
-           str_detect(Parameter, "^beta3_pH\\[")|
-           str_detect(Parameter, "^beta0_pelagic\\[")|
-           str_detect(Parameter, "^beta1_pelagic\\[")|
-           str_detect(Parameter, "^beta2_pelagic\\[")|
-           str_detect(Parameter, "^beta3_pelagic\\[")|
-           str_detect(Parameter, "^beta0_yellow\\[")|
-           str_detect(Parameter, "^beta1_yellow\\[")|
-           str_detect(Parameter, "^beta2_yellow\\[")|
-           str_detect(Parameter, "^beta3_yellow\\[")|
-           str_detect(Parameter, "^beta0_black\\[")|
-           str_detect(Parameter, "^beta2_black\\[")|
-           str_detect(Parameter, "^beta3_black\\[")|
-           str_detect(Parameter, "^beta4_black\\[")|
-           str_detect(Parameter, "^beta0_dsr\\[")|
-           str_detect(Parameter, "^beta1_dsr\\[")|
-           str_detect(Parameter, "^beta2_dsr\\[")|
-           str_detect(Parameter, "^beta3_dsr\\[")|
-           str_detect(Parameter, "^beta4_dsr\\[")|
-           str_detect(Parameter, "^beta0_slope\\[")|
-           str_detect(Parameter, "^beta1_slope\\[")|
-           str_detect(Parameter, "^beta2_slope\\[")|
-           str_detect(Parameter, "^beta3_slope\\[")|
-           str_detect(Parameter, "^beta4_slope\\[")|
-           str_detect(Parameter, "^sigma_H\\[")|
-           str_detect(Parameter, "^beta_H\\[")|
-           str_detect(Parameter, "^beta0_H\\[")|
-           str_detect(Parameter, "^lambda_H\\[")|
-           str_detect(Parameter, "^mu_lambda_H\\[")|
-           str_detect(Parameter, "^sigma_lambda_H\\["))
+postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
+
+res_c <- "annual_est_model_thru2024_1e+06__2026-07-15" #prelim; just using temporarily
+#res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+
+postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
+
+SE4stageyear1 <- 2020
+
 
 Fig_N <- 0
 Tab_N <- 0
@@ -163,7 +116,32 @@ format_numbers <- function(df) {
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix A: Spline fomulae:** The following formulas were used to fit the penalized spline to the harvest trend in the model. In region *R* parameters $\alpha_{\lambda_R}$ and $\beta_{\lambda_R}$ were calculated as
+**Appendix A: Release mortality at depth used in Southcentral and Kodiak regions:** Estimated release mortality rates by depth and species used in estimating release mortality in Southcentral and Kodiak regions. DRM release methods denote the use of deepwater release mechanisms.
+
+```{r}
+sc_rm <- readxl::read_xlsx(paste0("AppendixA_SC_relmort.xlsx"), 
+                       sheet = "Sheet1") %>% 
+#  clean_names() %>% 
+  filter(rowSums(is.na(.)) < ncol(.)) #
+
+flextable(sc_rm) %>%
+  add_header_row(values = c("","Capture depth (feet)",""), 
+                 colwidths = c(2,4,1)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 10, part = "body") %>%
+  align(j = 1:7, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") #
+
+
+```
+
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix B: Spline fomulae:** The following formulas were used to fit the penalized spline to the harvest trend in the model. In region *R* parameters $\alpha_{\lambda_R}$ and $\beta_{\lambda_R}$ were calculated as
 
 $\alpha_{\lambda_R}~=~\frac{\mu_{\lambda_R}^2}{\sigma_{\lambda_R}^2}$
 
@@ -198,17 +176,17 @@ where $Z_y$ is a matrix derived from the number of knots and the number of years
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-# Appendix B: Model fit to weight data.
+# Appendix C: Model fit to weight data.
 
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Appenidx B",App_N,".**- Mean weights of black rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Appenidx C",App_N,".**- Mean weights of black rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
-brf_wt_mod <- 
-  rbind(postH$mean$wt[,,1,1] %>% t(), #area,year,user,species
-        postH$mean$wt[,,2,1] %>% t()) %>%
+brf_wt_mod_h <- 
+  rbind(postH_h$mean$wt[,,1,1] %>% t(), #area,year,user,species
+        postH_h$mean$wt[,,2,1] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -216,8 +194,8 @@ brf_wt_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$wt[,,1,1] %>% t(),
-                  postH$q2.5$wt[,,2,1] %>% t()) %>%
+  left_join(rbind(postH_h$q2.5$wt[,,1,1] %>% t(),
+                  postH_h$q2.5$wt[,,2,1] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -226,8 +204,8 @@ brf_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$wt[,,1,1] %>% t(),
-                  postH$q97.5$wt[,,2,1] %>% t()) %>%
+  left_join(rbind(postH_h$q97.5$wt[,,1,1] %>% t(),
+                  postH_h$q97.5$wt[,,2,1] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -236,8 +214,8 @@ brf_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$sd$wt[,,1,1] %>% t(),
-                  postH$sd$wt[,,2,1] %>% t()) %>%
+  left_join(rbind(postH_h$sd$wt[,,1,1] %>% t(),
+                  postH_h$sd$wt[,,2,1] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -246,6 +224,52 @@ brf_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
+
+brf_wt_mod_c <- 
+  rbind(postH_c$mean$wt[,,1,1] %>% t(), #area,year,user,species
+        postH_c$mean$wt[,,2,1] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH_c$q2.5$wt[,,1,1] %>% t(),
+                  postH_c$q2.5$wt[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$q97.5$wt[,,1,1] %>% t(),
+                  postH_c$q97.5$wt[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$sd$wt[,,1,1] %>% t(),
+                  postH_c$sd$wt[,,2,1] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+brf_wt_mod <- rbind(brf_wt_mod_h %>% filter(year < 2020),
+                    brf_wt_mod_c %>% filter(year >= 2020))
+
+
 brf_wt_obs <- 
   as.data.frame(
     rbind(cbind(t(jags_dat$r2_gwt_b),t(jags_dat$r1_gwt_b)),
@@ -293,12 +317,12 @@ App_N <- App_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Appenidx B",App_N,".**- Mean weights of yelloweye rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Appenidx C",App_N,".**- Mean weights of yelloweye rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
-ye_wt_mod <- 
-  rbind(postH$mean$wt[,,1,2] %>% t(), #area,year,user,species
-        postH$mean$wt[,,2,2] %>% t()) %>%
+ye_wt_mod_h <- 
+  rbind(postH_h$mean$wt[,,1,2] %>% t(), #area,year,user,species
+        postH_h$mean$wt[,,2,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -306,8 +330,8 @@ ye_wt_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$wt[,,1,2] %>% t(),
-                  postH$q2.5$wt[,,2,2] %>% t()) %>%
+  left_join(rbind(postH_h$q2.5$wt[,,1,2] %>% t(),
+                  postH_h$q2.5$wt[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -316,8 +340,8 @@ ye_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$wt[,,1,2] %>% t(),
-                  postH$q97.5$wt[,,2,2] %>% t()) %>%
+  left_join(rbind(postH_h$q97.5$wt[,,1,2] %>% t(),
+                  postH_h$q97.5$wt[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -326,8 +350,8 @@ ye_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$sd$wt[,,1,2] %>% t(),
-                  postH$sd$wt[,,2,2] %>% t()) %>%
+  left_join(rbind(postH_h$sd$wt[,,1,2] %>% t(),
+                  postH_h$sd$wt[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -336,6 +360,51 @@ ye_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
+
+ye_wt_mod_c <- 
+  rbind(postH_c$mean$wt[,,1,2] %>% t(), #area,year,user,species
+        postH_c$mean$wt[,,2,2] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH_c$q2.5$wt[,,1,2] %>% t(),
+                  postH_c$q2.5$wt[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$q97.5$wt[,,1,2] %>% t(),
+                  postH_c$q97.5$wt[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$sd$wt[,,1,2] %>% t(),
+                  postH_c$sd$wt[,,2,2] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+ye_wt_mod <- rbind(ye_wt_mod_h %>% filter(year < 2020),
+                    ye_wt_mod_c %>% filter(year >= 2020))
+
 ye_wt_obs <- 
   as.data.frame(
     rbind(cbind(t(jags_dat$r2_gwt_y),t(jags_dat$r1_gwt_y)),
@@ -384,12 +453,12 @@ App_N <- App_N + 1
 \newpage
 
 
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx B",App_N,".**- Mean weights of non-black, pelagic rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx C",App_N,".**- Mean weights of non-black, pelagic rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
-pel_wt_mod <- 
-  rbind(postH$mean$wt[,,1,3] %>% t(), #area,year,user,species
-        postH$mean$wt[,,2,3] %>% t()) %>%
+pel_wt_mod_h <- 
+  rbind(postH_h$mean$wt[,,1,3] %>% t(), #area,year,user,species
+        postH_h$mean$wt[,,2,3] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -397,8 +466,8 @@ pel_wt_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$wt[,,1,3] %>% t(),
-                  postH$q2.5$wt[,,2,3] %>% t()) %>%
+  left_join(rbind(postH_h$q2.5$wt[,,1,3] %>% t(),
+                  postH_h$q2.5$wt[,,2,3] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -407,8 +476,8 @@ pel_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$wt[,,1,3] %>% t(),
-                  postH$q97.5$wt[,,2,3] %>% t()) %>%
+  left_join(rbind(postH_h$q97.5$wt[,,1,3] %>% t(),
+                  postH_h$q97.5$wt[,,2,3] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -417,8 +486,8 @@ pel_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$sd$wt[,,1,3] %>% t(),
-                  postH$sd$wt[,,2,3] %>% t()) %>%
+  left_join(rbind(postH_h$sd$wt[,,1,3] %>% t(),
+                  postH_h$sd$wt[,,2,3] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -427,6 +496,51 @@ pel_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
+
+pel_wt_mod_c <- 
+  rbind(postH_c$mean$wt[,,1,3] %>% t(), #area,year,user,species
+        postH_c$mean$wt[,,2,3] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH_c$q2.5$wt[,,1,3] %>% t(),
+                  postH_c$q2.5$wt[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$q97.5$wt[,,1,3] %>% t(),
+                  postH_c$q97.5$wt[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$sd$wt[,,1,3] %>% t(),
+                  postH_c$sd$wt[,,2,3] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+pel_wt_mod <- rbind(pel_wt_mod_h %>% filter(year < 2020),
+                    pel_wt_mod_c %>% filter(year >= 2020))
+
 pel_wt_obs <- 
   as.data.frame(
     rbind(cbind(t(jags_dat$r1_gwt_p)),
@@ -476,12 +590,12 @@ App_N <- App_N + 1
 \newpage
 
 
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx B",App_N,".**- Mean weights of non-yelloweye, demersal shelf rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx C",App_N,".**- Mean weights of non-yelloweye, demersal shelf rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
-dsr_wt_mod <- 
-  rbind(postH$mean$wt[,,1,4] %>% t(), #area,year,user,species
-        postH$mean$wt[,,2,4] %>% t()) %>%
+dsr_wt_mod_h <- 
+  rbind(postH_h$mean$wt[,,1,4] %>% t(), #area,year,user,species
+        postH_h$mean$wt[,,2,4] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -489,8 +603,8 @@ dsr_wt_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$wt[,,1,4] %>% t(),
-                  postH$q2.5$wt[,,2,4] %>% t()) %>%
+  left_join(rbind(postH_h$q2.5$wt[,,1,4] %>% t(),
+                  postH_h$q2.5$wt[,,2,4] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -499,8 +613,8 @@ dsr_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$wt[,,1,4] %>% t(),
-                  postH$q97.5$wt[,,2,4] %>% t()) %>%
+  left_join(rbind(postH_h$q97.5$wt[,,1,4] %>% t(),
+                  postH_h$q97.5$wt[,,2,4] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -509,8 +623,8 @@ dsr_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$sd$wt[,,1,4] %>% t(),
-                  postH$sd$wt[,,2,4] %>% t()) %>%
+  left_join(rbind(postH_h$sd$wt[,,1,4] %>% t(),
+                  postH_h$sd$wt[,,2,4] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -519,6 +633,51 @@ dsr_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
+
+dsr_wt_mod_c <- 
+  rbind(postH_c$mean$wt[,,1,4] %>% t(), #area,year,user,species
+        postH_c$mean$wt[,,2,4] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH_c$q2.5$wt[,,1,4] %>% t(),
+                  postH_c$q2.5$wt[,,2,4] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$q97.5$wt[,,1,4] %>% t(),
+                  postH_c$q97.5$wt[,,2,4] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$sd$wt[,,1,4] %>% t(),
+                  postH_c$sd$wt[,,2,4] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+dsr_wt_mod <- rbind(dsr_wt_mod_h %>% filter(year < 2020),
+                    dsr_wt_mod_c %>% filter(year >= 2020))
+
 dsr_wt_obs <- 
   as.data.frame(
     rbind(cbind(t(jags_dat$r1_gwt_d)),
@@ -568,12 +727,12 @@ App_N <- App_N + 1
 \newpage
 
 
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx B",App_N,".**- Mean weights of slope rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Appenidx C",App_N,".**- Mean weights of slope rockfish used to estimate biomass from harvest and release mortality estimates in numbers of fish.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
-slope_wt_mod <- 
-  rbind(postH$mean$wt[,,1,5] %>% t(), #area,year,user,species
-        postH$mean$wt[,,2,5] %>% t()) %>%
+slope_wt_mod_h <- 
+  rbind(postH_h$mean$wt[,,1,5] %>% t(), #area,year,user,species
+        postH_h$mean$wt[,,2,5] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
   mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -581,8 +740,8 @@ slope_wt_mod <-
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
-  left_join(rbind(postH$q2.5$wt[,,1,5] %>% t(),
-                  postH$q2.5$wt[,,2,5] %>% t()) %>%
+  left_join(rbind(postH_h$q2.5$wt[,,1,5] %>% t(),
+                  postH_h$q2.5$wt[,,2,5] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -591,8 +750,8 @@ slope_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$q97.5$wt[,,1,5] %>% t(),
-                  postH$q97.5$wt[,,2,5] %>% t()) %>%
+  left_join(rbind(postH_h$q97.5$wt[,,1,5] %>% t(),
+                  postH_h$q97.5$wt[,,2,5] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -601,8 +760,8 @@ slope_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source")) %>%
-  left_join(rbind(postH$sd$wt[,,1,5] %>% t(),
-                  postH$sd$wt[,,2,5] %>% t()) %>%
+  left_join(rbind(postH_h$sd$wt[,,1,5] %>% t(),
+                  postH_h$sd$wt[,,2,5] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
               mutate(year = rep(unique(Hhat_ay$year), times = 2),
@@ -611,6 +770,51 @@ slope_wt_mod <-
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
+
+slope_wt_mod_c <- 
+  rbind(postH_c$mean$wt[,,1,5] %>% t(), #area,year,user,species
+        postH_c$mean$wt[,,2,5] %>% t()) %>%
+  as.data.frame() %>%
+  setNames(nm = unique(H_ayg$area)) %>%
+  mutate(year = rep(unique(Hhat_ay$year), times = 2),
+         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+         source = "model") %>%
+  pivot_longer(-c(year, user,source), names_to = "area", values_to = "wt")  %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+  left_join(rbind(postH_c$q2.5$wt[,,1,5] %>% t(),
+                  postH_c$q2.5$wt[,,2,5] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_lo95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$q97.5$wt[,,1,5] %>% t(),
+                  postH_c$q97.5$wt[,,2,5] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "w_hi95")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source")) %>%
+  left_join(rbind(postH_c$sd$wt[,,1,5] %>% t(),
+                  postH_c$sd$wt[,,2,5] %>% t()) %>%
+              as.data.frame() %>%
+              setNames(nm = unique(H_ayg$area)) %>%
+              mutate(year = rep(unique(Hhat_ay$year), times = 2),
+                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+                     source = "model") %>%
+              pivot_longer(-c(year, user,source), names_to = "area", values_to = "sd_wt")  %>%
+              mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
+            by = c("year","area","user","source"))
+
+slope_wt_mod <- rbind(slope_wt_mod_h %>% filter(year < 2020),
+                    slope_wt_mod_c %>% filter(year >= 2020))
+
 slope_wt_obs <- 
   as.data.frame(
     rbind(cbind(t(jags_dat$r1_gwt_s)),
@@ -659,12 +863,12 @@ App_N <- App_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-# Appendix C: Model output harvest, release, release mortality and total removal estimates 
+# Appendix D: Model output harvest, release, release mortality and total removal estimates 
 
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 black <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
@@ -717,7 +921,7 @@ black %>% filter(area == "CI" & User != "All") %>%
   select(-region, -area)-> black_ci
 
 flextable(black_ci) %>%
-  add_header_row(values = c("Cook Inlet Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Cook Inlet black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -739,13 +943,13 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for North Gulf Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for North Gulf Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
 flextable(black %>% filter(area == "NG" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("North Gulf Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("North Gulf black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -765,13 +969,13 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Inside Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Inside Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
 flextable(black %>% filter(area == "PWSI" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Prince William Sound Inside Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Prince William Sound Inside black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -791,13 +995,13 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Outside Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Outside Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
 flextable(black %>% filter(area == "PWSO" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Prince William Sound Outside Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Prince William Sound Outside black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -817,7 +1021,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Bering Sea & Aleutian Islands Commercial Fisheries Management Units 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Bering Sea & Aleutian Islands Commercial Fisheries Management Units 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -825,7 +1029,7 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "BSAI" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Bering Sea & Aleutian Islands Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Bering Sea & Aleutian Islands black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -845,7 +1049,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Southeast, Southwest, Chignik and South Alaska Peninsula (SAKPEN) districts (SOKO2SAP) 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Southeast, Southwest, Chignik and South Alaska Peninsula (SAKPEN) districts (SOKO2SAP) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -853,7 +1057,7 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "SOKO2SAP" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Southeast, Southwest (Kodiak), Chignik and South Alaska Peninsula (SAKPEN) Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Southeast, Southwest (Kodiak), Chignik and South Alaska Peninsula (SAKPEN) black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -873,7 +1077,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Westside and Mainland districts (WKMA) 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Westside and Mainland districts (WKMA) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -881,7 +1085,7 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "WKMA" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Westside and Mainland Kodiak districts Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Westside and Mainland Kodiak districts black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -901,7 +1105,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Afognak Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Afognak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -909,7 +1113,7 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "AFOGNAK" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Afognak (Kodiak) Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Afognak (Kodiak) black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -929,7 +1133,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -937,7 +1141,7 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "EASTSIDE" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Eastside Kodiak Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Eastside Kodiak black rockfish"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -957,7 +1161,7 @@ AT_N <- AT_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Appendix C`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - 2023. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
 ```{r}
 
@@ -965,7 +1169,1094 @@ AT_N <- AT_N + 1
 
 flextable(black %>% filter(area == "NORTHEAST" & User != "All") %>%
   select(-region, -area)) %>%
-  add_header_row(values = c("Northeast Kodiak Black Rockfish"), colwidths = c(13)) %>%
+  add_header_row(values = c("Northeast Kodiak black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the CSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("CSEO black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the East–West Yakutat management area  Commercial Fisheries Management Unit (Icy Bay subdistrict and East Yakutat section combined) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("EWYKT black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEI black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEO black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEI black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Black rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(black %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEO black rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+ye <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Yelloweye") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+ye <- format_numbers(ye)
+
+ye <- ye %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         #harvests = paste0(harvests, " (",sd_h,")"),
+         #releases = paste0(releases, " (",sd_r,")"),
+         #release_morts = paste0(release_morts, " (",sd_rm,")"),
+         #wt = paste0(wt, " (",sd_wt,")"),
+         #mort_lbs = paste0(mort_lbs, " (",sd_m,")")
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+  
+  select(Year = year, User = user, area,region,
+         'Harvest' = harvests, 'H. SD' =  sd_h, 'H. 95% CI',  #'H. lower 95%' = h_lo95, 'H. upper 95%' = h_hi95,
+         'Releases' = releases, 'R. SD' =  sd_r, 'R. 95% CI', #'R. lower 95%' = r_lo95, 'R. upper 95%' = r_hi95,
+  ##       'Rel. Morts' = release_morts, 'RM. SD' =  sd_rm, 'RM. 95% CI', #'RM. lower 95%' = rm_lo95, 'RM. upper 95%' = rm_hi95,
+         'Rel. Mort. Rate' = mort_rate, 'Mean wt lbs' = wt, #'wt. SD' =  sd_wt,
+         'Total Mortality (lbs)' = mort_lbs, 'TM. SD' =  sd_m,  'TM. 95% CI'#, 'TM. lower 95%' = m_lo95, 'TM. upper 95%' = m_hi95
+         ) #%>%
+         #"Prop. mortality from releases" = p_mort_r) %>%
+#  select(-c(p_mort_h,p_mort_r,
+            #sd_h,sd_r,sd_rm,sd_wt,sd_m,
+#            h_lo95,h_hi95, r_lo95,r_hi95, rm_lo95,rm_hi95, m_lo95,m_hi95))
+
+ye %>% filter(area == "CI" & User != "All") %>%
+  select(-region, -area)-> ye_ci
+
+flextable(ye_ci) %>%
+  add_header_row(values = c("Cook Inlet yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+#7*0.53 + 3*0.70 + 3*1.06
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for North Gulf Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+flextable(ye %>% filter(area == "NG" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("North Gulf yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Inside Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+flextable(ye %>% filter(area == "PWSI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Prince William Sound Inside (PWSI) yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Prince William Sound Outside Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+flextable(ye %>% filter(area == "PWSO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Prince William Sound Outside (PWSO) yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Bering Sea & Aleutian Islands Commercial Fisheries Management Units 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "BSAI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Bering Sea & Aleutian Islands yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Southeast, Southwest, Chignik and South Alaska Peninsula (SAKPEN) districts (SOKO2SAP) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "SOKO2SAP" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Southeast, Southwest (Kodiak), Chignik and South Alaska Peninsula (SAKPEN) yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Westside and Mainland districts (WKMA) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "WKMA" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Westside and Mainland Kodiak districts yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Afognak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "AFOGNAK" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Afognak (Kodiak) yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "EASTSIDE" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Eastside Kodiak yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the Eastside Kodiak Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "NORTHEAST" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("Northeast Kodiak yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the CSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("CSEO yelloweye rockfishh"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the East–West Yakutat management area  Commercial Fisheries Management Unit (Icy Bay subdistrict and East Yakutat section combined) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("EWYKT yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEI yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEO yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEI yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Yelloweye rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(ye %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEO yelloweye rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+pel <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Non-black Pelagics") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+pel <- format_numbers(pel)
+
+pel <- pel %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         #harvests = paste0(harvests, " (",sd_h,")"),
+         #releases = paste0(releases, " (",sd_r,")"),
+         #release_morts = paste0(release_morts, " (",sd_rm,")"),
+         #wt = paste0(wt, " (",sd_wt,")"),
+         #mort_lbs = paste0(mort_lbs, " (",sd_m,")")
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+  
+  select(Year = year, User = user, area,region,
+         'Harvest' = harvests, 'H. SD' =  sd_h, 'H. 95% CI',  #'H. lower 95%' = h_lo95, 'H. upper 95%' = h_hi95,
+         'Releases' = releases, 'R. SD' =  sd_r, 'R. 95% CI', #'R. lower 95%' = r_lo95, 'R. upper 95%' = r_hi95,
+  ##       'Rel. Morts' = release_morts, 'RM. SD' =  sd_rm, 'RM. 95% CI', #'RM. lower 95%' = rm_lo95, 'RM. upper 95%' = rm_hi95,
+         'Rel. Mort. Rate' = mort_rate, 'Mean wt lbs' = wt, #'wt. SD' =  sd_wt,
+         'Total Mortality (lbs)' = mort_lbs, 'TM. SD' =  sd_m,  'TM. 95% CI'#, 'TM. lower 95%' = m_lo95, 'TM. upper 95%' = m_hi95
+         ) #%>%
+         #"Prop. mortality from releases" = p_mort_r) %>%
+#  select(-c(p_mort_h,p_mort_r,
+            #sd_h,sd_r,sd_rm,sd_wt,sd_m,
+#            h_lo95,h_hi95, r_lo95,r_hi95, rm_lo95,rm_hi95, m_lo95,m_hi95))
+
+pel %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> pel_cseo
+
+flextable(pel_cseo) %>%
+  add_header_row(values = c("CSEO non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+#7*0.53 + 3*0.70 + 3*1.06
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the East–West Yakutat management area  Commercial Fisheries Management Unit (Icy Bay subdistrict and East Yakutat section combined) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(pel %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("EWYKT non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(pel %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEI non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(pel %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEO non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(pel %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEI non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-black pelagic rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(pel %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEO non-black pelagic rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+dsr <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Non-ye DSR") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+dsr <- format_numbers(dsr)
+
+dsr <- dsr %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         #harvests = paste0(harvests, " (",sd_h,")"),
+         #releases = paste0(releases, " (",sd_r,")"),
+         #release_morts = paste0(release_morts, " (",sd_rm,")"),
+         #wt = paste0(wt, " (",sd_wt,")"),
+         #mort_lbs = paste0(mort_lbs, " (",sd_m,")")
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+  
+  select(Year = year, User = user, area,region,
+         'Harvest' = harvests, 'H. SD' =  sd_h, 'H. 95% CI',  #'H. lower 95%' = h_lo95, 'H. upper 95%' = h_hi95,
+         'Releases' = releases, 'R. SD' =  sd_r, 'R. 95% CI', #'R. lower 95%' = r_lo95, 'R. upper 95%' = r_hi95,
+  ##       'Rel. Morts' = release_morts, 'RM. SD' =  sd_rm, 'RM. 95% CI', #'RM. lower 95%' = rm_lo95, 'RM. upper 95%' = rm_hi95,
+         'Rel. Mort. Rate' = mort_rate, 'Mean wt lbs' = wt, #'wt. SD' =  sd_wt,
+         'Total Mortality (lbs)' = mort_lbs, 'TM. SD' =  sd_m,  'TM. 95% CI'#, 'TM. lower 95%' = m_lo95, 'TM. upper 95%' = m_hi95
+         ) #%>%
+         #"Prop. mortality from releases" = p_mort_r) %>%
+#  select(-c(p_mort_h,p_mort_r,
+            #sd_h,sd_r,sd_rm,sd_wt,sd_m,
+#            h_lo95,h_hi95, r_lo95,r_hi95, rm_lo95,rm_hi95, m_lo95,m_hi95))
+
+dsr %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> dsr_cseo
+
+flextable(dsr_cseo) %>%
+  add_header_row(values = c("CSEO non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+#7*0.53 + 3*0.70 + 3*1.06
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for the East–West Yakutat management area  Commercial Fisheries Management Unit (Icy Bay subdistrict and East Yakutat section combined) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(dsr %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("EWYKT non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(dsr %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEI non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(dsr %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEO non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(dsr %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEI non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Non-yelloweye demersal shelf rockfish (DSR) harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(dsr %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEO non-yelloweye demersal shelf rockfish (DSR)"), colwidths = c(13)) %>%
   #autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "header") %>%
@@ -987,8 +2278,217 @@ AT_N <- AT_N + 1
 
 
 
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for Cook Inlet Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
 
+```{r}
+slope <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Slope") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
 
+slope <- format_numbers(slope)
 
+slope <- slope %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         #harvests = paste0(harvests, " (",sd_h,")"),
+         #releases = paste0(releases, " (",sd_r,")"),
+         #release_morts = paste0(release_morts, " (",sd_rm,")"),
+         #wt = paste0(wt, " (",sd_wt,")"),
+         #mort_lbs = paste0(mort_lbs, " (",sd_m,")")
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+  
+  select(Year = year, User = user, area,region,
+         'Harvest' = harvests, 'H. SD' =  sd_h, 'H. 95% CI',  #'H. lower 95%' = h_lo95, 'H. upper 95%' = h_hi95,
+         'Releases' = releases, 'R. SD' =  sd_r, 'R. 95% CI', #'R. lower 95%' = r_lo95, 'R. upper 95%' = r_hi95,
+  ##       'Rel. Morts' = release_morts, 'RM. SD' =  sd_rm, 'RM. 95% CI', #'RM. lower 95%' = rm_lo95, 'RM. upper 95%' = rm_hi95,
+         'Rel. Mort. Rate' = mort_rate, 'Mean wt lbs' = wt, #'wt. SD' =  sd_wt,
+         'Total Mortality (lbs)' = mort_lbs, 'TM. SD' =  sd_m,  'TM. 95% CI'#, 'TM. lower 95%' = m_lo95, 'TM. upper 95%' = m_hi95
+         ) #%>%
+         #"Prop. mortality from releases" = p_mort_r) %>%
+#  select(-c(p_mort_h,p_mort_r,
+            #sd_h,sd_r,sd_rm,sd_wt,sd_m,
+#            h_lo95,h_hi95, r_lo95,r_hi95, rm_lo95,rm_hi95, m_lo95,m_hi95))
 
+slope %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> slope_cseo
 
+flextable(slope_cseo) %>%
+  add_header_row(values = c("CSEO slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+#7*0.53 + 3*0.70 + 3*1.06
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the East–West Yakutat management area  Commercial Fisheries Management Unit (Icy Bay subdistrict and East Yakutat section combined) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(slope %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("EWYKT slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(slope %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEI slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the NSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(slope %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("NSEO slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEI Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(slope %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEI slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Appendix D`r AT_N`.** Slope rockfish harvest, release, release mortality, weight, and total mortality estimates by year and user group for the SSEO Commercial Fisheries Management Unit 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. Harvest, release and release mortalities are estimated in numbers of fish. 
+
+```{r}
+
+#unique(black$area)
+
+flextable(slope %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)) %>%
+  add_header_row(values = c("SSEO slope rockfish"), colwidths = c(13)) %>%
+  #autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 10, part = "header") %>%
+  fontsize(size = 9, part = "body") %>%
+  align(j = 1:13, align = "center", part = "all") %>%
+  #set_table_properties(width = 1, layout = "autofit") %>%
+  set_table_properties(layout = "fixed") %>%
+  line_spacing(space = 0.5, part = "body") %>% 
+  height_all(height = 0.10) %>%
+  width(j = c(1:2,4,7,9:10,12), width = 0.53) %>%
+  width(j = c(3,6,11), width = 0.70) %>%
+  width(j = c(5,8,13), width = 1.06) 
+
+AT_N <- AT_N + 1
+
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage

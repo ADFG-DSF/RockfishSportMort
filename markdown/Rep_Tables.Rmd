@@ -55,66 +55,9 @@ mod<-"LB_fit_3pH"
 
 res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
 
-postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+#postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
-rhat <- get_Rhat(postH, cutoff = 1.11)
-
-summary_table <- postH$summary %>%
-  as.data.frame() %>%
-  tibble::rownames_to_column(var = "Parameter") %>%
-  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
-  rename(
-    Lower_CI = `2.5%`,
-    Median = `50%`,
-    Upper_CI = `97.5%`
-  ) %>% 
-  filter(str_detect(Parameter, "^tau_comp\\[") |
-         str_detect(Parameter, "^tau_pH\\[") |
-          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
-           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
-           str_detect(Parameter, "^mu_beta0_yellow\\[")|
-           str_detect(Parameter, "^tau_beta0_yellow\\[")|
-           str_detect(Parameter, "^mu_beta0_black\\[")|
-           str_detect(Parameter, "^tau_beta0_black\\[")|
-           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
-           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
-           str_detect(Parameter, "^mu_bc_H\\[")|
-           str_detect(Parameter, "^tau_bc_H\\[")|
-           str_detect(Parameter, "^mu_bc_R\\[")|
-           str_detect(Parameter, "^tau_bc_R\\[")|
-           str_detect(Parameter, "^bc_R_offset\\[")|
-           str_detect(Parameter, "^beta0_pH\\[")|
-           str_detect(Parameter, "^beta1_pH\\[")|
-           str_detect(Parameter, "^beta2_pH\\[")|
-           str_detect(Parameter, "^beta3_pH\\[")|
-           str_detect(Parameter, "^beta0_pelagic\\[")|
-           str_detect(Parameter, "^beta1_pelagic\\[")|
-           str_detect(Parameter, "^beta2_pelagic\\[")|
-           str_detect(Parameter, "^beta3_pelagic\\[")|
-           str_detect(Parameter, "^beta0_yellow\\[")|
-           str_detect(Parameter, "^beta1_yellow\\[")|
-           str_detect(Parameter, "^beta2_yellow\\[")|
-           str_detect(Parameter, "^beta3_yellow\\[")|
-           str_detect(Parameter, "^beta0_black\\[")|
-           str_detect(Parameter, "^beta2_black\\[")|
-           str_detect(Parameter, "^beta3_black\\[")|
-           str_detect(Parameter, "^beta4_black\\[")|
-           str_detect(Parameter, "^beta0_dsr\\[")|
-           str_detect(Parameter, "^beta1_dsr\\[")|
-           str_detect(Parameter, "^beta2_dsr\\[")|
-           str_detect(Parameter, "^beta3_dsr\\[")|
-           str_detect(Parameter, "^beta4_dsr\\[")|
-           str_detect(Parameter, "^beta0_slope\\[")|
-           str_detect(Parameter, "^beta1_slope\\[")|
-           str_detect(Parameter, "^beta2_slope\\[")|
-           str_detect(Parameter, "^beta3_slope\\[")|
-           str_detect(Parameter, "^beta4_slope\\[")|
-           str_detect(Parameter, "^sigma_H\\[")|
-           str_detect(Parameter, "^beta_H\\[")|
-           str_detect(Parameter, "^beta0_H\\[")|
-           str_detect(Parameter, "^lambda_H\\[")|
-           str_detect(Parameter, "^mu_lambda_H\\[")|
-           str_detect(Parameter, "^sigma_lambda_H\\["))
+#rhat <- get_Rhat(postH, cutoff = 1.11)
 
 Fig_N <- 0
 Tab_N <- 1
@@ -157,15 +100,15 @@ library(knitr)
 
 # Create a data frame for the table
 my_table <- data.frame(
-  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propogation"),
-  Howard = c("1999 - present","Not explicitly dealt with. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
-              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook data.",
-             "Uses sample size threshholds such that when areas fall below those threshholds values are borrowed from nearby areas.",
-             "Error is propogated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases, are not dealt with."),
+  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propagation"),
+  Howard = c("1999 - present","Not explicitly accounted for. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
+              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook and podata.",
+             "Uses sample size thresholds such that when areas fall below those thresholds values are borrowed from nearby areas or user groups.",
+             "Error is propagated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases."),
   Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
-              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook data, portside interview data, and bias corrected SWHS data",
-            "Uses a hierarchichacal modelling approach that shares information between areas in the same region. Thus all data is used, even with small sample sizes. This is a more sound method that avoids assumptions and uses all of the data. ",
-            "By breaking the assumption that species composition is equal between harvests and releases, uncertainty in the release estimates is more reflective of the fishery. Furthermore, the hyerarchichal approach more accurately captures uncertainy within and between areas within a region.")
+              "Recognizes different release probabilities by species / species assemblage and estimates it from logbook, portside interview, and bias corrected SWHS data",
+            "Uses a hierarchical modelling approach that shares information between areas in the same region, reduces assumptions, and maximizes the use of all available data, even with small sample sizes. ",
+            "Uncertainty in release estimates is more reflective of the fishery because these methods do not assume species composition is the same between harvests and releases. The hierarchical approach more accurately captures uncertainty within and between areas within a region.")
 )
 
 flextable(my_table) %>%

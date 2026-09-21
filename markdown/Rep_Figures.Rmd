@@ -59,68 +59,12 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
-res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+res_c <- "annual_est_model_thru2024_1e+06__2026-07-15" #prelim; just using temporarily
+#res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 
-#rhat <- get_Rhat(postH, cutoff = 1.11)
-
-#summary_table <- postH$summary %>%
-#  as.data.frame() %>%
-#  tibble::rownames_to_column(var = "Parameter") %>%
-#  select(Parameter, mean, sd, `2.5%`, `50%`, `97.5%`) %>%
-#  rename(
-#    Lower_CI = `2.5%`,
-#    Median = `50%`,
-#    Upper_CI = `97.5%`
-#  ) %>% 
-#  filter(str_detect(Parameter, "^tau_comp\\[") |
-#         str_detect(Parameter, "^tau_pH\\[") |
-#          str_detect(Parameter, "^mu_beta0_pelagic\\[")|
-#           str_detect(Parameter, "^tau_beta0_pelagic\\[")|
-#           str_detect(Parameter, "^mu_beta0_yellow\\[")|
-#           str_detect(Parameter, "^tau_beta0_yellow\\[")|
-#           str_detect(Parameter, "^mu_beta0_black\\[")|
-#           str_detect(Parameter, "^tau_beta0_black\\[")|
-#           str_detect(Parameter, "^mu_beta0_yellow_x\\[")|
-#           str_detect(Parameter, "^tau_beta0_yellow_x\\[")|
-#           str_detect(Parameter, "^mu_bc_H\\[")|
-#           str_detect(Parameter, "^tau_bc_H\\[")|
-#           str_detect(Parameter, "^mu_bc_R\\[")|
-#           str_detect(Parameter, "^tau_bc_R\\[")|
-#           str_detect(Parameter, "^bc_R_offset\\[")|
-#           str_detect(Parameter, "^beta0_pH\\[")|
-#           str_detect(Parameter, "^beta1_pH\\[")|
-#           str_detect(Parameter, "^beta2_pH\\[")|
-#           str_detect(Parameter, "^beta3_pH\\[")|
-#           str_detect(Parameter, "^beta0_pelagic\\[")|
-#           str_detect(Parameter, "^beta1_pelagic\\[")|
-#           str_detect(Parameter, "^beta2_pelagic\\[")|
-#           str_detect(Parameter, "^beta3_pelagic\\[")|
-#           str_detect(Parameter, "^beta0_yellow\\[")|
-#           str_detect(Parameter, "^beta1_yellow\\[")|
-#           str_detect(Parameter, "^beta2_yellow\\[")|
-#           str_detect(Parameter, "^beta3_yellow\\[")|
-#           str_detect(Parameter, "^beta0_black\\[")|
-#           str_detect(Parameter, "^beta2_black\\[")|
-#           str_detect(Parameter, "^beta3_black\\[")|
-#           str_detect(Parameter, "^beta4_black\\[")|
-#           str_detect(Parameter, "^beta0_dsr\\[")|
-#           str_detect(Parameter, "^beta1_dsr\\[")|
-#           str_detect(Parameter, "^beta2_dsr\\[")|
-#           str_detect(Parameter, "^beta3_dsr\\[")|
-#           str_detect(Parameter, "^beta4_dsr\\[")|
-#           str_detect(Parameter, "^beta0_slope\\[")|
-#           str_detect(Parameter, "^beta1_slope\\[")|
-#           str_detect(Parameter, "^beta2_slope\\[")|
-#           str_detect(Parameter, "^beta3_slope\\[")|
-#           str_detect(Parameter, "^beta4_slope\\[")|
-#           str_detect(Parameter, "^sigma_H\\[")|
-#           str_detect(Parameter, "^beta_H\\[")|
-#           str_detect(Parameter, "^beta0_H\\[")|
-#           str_detect(Parameter, "^lambda_H\\[")|
-#           str_detect(Parameter, "^mu_lambda_H\\[")|
-#           str_detect(Parameter, "^sigma_lambda_H\\["))
+SE4stageyear1 <- 2020
 
 Fig_N <- 0
 Tab_N <- 0
@@ -2248,7 +2192,7 @@ pel_harv %>%
                    H_lo95 = round(H_lo95,0),
                    H_hi95 = round(H_hi95),
                    sd_H = round(sd_H,3)) %>%
-            select(region,area,year,user,Harvests = H, H_lo95,H_hi95) -> pelH_wb
+            select(region,area,year,user,Harvests = H, sd_H, H_lo95,H_hi95) -> pelH_wb
 
 postH <- postH_h
 as.data.frame(
@@ -6291,7 +6235,7 @@ wb_save(rep_wb, file = "RF_Sport_Removals_RepV.xlsx", overwrite = TRUE, path = N
 
 ```
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of black rockfish by guided and unguided anglers in 16 Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of black rockfish by guided and unguided anglers in 16 Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals. Southeast Alaska (CSEO, EWYKT, NSEI, NSEO, SSEI, SSEO) biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 #pal <- c(wes_palette(name = "Moonrise2", n=4),"black")
 pal <- wes_palette(name = "AsteroidCity1", n=5)
 
@@ -6354,7 +6298,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage 
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of yelloweye rockfish by guided and unguided anglers in Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of yelloweye rockfish by guided and unguided anglers in Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals. Southeast Alaska (CSEO, EWYKT, NSEI, NSEO, SSEI, SSEO) biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 
 YE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -6411,7 +6355,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage  
 
-```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-black pelagic rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals.")}
+```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-black pelagic rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 
 PEL_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
@@ -6466,7 +6410,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage  
 
-```{r, fig.width = 8, fig.height =6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-yelloweye demersal shelf rockfish by guided and unguided anglers in southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals.")}
+```{r, fig.width = 8, fig.height =6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-yelloweye demersal shelf rockfish by guided and unguided anglers in southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 DSR_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
                values_to = "M_prop",
@@ -6521,7 +6465,7 @@ Fig_N <- Fig_N+1
 \newpage  
 
 
-```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of slope rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals.")}
+```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of slope rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2024. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 
 SLOPE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
   pivot_longer(cols = c(p_mort_H,p_mort_R),
