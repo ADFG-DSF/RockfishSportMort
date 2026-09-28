@@ -18,7 +18,7 @@ datSC <- read.csv("data/raw_dat/Species_comp_SC/sample_size_rf_SC_Port_Sampling.
          freq = NA)
 
 
-datSE <- 
+datSE_raw <- 
   read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\SE_2011_2025_number of vessels with sampled RF_19SEP25.xlsx"), 
             sheet = "By MHS Grouping",
             range = "A4:I974") %>% clean_names() %>%
@@ -27,17 +27,22 @@ datSE <-
          sp_grp = rf_mhs_grp) %>%
   select(-c(obs,type))
 
+datSE_4st <- 
+  read.csv("data/raw_dat/Species_comp_SE/SEAK_2025_avg_GF_Area_RPT_24SEP26.csv") %>%
+  clean_names()
+
 head(datSC)
-head(datSE)
+head(datSE_raw)
+head(datSE_4st)
 
 unique(datSC$sp_grp)
-unique(datSE$sp_grp)
+unique(datSE_raw$sp_grp)
 
 cfmus <- c("CI","NG","PWSI","PWSO",
            "WESTSIDE","AFOGNAK","EASTSIDE","NORTHEAST",
            "CSEO","EYKT","IBS","NSEI","NSEO","NSEO/CSEO","SSEI","SSEO")
 
-dat <- rbind(datSC,datSE) %>%
+dat <- rbind(datSC,datSE_raw) %>%
   filter(!is.na(cfmu),
          !is.na(sp_grp)) %>%
   mutate(cfmu = factor(cfmu, 
@@ -141,7 +146,7 @@ wts1 %>%
 unique(wts1$analysis_grp)
 
 # Notes from Diana Tersteeg:
-#Starting in 2017 with the database, we had a shiftid and interviewid variable which 
+# Starting in 2017 with the database, we had a shiftid and interviewid variable which 
 # identified individual shifts (a unique day worked by an individual technician at 
 # a port and harbor) and individual interviewid (a unique boat interview during a shiftid).  
 
@@ -286,21 +291,52 @@ ggplot(ss_eval, aes(x = cfmu, col = pint_gt5, fill = pint_gt5)) +
   theme_bw() +
   scale_x_discrete(guide = guide_axis(angle = 90))
 
-# Cutoff: 10 fish and 4 boats:
+#-------------------------------------------------------------------------------
+# Cutoff: 10 fish and 4 boats for bootstrap estimates
+# USe 4-stage est for SE where available!!
+wts; 
+datSE_4st <- datSE_4st %>%
+  mutate(assemblage = tolower(assemblage),
+         spec = ifelse(assemblage == "dsrlessye","dsr_less_ye",
+                       ifelse(assemblage == "pelnbrf","pelagic_less_blk",assemblage))) 
+
+unique(wts$spec)
+unique(datSE_4st$assemblage)
 
 wts_for_mod <- wts %>%
   filter(!is.na(mean_wtkg),
          n_samps > 9,
-         n_ints2 > 3)
+         n_ints2 > 3) %>%
+  mutate(method = "bootstrap",
+         wt_cv = boot_sd / mean_wtkg) %>%
+  rbind(datSE_4st %>% select(-assemblage) %>%
+          rename(cfmu = area_cfmu,
+                 sd_wt = wt_sd) %>%
+          mutate(user = ifelse(user == "Unguided","Private","Charter"),
+                 n_ints = NA,
+                 samp_p_int = NA,
+                 boot_sd = NA,
+                 mean_n = NA,
+                 mean_int = NA,
+                 mean_spi = NA,
+                 n_ints2 = NA,
+                 method = "4-stage")) 
+  
 
 unique(wts$cfmu)
 unique(wts$spec)
+unique(wts_for_mod$method)
+unique(wts_for_mod$spec)
 
 with(wts_for_mod, table(year,cfmu))
 
+wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
+  filter(spec == "black") -> tst
+unique(tst$method)
+
 ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
          filter(spec == "black"), 
-       aes(x= year, y = mean_wtkg, col = user, fill = user)) +
+       aes(x= year, y = mean_wtkg, col = user, fill = user, shape = method)) +
   geom_ribbon(aes(ymin = mean_wtkg - 1.96 * boot_sd,
                   ymax = mean_wtkg + 1.96 * boot_sd),
               alpha = 0.2, color = NA) +
@@ -368,9 +404,21 @@ ggplot(wts_for_mod %>% mutate(user_sp = paste0(spec," - ",user)) %>%
   xlim(2005,2025) + theme_bw() +
   ylim(0,3.5)
 
+# need to use 4-stage for SE when available
+se4st_yrs <- wts_for_mod %>% filter(method == "4-stage") %>%
+  select(year) %>% unique()
 
-write.csv(wts_for_mod, "data/bayes_dat/wt_dat_processed.csv")
+wts_for_mod_fin <- rbind(wts_for_mod %>% filter(cfmu %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"),
+                                                method == "bootstrap",
+                                                year < min(se4st_yrs)),
+                         wts_for_mod %>% filter(cfmu %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO"),
+                                                method == "4-stage")) %>%
+  rbind(wts_for_mod %>% filter(cfmu %in% c("NG","PWSI","PWSO","NORTHEAST","CI",
+                                           "EASTSIDE","AFOGNAK")))
 
+with(wts_for_mod_fin, table(year,method,cfmu))
+
+write.csv(wts_for_mod_fin, "data/bayes_dat/wt_dat_processed.csv")
 
 
 #------------------------------------------------------------------------------

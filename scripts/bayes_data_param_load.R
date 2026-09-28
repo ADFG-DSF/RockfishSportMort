@@ -974,7 +974,7 @@ load_raw <- function(start_yr = 1977,
 # Alternative data setup to see if NOT fitting to others in SE helps things out...
 readinData_alt <- function(spl_knts = 7,
                        start_yr = 1977,
-                       end_yr = 2024,
+                       end_yr = 2025,
                        SE06 = "exclude"){
   # Logbook harvests by area, year for guided trips
   H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
@@ -1094,15 +1094,22 @@ readinData_alt <- function(spl_knts = 7,
   kha <- readRDS(".//data//bayes_dat//kha.rds")
   
   #Weigth and release mortality data 
-  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat_tst.rds") %>%
+#  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
     group_by(assemblage,area,user) %>%
     mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
                           10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
     ungroup() %>% 
     mutate(assemblage = factor(assemblage, 
                                levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
-           wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
-                          ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))) %>%
+           method = ifelse(is.na(method),"bootstrap",method),
+           wt_sd = ifelse(is.na(bootsd_wtlbs) & method == "bootstrap", maxsd,
+                          ifelse(bootsd_wtlbs == 0 & method == "bootstrap",
+                                 0.5 * maxsd,
+                                 ifelse(method == "4-stage",sd_wtlbs, bootsd_wtlbs)))
+          # wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
+           #               ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))
+           ) %>%
     #wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
     arrange(assemblage, user,region, area, year) 
   

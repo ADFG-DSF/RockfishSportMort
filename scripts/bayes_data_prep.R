@@ -16,7 +16,7 @@ library(ggplot2)
 library(janitor)
 library(scales)
 
-REP_YR <- 2024
+REP_YR <- 2025
 
 #look up table for region
 lut <- 
@@ -853,7 +853,10 @@ wts <- read.csv("data/bayes_dat/wt_dat_processed.csv") %>%
 unique(wts$area)
 with(wts,table(area,year))
 
-sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
+wts %>% filter(year %in% c(2018,2024, 2025) & area == "CSEO")
+
+#sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc24.csv") %>% clean_names() %>%
+sc_rm <- read.csv("data/raw_dat/Species_comp_SC/rf_mort_sc_rec2026.csv") %>% clean_names() %>%
   rename(area = cfmu) %>%
   select(year,assemblage,user,area,rel_cat,p_rel,pcat_surface,pcat_drm,mort_rate) %>%
   mutate(assemblage = tolower(assemblage),

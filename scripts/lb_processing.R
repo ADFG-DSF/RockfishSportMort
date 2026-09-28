@@ -25,10 +25,10 @@ library(janitor)
 library(haven)
 
 # year of new data
-YEAR <- 2024
+YEAR <- 2025
 
-LB_file_name <- "2024LogbookData.9.15.2025.csv" #date is the date the data was pulled by logbook folks
-
+LB_file_name24 <- "2024LogbookData.9.15.2025.csv" #date is the date the data was pulled by logbook folks
+LB_file_name <- "2025LogbookData.9.21.2026 BLJ.csv"
 # Logbook data -----------------------------------------------------------------
 
 # Read in new logbook data:
@@ -40,10 +40,37 @@ raw_log22 <- read_sas(paste0("data/raw_dat/",YEAR,"/statewide_2022_100923.sas7bd
 raw_log23 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
   clean_names()
 
-raw_log24 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
+raw_log24 <- read.csv(paste0("data/raw_dat/",2024,"/",LB_file_name24)) %>% 
   clean_names()
 
-raw_log <- raw_log24
+raw_log25 <- read.csv(paste0("data/raw_dat/",YEAR,"/",LB_file_name)) %>% 
+  clean_names()
+
+str(raw_log24)
+str(raw_log25)
+
+# structure of new logbook data is off from previous year so we'll map the '24
+# structure onto the '25 data so we can roll forward with this code:
+for (nm in names(raw_log24)) {
+  
+  if (is.integer(raw_log24[[nm]])) {
+    raw_log25[[nm]] <- as.integer(
+      replace(raw_log25[[nm]], raw_log25[[nm]] == "NULL", NA)
+    )
+    
+  } else if (is.numeric(raw_log24[[nm]])) {
+    raw_log25[[nm]] <- as.numeric(
+      replace(raw_log25[[nm]], raw_log25[[nm]] == "NULL", NA)
+    )
+    
+  } else if (is.logical(raw_log24[[nm]])) {
+    raw_log25[[nm]] <- as.logical(
+      replace(raw_log25[[nm]], raw_log25[[nm]] == "NULL", NA)
+    )
+  }
+}
+
+raw_log <- raw_log25
 
 log <- raw_log %>% 
   mutate(
@@ -902,13 +929,17 @@ R_sum_2 <- rbind(R_sum_2, # %>% filter(year < 2022),
 # Add in blank line for Southwest if needed
 unique(R_sum_2$RptArea) #none in 2022
 # none in 2023
+print(R_sum_2, n = 50) # no need to in 2025
 
-R_sum_2 <- R_sum_2 %>% data.frame() %>%
-  add_row(year = YEAR, RptArea = "SOUTHWEST",
-          total_rfrel = 0,
-          total_prockrel = 0,
-          total_yrockrel = 0,
-          total_orockrel = 0) #%>%
+if (nrow(R_sum_2 %>% filter(RptArea == "SOUTHWEST")) < 1){
+  R_sum_2 <- R_sum_2 %>% data.frame() %>%
+    add_row(year = YEAR, RptArea = "SOUTHWEST",
+            total_rfrel = 0,
+            total_prockrel = 0,
+            total_yrockrel = 0,
+            total_orockrel = 0) #%>%
+}
+
 
 R_sum_2 <- rbind(R_sum_2,
                  R_sum_2 %>% filter(RptArea %in% c("WESTSIDE","MAINLAND")) %>%
@@ -918,7 +949,7 @@ R_sum_2 <- rbind(R_sum_2,
   rbind(R_sum_2 %>% filter(RptArea %in% c("SOUTHEAST","SOUTHWEST")) %>%
           summarise(.,across(where(is.numeric),sum)) %>%
           mutate(year = YEAR,
-                 RptArea = "SKMA"))
+                 RptArea = "SKMA")) %>% print(n = 50)
 
 lb_rel2 <- rbind(lb_rel %>% filter(year < YEAR),
                  R_sum_2 %>%  

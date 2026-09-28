@@ -18,7 +18,7 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 
-YEAR <- 2024
+YEAR <- 2025
 
 #2022
 SWHS_file_name <- "rf_byMgmtUnit_20240305.xlsx"
@@ -26,6 +26,8 @@ SWHS_file_name <- "rf_byMgmtUnit_20240305.xlsx"
 SWHS_file_name <- "rf_byMgmtUnit_sent20240925.xlsx"
 #2024
 SWHS_file_name <- "rf_byMgmtUnit_sent20250916.xlsx"
+#2025
+SWHS_file_name <- "rf_byMgmtUnit_20260922.xlsx"
 
 # KODIAK: Between 2017 and 2021 Kodiak harvests were not handled properly. The last
 # FS I confused the sample size requirements for SWHS responses (12+) and those 
