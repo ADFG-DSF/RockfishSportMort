@@ -26,7 +26,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2024
+YEAR <- 2025
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -68,10 +68,11 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_30-Sep-25.xlsx"), 
                      #sheet = "Sheet1", 2023
                      sheet = "Sheet1", #2024; different format
-                     range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
+                     range = paste0("A1:DX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
@@ -314,7 +315,6 @@ saveWorkbook(rel_est_xlsx, paste0("output/release_estimates_Howard_thru",YEAR,".
 #-------------------------------------------------------------------------------
 # Summary and plots
 # Harvest and release by year and user and CFMU / RptArea
-str(updated_YE_H)
 
 updated_Pel_H %>% select(Region,RptArea,year,
                          Guided = GuiPel,SE_Gui = sqrt_GuiPel ,

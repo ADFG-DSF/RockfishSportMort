@@ -38,7 +38,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2024
+YEAR <- 2025
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -60,10 +60,11 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"), 
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_30-Sep-25.xlsx"), 
                      #sheet = "Sheet1", 2023
                      sheet = "Sheet1", #2024; different format
-                     range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
+                     range = paste0("A1:DX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
@@ -222,7 +223,7 @@ ncol(SLO_lastH); ncol(SLO_harvest)
 
 updated_SLO_H <- rbind(SLO_lastH,SLO_harvest) %>% arrange(Region,RptArea,year)
 
-updated_SLO_H %>% filter(year == 2022 & Region == "SE") 
+updated_SLO_H %>% filter(year >= 2022 & Region == "SE") 
 #checks out! just save one 2022 row
 #updated_SLO_H <- rbind(SLO_lastH %>% filter(year < YEAR),
 #                       SLO_harvest) %>% arrange(Region,RptArea,year)
@@ -299,7 +300,7 @@ ncol(SLO_lastR); ncol(SLO_release)
 
 updated_SLO_R <- rbind(SLO_lastR,SLO_release) %>% arrange(Region,RptArea,year)
 
-updated_SLO_R %>% filter(year == 2022 & Region == "SE") %>% 
+updated_SLO_R %>% filter(year >= 2022 & Region == "SE") %>% 
   mutate(checkTot = GuiSlope + Priv_Slope)
 
 updated_SLO_R %>% filter(RptArea == "EWYKT" & year == 2022)

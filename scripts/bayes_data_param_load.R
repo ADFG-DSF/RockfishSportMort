@@ -977,23 +977,23 @@ readinData_alt <- function(spl_knts = 7,
                        end_yr = 2025,
                        SE06 = "exclude"){
   # Logbook harvests by area, year for guided trips
-  H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
+  H_ayg <- readRDS(paste0(".//data//bayes_dat//H_ayg",end_yr,".rds")) %>% 
     mutate(H_lb = ifelse(H == 0, 1, H))
   
   # Logbook releases by area, year for guided trips
-  R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+  R_ayg <- readRDS(paste0(".//data//bayes_dat//R_ayg",end_yr,".rds")) %>% 
     mutate(R_lb = ifelse(R == 0, 1, R),
            Rye = ifelse(year < 2006, NA,Rye))
   
   # SWHS harvests by area, year and user 
   Hhat_ayu <- 
-    readRDS(".//data//bayes_dat//Hhat_ayu.rds")  %>% 
+    readRDS(paste0(".//data//bayes_dat//Hhat_ayu_thru",end_yr,".rds"))  %>% 
     mutate(Hhat = ifelse(H == 0, 1, H), 
            seH = ifelse(seH == 0, 1, seH)) %>%
     arrange(area, user, year)
   
   Chat_ayu <- 
-    readRDS(".//data//bayes_dat//Chat_ayu.rds")  %>% 
+    readRDS(paste0(".//data//bayes_dat//Chat_ayu_thru",end_yr,".rds"))  %>% 
     mutate(Chat = ifelse(C == 0, 1, C), 
            seC = ifelse(seC == 0, 1, seC)) %>%
     arrange(area, user, year)
@@ -1011,7 +1011,7 @@ readinData_alt <- function(spl_knts = 7,
   
   # SWHS harvests by area, year
   Hhat_ay <- 
-    readRDS(".//data//bayes_dat//Hhat_ay.rds") %>% 
+    readRDS(paste0(".//data//bayes_dat//Hhat_ay_thru",end_yr,".rds")) %>% 
     rename(Hhat = H) %>%
     mutate(area = as.character(area)) %>%
     bind_rows(Hhat_ayu %>% 
@@ -1031,7 +1031,7 @@ readinData_alt <- function(spl_knts = 7,
   
   # SWHS Catch by area, year
   Chat_ay <- 
-    readRDS(".//data//bayes_dat//Chat_ay.rds") %>% 
+    readRDS(paste0(".//data//bayes_dat//Chat_ay_thru",end_yr,".rds")) %>% 
     rename(Chat = C) %>%
     mutate(area = as.character(area)) %>%
     bind_rows(readRDS(".//data//bayes_dat//Chat_ayu.rds") %>% 
@@ -1054,7 +1054,7 @@ readinData_alt <- function(spl_knts = 7,
            seR = ifelse(seR == 0, 1, seR)) 
   
   # Survey data on catch composition
-  S_ayu0 <- readRDS(".//data//bayes_dat//S_ayu.rds") 
+  S_ayu0 <- readRDS(paste0(".//data//bayes_dat//S_ayu_thru",end_yr,".rds")) 
   S_ayu <- 
     S_ayu0 %>% mutate(year = as.integer(year)) %>%
     bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
@@ -1070,7 +1070,8 @@ readinData_alt <- function(spl_knts = 7,
   }
   
   #Interview data on kept and released 
-  I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
+  I_ayu0 <- readRDS(paste0(".//data//bayes_dat//Int_ayu_thru",end_yr,".rds")) %>% 
+    arrange(area,user,year) %>%
     filter(!is.na(user))
   
   setdiff(expand_grid(year = unique(I_ayu0$year),
@@ -1091,11 +1092,11 @@ readinData_alt <- function(spl_knts = 7,
     arrange(user, area, year) 
   
   # Kodiak hydroacoustic supplemental data
-  kha <- readRDS(".//data//bayes_dat//kha.rds")
+  kha <- readRDS(paste0(".//data//bayes_dat//kha_thru",end_yr,".rds"))
   
   #Weigth and release mortality data 
-  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat_tst.rds") %>%
-#  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
+#  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat_tst.rds") %>%
+  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru",end_yr,".rds")) %>%
     group_by(assemblage,area,user) %>%
     mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
                           10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%

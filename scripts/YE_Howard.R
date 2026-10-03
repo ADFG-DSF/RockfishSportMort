@@ -29,7 +29,7 @@ library(janitor)
 library(haven)
 library(openxlsx)
 
-YEAR <- 2024
+YEAR <- 2025
 
 # Read in the processed general rf data processed thus far: 
 new_H <- read.csv(paste0("data/raw_dat/",YEAR,"/SWHS_LB_harv_",YEAR,".csv"))
@@ -54,10 +54,11 @@ LB_H <- LB_H %>% mutate(Region = ifelse(RptArea == "EWYKT","SE",Region))
 # SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024.xlsx"), 
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"),
 #SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_22-Oct-2025.xlsx"),
-SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+#SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
+SE_port <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_30-Sep-25.xlsx"), 
                      #sheet = "Sheet1", 2023
                      sheet = "Sheet1", #2024; different format
-                     range = paste0("A1:DX1000"), # paste0("A1:BX1000"), 
+                     range = paste0("A1:DX1000"), 
                      na = "NA")
 SE_port <- SE_port[rowSums(is.na(SE_port)) != ncol(SE_port), ]
 
@@ -69,7 +70,7 @@ colnames(SE_port)
 SE_port <- SE_port %>%
   rename_with(~ str_replace_all(.x, "ave", "avg"))
 
-SE_port %>% filter(Year %in% c("2019","2023","2024") & Rpt_Area %in% c("NSEI","NSEO")) %>% data.frame() %>%
+SE_port %>% filter(Year %in% c("2019","2023","2024","2025") & Rpt_Area %in% c("NSEI","NSEO")) %>% data.frame() %>%
   select(Year,Rpt_Area,User,pYE,pYE_avgRptArea,var_pYE,var_pYE_avgRptArea,
          pDSR,pDSR_avgRptArea,var_pDSR,var_pDSR_avgRptArea,
          pSlope,pSlope_avgRptArea,var_pSlope,var_pSlope_avgRptArea)
@@ -146,8 +147,8 @@ spec_apor <- spec_apor %>%
 #colnames(YE_lastH) <- colnames(YE_harvest)
 
 # With 2023 and beyond you will pull and update the csv files created in this workflow:
-YE_lastH <- read.csv(paste0("output/YE_harv_Howard_thru",YEAR-1,".csv")) %>% select(-X)
-YE_lastR <- read.csv(paste0("output/YE_rel_Howard_thru",YEAR-1,".csv")) %>% select(-X)
+YE_lastH <- read.csv(paste0("output/YE_harv_Howard_thru",YEAR-1,".csv"))# %>% select(-X)
+YE_lastR <- read.csv(paste0("output/YE_rel_Howard_thru",YEAR-1,".csv")) #%>% select(-X)
 
 #-------------------------------------------------------------------------------
 # Before we get going we need to deal with the Kodiak decision tree
@@ -219,6 +220,7 @@ spec_apor <- left_join(spec_apor,KOD_YE_crap, by = c("Year","RptArea"))
 unique(spec_apor$Year)
 spec_apor %>% filter (!is.na("gui_pYE_harv"))
 unique(spec_apor$gui_pYE_harv)
+spec_apor%>% select(Year,User,RptArea,gui_pYE_harv) %>% print(n=50)
 #---HARVESTS--------------------------------------------------------------------
 #Calculate this year's estimates:
 # To stay consistent we'll populate the spreadsheet with all the redundancies:

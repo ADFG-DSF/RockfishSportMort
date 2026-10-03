@@ -52,15 +52,33 @@ H_ayg0 %>% filter(is.na(area))
 H_ayg0 %>% filter(year > 2019 & area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EKYT",
                                             "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
-                                            "WKMA","WESTSIDE","MAINLAND"))
+                                            "WKMA","WESTSIDE","MAINLAND")) %>%
+  arrange(area,year) -> check; check
 #Note BSAI = aleutian + bering
-1144+20
 #Note EWYKT = IBS + EYKT
-14019+59280
 #Note SOKO2PEN / SOKO2SAP= southeast + southwest + sakpen + chignik
-11603+140+372+915
 #Note WKMA = westside + mainland
-39414+290
+with(check, table(area,year))
+
+# years & areas with 0 harvests
+with(H_ayg0, table(year,area)) %>% data.frame() %>%
+  filter(Freq < 1) %>% arrange(area,year) -> missingLBdat; missingLBdat
+
+#years where there were no recorded harvests in raw areas
+LB0yrs <- missingLBdat %>% filter(!area %in% c("BSAI","EWYKT","SOKO2PEN","WKMA")) %>%
+  mutate(year = as.integer(as.character(year)),
+         area = as.character(area));LB0yrs
+str(LB0yrs); str(H_ayg0)
+
+#add in 0's for years and areas with no harvests
+for(i in 1:nrow(LB0yrs)){
+  H_ayg0 <- H_ayg0 %>%
+    add_row(year = LB0yrs$year[i],
+            area = LB0yrs$area[i],
+            H = 0, Hp = 0, Hnp = 0, Hye = 0, Ho = 0)
+}
+
+with(H_ayg0, table(year,area))
 
 # Identify where logbook data amalgamations need to be done. They were not done
 # for 2 of the 4 amalgamated areas in 2022 and 2023 so keep an eye on this: 
@@ -76,12 +94,18 @@ H_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
          Hye = sum(Hye, na.rm = T),
          Ho = sum(Ho, na.rm=T)) -> a_check
 
+a_check %>% filter(year >= 2022) %>% arrange(AMALG)
+# are there rows for each year? Yes for 2025 data examined on 10-1-26
+
 H_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EYKT",
                                             "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
                                             "WKMA","WESTSIDE","MAINLAND")) %>%
   bind_rows(a_check %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
   arrange(year,area) -> amalg
+
+amalg %>%
+  filter(area %in% c("BSAI","SOKO2SAP"))
  
 with(amalg %>%
        filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
@@ -89,14 +113,17 @@ with(amalg %>%
                       # If they are 1's then they aren't yet in the data set and
                       # need to be added in.
 
-#!!! BSAI and SOKO2SAP missing in 2022 and 2023 and 2024 so need to add them back in
-H_ayg0 %>% bind_rows(amalg %>% filter(year %in% c(2022,2023,2024) & area %in% c("BSAI","SOKO2SAP"))) %>%
-  arrange(area, year) -> H_ayg0
+#!!! BSAI missing since 2022 so need to add them in here
+H_ayg0 %>% bind_rows(amalg %>% filter(year %in% seq(2022,REP_YR,1) & area %in% c("BSAI"))) %>%
+  arrange(area, year) %>% unique() -> H_ayg0
 
 #double check... 
 with(H_ayg0 %>%
        filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year))    
+     table(area,year))   
+
+with(H_ayg0,
+     table(area,year)) 
 
 H_ayg <-
   H_ayg0 %>%
@@ -118,7 +145,7 @@ H_ayg %>%
     geom_line() +
     facet_grid(region ~ .)
 
-saveRDS(H_ayg, ".\\data\\bayes_dat\\H_ayg.rds")
+saveRDS(H_ayg, paste0(".\\data\\bayes_dat\\H_ayg",REP_YR,".rds"))
 
 # -Logbook release data: -------------------------------------------------------
 R_ayg0 <- #logbook harvest by area, user = guided, year
@@ -143,7 +170,28 @@ R_ayg0 %>% filter(is.na(area))
 R_ayg0 %>% filter(year > 2019 & area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EKYT",
                                             "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
-                                            "WKMA","WESTSIDE","MAINLAND"))
+                                            "WKMA","WESTSIDE","MAINLAND")) %>%
+  arrange(area,year) -> check2; check2
+
+# years & areas with 0 releases
+with(R_ayg0, table(year,area)) %>% data.frame() %>%
+  filter(Freq < 1) %>% arrange(area,year) -> missingLBdat2; missingLBdat2
+
+#years where there were no recorded harvests in raw areas
+LB0yrs2 <- missingLBdat2 %>% filter(!area %in% c("BSAI","EWYKT","SOKO2PEN","WKMA")) %>%
+  mutate(year = as.integer(as.character(year)),
+         area = as.character(area));LB0yrs2
+str(LB0yrs2); str(R_ayg0)
+
+#add in 0's for years and areas with no harvests
+for(i in 1:nrow(LB0yrs2)){
+  R_ayg0 <- R_ayg0 %>%
+    add_row(year = LB0yrs2$year[i],
+            area = LB0yrs2$area[i],
+            R = 0, Rp = 0, Rnp = 0, Rye = 0, Ro = 0)
+}
+
+with(R_ayg0, table(year,area))
 
 # Identify where logbook data amalgamations need to be done. They were not done
 # for 2 of the 4 amalgamated areas in 2022 and 2023 so keep an eye on this: 
@@ -156,7 +204,7 @@ R_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
   summarise(R = sum(R, na.rm = T),
             Rp = sum(Rp, na.rm = T),
             Rnp = sum(Rnp, na.rm = T),
-            Rye = sum(Rye, na.rm = T)) -> a_check2
+            Rye = sum(Rye, na.rm = T)) -> a_check2; a_check2
 
 R_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
                               "EWYKT","IBS","EYKT",
@@ -200,7 +248,7 @@ R_ayg %>%
   geom_line() +
   facet_grid(region ~ .)
 
-saveRDS(R_ayg, ".\\data\\bayes_dat\\R_ayg.rds")
+saveRDS(R_ayg, paste0(".\\data\\bayes_dat\\R_ayg",REP_YR,".rds"))
 
 #-------------------------------------------------------------------------------
 # SWHS Data
@@ -256,7 +304,8 @@ with(Chat_ay77to95, table(area, year))
 #------------------------
 # what is the name of this year's data file?
 #swhs_dat <- "rf_byMgmtUnit_sent20240925.xlsx" #2023
-swhs_dat <- "rf_byMgmtUnit_sent20250916.xlsx" #2024
+#swhs_dat <- "rf_byMgmtUnit_sent20250916.xlsx" #2024
+swhs_dat <- "rf_byMgmtUnit_20260922.xlsx" #2025
 
 # Hhat_ay data ----
 Hhat_ay0 <- 
@@ -391,7 +440,7 @@ Hhat_ay %>%
 Hhat_ay %>% filter(area == 'SSEO') %>% print(n = 50)
 
 #save it
-saveRDS(Hhat_ay, ".\\data\\bayes_dat\\Hhat_ay.rds")
+saveRDS(Hhat_ay, paste0(".\\data\\bayes_dat\\Hhat_ay_thru",REP_YR,".rds"))
 
 Hhat_ay %>% filter (area == "UNKNOWN")
 
@@ -449,7 +498,7 @@ Chat_ay %>%
   geom_line() +
   facet_wrap(area ~ ., scales = "free")
 
-saveRDS(Chat_ay, ".\\data\\bayes_dat\\Chat_ay.rds")
+saveRDS(Chat_ay, paste0(".\\data\\bayes_dat\\Chat_ay_thru",REP_YR,".rds"))
 
 unique(Chat_ay$year)
 
@@ -513,7 +562,7 @@ table(seHhat_ayp$region, seHhat_ayp$area)
 
 Hhat_ayp <- left_join(Hhat_ayp0, seHhat_ayp, by = c("year", "area", "region", "user"))
 Hhat_ayu <- rbind(Hhat_ayg, Hhat_ayp)
-saveRDS(Hhat_ayu, ".\\data\\bayes_dat\\Hhat_ayu.rds")
+saveRDS(Hhat_ayu, paste0(".\\data\\bayes_dat\\Hhat_ayu_thru",REP_YR,".rds"))
 
 
 # Chat_ayu data ----
@@ -571,7 +620,7 @@ table(seChat_ayp$region, seChat_ayp$area)
 
 Chat_ayp <- left_join(Chat_ayp0, seChat_ayp, by = c("year", "area", "region", "user"))
 Chat_ayu <- rbind(Chat_ayg, Chat_ayp)
-saveRDS(Chat_ayu, ".\\data\\bayes_dat\\Chat_ayu.rds")
+saveRDS(Chat_ayu, paste0(".\\data\\bayes_dat\\Chat_ayu_thru",REP_YR,".rds"))
 
 
 #-------------------------------------------------------------------------------
@@ -584,35 +633,10 @@ S_ayu_ly <- readRDS(".//data//bayes_dat//S_ayu.rds") #last year's data
 table(S_ayu_ly$region, S_ayu_ly$area)
 table(S_ayu_ly$year, S_ayu_ly$area)
 
-#2023 data set
-S_ayu_ly2 <-cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), #2023
-              range = c("A1:I1000")),
-    read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), 
-              range = c("AH1:AH1000")),
-    read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_Region1_forR_",REP_YR-1,".FINAL.xlsx"), 
-              range = c("AQ1:AQ1000")) ) %>%
-  rename_all(.funs = tolower) %>%
-  mutate(user = tolower(user)) %>%
-  rename(area = rpt_area) %>% 
-  filter_all(any_vars(!is.na(.)))
-
-#2024 data set
-sppcompR1_corrupt <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
-            range = c("A1:N1000"),
-            sheet = "MHS num Fish")  %>%
-  rename_all(.funs = tolower) %>%
-  mutate(user = tolower(user)) %>%
-  rename(area = rpt_area) %>% 
-  filter_all(any_vars(!is.na(.))) %>%
-  #  select(-c("totalrf_n_rel","totalrf_n_res","totalrf_n_nonres")) %>%
-  select(-c("totalrf_n_rel")) %>%
-  mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
-              "notye_nonpel_n","dsr_n","slope_n",
-              "pelnbrf_n","dsrnye_n"),as.numeric)
-
 sppcompR1_0 <- 
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+  read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_02-Oct-2026.xlsx"), #2025 2nd try
+  #read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_30-Sep-25.xlsx"), #2025 1st try
+  #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
   #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_22-Oct-2025.xlsx"), 
   #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
             range = c("A1:N1000"),
@@ -628,20 +652,39 @@ sppcompR1_0 <-
               "notye_nonpel_n","dsr_n","slope_n",
               "pelnbrf_n","dsrnye_n"),as.numeric)
 
-setdiff(sppcompR1_corrupt,sppcompR1_0) %>% arrange(area,user,year)
-setdiff(sppcompR1_0,sppcompR1_corrupt) %>% arrange(area,user,year)
-# compare the data:
-colnames(sppcompR1_0)
-table(sppcompR1_0$year, sppcompR1_0$area, sppcompR1_0$user)
+#compare this year to last years 
+colnames(S_ayu_ly); colnames(sppcompR1_0)
+S_ayu_ly %>% filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  mutate(source = "last_year",
+         pelnbrf_n = pelagic_n - black_n,
+         dsrnye_n = dsr_n) %>% select(-region) %>% 
+  #FLAG! Note that SE has sdrnye and dsr but in the data analysis and this work
+  # flow dsr_n IS dsrnye_n!!
+  rbind(sppcompR1_0 %>% mutate(source = "this_year")) %>%
+    pivot_longer(cols = c("totalrf_n",  "ye_n", "black_n", "pelagic_n", "nonpel_n",
+                          "dsr_n", "slope_n", "pelnbrf_n", "notye_nonpel_n", "dsrnye_n"),
+                 names_to = "assemblage",
+                 values_to = "n") -> se_check
 
-table(S_ayu_ly$year, S_ayu_ly$area, S_ayu_ly$user)
+ggplot(se_check, aes(x = year, y = n, colour = source, linetype = source, shape = source)) +
+  facet_wrap(~assemblage + user, scale = "free") +
+  geom_line() + geom_point()
 
-SE_ly <- S_ayu_ly %>% filter(region == "Southeast")
+#check DSR
+ggplot(se_check %>% filter(assemblage %in% c("dsr_n","ye_n","dsrnye_n")),
+       aes(x = year, y = n, col = assemblage,
+           linetype = source, shape = source,
+           group = interaction(assemblage, source))) +
+  facet_wrap(~user + area, scale = "free") +
+  geom_line() + geom_point()
+
+# looks good and our labelling dsr_n in past years matches SE dsrnye_n
 
 
 #As of 9/29/25 the new SE data is fucked up. For now I may just patch on the new
 # As of 10/9/2025 the SE crew has thing fixed and this next bracketed section can 
 # be skipped. Leaving it in for now for next year to check data stays consistent
+# In 2026 the SE data matches last year so skip line 688-726
 {
   # 2024 data to the old data through 2023.
   as <- unique(sppcompR1_0$area)
@@ -683,9 +726,11 @@ SE_ly <- S_ayu_ly %>% filter(region == "Southeast")
 }
 
 str(sppcompR1_0)
+unique(sppcompR1_0$area)
 #Note EKYKT = IBS + EKYT ; checking , should be all TRUE
 # Not recorded in new SE data in 2025 (for 2024 data calcs)
-sppcompR1_0$totalrf_n[sppcompR1_0$area == "EWYKT"] == sppcompR1_0$totalrf_n[sppcompR1_0$area == "EYKT"] + sppcompR1_0$totalrf_n[sppcompR1_0$area == "IBS"]
+sppcompR1_0$totalrf_n[sppcompR1_0$area == "EWYKT"] == sppcompR1_0$totalrf_n[sppcompR1_0$area == "EYKT"] + 
+  sppcompR1_0$totalrf_n[sppcompR1_0$area == "IBS"]
 
 sppcompR1 <- 
   sppcompR1_0 %>% 
@@ -694,6 +739,7 @@ sppcompR1 <-
   arrange(region, area, year)
 table(sppcompR1$area)
 
+# REGION 2! 
 
 sppcompR2_0 <- read.csv(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv")) %>%
 #  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SC\\species_comp_Region2_thru",REP_YR,".csv"), 
@@ -709,11 +755,35 @@ table(sppcompR2_0$area)
 
 with(sppcompR2_0, table(area,user))
 
+S_ayu_ly %>% filter(region %in% c("Central","Kodiak")) %>%
+  mutate(source = "last_year") %>% select(-region) %>% 
+  #FLAG! Note that SE has sdrnye and dsr but in the data analysis and this work
+  # flow dsr_n IS dsrnye_n!!
+  rbind(sppcompR2_0 %>% 
+          mutate(source = "this_year")) %>%
+  pivot_longer(cols = c("totalrf_n",  "ye_n", "black_n", "pelagic_n", "nonpel_n",
+                        "dsr_n", "slope_n", "notye_nonpel_n"),
+               names_to = "assemblage",
+               values_to = "n") -> sc_check
+
+ggplot(sc_check %>% filter(user == "private"), 
+       aes(x = year, y = n, colour = source, linetype = source, shape = source)) +
+  facet_wrap(~assemblage, scale = "free") +
+  geom_line() + geom_point()
+
+ggplot(sc_check %>% filter(user == "charter"), 
+       aes(x = year, y = n, colour = source, linetype = source, shape = source)) +
+  facet_wrap(~assemblage + user, scale = "free") +
+  geom_line() + geom_point()
+
+# Check for EWYKT harvests brought back to region 2 port.
 # Noted in 2024 that there were some Reg2 based charters fishing in the EWYKT:
 sppcompR2_0 %>% filter(area %in% c("EYKT","IBS"))
 # remove them from Region 2 and add to region 1:
-sppcompR2_0 %>% filter(area %in% c("EYKT","IBS")) %>%
-  summarize(year = "2024", user = "charter", area = "EWYKT", region = "Southeast",
+sppcompR2_0 %>% filter(area %in% c("EYKT","IBS"),
+                       totalrf_n > 0) %>%
+  group_by(year) %>%
+  summarize(user = "charter", area = "EWYKT", region = "Southeast",
             totalrf_n = sum(totalrf_n),
             ye_n = sum(ye_n),
             black_n = sum(black_n),
@@ -725,13 +795,17 @@ sppcompR2_0 %>% filter(area %in% c("EYKT","IBS")) %>%
             #slope_sm_n = 0, slope_lg_n = 0,
             dsrnye_n = 0) -> R1fish_in_R2ports
 
-sppcompR1 %>% filter(area == "EWYKT" & year == REP_YR & user == "charter") -> R1_EWYKT
+sppcompR1 %>% filter(area == "EWYKT" & 
+                       year %in% c(unique(R1fish_in_R2ports$year)) & 
+                       user %in% c(unique(R1fish_in_R2ports$user))) -> R1_EWYKT
 
 coldifs <- setdiff(colnames(sppcompR1),colnames(R1fish_in_R2ports)); coldifs
 
 rbind(R1_EWYKT,
       R1fish_in_R2ports) %>%
-  summarize(year = as.numeric("2024"), user = "charter", area = "EWYKT", region = "Southeast",
+  group_by(year,user) %>%
+  summarize(area = "EWYKT", 
+            region = "Southeast",
             totalrf_n = sum(totalrf_n),
             ye_n = sum(ye_n),
             black_n = sum(black_n),
@@ -747,8 +821,12 @@ rbind(R1_EWYKT,
 
 sppcompR1 %>%
   rows_update(patch, by = c("year","user","area")) -> try
-sppcompR1 %>% filter(area == "EWYKT" & year == REP_YR & user == "charter")
-try %>% filter(area == "EWYKT" & year == REP_YR & user == "charter")
+sppcompR1 %>% filter(area == "EWYKT" & 
+                       year %in% c(unique(R1fish_in_R2ports$year)) & 
+                       user %in% c(unique(R1fish_in_R2ports$user)))
+try %>% filter(area == "EWYKT" & 
+                 year %in% c(unique(R1fish_in_R2ports$year)) & 
+                 user %in% c(unique(R1fish_in_R2ports$user)))
 
 sppcompR1 <- try
 
@@ -772,7 +850,7 @@ table(sppcompR2$region, sppcompR2$area)
 S_ayu <- 
   rbind(sppcompR1 %>%
           select(-c(pelnbrf_n,dsr_n)) %>%
-          rename(dsr_n = dsrnye_n), 
+          rename(dsr_n = dsrnye_n), #FLAG!! Here is where we declare dsr_n omits YE!!!
 #          select(-c(slope_lg_n,slope_sm_n,pelnbrf_n,dsrnye_n)), 
         sppcompR2) %>%
   mutate_at(vars(ye_n:notye_nonpel_n), .funs = function(x){x = ifelse(.$totalrf_n == 0, NA, x)}) %>%
@@ -781,7 +859,7 @@ S_ayu <-
 
 table(S_ayu$region, S_ayu$area)
 
-saveRDS(data.frame(S_ayu), ".\\data\\bayes_dat\\S_ayu.rds")
+saveRDS(data.frame(S_ayu), paste0(".\\data\\bayes_dat\\S_ayu_thru",REP_YR,".rds"))
 
 
 #-------------------------------------------------------------------------------
@@ -791,16 +869,25 @@ saveRDS(data.frame(S_ayu), ".\\data\\bayes_dat\\S_ayu.rds")
 #Note no samples from BSAI (= aleutian + bering)
 #Note only westside from WKMA (= westside + mainland)
 
-kha <- read.csv("data/raw_dat/kodiak_stereocom_dat.csv") %>%
-  clean_names() %>%
-  mutate(district = tolower(district),
-         area = ifelse(district %in% c("southeast","southwest","chignik"),"SOKO2SAP",
-                       ifelse(district %in% c("westside","mainland"),"WKMA",
-                              ifelse(district == "shumagins","BSAI",district))),
-         across(where(is.character), ~ ifelse(grepl("^[0-9,]+$", .), as.numeric(gsub(",", "", .)), .)),
-         percent_brf = percent_brf/100,
-         rf_var = se_rf_abund ^ 2,
-         brf_var = se_brf_abund ^ 2)
+#kha <- read.csv("data/raw_dat/kodiak_stereocom_dat.csv") %>%
+kha <- read.csv("data/raw_dat/kodiak_hydro_dat.csv") %>%
+  clean_names()  %>%
+  mutate(across(
+    contains("abund") | contains("dens"),
+    ~ as.numeric(gsub(",", "", trimws(.)))
+  ),
+  across(
+    starts_with("cv_"),
+    ~ readr::parse_number(.x) / 100
+  ),
+  district = tolower(district),
+  area = ifelse(district %in% c("southeast","southwest","chignik"),"SOKO2SAP",
+                ifelse(district %in% c("westside","mainland"),"WKMA",
+                       ifelse(district == "shumagins","BSAI",district))),
+  across(where(is.character), ~ ifelse(grepl("^[0-9,]+$", .), as.numeric(gsub(",", "", .)), .)),
+  percent_brf = percent_brf/100,
+  rf_var = se_rf_abund ^ 2,
+  brf_var = se_brf_abund ^ 2) 
 
 kha %>% group_by(year,area) %>%
   summarise(rf_tot = sum(rf_abund),
@@ -826,8 +913,9 @@ kha %>% group_by(year,area) %>%
             prop_cv = prop_se / prop_brf) -> kha
 
 print(kha,n=70)
+unique(kha$year)
 
-saveRDS(kha, ".\\data\\bayes_dat\\kha.rds")
+saveRDS(kha, paste0(".\\data\\bayes_dat\\kha_thru",REP_YR,".rds"))
 
 #-------------------------------------------------------------------------------
 # Release mortality and Biomass data
@@ -916,6 +1004,8 @@ expand.grid(year = seq(1977,(max(sc_rm$year)),1),
 
 with(r2_rm, table(year,area,assemblage,user))
 
+# This is from the 2024 data, but SE rates are the same in subsequent years so 
+# just carry them forward.
 se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2024_RUN_08-Oct-2025.xlsx"), 
                    #se_rm <- read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_.xlsx"), 
                    sheet = "Mortality Rates",
@@ -935,7 +1025,7 @@ se_rm %>% group_by(user,assemblage,area) %>%
   summarize(mrate_dwr = r_mort[which.max(year)]) -> se_mrates_dwr
 
 
-expand.grid(year = seq(1977,(max(se_rm$year)),1),
+expand.grid(year = seq(1977,(REP_YR),1),
             area = unique(se_rm$area),
             assemblage = unique(se_rm$assemblage),
             user = unique(se_rm$user)) %>%
@@ -1106,7 +1196,7 @@ wt_rm %>%
 
 check %>% filter(n_wt != 0)
 
-saveRDS(wt_rm %>% filter(year <= REP_YR), ".\\data\\bayes_dat\\wt_rm_dat.rds")
+saveRDS(wt_rm %>% filter(year <= REP_YR), paste0(".\\data\\bayes_dat\\wt_rm_dat_thru_",REP_YR,".rds"))
 
 ##------------------------------------------------------------------------------
 # Get mean weights by species across all years for priors:
@@ -1128,11 +1218,13 @@ wt_rm_dat %>% filter(!is.na(wt_lbs)) %>%
 ################################################################################
 z<-1.96 #for CI calculations and graphics
 
-se_int <-  
-  read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
+se_int <- 
+  read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_02-Oct-2026.xlsx"), #2025 2nd try
+            #read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\Species_comp_MHS_Region1_forR_2025_RUN_30-Sep-25.xlsx"), #2025 1st try 
+  #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"),
   #read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Species_comp_MHS_Region1_forR_",REP_YR,"_RUN_08-Oct-2025.xlsx"), 
-            range = c("A1:N1000"),
-            sheet = "Sheet1")  %>%
+            range = c("A1:DX1000"),
+            sheet = "MHS num Fish")  %>% #This changes every year: sheet = "Sheet1") 
   rename_all(.funs = tolower) %>%
   mutate(user = tolower(user)) %>%
   rename(area = rpt_area) %>% 
@@ -1142,13 +1234,13 @@ se_int <-
   mutate_at(c("totalrf_n","ye_n","black_n","pelagic_n","nonpel_n",
               "notye_nonpel_n","dsr_n","slope_n",
               "pelnbrf_n","dsrnye_n"),as.numeric) %>%
-  cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
-                  range = c("BO1:BW1000"),
-                  sheet = "Sheet1")  %>%
-          rename_all(.funs = tolower) %>%
+ # cbind(read_xlsx(paste0(".\\data\\raw_dat\\species_comp_SE\\Spp.Comp_MHS_Region1_forR.xlsx"), 
+#                  range = c("BO1:BW1000"),
+#                  sheet = "Sheet1")  %>%
+#          rename_all(.funs = tolower) %>%
           mutate_at(c("ye_n_rel","black_n_rel","pelagic_n_rel","nonpel_n_rel",
                       "notye_nonpel_n_rel","dsr_n_rel","slope_n_rel",
-                      "pelnbrf_n_rel","dsrnye_n_rel"),as.numeric)) %>%
+                      "pelnbrf_n_rel","dsrnye_n_rel"),as.numeric) %>% #) %>%
   filter_all(any_vars(!is.na(.))) %>%
   mutate(totalrf_n_rel = ye_n_rel+pelagic_n_rel+notye_nonpel_n_rel) %>%
   mutate(pH_ye = ye_n / (ye_n + ye_n_rel),
@@ -1284,8 +1376,12 @@ int <- rbind(sc_int, se_int %>% select(colnames(sc_int))) %>%
            (1 + z^2/(slope_n + slope_n_rel))) 
   
 str(int)
+with(int, table(year,area))
 
 int %>% filter(area == "CI" & year < 2010)
+
+se_int %>% filter(year == 2025)
+
 
 ggplot(int, 
        aes(x = year, y = pH_pel, col = user)) +
@@ -1302,6 +1398,8 @@ ggplot(int,
   facet_wrap(~area) +
   theme_bw() + ggtitle("Black") +
   ylab("Proportion harvested") + ylim(0,1)
+
+int %>% filter()
 
 ggplot(int, 
        aes(x = year, y = pH_ye, col = user)) +
@@ -1331,22 +1429,24 @@ max((se_int$var),na.rm = T)
 
 #I don't trust the variance of 0
 # Compare to logbook data: 
-H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
+H_ayg <- readRDS(paste0(".//data//bayes_dat//H_ayg",REP_YR,".rds")) %>% 
   mutate(H_lb = ifelse(H == 0, 1, H),
          area = toupper(factor(area, lut$area, ordered = TRUE))) 
 
 # Logbook releases by area, year for guided trips
-R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+R_ayg <- readRDS(paste0(".//data//bayes_dat//R_ayg",REP_YR,".rds")) %>% 
   mutate(R_lb = ifelse(R == 0, 1, R),
          Rye = ifelse(year < 2006, NA,Rye),
          area = toupper(factor(area, lut$area, ordered = TRUE))) 
 
 head(H_ayg); head(R_ayg)
+with(H_a)
 head(se_int)
 
 unique(H_ayg$area);unique(R_ayg$area) 
 
 with(H_ayg, table(year,area))
+with(R_ayg, table(year,area))
 
 full_join(H_ayg,R_ayg,by = c("year","area","region")) %>%
   mutate(p_h = H / (R+H),
@@ -1408,7 +1508,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_pelagics.png")  
+ggsave(paste0("figures/int_vs_lb_propH_pelagics_thru",REP_YR,".png"))  
 
 unique(se_int$area) -> se_area
 
@@ -1436,7 +1536,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_black-pelagics.png")
+ggsave(paste0("figures/int_vs_lb_propH_black-pelagics_thru",REP_YR,".png"))
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user), #%>% filter(assemblage == "Black"), 
@@ -1461,7 +1561,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_yelloweye.png")
+ggsave(paste0("figures/int_vs_lb_propH_yelloweye",REP_YR,".png"))
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user), #%>% filter(assemblage == "Black"), 
@@ -1486,7 +1586,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_other.png")
+ggsave(paste0("figures/int_vs_lb_propH_other_thru",REP_YR,".png"))
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user) %>% filter(area %in% se_area), 
@@ -1511,7 +1611,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_dsr-other.png")
+ggsave(paste0("figures/int_vs_lb_propH_dsr-other",REP_YR,".png"))
 
 ggplot(int %>% mutate(year = as.integer(year),
                       User = user) %>% filter(area %in% se_area), 
@@ -1536,7 +1636,7 @@ ggplot(int %>% mutate(year = as.integer(year),
   ylab("Proportion harvested") + xlab("Year") +
   labs(colour = "Source", User = "User group")
 
-ggsave("figures/int_vs_lb_propH_slope-other.png")
+ggsave(paste0("figures/int_vs_lb_propH_slope-other",REP_YR,".png"))
 
 unique(int$area)
 str(int)
@@ -1600,9 +1700,50 @@ int_for_mod %>% filter(region == "Southeast") %>%
          slopedsr_n_rel = dsr_n_rel + slope_n_rel)  %>%
   filter(slopedsr_n_rel != other_n_rel)
 
-saveRDS(int_for_mod, ".\\data\\bayes_dat\\Int_ayu.rds")
+#double check against last year's data:
+Int_ayu_ly <- readRDS(".//data//bayes_dat//Int_ayu.rds") 
 
+colnames(Int_ayu_ly); colnames(int_for_mod)
+Int_ayu_ly %>% # filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  mutate(source = "last_year",
+        # pelnbrf_n_rel = pelagic_n_rel - black_n_rel,
+        # dsrnye_n_rel = dsr_n_rel
+        ) %>% #select(-region) %>% 
+  #FLAG! Note that SE has sdrnye and dsr but in the data analysis and this work
+  # flow dsr_n IS dsrnye_n!!
+  rbind(int_for_mod %>% mutate(source = "this_year")) %>%
+  pivot_longer(cols = c("pelagic_n", "pelagic_n_rel", "ye_n", "ye_n_rel", "other_n",
+                        "other_n_rel", "dsr_n", "dsr_n_rel", "slope_n",
+                        "slope_n_rel", "pelagic_c", "ye_c", "other_c", "dsr_c",
+                        "slope_c"),
+               names_to = "assemblage",
+               values_to = "n") -> check
 
+plots <- list()
+for (i in unique(check$area)){
+  ggplot(check %>% filter(area == i), 
+         aes(x = year, y = n, colour = source, linetype = source, shape = source)) +
+    facet_wrap(~assemblage + user, scale = "free") +
+    geom_line() + geom_point() -> plot
+  plots[[i]] <- plot
+}
+
+plots$afognak
+plots$CI
+plots$eastside
+plots$NG
+plots$northeast
+plots$PWSI
+plots$PWSO
+plots$WKMA
+plots$NSEI
+plots$NSEO
+plots$CSEO
+plots$EWYKT
+plots$SSEI
+plots$SSEO
+
+saveRDS(int_for_mod, paste0(".\\data\\bayes_dat\\Int_ayu_thru",REP_YR,".rds"))
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
