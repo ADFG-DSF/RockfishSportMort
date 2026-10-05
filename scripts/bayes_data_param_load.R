@@ -1096,7 +1096,7 @@ readinData_alt <- function(spl_knts = 7,
   
   #Weigth and release mortality data 
 #  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat_tst.rds") %>%
-  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru",end_yr,".rds")) %>%
+  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru_",end_yr,".rds")) %>%
     group_by(assemblage,area,user) %>%
     mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
                           10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
@@ -2177,27 +2177,27 @@ readinData_contemporary2 <- function(spl_knts = 4,
                                     start_comp_yr = 2020,
                                     start_kodcomp_yr = 2000,
                                     start_yr = 2020,
-                                    end_yr = 2024,
+                                    end_yr = 2025,
                                     b4_start = 2011,
                                     SE06 = "exclude"){
   # Logbook harvests by area, year for guided trips
-  H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
+  H_ayg <- readRDS(paste0(".//data//bayes_dat//H_ayg",end_yr,".rds")) %>% 
     mutate(H_lb = ifelse(H == 0, 1, H))
   
   # Logbook releases by area, year for guided trips
-  R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+  R_ayg <- readRDS(paste0(".//data//bayes_dat//R_ayg",end_yr,".rds")) %>% 
     mutate(R_lb = ifelse(R == 0, 1, R),
            Rye = ifelse(year < 2006, NA,Rye))
   
   # SWHS harvests by area, year and user 
   Hhat_ayu <- 
-    readRDS(".//data//bayes_dat//Hhat_ayu.rds")  %>% 
+    readRDS(paste0(".//data//bayes_dat//Hhat_ayu_thru",end_yr,".rds"))  %>% 
     mutate(Hhat = ifelse(H == 0, 1, H), 
            seH = ifelse(seH == 0, 1, seH)) %>%
     arrange(area, user, year)
   
   Chat_ayu <- 
-    readRDS(".//data//bayes_dat//Chat_ayu.rds")  %>% 
+    readRDS(paste0(".//data//bayes_dat//Chat_ayu_thru",end_yr,".rds"))  %>% 
     mutate(Chat = ifelse(C == 0, 1, C), 
            seC = ifelse(seC == 0, 1, seC)) %>%
     arrange(area, user, year)
@@ -2211,11 +2211,11 @@ readinData_contemporary2 <- function(spl_knts = 4,
     arrange(area, user, year)
   
   #get priors from pri:gui release ratio
-  pri_rel_pr <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
+  pri_rel_pr <- readRDS(paste0(".\\data\\bayes_dat\\pri_rel_pr_thru",end_yr,".rds"))
   
   # SWHS harvests by area, year
   Hhat_ay <- 
-    readRDS(".//data//bayes_dat//Hhat_ay.rds") %>% 
+    readRDS(paste0(".//data//bayes_dat//Hhat_ay_thru",end_yr,".rds")) %>%  
     rename(Hhat = H) %>%
     mutate(area = as.character(area)) %>%
     bind_rows(Hhat_ayu %>% 
@@ -2227,7 +2227,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
            seH = ifelse(seH == 0, 1, seH)) %>%
     select(-cv)
   
-  Hhat_ay %>% filter(is.na(Hhat))
+  #Hhat_ay %>% filter(is.na(Hhat))
   #DEV Code; delete once we figure out how to deal with the blanks
   Hhat_ay %>% mutate(Hhat = ifelse(is.na(Hhat),1,Hhat),
                      seH = ifelse(is.na(seH),1,seH)) -> Hhat_ay
@@ -2235,7 +2235,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
   
   # SWHS Catch by area, year
   Chat_ay <- 
-    readRDS(".//data//bayes_dat//Chat_ay.rds") %>% 
+    readRDS(paste0(".//data//bayes_dat//Chat_ay_thru",end_yr,".rds")) %>% 
     rename(Chat = C) %>%
     mutate(area = as.character(area)) %>%
     bind_rows(readRDS(".//data//bayes_dat//Chat_ayu.rds") %>% 
@@ -2247,7 +2247,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
            seC = ifelse(seC == 0, 1, seC)) %>%
     select(-cv)
   
-  Chat_ay %>% filter(is.na(Chat))
+  #Chat_ay %>% filter(is.na(Chat))
   
   Rhat_ay <- Hhat_ay %>%
     left_join(Chat_ay, by = c("year","area","region")) %>%
@@ -2258,7 +2258,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
            seR = ifelse(seR == 0, 1, seR)) 
   
   # Survey data on catch composition
-  S_ayu0 <- readRDS(".//data//bayes_dat//S_ayu.rds") 
+  S_ayu0 <- readRDS(paste0(".//data//bayes_dat//S_ayu_thru",end_yr,".rds")) 
   S_ayu <- 
     S_ayu0 %>% mutate(year = as.integer(year)) %>%
     bind_rows(data.frame(area = rep(unique(S_ayu0$area[S_ayu0$region %in% "Southeast"]), each = 4), 
@@ -2274,7 +2274,8 @@ readinData_contemporary2 <- function(spl_knts = 4,
   }
   
   #Interview data on kept and released 
-  I_ayu0 <- readRDS(".//data//bayes_dat//Int_ayu.rds") %>% arrange(area,user,year) %>%
+  I_ayu0 <- readRDS(paste0(".//data//bayes_dat//Int_ayu_thru",end_yr,".rds")) %>% 
+    arrange(area,user,year) %>%
     filter(!is.na(user))
   
   setdiff(expand_grid(year = unique(I_ayu0$year),
@@ -2295,24 +2296,67 @@ readinData_contemporary2 <- function(spl_knts = 4,
     arrange(user, area, year) 
   
   # Kodiak hydroacoustic supplemental data
-  kha <- readRDS(".//data//bayes_dat//kha.rds")
+  kha <- readRDS(paste0(".//data//bayes_dat//kha_thru",end_yr,".rds"))
   
   #Weigth and release mortality data 
-  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat.rds") %>%
-    group_by(assemblage,area,user) %>%
-    mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
-                          10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
+  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru_",end_yr,".rds")) # %>%
+    
+  wt_rm %>%  
+    group_by(assemblage, area, user) %>%
+    mutate(
+      maxsd = ifelse(
+        all(is.na(bootsd_wtlbs)),
+        10,
+        2 * max(bootsd_wtlbs, na.rm = TRUE)
+      )
+    ) %>%
     ungroup() %>% 
-    mutate(assemblage = factor(assemblage, 
-                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
-           wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
-                          ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))) %>%
+    mutate(
+      assemblage = factor(
+        assemblage, 
+        levels = c("black", "yelloweye", "pelnbrf", "dsrlessye", "slope")
+      ),
+      wt_sd = ifelse(
+        is.na(bootsd_wtlbs),
+        maxsd,
+        ifelse(
+          bootsd_wtlbs == 0,
+          0.5 * maxsd,
+          bootsd_wtlbs
+        )
+      )
+    ) %>% 
+    arrange(assemblage, user, region, area, year) %>% print(n = 50) -> wt_rm
+    
+#old code; creates warnings but works
+#wt_rm %>%
+#    group_by(assemblage,area,user) %>%
+#    mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
+#                          10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
+#    ungroup() %>% 
+#    mutate(assemblage = factor(assemblage, 
+#                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
+#           wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
+#                          ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))) %>%
     #wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
-    arrange(assemblage, user,region, area, year) 
+#    arrange(assemblage, user,region, area, year) -> wt_rm2
+
+#rbind(wt_rm1 %>% mutate(code = "new") %>% select(year,area,assemblage,user,
+#                                                 wt_lbs,maxsd,wt_sd, code),
+#      wt_rm2 %>% mutate(code = "old") %>% select(year,area,assemblage,user,
+#                                                 wt_lbs,maxsd,wt_sd, code)) -> wt_rm
+#check %>% filter(code == "new" & assemblage == "black")
+
+#ggplot(check %>% filter(assemblage == "yelloweye"),
+#       aes(x = year, y = wt_sd,
+#           col = code, fill = code, 
+#           shape = user, linetype = code)) +
+#  facet_wrap(~area, scale = "free") +
+#  geom_line() + geom_point(alpha = 0.2)
   
-  wt_rm_ch <- wt_rm %>% filter(!is.na(n_samps))
+#  wt_rm_ch <- wt_rm %>% filter(!is.na(n_samps))
   
-  with(wt_rm_ch, table(year,area))
+#  with(wt_rm_ch, table(year,area))
   
   #  View(wt_rm)
   #  unique(wt_rm$maxsd) %>% arrange()
@@ -2340,7 +2384,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
   
   R_ayg <- R_ayg %>% filter(year >= start_yr & year <= end_yr)
   
-  Hhat_ayg <- Hhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr); unique(Hhat_ayg$area)
+  Hhat_ayg <- Hhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)#; unique(Hhat_ayg$area)
   Hhat_ayp <- Hhat_ayu %>% filter(user == "private" & year >= start_yr & year <= end_yr)
   
   Rhat_ayg <- Rhat_ayu %>% filter(user == "guided" & year >= start_yr & year <= end_yr)
@@ -2545,17 +2589,19 @@ readinData_contemporary2 <- function(spl_knts = 4,
       Hlby_ayg = cbind(matrix(NA, nrow = A, 
                               ncol = Y_ts - length(unique(H_ayg$year))),
                        matrix(H_ayg$Hye, nrow = A, ncol = length(unique(H_ayg$year)), byrow = TRUE)),
-      Hlbo_ayg = cbind(matrix(NA, nrow = A, ncol = Y_ts - length(unique(H_ayg$year))),
+      Hlbo_ayg = cbind(matrix(NA, nrow = A, 
+                              ncol = Y_ts - length(unique(H_ayg$year))),
                        matrix(H_ayg$Ho, 
                               nrow = A, 
-                              ncol = length(unique(H_ayg$year)), byrow = TRUE)),
+                              ncol = Y_ts - length(unique(H_ayg$year)), byrow = TRUE)),
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, 
                              ncol = Y_ts - length(unique(R_ayg$year))),
                       matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       Rlb_ayg_bound = cbind(matrix(NA, nrow = A, 
                                    ncol = Y_ts - length(unique(R_ayg$year))),
-                            matrix(R_ayg$R_lb, nrow = A, ncol = length(unique(R_ayg$year)), byrow = TRUE)),
+                            matrix(R_ayg$R_lb, nrow = A, 
+                                   ncol = Y_ts - length(unique(R_ayg$year)), byrow = TRUE)),
       #Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, 

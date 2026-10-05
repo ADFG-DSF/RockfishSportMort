@@ -11,24 +11,27 @@ library(tidyverse)
 library(tidyr)
 library(wesanderson)
 
+end_yr <- 2025
+
+
 # Load the data 
-H_ayg <- readRDS(".//data//bayes_dat//H_ayg.rds") %>% 
+H_ayg <- readRDS(paste0(".//data//bayes_dat//H_ayg",end_yr,".rds")) %>% 
   mutate(H_lb = ifelse(H == 0, 1, H))
 
 # Logbook releases by area, year for guided trips
-R_ayg <- readRDS(".//data//bayes_dat//R_ayg.rds") %>% 
+R_ayg <- readRDS(paste0(".//data//bayes_dat//R_ayg",end_yr,".rds")) %>% 
   mutate(R_lb = ifelse(R == 0, 1, R),
          Rye = ifelse(year < 2006, NA,Rye))
 
 # SWHS harvests by area, year and user 
 Hhat_ayu <- 
-  readRDS(".//data//bayes_dat//Hhat_ayu.rds")  %>% 
+  readRDS(paste0(".//data//bayes_dat//Hhat_ayu_thru",end_yr,".rds"))  %>% 
   mutate(Hhat = ifelse(H == 0, 1, H), 
          seH = ifelse(seH == 0, 1, seH)) %>%
   arrange(area, user, year)
 
 Chat_ayu <- 
-  readRDS(".//data//bayes_dat//Chat_ayu.rds")  %>% 
+  readRDS(paste0(".//data//bayes_dat//Chat_ayu_thru",end_yr,".rds"))  %>% 
   mutate(Chat = ifelse(C == 0, 1, C), 
          seC = ifelse(seC == 0, 1, seC)) %>%
   arrange(area, user, year)
@@ -107,7 +110,7 @@ ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) +
 #  facet_wrap(~area) +
   theme_bw() +
   theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  scale_x_continuous(breaks=seq(2012,2024,2)) +
+  scale_x_continuous(breaks=seq(2012,2025,2)) +
   labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
 
 ggsave("figures/bayes_model/pH_prigui_ratio.png")
@@ -121,9 +124,14 @@ expand_grid(year = seq(1977,2010,1),
   rename(prigui_ratio = mean_ratio,
          ratio_cv = max_cv) %>% 
     arrange(area,year) %>%
+  rowwise() %>%
+  mutate(lower = (prigui_ratio  - 1.96 * ratio_cv * prigui_ratio ),
+         upper = (prigui_ratio  + 1.96 * ratio_cv * prigui_ratio ),
+         lower2 = (prigui_ratio  - ratio_cv * prigui_ratio ),
+         upper2 = (prigui_ratio  + ratio_cv * prigui_ratio )) %>%
   rbind(pri_rel_pr %>% 
-          select(year,area,prigui_ratio,ratio_cv)) %>%
-  arrange(area,year) -> prigui_priors
+          select(year,area,prigui_ratio,ratio_cv,lower,upper,lower2,upper2)) -> prigui_priors #%>%
+#  arrange(area,year) -> prigui_priors
 View(prigui_priors)
 
 ggplot(prigui_priors,aes(x=year,y=prigui_ratio)) + 
@@ -144,14 +152,22 @@ ggplot(prigui_priors,aes(x=year,y=prigui_ratio)) +
   scale_x_continuous(breaks=seq(1978,2024,2)) +
   labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
 
+# Before saving, compare to last year to make sure nothing went sideways:
+
 pri_rel_pr_old <- readRDS(".//data//bayes_dat//pri_rel_pr.rds")
 
-str(pri_rel_pr)
-unique(pri_rel_pr_old$year)
-unique(pri_rel_pr$year)
-unique(prigui_priors$year)
+pri_rel_pr_old %>% # filter(area %in% c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")) %>%
+  mutate(source = "last_year" ) %>% #select(-region) %>% 
+  rbind(pri_rel_pr %>% mutate(source = "this_year")) -> check
 
-saveRDS(pri_rel_pr, ".\\data\\bayes_dat\\pri_rel_pr.rds")
+ggplot(check, 
+         aes(x = year, y = pH_guided, 
+             colour = source, linetype = source, shape = source)) +
+    facet_wrap(~area, scale = "free") +
+    geom_line() + geom_point() 
+
+
+saveRDS(pri_rel_pr, paste0(".\\data\\bayes_dat\\pri_rel_pr_thru",end_yr,".rds"))
 #saveRDS(prigui_priors, ".\\data\\bayes_dat\\pri_rel_pr.rds")
 
 

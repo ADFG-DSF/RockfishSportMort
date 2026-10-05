@@ -1,5 +1,12 @@
 ################################################################################
-# Weight Sample Size evaluation
+# Weight data processing
+#
+# This script processes raw weight data and the processed 4-stage estimates from 
+# SE for use in the bayesian model.
+#
+# Author: Phil Joy
+# Last updated: October 2026
+#
 ################################################################################
 library(readxl)
 library(janitor)
@@ -10,6 +17,7 @@ library(wesanderson)
 library(janitor)
 library(readxl)
 ###############################################################################
+# Southcentral and Kodiak data:
 datSC <- read.csv("data/raw_dat/Species_comp_SC/sample_size_rf_SC_Port_Sampling.csv") %>%
   clean_names() %>% 
   rename(sp_grp = sp) %>%
@@ -17,7 +25,7 @@ datSC <- read.csv("data/raw_dat/Species_comp_SC/sample_size_rf_SC_Port_Sampling.
                          ifelse(sp_grp == 145,"Yelloweye","IDK")),
          freq = NA)
 
-
+# RAW Southeast Data
 datSE_raw <- 
   read_xlsx(paste0(".\\data\\raw_dat\\Species_comp_SE\\SE_2011_2025_number of vessels with sampled RF_19SEP25.xlsx"), 
             sheet = "By MHS Grouping",
@@ -27,6 +35,7 @@ datSE_raw <-
          sp_grp = rf_mhs_grp) %>%
   select(-c(obs,type))
 
+# 4-stage SE estimates
 datSE_4st <- 
   read.csv("data/raw_dat/Species_comp_SE/SEAK_2025_avg_GF_Area_RPT_24SEP26.csv") %>%
   clean_names()

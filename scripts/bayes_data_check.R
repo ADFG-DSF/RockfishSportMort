@@ -1,3 +1,5 @@
+# Code for comparing data output frmo different functions.
+
 library(readxl)
 library(janitor)
 library(ggplot2)

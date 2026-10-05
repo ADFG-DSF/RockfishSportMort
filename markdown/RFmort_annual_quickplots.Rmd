@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_DEV_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_TST25_",Sys.Date(),".html"))
       })
 ---
 
@@ -40,8 +40,8 @@ library(flextable)
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("../scripts/bayes_data_param_load.R", echo = FALSE)
 start_yr <- 1977
-end_yr <- 2024
-REP_YR <- 2024 #for Howard estimates
+end_yr <- 2025
+REP_YR <- 2025 #for Howard estimates
 #list2env(readinData(start_yr = start_yr,
 #                  end_yr = end_yr),
 #         .GlobalEnv)
@@ -68,7 +68,8 @@ intdat <- "yes"
 
 B4 <- "simp" #complex "simp", "none
 
-res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+#res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17" # Best 2024...
+res <- "annual_est_model_thru2025_1e+05__2026-10-05"
 #res <- "annual_est_working_kodpr.3hist_thru2024_50000__2026-07-14" 
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
@@ -436,8 +437,8 @@ as.data.frame(
         t(histpost$q50$H_ayu),
         t(histpost$q50$H_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -445,8 +446,8 @@ as.data.frame(
           t(histpost$q2.5$H_ayu),
           t(histpost$q2.5$H_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -455,8 +456,8 @@ as.data.frame(
           t(histpost$q97.5$H_ayu),
           t(histpost$q97.5$H_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -465,8 +466,8 @@ as.data.frame(
           t(histpost$sd$H_ayu),
           t(histpost$sd$H_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -578,8 +579,8 @@ as.data.frame(
         t(histpost$q50$R_ayu),
         t(histpost$q50$R_ay))) %>%
   setNames(nm = unique(R_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -587,8 +588,8 @@ as.data.frame(
           t(histpost$q2.5$R_ayu),
           t(histpost$q2.5$R_ay))) %>%
       setNames(nm = unique(R_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -597,8 +598,8 @@ as.data.frame(
           t(histpost$q97.5$R_ayu),
           t(histpost$q97.5$R_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -607,8 +608,8 @@ as.data.frame(
           t(histpost$sd$R_ayu),
           t(histpost$sd$R_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -725,8 +726,8 @@ as.data.frame(
         t(histpost$q50$Hb_ayu),
         t(histpost$q50$Hb_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -734,8 +735,8 @@ as.data.frame(
           t(histpost$q2.5$Hb_ayu),
           t(histpost$q2.5$Hb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -744,8 +745,8 @@ as.data.frame(
           t(histpost$q97.5$Hb_ayu),
           t(histpost$q97.5$Hb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -754,8 +755,8 @@ as.data.frame(
           t(histpost$sd$Hb_ayu),
           t(histpost$sd$Hb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -878,8 +879,8 @@ as.data.frame(
         t(histpost$q50$Rb_ayu),
         t(histpost$q50$Rb_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -887,8 +888,8 @@ as.data.frame(
           t(histpost$q2.5$Rb_ayu),
           t(histpost$q2.5$Rb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -897,8 +898,8 @@ as.data.frame(
           t(histpost$q97.5$Rb_ayu),
           t(histpost$q97.5$Rb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -907,8 +908,8 @@ as.data.frame(
           t(histpost$sd$Rb_ayu),
           t(histpost$sd$Rb_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1122,8 +1123,8 @@ as.data.frame(
         t(histpost$q50$Hy_ayu),
         t(histpost$q50$Hy_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -1131,8 +1132,8 @@ as.data.frame(
           t(histpost$q2.5$Hy_ayu),
           t(histpost$q2.5$Hy_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1141,8 +1142,8 @@ as.data.frame(
           t(histpost$q97.5$Hy_ayu),
           t(histpost$q97.5$Hy_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1151,8 +1152,8 @@ as.data.frame(
           t(histpost$sd$Hy_ayu),
           t(histpost$sd$Hy_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1227,8 +1228,8 @@ as.data.frame(
         t(histpost$q50$Ry_ayu),
         t(histpost$q50$Ry_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -1236,8 +1237,8 @@ as.data.frame(
           t(histpost$q2.5$Ry_ayu),
           t(histpost$q2.5$Ry_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1246,8 +1247,8 @@ as.data.frame(
           t(histpost$q97.5$Ry_ayu),
           t(histpost$q97.5$Ry_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1256,8 +1257,8 @@ as.data.frame(
           t(histpost$sd$Ry_ayu),
           t(histpost$sd$Ry_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1540,8 +1541,8 @@ as.data.frame(
         t(histpost$q50$Hd_ayu),
         t(histpost$q50$Hd_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -1549,8 +1550,8 @@ as.data.frame(
           t(histpost$q2.5$Hd_ayu),
           t(histpost$q2.5$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1559,8 +1560,8 @@ as.data.frame(
           t(histpost$q97.5$Hd_ayu),
           t(histpost$q97.5$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1569,8 +1570,8 @@ as.data.frame(
           t(histpost$sd$Hd_ayu),
           t(histpost$sd$Hd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1710,8 +1711,8 @@ as.data.frame(
         t(histpost$q50$Rd_ayu),
         t(histpost$q50$Rd_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -1719,8 +1720,8 @@ as.data.frame(
           t(histpost$q2.5$Rd_ayu),
           t(histpost$q2.5$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1729,8 +1730,8 @@ as.data.frame(
           t(histpost$q97.5$Rd_ayu),
           t(histpost$q97.5$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1739,8 +1740,8 @@ as.data.frame(
           t(histpost$sd$Rd_ayu),
           t(histpost$sd$Rd_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1925,8 +1926,8 @@ as.data.frame(
         t(histpost$q50$Hs_ayu),
         t(histpost$q50$Hs_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -1934,8 +1935,8 @@ as.data.frame(
           t(histpost$q2.5$Hs_ayu),
           t(histpost$q2.5$Hs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1944,8 +1945,8 @@ as.data.frame(
           t(histpost$q97.5$Hs_ayu),
           t(histpost$q97.5$Hs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -1954,8 +1955,8 @@ as.data.frame(
           t(histpost$sd$Hs_ayu),
           t(histpost$sd$Hs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2082,8 +2083,8 @@ as.data.frame(
         t(histpost$q50$Rs_ayu),
         t(histpost$q50$Rs_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -2091,8 +2092,8 @@ as.data.frame(
           t(histpost$q2.5$Rs_ayu),
           t(histpost$q2.5$Rs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2101,8 +2102,8 @@ as.data.frame(
           t(histpost$q97.5$Rs_ayu),
           t(histpost$q97.5$Rs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2111,8 +2112,8 @@ as.data.frame(
           t(histpost$sd$Rs_ayu),
           t(histpost$sd$Rs_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2278,8 +2279,8 @@ as.data.frame(
         t(histpost$q50$Ho_ayu),
         t(histpost$q50$Ho_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "H") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -2287,8 +2288,8 @@ as.data.frame(
           t(histpost$q2.5$Ho_ayu),
           t(histpost$q2.5$Ho_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2297,8 +2298,8 @@ as.data.frame(
           t(histpost$q97.5$Ho_ayu),
           t(histpost$q97.5$Ho_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "H_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2307,8 +2308,8 @@ as.data.frame(
           t(histpost$sd$Ho_ayu),
           t(histpost$sd$Ho_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_H") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2435,8 +2436,8 @@ as.data.frame(
         t(histpost$q50$Ro_ayu),
         t(histpost$q50$Ro_ay))) %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(start_yr:end_yr, times = 3),
-         user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+  mutate(year = rep(start_yr:2024, times = 3),
+         user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(!c(year,user), names_to = "area", values_to = "R") %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(as.data.frame(
@@ -2444,8 +2445,8 @@ as.data.frame(
           t(histpost$q2.5$Ro_ayu),
           t(histpost$q2.5$Ro_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_lo95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2454,8 +2455,8 @@ as.data.frame(
           t(histpost$q97.5$Ro_ayu),
           t(histpost$q97.5$Ro_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "R_hi95") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -2464,8 +2465,8 @@ as.data.frame(
           t(histpost$sd$Ro_ayu),
           t(histpost$sd$Ro_ay))) %>%
       setNames(nm = unique(H_ayg$area)) %>%
-      mutate(year = rep(start_yr:end_yr, times = 3),
-             user = rep(c("guided", "unguided", "All"), each = Y)) %>%
+      mutate(year = rep(start_yr:2024, times = 3),
+             user = rep(c("guided", "unguided", "All"), each = length(seq(start_yr,2024,1)))) %>%
       pivot_longer(!c(year,user), names_to = "area", values_to = "sd_R") %>%
       mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
     by = c("year","user","area")) %>%
@@ -3236,14 +3237,14 @@ hist_pG_mod <-
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
+  mutate(year = seq(start_yr,2024,1),
          source = "model") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "pG") %>%
   left_join(histpost$q2.5$pG %>%
               t() %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = unique(Hhat_ay$year),
+              mutate(year = seq(start_yr,2024,1),
                      source = "model") %>%
               pivot_longer(-c(year, source), names_to = "area", values_to = "pG_lo95"),
             by = c("year","source","area")) %>%
@@ -3251,7 +3252,7 @@ hist_pG_mod <-
               t() %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = unique(Hhat_ay$year),
+              mutate(year = seq(start_yr,2024,1),
                      source = "model") %>%
               pivot_longer(-c(year, source), names_to = "area", values_to = "pG_hi95"),
             by = c("year","source","area")) %>%
@@ -3330,8 +3331,8 @@ pHpel_histmod <-
         histpost$mean$pH[,,2,1] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -3339,8 +3340,8 @@ pHpel_histmod <-
                   histpost$q2.5$pH[,,2,1] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3349,8 +3350,8 @@ pHpel_histmod <-
                   histpost$q97.5$pH[,,2,1] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3491,8 +3492,8 @@ pHye_histmod <-
         histpost$mean$pH[,,2,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -3500,8 +3501,8 @@ pHye_histmod <-
                   histpost$q2.5$pH[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3510,8 +3511,8 @@ pHye_histmod <-
                   histpost$q97.5$pH[,,2,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3652,8 +3653,8 @@ pHnpny_histmod <-
         histpost$mean$pH[,,2,3] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -3661,8 +3662,8 @@ pHnpny_histmod <-
                   histpost$q2.5$pH[,,2,3] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3671,8 +3672,8 @@ pHnpny_histmod <-
                   histpost$q97.5$pH[,,2,3] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3817,8 +3818,8 @@ pHdsr_histmod <-
         histpost$mean$pH[,,2,4] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -3826,8 +3827,8 @@ pHdsr_histmod <-
                   histpost$q2.5$pH[,,2,4] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3836,8 +3837,8 @@ pHdsr_histmod <-
                   histpost$q97.5$pH[,,2,4] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3978,8 +3979,8 @@ pHslope_histmod <-
         histpost$mean$pH[,,2,5] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user,source), names_to = "area", values_to = "pH")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -3987,8 +3988,8 @@ pHslope_histmod <-
                   histpost$q2.5$pH[,,2,5] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -3997,8 +3998,8 @@ pHslope_histmod <-
                   histpost$q97.5$pH[,,2,5] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
                      source = "model") %>%
               pivot_longer(-c(year, user,source), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
@@ -4204,7 +4205,7 @@ bc_histmod2 <-
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
+  mutate(year = seq(start_yr,2024,1),
          source = "model") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
   mutate(data = "H") %>%
@@ -4212,7 +4213,7 @@ bc_histmod2 <-
           t() %>%
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%
-          mutate(year = unique(Hhat_ay$year),
+          mutate(year = seq(start_yr,2024,1),
                  source = "model") %>%
           pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
           mutate(data = "R")) %>%
@@ -4320,7 +4321,7 @@ bc_histmod2 <-
   t() %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = unique(Hhat_ay$year),
+  mutate(year = seq(start_yr,2024,1),
          source = "model") %>%
   pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
   mutate(data = "H") %>%
@@ -4329,7 +4330,7 @@ bc_histmod2 <-
           t() %>%
           as.data.frame() %>%
           setNames(nm = unique(H_ayg$area)) %>%
-          mutate(year = unique(Hhat_ay$year),
+          mutate(year = seq(start_yr,2024,1),
                  source = "model") %>%
           pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
           mutate(data = "R")) %>%
@@ -4436,16 +4437,16 @@ histp_pelagic_mod <-
         histpost$mean$p_pelagic[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
   pivot_longer(-c(year, user), names_to = "area", values_to = "p_pelagic")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
   left_join(rbind(histpost$q2.5$p_pelagic[,,1] %>% t(),
                   histpost$q2.5$p_pelagic[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4453,8 +4454,8 @@ histp_pelagic_mod <-
                   histpost$q97.5$p_pelagic[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
@@ -4553,8 +4554,8 @@ histp_black_mod <-
         histpost$mean$p_black[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_black")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -4562,8 +4563,8 @@ histp_black_mod <-
                   histpost$q2.5$p_black[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4571,8 +4572,8 @@ histp_black_mod <-
                   histpost$q97.5$p_black[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
@@ -4773,8 +4774,8 @@ histp_yellow_mod <-
         histpost$mean$p_yellow[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_yellow")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -4782,8 +4783,8 @@ histp_yellow_mod <-
                   histpost$q2.5$p_yellow[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4791,8 +4792,8 @@ histp_yellow_mod <-
                   histpost$q97.5$p_yellow[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4800,8 +4801,8 @@ histp_yellow_mod <-
                   histpost$q50$p_yellow[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
@@ -4931,8 +4932,8 @@ histp_dsr_mod <-
         histpost$mean$p_dsr[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_dsr")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -4940,8 +4941,8 @@ histp_dsr_mod <-
                   histpost$q2.5$p_dsr[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4949,8 +4950,8 @@ histp_dsr_mod <-
                   histpost$q97.5$p_dsr[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -4958,8 +4959,8 @@ histp_dsr_mod <-
                   histpost$q50$p_dsr[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))
@@ -5070,8 +5071,8 @@ histp_slope_mod <-
         histpost$mean$p_slope[,,2] %>% t()) %>%
   as.data.frame() %>%
   setNames(nm = unique(H_ayg$area)) %>%
-  mutate(year = rep(unique(Hhat_ay$year), times = 2),
-         user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year))),
+  mutate(year = rep(seq(start_yr,2024,1), times = 2),
+         user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1))),
          source = "model") %>%
   pivot_longer(-c(year, user, source), names_to = "area", values_to = "p_slope")  %>%
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
@@ -5079,8 +5080,8 @@ histp_slope_mod <-
                   histpost$q2.5$p_slope[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_lo95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -5088,8 +5089,8 @@ histp_slope_mod <-
                   histpost$q97.5$p_slope[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "p_hi95")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user")) %>%
@@ -5097,8 +5098,8 @@ histp_slope_mod <-
                   histpost$q50$p_slope[,,2] %>% t()) %>%
               as.data.frame() %>%
               setNames(nm = unique(H_ayg$area)) %>%
-              mutate(year = rep(unique(Hhat_ay$year), times = 2),
-                     user = rep(c("charter", "private"), each = length(unique(Hhat_ay$year)))) %>%
+              mutate(year = rep(seq(start_yr,2024,1), times = 2),
+                     user = rep(c("charter", "private"), each = length(seq(start_yr,2024,1)))) %>%
               pivot_longer(-c(year, user), names_to = "area", values_to = "med_p")  %>%
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user"))

@@ -71,12 +71,12 @@ LB0yrs <- missingLBdat %>% filter(!area %in% c("BSAI","EWYKT","SOKO2PEN","WKMA")
 str(LB0yrs); str(H_ayg0)
 
 #add in 0's for years and areas with no harvests
-for(i in 1:nrow(LB0yrs)){
-  H_ayg0 <- H_ayg0 %>%
-    add_row(year = LB0yrs$year[i],
-            area = LB0yrs$area[i],
-            H = 0, Hp = 0, Hnp = 0, Hye = 0, Ho = 0)
-}
+#for(i in 1:nrow(LB0yrs)){
+#  H_ayg0 <- H_ayg0 %>%
+#    add_row(year = LB0yrs$year[i],
+#            area = LB0yrs$area[i],
+#            H = 0, Hp = 0, Hnp = 0, Hye = 0, Ho = 0)
+#}
 
 with(H_ayg0, table(year,area))
 

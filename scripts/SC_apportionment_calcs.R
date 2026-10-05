@@ -3,7 +3,7 @@
 ## weighting of NG and PWS ports according to catches
 ##
 ## Author: Phil Joy
-## Last updated: Oct. 2024
+## Last updated: Oct. 2026
 ##
 ##
 ## NEED TO PROCESS THIS FIRST:

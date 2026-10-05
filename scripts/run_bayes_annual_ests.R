@@ -27,25 +27,30 @@ source(".\\scripts//bayes_data_param_load.R")
 
 #year to run model through
 start_yr <- 1977
-end_yr <- 2024
+end_yr <- 2025
 
 #most recent Howard estimates: 
-REP_YR <- 2024 #for bringing in Howard estimats
+#REP_YR <- 2025 
+
+#-------------------------------------------------------------------------------
+# REMINDERS!!
+# 1) Did you run bayes_data_prep.R to update all the data?
+# 2) Did you run pH_B4_prior_dev.R to update the B4 priors?
 
 #-------------------------------------------------------------------------------
 
 #load the data:
 
 #mod <- "annual_est_take5.1.1.c_fixH.1"
-mod <- "annual_est_take5.1.1.c_fixH.2"
-mod <- "annual_est_working"
-mod <- "annual_est_working_kodpr"
-mod <- "annual_est_working_kodpr.1"
-mod <- "annual_est_working_kodpr.2"
-mod <- "annual_est_working_kodpr.3"
-mod <- "annual_est_working_kodpr.3hist"
+#mod <- "annual_est_take5.1.1.c_fixH.2"
+#mod <- "annual_est_working"
+#mod <- "annual_est_working_kodpr"
+#mod <- "annual_est_working_kodpr.1"
+#mod <- "annual_est_working_kodpr.2"
+#mod <- "annual_est_working_kodpr.3"
+#mod <- "annual_est_working_kodpr.3hist"
 mod <- "annual_est_model"
-mod <- "annual_est_model_kodalt2"
+#mod <- "annual_est_model_kodalt2" #Close alternative
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -83,7 +88,7 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 6E6; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
 
 #ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
 #ni = 1E5 = 1 hour... mostly converged
@@ -144,7 +149,7 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
