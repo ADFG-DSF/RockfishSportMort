@@ -29,12 +29,17 @@ lut <-
 
 #-------------------------------------------------------------------------------
 # Logbook data ----
+# 
+# FLAG on LB DATA
+# LB hasn't amalgamated BSAI and SOKO2SAP areas consistently but HAS amalgamated
+# WKMA and EWYKT. Code is set up to deal with that, but pay attention with both
+# harvests and releases!!! 
 #-------------------------------------------------------------------------------
 H_ayg0 <- #logbook harvest by area, user = guided, year
-read.csv(paste0("data/raw_dat/logbook_harvest_thru",REP_YR,".csv")) %>% 
+  read.csv(paste0("data/raw_dat/logbook_harvest_thru",REP_YR,".csv")) %>% 
   select(-c(Region))
-  #select(-c(Region,not_ye_nonpel_harv))
-  
+#select(-c(Region,not_ye_nonpel_harv))
+
 colnames(H_ayg0)
 colnames(H_ayg0) <- c("year", "area", "H", "Hp", "Hnp", "Hye", "Ho")
 
@@ -68,15 +73,6 @@ with(H_ayg0, table(year,area)) %>% data.frame() %>%
 LB0yrs <- missingLBdat %>% filter(!area %in% c("BSAI","EWYKT","SOKO2PEN","WKMA")) %>%
   mutate(year = as.integer(as.character(year)),
          area = as.character(area));LB0yrs
-str(LB0yrs); str(H_ayg0)
-
-#add in 0's for years and areas with no harvests
-#for(i in 1:nrow(LB0yrs)){
-#  H_ayg0 <- H_ayg0 %>%
-#    add_row(year = LB0yrs$year[i],
-#            area = LB0yrs$area[i],
-#            H = 0, Hp = 0, Hnp = 0, Hye = 0, Ho = 0)
-#}
 
 with(H_ayg0, table(year,area))
 
@@ -89,63 +85,80 @@ H_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
   filter(!is.na(AMALG)) %>%
   group_by(year,AMALG) %>%
   summarise(H = sum(H, na.rm = T),
-         Hp = sum(Hp, na.rm = T),
-         Hnp = sum(Hnp, na.rm = T),
-         Hye = sum(Hye, na.rm = T),
-         Ho = sum(Ho, na.rm=T)) -> a_check
+            Hp = sum(Hp, na.rm = T),
+            Hnp = sum(Hnp, na.rm = T),
+            Hye = sum(Hye, na.rm = T),
+            Ho = sum(Ho, na.rm=T)) -> a_check
 
-a_check %>% filter(year >= 2022) %>% arrange(AMALG)
-# are there rows for each year? Yes for 2025 data examined on 10-1-26
+a_check %>% filter(year >= 2020) %>% arrange(AMALG) %>% print(n = 50)
+H_ayg0 %>% filter(year >= 2020) %>% filter(area %in% c("BSAI","EWYKT",
+                                                       "SOKO2SAP",
+                                                       "WKMA")) %>%
+  arrange(area)
 
-H_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
-                                            "EWYKT","IBS","EYKT",
-                                            "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
-                                            "WKMA","WESTSIDE","MAINLAND")) %>%
-  bind_rows(a_check %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
-  arrange(year,area) -> amalg
+#check how our amalgamations match up with precanned from LB program:
+a_check %>% filter(year >= 2005) %>% mutate(area = AMALG) %>%
+  left_join(H_ayg0 %>% filter(year >= 2005) %>% filter(area %in% c("BSAI","EWYKT",
+                                                                   "SOKO2SAP",
+                                                                   "WKMA")),
+            by = c("year","area")) %>% arrange(area) %>% print(n = 100)
 
-amalg %>%
-  filter(area %in% c("BSAI","SOKO2SAP"))
- 
-with(amalg %>%
-       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year)) # These should all be 2's if the amalgamated areas are already done
-                      # If they are 1's then they aren't yet in the data set and
-                      # need to be added in.
+# can see that there is missing shit for SOKO2SAP and BSAI
+rbind(H_ayg0 %>% filter(!area %in% c("BSAI","SOKO2SAP") &
+                          year > 2021),
+      a_check %>% filter(year > 2021) %>% 
+        mutate(area = AMALG,
+               Hye = ifelse(year < 2006, NA, Hye),
+               Ho = ifelse(year < 2006, NA, Ho)) %>% 
+        select(-AMALG)) %>%
+  rbind(H_ayg0 %>% filter( year < 2022)) %>% unique() %>%
+  arrange(area,year) -> Hayg0patch
 
-#!!! BSAI missing since 2022 so need to add them in here
-H_ayg0 %>% bind_rows(amalg %>% filter(year %in% seq(2022,REP_YR,1) & area %in% c("BSAI"))) %>%
-  arrange(area, year) %>% unique() -> H_ayg0
+#check we didn't screw up:
+Hayg0patch %>% filter(year >= 2020,
+                      area %in% c("BSAI","EWYKT",
+                                  "SOKO2SAP",
+                                  "WKMA")) %>% 
+  left_join(H_ayg0 %>% filter(year >= 2020) %>% filter(area %in% c("BSAI","EWYKT",
+                                                                   "SOKO2SAP",
+                                                                   "WKMA")),
+            by = c("year","area")) %>% arrange(area) 
 
-#double check... 
-with(H_ayg0 %>%
-       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year))   
+with(Hayg0patch, table(year,area))
 
-with(H_ayg0,
-     table(area,year)) 
-
-H_ayg <-
-  H_ayg0 %>%
+H_ayg <- Hayg0patch %>%
   filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", #get rid of areas contained in amalgamated areas
                        "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND",
                        "SOUTHEAST","SOUTHWEST"))) %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          area = ifelse(area == "northeas", "northeast", area)) %>%
   left_join(lut, by = "area") %>%
-  mutate(area = factor(area, lut$area, ordered = TRUE)) %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE),
+         Hye = ifelse(year < 2006, NA, Hye),
+         Ho = ifelse(year < 2006, NA, Ho)) %>%
   arrange(region, area, year)
 
 table(H_ayg$region, H_ayg$area)
+with(H_ayg, table(year,area)) # any 0's in the new year? Yes in 2025 for BSAI
 
-H_ayg %>% filter(is.na(area))
+t(with(H_ayg, table(year,area))) %>% data.frame() %>%
+  filter(Freq == 0) -> zero_ch; zero_ch
 
-H_ayg %>%
-  ggplot(aes(x = year, y = H, color = area)) +
-    geom_line() +
-    facet_grid(region ~ .)
+for(i in 1:nrow(zero_ch)){
+  H_ayg %>% add_row(year = as.integer(as.character(zero_ch$year[i])),
+                    area = ordered(zero_ch$area[i], levels = levels(H_ayg$area)),
+                    H = 0, Hp = 0, Hnp = 0, Hye = 0, Ho = 0,
+                    region = "Kodiak") -> H_ayg
+}
+
+H_ayg <- H_ayg %>% arrange(region, area, year)
+
+with(H_ayg, table(year,area))
+table(H_ayg$region, H_ayg$area)
 
 saveRDS(H_ayg, paste0(".\\data\\bayes_dat\\H_ayg",REP_YR,".rds"))
+# for posterity resave data used in 2024
+saveRDS(H_ayg %>% filter(year < 2025), ".\\data\\bayes_dat\\H_ayg.rds")
 
 # -Logbook release data: -------------------------------------------------------
 R_ayg0 <- #logbook harvest by area, user = guided, year
@@ -167,13 +180,16 @@ R_ayg0 %>%
 
 R_ayg0 %>% filter(is.na(area))
 
-R_ayg0 %>% filter(year > 2019 & area %in% c("BSAI","ALEUTIAN","BERING",
+R_ayg0 %>% filter(year > 2005 & area %in% c("BSAI","ALEUTIAN","BERING",
                                             "EWYKT","IBS","EKYT",
                                             "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
                                             "WKMA","WESTSIDE","MAINLAND")) %>%
   arrange(area,year) -> check2; check2
 
-# years & areas with 0 releases
+
+with(check2, table(area,year))
+
+# years & areas with 0 harvests
 with(R_ayg0, table(year,area)) %>% data.frame() %>%
   filter(Freq < 1) %>% arrange(area,year) -> missingLBdat2; missingLBdat2
 
@@ -182,14 +198,6 @@ LB0yrs2 <- missingLBdat2 %>% filter(!area %in% c("BSAI","EWYKT","SOKO2PEN","WKMA
   mutate(year = as.integer(as.character(year)),
          area = as.character(area));LB0yrs2
 str(LB0yrs2); str(R_ayg0)
-
-#add in 0's for years and areas with no harvests
-for(i in 1:nrow(LB0yrs2)){
-  R_ayg0 <- R_ayg0 %>%
-    add_row(year = LB0yrs2$year[i],
-            area = LB0yrs2$area[i],
-            R = 0, Rp = 0, Rnp = 0, Rye = 0, Ro = 0)
-}
 
 with(R_ayg0, table(year,area))
 
@@ -204,52 +212,83 @@ R_ayg0 %>% mutate(AMALG = ifelse(area %in% c("ALEUTIAN","BERING"),"BSAI",
   summarise(R = sum(R, na.rm = T),
             Rp = sum(Rp, na.rm = T),
             Rnp = sum(Rnp, na.rm = T),
-            Rye = sum(Rye, na.rm = T)) -> a_check2; a_check2
+            Rye = sum(Rye, na.rm = T),
+            Ro = sum(Ro, na.rm=T)) -> a_check2
 
-R_ayg0 %>% filter(area %in% c("BSAI","ALEUTIAN","BERING",
-                              "EWYKT","IBS","EYKT",
-                              "SOKO2PEN","SOKO2SAP","SOUTHEAST","SOUTHWEST","SAKPEN","CHIGNIK",
-                              "WKMA","WESTSIDE","MAINLAND")) %>%
-  bind_rows(a_check2 %>% mutate(area = AMALG) %>% select(-AMALG)) %>%
-  arrange(year,area) -> amalg2; amalg2
+a_check2 %>% filter(year >= 2020) %>% arrange(AMALG) %>% print(n = 50)
+R_ayg0 %>% filter(year >= 2020) %>% filter(area %in% c("BSAI","EWYKT",
+                                                       "SOKO2SAP",
+                                                       "WKMA")) %>%
+  arrange(area)
+#check how our amalgamations match up with precanned from LB program:
+a_check2 %>% filter(year >= 1996) %>% mutate(area = AMALG) %>%
+  left_join(R_ayg0 %>% filter(year >= 1996) %>% filter(area %in% c("BSAI","EWYKT",
+                                                                   "SOKO2SAP",
+                                                                   "WKMA")),
+            by = c("year","area")) %>% arrange(area) %>% print(n = 100)
 
-with(amalg2 %>%
-       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year)) # These should all be 2's if the amalgamated areas are already done
-                       # If they are 1's then they aren't yet in the data set and
-                       # need to be added in. 
+#can see that there is missing shit for all years SOKO2SAP and BsAI
+rbind(R_ayg0 %>% filter(!area %in% c("BSAI","SOKO2SAP") &
+                          year > 1996),
+      a_check2 %>% filter(year > 1996,
+                          AMALG %in% c("BSAI","SOKO2SAP")) %>% 
+        mutate(area = AMALG,
+               Rye = ifelse(year < 2006, NA, Rye),
+               Ro = ifelse(year < 2006, NA, Ro)) %>% 
+        select(-AMALG)) %>%
+  rbind(R_ayg0 %>% filter( year < 1997)) %>% unique() %>%
+  arrange(area,year) -> Rayg0patch
 
-#!!! BSAI and SOKO2SAP missing in all years so need to add them back in
-R_ayg0 %>% bind_rows(amalg2 %>% filter(area %in% c("BSAI","SOKO2SAP"))) %>%
-  arrange(area, year) -> R_ayg0
+#check we didn't screw up:
+Rayg0patch %>% filter(year >= 1996,
+                      area %in% c("BSAI","EWYKT",
+                                  "SOKO2SAP",
+                                  "WKMA")) %>% 
+  left_join(R_ayg0 %>% filter(year >= 1996) %>% filter(area %in% c("BSAI","EWYKT",
+                                                                   "SOKO2SAP",
+                                                                   "WKMA")),
+            by = c("year","area")) %>% 
+  arrange(area) 
 
-#double check... 
-with(R_ayg0 %>%
-       filter(area %in% c("BSAI","EWYKT","SOKO2SAP","WKMA")),
-     table(area,year))    
+with(Rayg0patch, table(year,area))
 
-R_ayg <-
-  R_ayg0 %>%
+Rayg0patch %>% filter(area %in% c("BSAI","EWYKT",
+                                  "SOKO2SAP",
+                                  "WKMA"))
+
+R_ayg <- Rayg0patch %>%
   filter(!(area %in% c("ALEUTIAN", "BERING", "IBS", "EYKT", "SOUTHEAS", "SOUTHWES", #get rid of areas contained in amalgamated areas
                        "SAKPEN", "CHIGNIK", "SKMA", "WESTSIDE", "MAINLAND",
                        "SOUTHEAST","SOUTHWEST"))) %>%
   mutate(area = ifelse(area %in% c("AFOGNAK", "EASTSIDE", "NORTHEAST"), tolower(area), area),
          area = ifelse(area == "northeas", "northeast", area)) %>%
   left_join(lut, by = "area") %>%
-  mutate(area = factor(area, lut$area, ordered = TRUE)) %>%
+  mutate(area = factor(area, lut$area, ordered = TRUE),
+         Rye = ifelse(year < 2006, NA, Rye),
+         Ro = ifelse(year < 2006, NA, Ro)) %>%
   arrange(region, area, year)
 
 table(R_ayg$region, R_ayg$area)
+with(R_ayg, table(year,area)) # any 0's in the new year? Yes in 2025 for BSAI
 
-R_ayg %>% filter(is.na(area))
+t(with(R_ayg, table(year,area))) %>% data.frame() %>%
+  filter(Freq == 0) -> zero_ch2; zero_ch2
 
-R_ayg %>%
-  ggplot(aes(x = year, y = R, color = area)) +
-  geom_line() +
-  facet_grid(region ~ .)
+for(i in 1:nrow(zero_ch2)){
+  R_ayg %>% add_row(year = as.integer(as.character(zero_ch2$year[i])),
+                    area = ordered(zero_ch2$area[i], levels = levels(R_ayg$area)),
+                    R = 0, Rp = 0, Rnp = 0, Rye = 0, Ro = 0,
+                    region = "Kodiak") -> R_ayg
+}
+
+R_ayg <- R_ayg %>% arrange(region, area, year)
+
+with(R_ayg, table(year,area))
+table(R_ayg$region, R_ayg$area)
 
 saveRDS(R_ayg, paste0(".\\data\\bayes_dat\\R_ayg",REP_YR,".rds"))
-
+# for posterity resave data used in 2024
+saveRDS(R_ayg %>% filter(year < 2025), ".\\data\\bayes_dat\\R_ayg.rds")
 #-------------------------------------------------------------------------------
 # SWHS Data
 #-------------------------------------------------------------------------------

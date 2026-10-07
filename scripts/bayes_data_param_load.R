@@ -1095,24 +1095,52 @@ readinData_alt <- function(spl_knts = 7,
   kha <- readRDS(paste0(".//data//bayes_dat//kha_thru",end_yr,".rds"))
   
   #Weigth and release mortality data 
-#  wt_rm <- readRDS(".//data//bayes_dat//wt_rm_dat_tst.rds") %>%
-  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru_",end_yr,".rds")) %>%
-    group_by(assemblage,area,user) %>%
-    mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
-                          10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
+  wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru_",end_yr,".rds")) # %>%
+  
+  wt_rm %>%  
+    group_by(assemblage, area, user) %>%
+    mutate(
+      maxsd = ifelse(
+        all(is.na(bootsd_wtlbs)),
+        10,
+        2 * max(bootsd_wtlbs, na.rm = TRUE)
+      )
+    ) %>%
     ungroup() %>% 
-    mutate(assemblage = factor(assemblage, 
-                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
-           method = ifelse(is.na(method),"bootstrap",method),
-           wt_sd = ifelse(is.na(bootsd_wtlbs) & method == "bootstrap", maxsd,
-                          ifelse(bootsd_wtlbs == 0 & method == "bootstrap",
-                                 0.5 * maxsd,
-                                 ifelse(method == "4-stage",sd_wtlbs, bootsd_wtlbs)))
+    mutate(
+      assemblage = factor(
+        assemblage, 
+        levels = c("black", "yelloweye", "pelnbrf", "dsrlessye", "slope")
+      ),
+      wt_sd = ifelse(
+        is.na(bootsd_wtlbs),
+        maxsd,
+        ifelse(
+          bootsd_wtlbs == 0,
+          0.5 * maxsd,
+          bootsd_wtlbs
+        )
+      )
+    ) %>% 
+    arrange(assemblage, user, region, area, year) -> wt_rm
+  
+  #wt_rm <- readRDS(paste0(".//data//bayes_dat//wt_rm_dat_thru_",end_yr,".rds")) %>%
+  #  group_by(assemblage,area,user) %>%
+  #  mutate(maxsd = ifelse(is.infinite(max(bootsd_wtlbs, na.rm = T)),
+  #                        10, 2 * max(bootsd_wtlbs, na.rm = T))) %>%
+  #  ungroup() %>% 
+  #  mutate(assemblage = factor(assemblage, 
+  #                             levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
+  #         method = ifelse(is.na(method),"bootstrap",method),
+  #         wt_sd = ifelse(is.na(bootsd_wtlbs) & method == "bootstrap", maxsd,
+  #                        ifelse(bootsd_wtlbs == 0 & method == "bootstrap",
+  #                               0.5 * maxsd,
+  #                               ifelse(method == "4-stage",sd_wtlbs, bootsd_wtlbs)))
           # wt_sd = ifelse(is.na(bootsd_wtlbs),maxsd,
            #               ifelse(bootsd_wtlbs == 0, 0.5 * maxsd, bootsd_wtlbs))
-           ) %>%
+   #        ) %>%
     #wt_sd = ifelse(is.na(sd_wtlbs),50,sd_wtlbs)) %>%
-    arrange(assemblage, user,region, area, year) 
+   # arrange(assemblage, user,region, area, year) 
   
   #  View(wt_rm)
   #  unique(wt_rm$maxsd) %>% arrange()
@@ -1122,7 +1150,7 @@ readinData_alt <- function(spl_knts = 7,
   #                               levels = c("black","yelloweye","pelnbrf","dsrlessye","slope")),
   #           wt_sd = sd_wtlbs) %>%
   #    arrange(assemblage, user,region, area, year)
-  
+
   wt_priors <- wt_rm %>%
     filter(!is.na(wt_lbs)) %>%
     group_by(assemblage) %>%
@@ -2326,7 +2354,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
         )
       )
     ) %>% 
-    arrange(assemblage, user, region, area, year) %>% print(n = 50) -> wt_rm
+    arrange(assemblage, user, region, area, year) -> wt_rm
     
 #old code; creates warnings but works
 #wt_rm %>%
@@ -2593,7 +2621,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
                               ncol = Y_ts - length(unique(H_ayg$year))),
                        matrix(H_ayg$Ho, 
                               nrow = A, 
-                              ncol = Y_ts - length(unique(H_ayg$year)), byrow = TRUE)),
+                              ncol = length(unique(H_ayg$year)), byrow = TRUE)),
       #Releases by species and user: 
       Rlb_ayg = cbind(matrix(NA, nrow = A, 
                              ncol = Y_ts - length(unique(R_ayg$year))),
@@ -2601,7 +2629,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
       Rlb_ayg_bound = cbind(matrix(NA, nrow = A, 
                                    ncol = Y_ts - length(unique(R_ayg$year))),
                             matrix(R_ayg$R_lb, nrow = A, 
-                                   ncol = Y_ts - length(unique(R_ayg$year)), byrow = TRUE)),
+                                   ncol = length(unique(R_ayg$year)), byrow = TRUE)),
       #Rlb_ayg_cens = matrix(as.numeric(NA), nrow = A, ncol = Y ),
       # logbook pelagic rf harvested by guides
       Rlbp_ayg = cbind(matrix(NA, nrow = A, 

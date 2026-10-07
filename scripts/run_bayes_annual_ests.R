@@ -51,6 +51,7 @@ end_yr <- 2025
 #mod <- "annual_est_working_kodpr.3hist"
 mod <- "annual_est_model"
 #mod <- "annual_est_model_kodalt2" #Close alternative
+mod <- "annual_est_model_bsaitrunc"
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -736,6 +737,8 @@ jagsUI::traceplot(postH, parameters = c("mu_beta4_pelagic","tau_beta4_pelagic",
                                         "mu_beta5_pelagic","tau_beta5_pelagic",
                                         "beta4_pelagic",
                                         "beta5_pelagic"))
+
+jagsUI::traceplot(postH, parameters = c("eps_pel"))
 
 jagsUI::traceplot(postH, parameters = c("mu_beta4_black","tau_beta4_black",
                                         "mu_beta5_black","tau_beta5_black",
