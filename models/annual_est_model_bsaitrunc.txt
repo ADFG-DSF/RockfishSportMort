@@ -461,17 +461,17 @@ for (a in 1:4){
 }
 
 for (a in 5:10){
-  for(y in 1:21){
+  for(y in 1:43){ #for(y in 1:21){
       for(u in 1:2){
-        eps_pel[a,y,u] ~ dnorm(0, tau_comp[1]) #<- eps_pel_Hest[a,y,u] #
-        eps_ye[a,y,u] ~ dnorm(0, tau_comp[2]) #<- eps_ye_Hest[a,y,u] #~ dnorm(0, tau_comp[2])
-        eps_bl[a,y,u] ~ dnorm(0, tau_comp[3]) #<- eps_bl_Hest[a,y,u] #~ dnorm(0, tau_comp[3])
+        eps_pel[a,y,u] <- eps_pel_Hest[a,y,u] #~ dnorm(0, tau_comp[1]) #<- eps_pel_Hest[a,y,u] #
+        eps_ye[a,y,u] <- eps_ye_Hest[a,y,u] #~ dnorm(0, tau_comp[2]) #<- eps_ye_Hest[a,y,u] #~ dnorm(0, tau_comp[2])
+        eps_bl[a,y,u] <- eps_bl_Hest[a,y,u] #~ dnorm(0, tau_comp[3]) #<- eps_bl_Hest[a,y,u] #~ dnorm(0, tau_comp[3])
         eps_dsr[a,y,u] <- eps_dsr_Hest[a,y,u] #~ dnorm(0, tau_comp[4])
         eps_sl[a,y,u] <- eps_sl_Hest[a,y,u] #~ dnorm(0, tau_comp[5])
       }
     }
 
-    for (y in 22:Y){ #for (y in 1:Y){
+    for (y in 44:Y){ #for (y in 1:Y){ for (y in 22:Y){ #for (y in 1:Y){
       for(u in 1:2){
         eps_pel[a,y,u] ~ dnorm(0, tau_comp[1])
         eps_ye[a,y,u] ~ dnorm(0, tau_comp[2])
@@ -482,17 +482,17 @@ for (a in 5:10){
     }
 
     for(u in 1:2){
-      mean_eps_pel0[a,u] <- mean(eps_pel[a,1:22,u])
-      mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:29,u])
-      mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:22,u])
+    #  mean_eps_pel0[a,u] <- mean(eps_pel[a,1:22,u])
+    #  mean_eps_ye0[a,u]  <- mean(eps_ye[a,1:29,u])
+    #  mean_eps_bl0[a,u]  <- mean(eps_bl[a,1:22,u])
     #  mean_eps_dsr0[a,u] <- mean(eps_dsr[a,1:29,u])
     #  mean_eps_sl0[a,u]  <- mean(eps_sl[a,1:29,u])
 
-      mean_eps_pel[a,u] <- mean(eps_pel[a,23:43,u])
-      mean_eps_ye[a,u]  <- mean(eps_ye[a,30:43,u])
-      mean_eps_bl[a,u]  <- mean(eps_bl[a,23:43,u])
-      mean_eps_dsr[a,u] <- mean(eps_dsr[a,30:43,u])
-      mean_eps_sl[a,u]  <- mean(eps_sl[a,30:43,u])
+    #  mean_eps_pel[a,u] <- mean(eps_pel[a,23:43,u])
+    #  mean_eps_ye[a,u]  <- mean(eps_ye[a,30:43,u])
+    #  mean_eps_bl[a,u]  <- mean(eps_bl[a,23:43,u])
+    #  mean_eps_dsr[a,u] <- mean(eps_dsr[a,30:43,u])
+    #  mean_eps_sl[a,u]  <- mean(eps_sl[a,30:43,u])
 
       mean_eps_pel2[a,u] <- mean(eps_pel[a,44:Y,u])
       mean_eps_ye2[a,u]  <- mean(eps_ye[a,44:Y,u])
@@ -512,7 +512,7 @@ for (a in 5:10){
 
       for (y in 22:43){
         re_pelagic[a,y,u] <- re_pelagic_Hest[a,y,u] #eps_pel[a,y,u] - mean_eps_pel[a,u]
-        re_black[a,y,u] <- eps_bl[a,y,u] - mean_eps_bl[a,u] #re_black_Hest[a,y,u] #
+        re_black[a,y,u] <- re_black_Hest[a,y,u] #eps_bl[a,y,u] - mean_eps_bl[a,u] #re_black_Hest[a,y,u] #
       }
       for(y in 30:43){
         re_yellow[a,y,u] <- re_yellow_Hest[a,y,u] #eps_ye[a,y,u] - mean_eps_ye[a,u]

@@ -70,7 +70,7 @@ B4 <- "simp" #complex "simp", "none
 
 #res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17" # Best thru 2024...
 #res <- "annual_est_model_thru2025_1e+05__2026-10-06"
-res <- "annual_est_model_kodalt2_thru2025_1e+05__2026-10-06"
+res <- "annual_est_model_bsaitrunc_thru2025_1e+05__2026-10-06"
 #res <- "annual_est_working_kodpr.3hist_thru2024_50000__2026-07-14" 
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
