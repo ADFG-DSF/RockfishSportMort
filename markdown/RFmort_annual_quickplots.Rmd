@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_TST25b_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_TST25i_",Sys.Date(),".html"))
       })
 ---
 
@@ -70,8 +70,8 @@ B4 <- "simp" #complex "simp", "none
 
 #res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17" # Best thru 2024...
 #res <- "annual_est_model_thru2025_1e+05__2026-10-06"
-res <- "annual_est_model_bsaitrunc_thru2025_1e+05__2026-10-06"
-#res <- "annual_est_working_kodpr.3hist_thru2024_50000__2026-07-14" 
+#res <- "annual_est_model_bsaitrunc_thru2025_1e+05__2026-10-06"
+res <- "annual_est_model_bsaitrunc3b_thru2025_1e+05__2026-10-07" 
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 

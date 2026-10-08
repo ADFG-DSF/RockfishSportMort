@@ -51,7 +51,7 @@ end_yr <- 2025
 #mod <- "annual_est_working_kodpr.3hist"
 mod <- "annual_est_model"
 #mod <- "annual_est_model_kodalt2" #Close alternative
-mod <- "annual_est_model_bsaitrunc"
+mod <- "annual_est_model_bsaitrunc3b"
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -89,7 +89,7 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E5; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 9E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 
 #ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
 #ni = 1E5 = 1 hour... mostly converged

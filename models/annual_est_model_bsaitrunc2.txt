@@ -300,11 +300,11 @@ for (a in 1:4){
 
 # KODIAK
 #HYPER PRIORS FOR SPECIES COMPOSITION PARAMTERS:
-  mu_beta4_pelagic_kod ~ dnorm(0, 0.01)
+  mu_beta4_pelagic_kod ~ dnorm(0, 0.5) #dnorm(0, 0.01)
   mu_beta5_pelagic_kod ~ dnorm(0, 0.01)
 
   tau_beta4_pelagic_kod <- 1 / sd_beta4_pelagic_kod / sd_beta4_pelagic_kod
-  sd_beta4_pelagic_kod ~ dunif(0.1, 10)
+  sd_beta4_pelagic_kod ~ dunif(0.001, 4)
   tau_beta5_pelagic_kod <- 1 / sd_beta5_pelagic_kod / sd_beta5_pelagic_kod
   sd_beta5_pelagic_kod ~ dunif(0.001, 4)
 

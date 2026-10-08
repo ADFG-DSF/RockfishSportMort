@@ -300,11 +300,11 @@ for (a in 1:4){
 
 # KODIAK
 #HYPER PRIORS FOR SPECIES COMPOSITION PARAMTERS:
-  mu_beta4_pelagic_kod ~ dnorm(0, 0.01)
+  mu_beta4_pelagic_kod ~ dnorm(0, 0.5) #dnorm(0, 0.01)
   mu_beta5_pelagic_kod ~ dnorm(0, 0.01)
 
   tau_beta4_pelagic_kod <- 1 / sd_beta4_pelagic_kod / sd_beta4_pelagic_kod
-  sd_beta4_pelagic_kod ~ dunif(0.1, 10)
+  sd_beta4_pelagic_kod ~ dunif(0.001, 4)
   tau_beta5_pelagic_kod <- 1 / sd_beta5_pelagic_kod / sd_beta5_pelagic_kod
   sd_beta5_pelagic_kod ~ dunif(0.001, 4)
 
@@ -323,9 +323,19 @@ for (a in 1:4){
   tau_beta5_black_kod <- 1 / sd_beta5_black_kod / sd_beta5_black_kod
   sd_beta5_black_kod ~ dunif(0.1, 5)
 
-for (a in 5:10){
+for (a in 5:7){
+  beta4_pelagic[a] <- mu_beta4_pelagic_kod #~ dnorm(mu_beta4_pelagic_kod, tau_beta4_pelagic_kod)T(-50,50)
+  beta5_pelagic[a] ~ dnorm(mu_beta5_pelagic_kod, tau_beta5_pelagic_kod) #T()
+}
+
+for (a in 8:10){
   beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic_kod, tau_beta4_pelagic_kod)T(-50,50)
   beta5_pelagic[a] ~ dnorm(mu_beta5_pelagic_kod, tau_beta5_pelagic_kod) #T()
+}
+
+for (a in 5:10){
+#  beta4_pelagic[a] ~ dnorm(mu_beta4_pelagic_kod, tau_beta4_pelagic_kod)T(-50,50)
+#  beta5_pelagic[a] ~ dnorm(mu_beta5_pelagic_kod, tau_beta5_pelagic_kod) #T()
 
   beta4_yellow[a] ~ dnorm(mu_beta4_yellow_kod, tau_beta4_yellow_kod)#T(-50,50)
   beta5_yellow[a] ~ dnorm(mu_beta5_yellow_kod, tau_beta5_yellow_kod)
