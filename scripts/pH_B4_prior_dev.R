@@ -95,6 +95,14 @@ meds <- pri_rel_pr %>% group_by(area) %>%
             cv_med_ratio = se_med_ratio / mean_ratio,
             max_cv = max(ratio_cv))
 
+#from Rmarkdown figure text size:
+baseTXT <- 17 # base text size
+legTXT <- 12 #legend text size
+axTXT <- 16 # axis tic label text size
+axTiTXT <- 17 # axis title text size
+barwidth <- 1 #bar width on bar graphs
+pointSIZE <- 2.5
+
 ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) + 
   geom_ribbon(aes(ymin = lower,
                   ymax = upper),
@@ -108,12 +116,14 @@ ggplot(pri_rel_pr,aes(x=year,y=prigui_ratio)) +
 #  ylim(0,10) +
   facet_wrap(~area, scale = "free") +
 #  facet_wrap(~area) +
-  theme_bw() +
-  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme_bw(base_size = baseTXT) +
+  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+         axis.text.y = element_text(size = 12)) +
+#  theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_x_continuous(breaks=seq(2012,2025,2)) +
   labs(y = "Proportion harvested ratio (private:guided anglers)", x = "Year") 
 
-ggsave("figures/bayes_model/pH_prigui_ratio.png")
+ggsave("figures/bayes_model/pH_prigui_ratio.png",width = 10, height = 8)
 
 pri_rel_pr %>% data.frame()
 

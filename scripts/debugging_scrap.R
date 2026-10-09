@@ -323,27 +323,178 @@ raw_pH %>% filter(area == "SOKO2SAP")
   saveRDS(R_ayg, paste0(".\\data\\bayes_dat\\R_ayg",REP_YR,".rds"))
   
   #----------------------------------------------------------------------------
-  H_ayg 
-  with(H_ayg, table(year,area))
+  bc_obs <- 
+    (jags_dat$Hhat_ayg/jags_dat$Hlb_ayg)[,35:Y] %>%
+    t() %>%
+    as.data.frame() %>%
+    setNames(nm = unique(H_ayg$area)) %>%
+    mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+           source = "observed LB") %>%
+    pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+    mutate(data = "H") %>% 
+    rbind((jags_dat$Rhat_ayg/jags_dat$Rlb_ayg)[,35:Y] %>%
+            #rbind((jags_dat$Chat_ayg/(jags_dat$Rlb_ayg + jags_dat$Hlb_ayg))[,35:Y] %>%
+            t() %>%
+            as.data.frame() %>%
+            setNames(nm = unique(H_ayg$area)) %>%
+            mutate(year = unique(Hhat_ayu$year[Hhat_ayu$year <= end_yr]),
+                   source = "observed LB") %>%
+            pivot_longer(-c(year, source), names_to = "area", values_to = "bc") %>%
+            mutate(data = "R")) %>%
+    mutate(bc_lo95 = NA,
+           bc_hi95 = NA) 
+  
+  
+  
+  max(bc_obs$bc)
+  
+  bc_obs %>% filter(data == "H") -> Hbc_obs
+  
+  Hbc_obs %>% filter(bc == max(Hbc_obs$bc))
+  Hbc_obs %>% filter(area == "BSAI")
+  
+  bc_obs %>% filter(year == 2024 & data == "H") %>% print(n = 50)
+  
+  mu_bc_H_h
   
   
   
   
   
+  mu_bc_H_h2 <- data.frame(area = unique(H_ayg$area), 
+                          mu_bc = apply(exp(postH_h$sims.list$mu_bc_H), 
+                                        2, mean),
+                          med_bc = apply(exp(postH_h$sims.list$mu_bc_H), 
+                                         2, median))
   
+  exp(postH_h$sims.list$mu_bc_H)[,5]
   
+  mean(exp(postH_h$sims.list$mu_bc_H)[,5])
   
+  rbind(bc_mod2, bc_obs) %>%
+    filter(data == "H") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>%
+    ggplot(aes(x = year, y = bc, color = source)) +
+    geom_ribbon(aes(ymin = bc_lo95, ymax = bc_hi95, fill = source), 
+                alpha = 0.2, color = NA) +
+    geom_point() +
+    geom_line() +
+    #coord_cartesian(ylim = c(0, 5)) +
+    geom_hline(aes(yintercept = med_bc), data = mu_bc_H_h) +
+    facet_wrap(. ~ area, scale = "free") + theme_bw(base_size = baseTXT)+
+    theme (axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+           legend.position = "bottom",
+           plot.margin = margin(t = 20, r = 5, b = 5, l = 5),
+           legend.title = element_text(size = axTiTXT),  # Adjust legend title size
+           legend.text = element_text(size = axTXT)) +
+    scale_colour_grey(start = 0.6, end = 0) + scale_fill_grey(start = 0.6, end = 0) +
+    labs(y = "Harvest Bias", x = "Year")
   
+  ################################################################################
+  Hs_h <- as.data.frame(postH_h$summary) %>%
+    mutate(parameter = rownames(postH_h$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% filter(grepl("H_", parameter) |
+                                          grepl("Hp_",parameter) |
+                                          grepl("Hb_",parameter) |
+                                          grepl("Hy_",parameter) |
+                                          grepl("Ho_",parameter) |
+                                          grepl("Hd_",parameter) |
+                                          grepl("Hs_",parameter) ) %>% 
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year < 44)
   
+  Hs_c <- as.data.frame(postH_c$summary) %>%
+    mutate(parameter = rownames(postH_c$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% filter(grepl("H_", parameter) |
+                                          grepl("Hp_",parameter) |
+                                          grepl("Hb_",parameter) |
+                                          grepl("Hy_",parameter) |
+                                          grepl("Ho_",parameter) |
+                                          grepl("Hd_",parameter) |
+                                          grepl("Hs_",parameter) ) %>% 
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year > 43)
   
+  rbind(Hs_h,Hs_c) -> Hs
   
+  Rs_h <- as.data.frame(postH_h$summary) %>%
+    mutate(parameter = rownames(postH_h$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% filter(grepl("R_", parameter) |
+                                          grepl("Rp_",parameter) |
+                                          grepl("Rb_",parameter) |
+                                          grepl("Ry_",parameter) |
+                                          grepl("Ro_",parameter) |
+                                          grepl("Rd_",parameter) |
+                                          grepl("Rs_",parameter) ) %>% 
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year < 44)
   
+  Rs_c <- as.data.frame(postH_c$summary) %>%
+    mutate(parameter = rownames(postH_c$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% filter(grepl("R_", parameter) |
+                                          grepl("Rp_",parameter) |
+                                          grepl("Rb_",parameter) |
+                                          grepl("Ry_",parameter) |
+                                          grepl("Ro_",parameter) |
+                                          grepl("Rd_",parameter) |
+                                          grepl("Rs_",parameter) ) %>% 
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year > 43)
   
-  
-  
-  
-  
-  
-  
-  
-  
+  rbind(Rs_h,Rs_c) -> Rs

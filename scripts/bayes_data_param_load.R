@@ -711,6 +711,7 @@ jags_params <- function(){
     "mu_beta3_pH","tau_beta3_pH",
     "mu_beta4_pH","tau_beta4_pH",
     "mu_beta5_pH","tau_beta5_pH",
+    "mu_beta6_pH","tau_beta6_pH",
     "beta0_pH","beta1_pH","beta2_pH","beta3_pH","beta4_pH","beta5_pH","beta6_pH",
     
     #random effects on pH
@@ -737,6 +738,7 @@ jags_params <- function(){
     "mu_beta3_pelagic", "tau_beta3_pelagic",
     "mu_beta4_pelagic", "tau_beta4_pelagic",
     "mu_beta5_pelagic", "tau_beta5_pelagic",
+    "mu_beta6_pelagic", "tau_beta6_pelagic",
     "mu_beta0_pelagic_kod", "tau_beta0_pelagic_kod",
     "mu_beta1_pelagic_kod", "tau_beta1_pelagic_kod",
     "mu_beta2_pelagic_kod", "tau_beta2_pelagi_kodc",
@@ -751,6 +753,7 @@ jags_params <- function(){
     "mu_beta3_yellow", "tau_beta3_yellow",
     "mu_beta4_yellow", "tau_beta4_yellow",
     "mu_beta5_yellow", "tau_beta5_yellow",
+    "mu_beta6_yellow", "tau_beta6_yellow",
     "mu_beta0_yellow_kod", "tau_beta0_yellow_kod",
     "mu_beta1_yellow_kod", "tau_beta1_yellow_kod",
     "mu_beta2_yellow_kod", "tau_beta2_yellow_kod",
@@ -765,6 +768,7 @@ jags_params <- function(){
     "mu_beta3_black", "tau_beta3_black",
     "mu_beta4_black", "tau_beta4_black",
     "mu_beta5_black", "tau_beta5_black",
+    "mu_beta6_black", "tau_beta6_black",
     "mu_beta0_black_kod", "tau_beta0_black_kod",
     "mu_beta1_black_kod", "tau_beta1_black_kod",
     "mu_beta2_black_kod", "tau_beta2_black_kod",
@@ -778,6 +782,8 @@ jags_params <- function(){
     "mu_beta2_dsr", "tau_beta2_dsr",
     "mu_beta3_dsr", "tau_beta3_dsr",
     "mu_beta4_dsr", "tau_beta4_dsr",
+    "mu_beta5_dsr", "tau_beta5_dsr",
+    "mu_beta6_dsr", "tau_beta6_dsr",
     "p_slope", "beta0_slope", "beta1_slope", "beta2_slope",  "beta3_slope", 
     "beta4_slope","beta5_slope","beta6_slope",
     "beta5_rslope","beta6_rslope",
@@ -787,7 +793,7 @@ jags_params <- function(){
     "mu_beta3_slope", "tau_beta3_slope",
     "mu_beta4_slope", "tau_beta4_slope",
     "mu_beta5_slope", "tau_beta5_slope",
-    
+    "mu_beta6_slope", "tau_beta6_slope",
     #random effects on species
     "re_pelagic", "re_black","re_yellow","re_dsr","re_slope","re_rslope",
     "eps_pel", "eps_bl","eps_ye","eps_dsr","eps_sl",

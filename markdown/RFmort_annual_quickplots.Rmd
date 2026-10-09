@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_TST25i_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_OM.1_",Sys.Date(),".html"))
       })
 ---
 
@@ -70,8 +70,21 @@ B4 <- "simp" #complex "simp", "none
 
 #res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17" # Best thru 2024...
 #res <- "annual_est_model_thru2025_1e+05__2026-10-06"
-#res <- "annual_est_model_bsaitrunc_thru2025_1e+05__2026-10-06"
-res <- "annual_est_model_bsaitrunc3b_thru2025_1e+05__2026-10-07" 
+#res <- "annual_est_model_bsaitrunc3b_thru2025_9e+05__2026-10-08" #efforts to deal with p_pel in base model
+#                                                               # but shit blows up :(
+#res <- "annual_est_model_bsaitrunc3b.1_thru2025_1e+06__2026-10-09"
+#res <- "annual_est_model_kodalt.2_thru2025_1e+06__2026-10-09"
+res <- "annual_est_model_thru2025_1e+06__2026-10-09"  # very nice except BSAI etc. p_pelagic :(
+
+# MODEL NOTES 10-9-26:
+# beta4_pH for NSEI dsr/slope needs to be monitored... slope/dsr balance issue.
+# effects on actual estimates are minimal...
+# OM model (clean) has that issue... b4_pH[13,4] goes off the rails and becomes
+# bimodal :(
+# KODALT model has convergence issue, but just random spike in traceplot. Does not 
+# lurch into bimodality
+# BSAIALT has truncations to fix that issue. Seems to be the best performing model
+# but also has the most added complexity to deal with this shiit.
 
 postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
 
@@ -5789,6 +5802,33 @@ bad_ps <- bad_df %>% filter(grepl("p_", parameter) &
   mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
   filter(!is.na(year))
 
+all_df <- as.data.frame(postH$summary) %>%
+  mutate(parameter = rownames(postH$summary)) %>%
+#  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+all_ps <- all_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter) &
+                              !grepl("Bp_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+  filter(!is.na(year))
+
 bad_ps01 <- bad_ps
 
 bad_Rs <- bad_df %>% filter(grepl("R_", parameter) |
@@ -6160,8 +6200,22 @@ flextable(badRhat_sumstat1p1) %>%
   set_table_properties(width = 1, layout = "autofit")
 ```
 
+**Table Xe.** Species proportion derived quantities that are not with 0.05 of the 0 and 1 bounds and are not converged relative to an Rhat of 1.01.
+```{r}
 
-**Table Xe.** All parameters and derived quantities that are not converged relative to an Rhat of 1.1.
+#---------------------------------------------
+
+flextable(all_ps) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+```
+
+**Table Xf.** All parameters and derived quantities that are not converged relative to an Rhat of 1.1.
 ```{r}
     
     

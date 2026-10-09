@@ -41,17 +41,11 @@ end_yr <- 2025
 
 #load the data:
 
-#mod <- "annual_est_take5.1.1.c_fixH.1"
-#mod <- "annual_est_take5.1.1.c_fixH.2"
-#mod <- "annual_est_working"
-#mod <- "annual_est_working_kodpr"
-#mod <- "annual_est_working_kodpr.1"
-#mod <- "annual_est_working_kodpr.2"
-#mod <- "annual_est_working_kodpr.3"
-#mod <- "annual_est_working_kodpr.3hist"
-mod <- "annual_est_model"
-#mod <- "annual_est_model_kodalt2" #Close alternative
-mod <- "annual_est_model_bsaitrunc3b"
+mod <- "annual_est_model" #Original and simplest model construction
+mod <- "annual_est_model_kodalt.2" #Close alternative; BSAI/SOKO/WKMA p_pel fixed to hyperprior value
+mod <- "annual_est_model_kodalt.2.1" #above plus truncation on beta4_pH for dsr
+mod <- "annual_est_model_bsaitrunc3b.1" #above but more extensive truncations
+mod <- "annual_est_model_se25tb" # base mod w/ TB on SE in 2025
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -89,11 +83,11 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 9E5; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 2.5E6; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
 
 #ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
 #ni = 1E5 = 1 hour... mostly converged
-#ni = 1E6 = 10 hours
+#ni = 1E6 = 17 - 18 hours; 99.84 conv Rhat 1.1; 98.56% 1.01
 
 
 #-------------------------------------------------------------------------------
@@ -150,11 +144,11 @@ other_label <- paste0(jags_dat$C,"kn")
 other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+results <- "annual_est_model_thru2025_9e+05__2026-10-08"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -734,13 +728,16 @@ rhat_exam %>% group_by(variable,area) %>%
   filter(str_detect(variable, "p_yellow")) %>% print(n=50)
 
 jagsUI::traceplot(postH, parameters = c("mu_beta4_pelagic","tau_beta4_pelagic",
-                                        "mu_beta5_pelagic","tau_beta5_pelagic",
-                                        "beta4_pelagic",
+                                        "mu_beta4_pelagic_kod","tau_beta4_pelagic_kod",
+                                        "beta4_pelagic"))
+
+jagsUI::traceplot(postH, parameters = c("mu_beta5_pelagic","tau_beta5_pelagic",
                                         "beta5_pelagic"))
 
 jagsUI::traceplot(postH, parameters = c("eps_pel"))
 
-jagsUI::traceplot(postH, parameters = c("mu_beta4_black","tau_beta4_black",
+jagsUI::traceplot(postH, parameters = c("mu_beta4_black_kod",
+                                        "mu_beta4_black","tau_beta4_black",
                                         "mu_beta5_black","tau_beta5_black",
                                         "beta4_black",
                                         "beta5_black"))

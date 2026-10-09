@@ -45,8 +45,8 @@ library(writexl)
 source("../scripts/mkdwn_functions.R", echo = FALSE)
 #source("./scripts/bayes_data_param_load", echo = FALSE)
 start_yr <- 1977
-end_yr <- 2024
-REP_YR <- 2024 #for Howard estimates
+end_yr <- 2025
+REP_YR <- 2025 #for Howard estimates
 list2env(readinData(start_yr = start_yr,
                   end_yr = end_yr),
          .GlobalEnv)
@@ -301,13 +301,413 @@ Tab_N <- Tab_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
+```{r, echo = FALSE}
+area_codes <- comp %>% select(area,area_n) %>% unique() %>%
+  add_row(area = "BSAI", area_n = 5) %>%
+  add_row(area = "SOKO2SAP", area_n = 6) %>%
+  add_row(area = "WKMA", area_n = 7) %>%
+  mutate(area_n = as.character(area_n)) %>% arrange(as.numeric(area_n))
+
+res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10" #oooh!
+
+postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
+
+res_c <- "annual_est_model_kodalt.2_thru2025_1e+06__2026-10-09" #prelim; just using temporarily
+#res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+
+postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
+
+endyear_hist <- 2024
+endyear <- 2025
+
+Rhat_cutoff <- 1.01
+
+HIST_bad_df <- as.data.frame(postH_h$summary) %>%
+  mutate(parameter = rownames(postH_h$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+CONT_bad_df <- as.data.frame(postH_c$summary) %>%
+  mutate(parameter = rownames(postH_c$summary)) %>%
+  filter(Rhat > Rhat_cutoff) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3))
+
+HIST_bad_Rs <- HIST_bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) |
+                              grepl("Rd_",parameter) |
+                                grepl("Rs_",parameter)) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+CONT_bad_Rs <- CONT_bad_df %>% filter(grepl("R_", parameter) |
+                              grepl("Rp_",parameter) |
+                              grepl("Rb_",parameter) |
+                              grepl("Ry_",parameter) |
+                              grepl("Ro_",parameter) |
+                              grepl("Rd_",parameter) |
+                                grepl("Rs_",parameter)) %>%
+  filter(!grepl("_mort",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+HIST_bad_Hs <- HIST_bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter) | 
+                              grepl("Hd_",parameter) |
+                                grepl("Hs_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+CONT_bad_Hs <- CONT_bad_df %>% filter(grepl("H_", parameter) |
+                              grepl("Hp_",parameter) |
+                              grepl("Hb_",parameter) |
+                              grepl("Hy_",parameter) |
+                              grepl("Ho_",parameter) | 
+                              grepl("Hd_",parameter) |
+                                grepl("Hs_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+  filter(!is.na(year))
+
+HIST_bad_Rs <- HIST_bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+CONT_bad_Rs <- CONT_bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
+                                             "R_ayu","R_ayg"))
+
+HIST_bad_Hs <- HIST_bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+CONT_bad_Hs <- CONT_bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
+                                             "H_ayu","H_ayg"))
+
+HIST_bad_Hs %>% 
+  filter(median > 10) %>% 
+  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
+  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
+         mean = round(mean,0),
+         median = round(median,0),
+         lower = round(lower,0),
+         upper = round(upper, 0),
+         sd = round(sd,1)) %>%
+  arrange(area,year,variable) -> HIST_bad_harvests
+
+CONT_bad_Hs %>% 
+  filter(median > 10) %>% 
+  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
+  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
+         mean = round(mean,0),
+         median = round(median,0),
+         lower = round(lower,0),
+         upper = round(upper, 0),
+         sd = round(sd,1)) %>%
+  arrange(area,year,variable) -> CONT_bad_harvests
+
+bad_harvests <- rbind(HIST_bad_harvests %>% 
+                        filter(year < 2020),
+                      CONT_bad_harvests %>%
+                        filter(year > 2019)) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+      Ho = "non-YE, non-pelagic",
+      Hb = "black",
+      Hp = "pelagic",
+      Hy = "yelloweye",
+      Hs = "slope",
+      Hd = "dsr",
+      H  = "all"
+    ),
+    User = recode(user_code,
+      ay  = "total",
+      ayg = "guided",
+      ayu = "unguided"
+    )
+  ) %>%
+  select(-sp_code, -user_code,
+         area,year,User,Species,mean,median,lower,upper,sd,Rhat) %>%
+  relocate(c(User,Species), .before = mean)
+
+colnames(bad_harvests) <- c("Area", "Year", "User", "Species grouping", "Mean", 
+                            "Median", "Lower CI", "Upper CI", "SD", "Rhat")
+
+HIST_bad_Rs %>% 
+  filter(median > 100) %>% 
+  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
+  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
+         mean = round(mean,0),
+         median = round(median,0),
+         lower = round(lower,0),
+         upper = round(upper, 0),
+         sd = round(sd,1)) %>%
+  arrange(area,year,variable)-> HIST_bad_releases
+
+CONT_bad_Rs %>% 
+  filter(median > 100) %>% 
+  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
+  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
+         mean = round(mean,0),
+         median = round(median,0),
+         lower = round(lower,0),
+         upper = round(upper, 0),
+         sd = round(sd,1)) %>%
+  arrange(area,year,variable)-> CONT_bad_releases
+
+bad_releases <- rbind(HIST_bad_releases %>% 
+                        filter(year < 2020),
+                      CONT_bad_releases %>%
+                        filter(year > 2019)) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+      Ro = "non-YE, non-pelagic",
+      Rb = "black",
+      Rp = "pelagic",
+      Ry = "yelloweye",
+      Rs = "slope",
+      Rd = "dsr",
+      R  = "all"
+    ),
+    User = recode(user_code,
+      ay  = "total",
+      ayg = "guided",
+      ayu = "unguided"
+    )
+  ) %>%
+  select(-sp_code, -user_code,
+         area,year,User,Species,mean,median,lower,upper,sd,Rhat) %>%
+  relocate(c(User,Species), .before = mean)
+
+colnames(bad_releases) <- c("Area", "Year", "User", "Species grouping","Mean", "Median", "Lower CI", "Upper CI", "SD", "Rhat")
+
+bad_harvests %>% 
+  rename(sp = "Species grouping") %>%
+  group_by(Year,Area) %>%
+  summarise(n = n(),
+            meanmean = mean(Mean),
+            meanmedian = mean(Median),
+            sp_list = unique(sp))
+
+```
+
+```{r, echo = FALSE}
+
+nrow(bad_harvests)
+nrow(bad_harvests %>% filter(Rhat > 1.1))
+
+flextable(bad_harvests) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+
+#unique(HIST_bad_harvests$variable)
+
+```
+
+```{r, echo = FALSE}
 
 
+nrow(bad_releases)
+nrow(bad_releases %>% filter(Rhat > 1.1))
+
+flextable(bad_releases %>% filter(Rhat > 1.1)) %>%
+  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
+ #             align_with_table = TRUE, style = "Table Caption") %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+
+```
+
+```{r, echo = FALSE}
+
+HIST_bad_ps <- HIST_bad_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter) &
+                              !grepl("Bp_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+  filter(!is.na(year) & year < 44)
+
+CONT_bad_ps <- CONT_bad_df %>% filter(grepl("p_", parameter) &
+                              !grepl("Hp_",parameter) &
+                              !grepl("Rp_",parameter) &
+                              !grepl("Tp_",parameter) &
+                              !grepl("Bp_",parameter)) %>% 
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+  mutate(year = as.numeric(year),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+  filter(!is.na(year) & year > 43)
+
+bad_ps <- rbind(HIST_bad_ps, CONT_bad_ps) %>%
+  mutate(Rhat_gt1.1 = ifelse(Rhat > 1.1, "unconverged", "converged"),
+         Rhat_gt1.01 = ifelse(Rhat > 1.01, "unconverged", "converged"))
+
+bad_ps %>% group_by(Rhat_gt1.1) %>%
+  summarise(n = n()) -> p_Rhat_conv1.1
+
+bad_ps %>% group_by(Rhat_gt1.01) %>%
+  summarise(n = n()) %>% data.frame()-> p_Rhat_conv1.01
+
+HIST_bad_ps_true <- HIST_bad_ps %>% filter(median < 0.95 & median > 0.05)
+
+CONT_bad_ps_true <- CONT_bad_ps %>% filter(median < 0.95 & median > 0.05)
+
+sum(p_Rhat_conv1.01$n) #number of unconvereged p to 1.01
+nrow(bad_ps %>% filter(Rhat > 1.1)) #number of p unconverged to 1.1
+
+```
 
 
+```{r, echo = FALSE}
+bad_betasH <- HIST_bad_df %>% filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
+  mutate(year = as.numeric('species'),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "historical") %>% 
+  filter(!is.na(variable))
+
+bad_betasC <- CONT_bad_df %>% filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
+  mutate(year = as.numeric('species'),
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "contemporary") %>% 
+  filter(!is.na(variable))
+
+bad_betas <- rbind(bad_betasH,bad_betasC) %>%
+  arrange(variable,area_n,species)
+
+bad_betas %>% filter(Rhat > 1.1)
+
+true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
+                 "lambda_H",
+                 #betas,
+                 #"re"
+                 "sd_prigui_pre",
+                 "mu_bc_H","sd_bc_H","logbc_H",
+                 "mu_bc_R","sd_bc_R","logbc_R",
+                 "b1_pG","b2_pG","pG")
+
+bad_o_paramsH <- HIST_bad_df %>%
+                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+                           mutate(index = str_replace(index, "\\]", "")) %>%
+                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+                           mutate(year = NA,
+                                  area_n = as.character(area_n)) %>%
+                           full_join(area_codes,by = "area_n") %>%
+                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                                  timeperiod = "historical") %>% 
+                           filter(!is.na(variable))
+
+bad_o_paramsC <- CONT_bad_df %>%
+                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+                           mutate(index = str_replace(index, "\\]", "")) %>%
+                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+                           mutate(year = NA,
+                                  area_n = as.character(area_n)) %>%
+                           full_join(area_codes,by = "area_n") %>%
+                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+                                  timeperiod = "contemporary") %>% 
+                           filter(!is.na(variable))
+
+bad_o_params <- rbind(bad_o_paramsH,bad_o_paramsC) %>%
+  arrange(variable,area_n,'year/species')
+
+nrow(bad_o_params)
+bad_o_params %>% filter(Rhat > 1.1)
 
 
+bad_true_params <- rbind(bad_betas %>% mutate(year = NA),
+                         bad_o_params %>%  
+                           mutate(year = 'year/species',
+                                  species = NA) %>%
+                           select(-'year/species'))
 
+bad_true_params %>% filter(Rhat > 1.1) -> unconverged_true_params
+nrow(unconverged_true_params)
+nrow(bad_true_params)
+
+
+```
 
 
 
