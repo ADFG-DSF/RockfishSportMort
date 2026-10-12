@@ -46,13 +46,14 @@ mod <- "annual_est_model_kodalt.2" #Close alternative; BSAI/SOKO/WKMA p_pel fixe
 mod <- "annual_est_model_kodalt.2.1" #above plus truncation on beta4_pH for dsr
 mod <- "annual_est_model_bsaitrunc3b.1" #above but more extensive truncations
 mod <- "annual_est_model_se25tb" # base mod w/ TB on SE in 2025
+mod <- "annual_est_model_se25tb.1" # base mod w/ TB on SE in 2025; trun B0_H
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
 # Make sure start_ests matches start
 start_ests <- 2020
 
-list2env(readinData_contemporary2(spl_knts = 4,
+list2env(readinData_contemporary2(spl_knts = 4, #minimum 4
                                   start_comp_yr = start_ests,
                                   start_kodcomp_yr = 1998, #don't change
                                   start_yr = start_ests,
@@ -83,18 +84,19 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 2.5E6; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000
+ni <- 1E6; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000; nt
 
 #ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
-#ni = 1E5 = 1 hour... mostly converged
+#ni = 1E5 = 1.4 hour... mostly converged
 #ni = 1E6 = 17 - 18 hours; 99.84 conv Rhat 1.1; 98.56% 1.01
-
+#ni = 2.5e6 ~ 48 hours 0.999+ conv
 
 #-------------------------------------------------------------------------------
 #Are we using starting values from a prior model?
 use_inits = "yes"
 
-inits_to_use <- get_inits(histdatmod)
+#inits_to_use <- get_inits(histdatmod)
+inits_to_use <- get_inits("annual_est_model_se25tb_thru2025_2500000_2026-10-11")
 
 #or, if using a model that was just run
 inits_to_use <- get_inits_justrun(postH)
@@ -141,14 +143,14 @@ jags_dat$Hlby_ayg
 #-------------------------------------------------------------------------------
 # Save these results?
 other_label <- paste0(jags_dat$C,"kn")
-other_label <- "" #"SE06ex"  "All_SE"
+#other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
-results <- "annual_est_model_thru2025_9e+05__2026-10-08"
+results <- "annual_est_model_se25tb_thru2025_2500000_2026-10-11"
 
 postH <- readRDS(paste0(".\\output\\bayes_posts\\",results,".rds"))
 
@@ -665,6 +667,8 @@ jagsUI::traceplot(postH, parameters = c("mu_lambda_H","sigma_lambda_H"))
 jagsUI::traceplot(postH, parameters = c("sd_pH",
                                         "mu_beta4_pH","tau_beta4_pH",
                                         "mu_beta5_pH","tau_beta5_pH"))
+
+jagsUI::traceplot(postH, parameters = c("b1_pG","b2_pG","pG"), Rhat_min = 1.1)
 
 jagsUI::traceplot(postH, parameters = c("sd_pH"))
 jagsUI::traceplot(postH, parameters = c("beta4_pH"))

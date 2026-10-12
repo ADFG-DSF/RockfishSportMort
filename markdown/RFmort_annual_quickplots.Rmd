@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_OM.1_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_SE25tb_5kn_tst_",Sys.Date(),".html"))
       })
 ---
 
@@ -69,12 +69,18 @@ intdat <- "yes"
 B4 <- "simp" #complex "simp", "none
 
 #res <- "annual_est_model_thru2024_1e+06_fix_2026-07-17" # Best thru 2024...
-#res <- "annual_est_model_thru2025_1e+05__2026-10-06"
-#res <- "annual_est_model_bsaitrunc3b_thru2025_9e+05__2026-10-08" #efforts to deal with p_pel in base model
-#                                                               # but shit blows up :(
-#res <- "annual_est_model_bsaitrunc3b.1_thru2025_1e+06__2026-10-09"
-#res <- "annual_est_model_kodalt.2_thru2025_1e+06__2026-10-09"
-res <- "annual_est_model_thru2025_1e+06__2026-10-09"  # very nice except BSAI etc. p_pelagic :(
+
+# These are nice, but missing 2025 Rhat_ay data ... Argh!! fixed 10-12-26
+#res <- "annual_est_model_thru2025_2500000_2026-10-11" #0.9985, B4pH[13,4] off
+#res <- "annual_est_model_se25tb_thru2025_2500000_2026-10-11" # timeblock for SE starting in 25 0.9995, B0_H a little off
+#res <- "annual_est_model_kodalt.2_thru2025_2500000_2026-10-11" #0.999, B0_4 CSEO & SSEI
+#res <- "annual_est_model_kodalt.2.1_thru2025_2500000_2026-10-11" #0.9989  B4pH[13,4] & B0_H BSAI, WKMA & tau_B4_pel_kod
+#res <- "annual_est_model_bsaitrunc3b.1_thru2025_2500000_2026-10-11"  # 0.9984, but no main parameters
+
+#res <- "annual_est_model_thru2025_50000_4kn_2026-10-12"
+#res <- "annual_est_model_se25tb_thru2025_1e+05_4kn_2026-10-12"
+#res <- "annual_est_model_se25tb.1_thru2025_1e+05_4kn_2026-10-12"
+res <- "annual_est_model_se25tb_thru2025_1e+05_5kn_2026-10-12"
 
 # MODEL NOTES 10-9-26:
 # beta4_pH for NSEI dsr/slope needs to be monitored... slope/dsr balance issue.

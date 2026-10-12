@@ -61,7 +61,7 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
-res_c <- "annual_est_model_bsaitrunc3b.1_thru2025_1e+06__2026-10-09" #prelim; just using temporarily
+res_c <- "annual_est_model_se25tb.1_thru2025_1e+05_4kn_2026-10-12" #pretty near final
 #res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
@@ -2810,20 +2810,6 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Schematic illustrating the difference processes used by Howard et al. (2020) and the Bayesian model to estimate releases of rockfish by unguided anglers in Alaska waters. The Howard methods assume that the ratio of unguided:guided releases for all rockfish in the SWHS apply equally to all rockfish species and complexes. The Bayesian approach estimates retention probabilities separately by species assemblage based on the retention probabilities of anglers evident in the logbook data, portside interview data, and bias corrected SWHS data with an informative prior derived from the SWHS data informing the model on the relative retention probability of a generic rockfish landed by guided and unguided anglers."), echo = FALSE}
-knitr::include_graphics("../figures/release_methods_fig.png")
-Fig_N <- Fig_N+1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Plots showing the ratio of the proportion of rockfish released by private anglers ($pH_{unguided}^{SWHS}$) to the proportion of rockfish released by guided anglers ($pH_{guided}^{SWHS}$) as derived from the statewide harvest survey (SWHS) between 2011 and 2025. This ratio, $pH_{ay}^{ung:gui}$, describes whether unguided anglers are more (values above 1) or less (values less than 1) likely to harvest a generic rockfish and is used as a prior to inform the $\\beta4_{(pH)(comp)ayu}$ parameter describing the offset of the *pH* logistic curve (or long-term average) for unguided anglers in the model. The fine dotted black line represents the mean across all years and the dahsed blue line highlights the value. The dark grey and light grey polygons represent the 50 and 95% confidence intervals for the prior values as calculated from SWHS data. "), echo = FALSE}
-knitr::include_graphics("../figures/bayes_model/pH_prigui_ratio.png")
-Fig_N <- Fig_N+1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Release mortality rates for 16 commercial fisheries management units used to calculate the number of released rockfish assumed to have died. The change in mortality rates in 2013 reflect the deep water release (DWR) requirements that were adopted in that year."), echo = FALSE}
 #knitr::include_graphics("../figures/rel_mort.png")
 #print("Don't forget to put this figure back in!!!!")
@@ -2860,6 +2846,19 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Schematic illustrating the difference processes used by Howard et al. (2020) and the Bayesian model to estimate releases of rockfish by unguided anglers in Alaska waters. The Howard methods assume that the ratio of unguided:guided releases for all rockfish in the SWHS apply equally to all rockfish species and complexes. The Bayesian approach estimates retention probabilities separately by species assemblage based on the retention probabilities of anglers evident in the logbook data, portside interview data, and bias corrected SWHS data with an informative prior derived from the SWHS data informing the model on the relative retention probability of a generic rockfish landed by guided and unguided anglers."), echo = FALSE}
+knitr::include_graphics("../figures/release_methods_fig.png")
+Fig_N <- Fig_N+1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Plots showing the ratio of the proportion of rockfish released by private anglers ($pH_{unguided}^{SWHS}$) to the proportion of rockfish released by guided anglers ($pH_{guided}^{SWHS}$) as derived from the statewide harvest survey (SWHS) between 2011 and 2025. This ratio, $pH_{ay}^{ung:gui}$, describes whether unguided anglers are more (values above 1) or less (values less than 1) likely to harvest a generic rockfish and is used as a prior to inform the $\\beta4_{(pH)(comp)ayu}$ parameter describing the offset of the *pH* logistic curve (or long-term average) for unguided anglers in the model. The fine dotted black line represents the mean across all years and the dahsed blue line highlights the value. The dark grey and light grey polygons represent the 50 and 95% confidence intervals for the prior values as calculated from SWHS data. "), echo = FALSE}
+knitr::include_graphics("../figures/bayes_model/pH_prigui_ratio.png")
+Fig_N <- Fig_N+1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
 
 ```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Residuals from SWHS harvests for 16 commercial fisheries management units 1977-2025 showing the difference between model estimates with the bias correction removed and observed values in the SWHS. The CV of the SWHS data is indicated by the grey scale.")}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
@@ -6366,6 +6365,61 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage 
 
+```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-black pelagic rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2025. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
+
+PEL_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
+  pivot_longer(cols = c(p_mort_H,p_mort_R),
+               values_to = "M_prop",
+               names_to = "M_source") %>%
+  mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> pel_m_source
+
+PEL_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
+  pivot_longer(cols = c(Harvests,'Release Mortalities'),
+               values_to = "Mortalities",
+               names_to = "Source")  -> pel_m_x_source
+
+pel_removals %>% 
+  left_join(pel_m_x_source %>%
+              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
+              mutate(p_h = harvests / (harvests + release_mortalities),
+                     p_rm = 1 - p_h) %>%
+              select(-harvests,-release_mortalities),
+            by = c("year","user","area")) %>%
+  mutate(h_morts = p_h * B,
+         rm_morts = p_rm * B) %>%
+  pivot_longer(cols = c(h_morts,rm_morts),
+               names_to = "Source",
+               values_to = "Removals") ->pel_rem_x_source
+
+pel_rem_x_source %>% filter(user != "All"  & area %in% southeast ) %>%
+  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
+         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
+   
+  ggplot(aes(x = year, y = Removals, fill = Source)) +
+  scale_fill_manual(values = pal,
+                    labels = function(x) str_wrap(x, width = 15)) +
+  scale_color_manual(values = pal) +
+  geom_ribbon(data = pel_removals %>% filter(user == "All") %>% mutate(Source = "Total",
+                                                                       Removals = B),
+              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
+              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
+  geom_bar(position="stack", stat="identity", width = barwidth) +
+  facet_wrap(. ~ area, scales = "free") +
+  scale_y_continuous(labels = comma) +
+  theme_bw(base_size = baseTXT-1)+
+  theme(legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.spacing.y = unit(2, "cm"),
+    legend.text = element_text(margin = margin(b = 13))
+  ) +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  labs(y = "Mortality (lbs)", x = "Year") 
+
+Fig_N <- Fig_N+1
+``` 
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage  
+
 ```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of yelloweye rockfish by guided and unguided anglers in Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2025. The grey polygon in the backround represents 95% credibility intervals of the total removals. Southeast Alaska (CSEO, EWYKT, NSEI, NSEO, SSEI, SSEO) biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 
 YE_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
@@ -6423,60 +6477,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage  
 
-```{r, fig.width = 8, fig.height = 6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-black pelagic rockfish by guided and unguided anglers in Southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2025. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 
-PEL_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%
-  pivot_longer(cols = c(p_mort_H,p_mort_R),
-               values_to = "M_prop",
-               names_to = "M_source") %>%
-  mutate(M_source = ifelse(M_source == "p_mort_H","Harvests","Releases")) -> pel_m_source
-
-PEL_wb %>% select(area,year,user,Harvests,'Release Mortalities' = Release_morts) %>%
-  pivot_longer(cols = c(Harvests,'Release Mortalities'),
-               values_to = "Mortalities",
-               names_to = "Source")  -> pel_m_x_source
-
-pel_removals %>% 
-  left_join(pel_m_x_source %>%
-              pivot_wider(names_from = Source, values_from = Mortalities) %>% clean_names() %>%
-              mutate(p_h = harvests / (harvests + release_mortalities),
-                     p_rm = 1 - p_h) %>%
-              select(-harvests,-release_mortalities),
-            by = c("year","user","area")) %>%
-  mutate(h_morts = p_h * B,
-         rm_morts = p_rm * B) %>%
-  pivot_longer(cols = c(h_morts,rm_morts),
-               names_to = "Source",
-               values_to = "Removals") ->pel_rem_x_source
-
-pel_rem_x_source %>% filter(user != "All"  & area %in% southeast ) %>%
-  mutate(Source = ifelse(Source == "h_morts","Harvest mortalities","Release mortalities"),
-         Source = str_wrap(paste0(Source," by ",user, " anglers")),width = 5) %>%
-   
-  ggplot(aes(x = year, y = Removals, fill = Source)) +
-  scale_fill_manual(values = pal,
-                    labels = function(x) str_wrap(x, width = 15)) +
-  scale_color_manual(values = pal) +
-  geom_ribbon(data = pel_removals %>% filter(user == "All") %>% mutate(Source = "Total",
-                                                                       Removals = B),
-              aes(x=year,ymin = B_lo95, ymax = B_hi95), 
-              alpha = 0.3, color = "lightgrey", fill = "darkgrey", size = 0.25) +
-  geom_bar(position="stack", stat="identity", width = barwidth) +
-  facet_wrap(. ~ area, scales = "free") +
-  scale_y_continuous(labels = comma) +
-  theme_bw(base_size = baseTXT-1)+
-  theme(legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-    legend.spacing.y = unit(2, "cm"),
-    legend.text = element_text(margin = margin(b = 13))
-  ) +
-  guides(fill = guide_legend(byrow = TRUE)) +
-  labs(y = "Mortality (lbs)", x = "Year") 
-
-Fig_N <- Fig_N+1
-``` 
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage  
 
 ```{r, fig.width = 8, fig.height =6, fig.cap = paste0("**Figure ",Fig_N,".**- Total removals of non-yelloweye demersal shelf rockfish by guided and unguided anglers in southeast Alaska commercial fishery management units as dervided from harvests and release mortalities 1977-2025. The grey polygon in the backround represents 95% credibility intervals of the total removals. Biomass estimates prior to ",SE4stageyear1," do not use mean weights generated from the 4-stage sampling design (Richards et al. 2025) that has been used since ", SE4stageyear1, " and as such are considered preliminary. Finalized biomass estimates for pre-",SE4stageyear1, " estimates are not expected to change significantly when 4-stage estimates are generated for those years.")}
 DSR_wb %>% select(area,year,user,p_mort_H,p_mort_R) %>%

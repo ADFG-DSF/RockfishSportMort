@@ -739,7 +739,7 @@ readinData_alt <- function(spl_knts = 7,
     readRDS(paste0("..//data//bayes_dat//Chat_ay_thru",end_yr,".rds")) %>% 
     rename(Chat = C) %>%
     mutate(area = as.character(area)) %>%
-    bind_rows(readRDS("..//data//bayes_dat//Chat_ayu.rds") %>% 
+    bind_rows(Chat_ayu %>% 
                 group_by(region, area, year) %>% 
                 summarise(Chat = sum(C), seC = sqrt(sum(seC^2))) %>%
                 mutate(area = as.character(area))) %>%

@@ -373,7 +373,7 @@ seHhat_ay <-
 table(seHhat_ay$region, seHhat_ay$area)
 
 Hhat_ay <- left_join(Hhat_ay0, seHhat_ay, by = c("year", "area", "region"))
-
+with(Hhat_ay, table(year,area))
 #-------------------------------------------------------------------------------
 #Get contemporary Chat 
 #-------------------------------------------------------------------------------
@@ -402,7 +402,7 @@ seChat_ay <-
 table(seChat_ay$region, seChat_ay$area)
 
 Chat_ay <- left_join(Chat_ay0, seChat_ay, by = c("year", "area", "region"))
-
+with(Chat_ay, table(year,area))
 #-------------------------------------------------------------------------------
 # Apportion pre1996 unknown area data based on 1996 data
 # Note: Ideally this would be done in the estimation model to propogate the

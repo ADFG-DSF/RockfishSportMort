@@ -1040,7 +1040,7 @@ readinData_alt <- function(spl_knts = 7,
     readRDS(paste0(".//data//bayes_dat//Chat_ay_thru",end_yr,".rds")) %>% 
     rename(Chat = C) %>%
     mutate(area = as.character(area)) %>%
-    bind_rows(readRDS(".//data//bayes_dat//Chat_ayu.rds") %>% 
+    bind_rows(Chat_ayu %>% 
                 group_by(region, area, year) %>% 
                 summarise(Chat = sum(C), seC = sqrt(sum(seC^2))) %>%
                 mutate(area = as.character(area))) %>%
@@ -1048,6 +1048,7 @@ readinData_alt <- function(spl_knts = 7,
     mutate(Chat = ifelse(Chat == 0, 1, Chat), 
            seC = ifelse(seC == 0, 1, seC)) %>%
     select(-cv)
+  #with(Chat_ay, table(area,year))
   
   Chat_ay %>% filter(is.na(Chat))
   
@@ -2229,12 +2230,14 @@ readinData_contemporary2 <- function(spl_knts = 4,
     mutate(Hhat = ifelse(H == 0, 1, H), 
            seH = ifelse(seH == 0, 1, seH)) %>%
     arrange(area, user, year)
+  #with(Hhat_ayu, table(area,year))
   
   Chat_ayu <- 
     readRDS(paste0(".//data//bayes_dat//Chat_ayu_thru",end_yr,".rds"))  %>% 
     mutate(Chat = ifelse(C == 0, 1, C), 
            seC = ifelse(seC == 0, 1, seC)) %>%
     arrange(area, user, year)
+  #with(Chat_ayu, table(area,year))
   
   Rhat_ayu <- Hhat_ayu %>%
     left_join(Chat_ayu, by = c("year","area","user","region")) %>%
@@ -2243,13 +2246,14 @@ readinData_contemporary2 <- function(spl_knts = 4,
     mutate(Rhat = ifelse(R <= 0, 1, R), 
            seR = ifelse(seR == 0, 1, seR)) %>%
     arrange(area, user, year)
+  #with(Rhat_ayu, table(area,year))
   
   #get priors from pri:gui release ratio
   pri_rel_pr <- readRDS(paste0(".\\data\\bayes_dat\\pri_rel_pr_thru",end_yr,".rds"))
   
   # SWHS harvests by area, year
   Hhat_ay <- 
-    readRDS(paste0(".//data//bayes_dat//Hhat_ay_thru",end_yr,".rds")) %>%  
+    readRDS(paste0(".//data//bayes_dat//Hhat_ay_thru",end_yr,".rds")) %>% 
     rename(Hhat = H) %>%
     mutate(area = as.character(area)) %>%
     bind_rows(Hhat_ayu %>% 
@@ -2260,6 +2264,8 @@ readinData_contemporary2 <- function(spl_knts = 4,
     mutate(Hhat = ifelse(Hhat == 0, 1, Hhat), 
            seH = ifelse(seH == 0, 1, seH)) %>%
     select(-cv)
+  
+  #with(Hhat_ay, table(area,year))
   
   #Hhat_ay %>% filter(is.na(Hhat))
   #DEV Code; delete once we figure out how to deal with the blanks
@@ -2272,7 +2278,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
     readRDS(paste0(".//data//bayes_dat//Chat_ay_thru",end_yr,".rds")) %>% 
     rename(Chat = C) %>%
     mutate(area = as.character(area)) %>%
-    bind_rows(readRDS(".//data//bayes_dat//Chat_ayu.rds") %>% 
+    bind_rows(Chat_ayu %>% 
                 group_by(region, area, year) %>% 
                 summarise(Chat = sum(C), seC = sqrt(sum(seC^2))) %>%
                 mutate(area = as.character(area))) %>%
@@ -2280,6 +2286,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
     mutate(Chat = ifelse(Chat == 0, 1, Chat), 
            seC = ifelse(seC == 0, 1, seC)) %>%
     select(-cv)
+  #with(Chat_ay, table(area,year))
   
   #Chat_ay %>% filter(is.na(Chat))
   
@@ -2290,6 +2297,7 @@ readinData_contemporary2 <- function(spl_knts = 4,
            seR = sqrt(seH^2 + seC^2)) %>%
     mutate(Rhat = ifelse(Rhat <= 0, 1, Rhat), 
            seR = ifelse(seR == 0, 1, seR)) 
+  #with(Rhat_ay, table(area,year))
   
   # Survey data on catch composition
   S_ayu0 <- readRDS(paste0(".//data//bayes_dat//S_ayu_thru",end_yr,".rds")) 
