@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_SE25tb_5kn_tst_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_SE25tb.1_4kn_tst_",Sys.Date(),".html"))
       })
 ---
 
@@ -76,11 +76,15 @@ B4 <- "simp" #complex "simp", "none
 #res <- "annual_est_model_kodalt.2_thru2025_2500000_2026-10-11" #0.999, B0_4 CSEO & SSEI
 #res <- "annual_est_model_kodalt.2.1_thru2025_2500000_2026-10-11" #0.9989  B4pH[13,4] & B0_H BSAI, WKMA & tau_B4_pel_kod
 #res <- "annual_est_model_bsaitrunc3b.1_thru2025_2500000_2026-10-11"  # 0.9984, but no main parameters
+# this one renamed "annual_est_model_noTBused"
 
 #res <- "annual_est_model_thru2025_50000_4kn_2026-10-12"
-#res <- "annual_est_model_se25tb_thru2025_1e+05_4kn_2026-10-12"
-#res <- "annual_est_model_se25tb.1_thru2025_1e+05_4kn_2026-10-12"
-res <- "annual_est_model_se25tb_thru2025_1e+05_5kn_2026-10-12"
+
+#res <- "annual_est_model_se25tb_thru2025_1e+06_4kn_2026-10-13" #Very close second!!!
+# Renamed model: "annual_est_model_altFINAL2026
+res <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL!!!!!
+# Renamed model: "annual_est_model_FINAL2026
+#res <- "annual_est_model_se25tb_thru2025_1e+06_5kn_2026-10-13" # 5 knots too much at this stage
 
 # MODEL NOTES 10-9-26:
 # beta4_pH for NSEI dsr/slope needs to be monitored... slope/dsr balance issue.

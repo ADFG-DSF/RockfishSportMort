@@ -71,8 +71,7 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
-res_c <- "annual_est_model_se25tb.1_thru2025_1e+05_4kn_2026-10-12" #prelim; just using temporarily
-#res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+res_c <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL!!!
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 
@@ -700,11 +699,175 @@ Hs_h <- as.data.frame(postH_h$summary) %>%
   rbind(Rs_h,Rs_c) %>% filter(!str_detect(variable, "mort")) -> Rs
 
 
-Rhat_cutoff <- 1.01
+lut <- 
+    data.frame(region = c(rep("Kodiak", 6), rep("Central", 4), rep("Southeast", 6)),
+               area = c("afognak", "WKMA", "SOKO2SAP", "northeast", "eastside", "BSAI", 
+                        "CI", "NG", "PWSI", "PWSO", 
+                        "EWYKT", "NSEO", "NSEI", "CSEO", "SSEO", "SSEI"),
+               stringsAsFactors = FALSE) %>%
+    arrange(region, area) %>%
+    mutate(area_n = seq(1,16,1),
+           region_n = c(1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3))
+  
+  sp_lut <- data.frame(species_n = c(1,2,3,4,5),
+                       species = c("Black",
+                                   "Yelloweye",
+                                   "non-YE, non-pelagic",
+                                   "DSR","Slope"))
+  
+  Hs %>% filter(Rhat > 1.1) %>% 
+    group_by(variable,area) %>%
+    mutate(year = year + 1976) %>%
+    summarise(n = n(),
+              meanmean = round(mean(mean),2),
+              meanmedian = round(mean(median),2),
+              minRhat = min(Rhat),
+              maxRhat = max(Rhat),
+              meansd = round(mean(sd),2),
+              meanskew = round(mean(skew),2),
+              years =  paste(sort(unique(year)), collapse = ", ")) %>%
+    tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+    mutate(
+      Species = recode(sp_code,
+                       Ho = "non-YE, non-pelagic",
+                       Hb = "black",
+                       Hp = "pelagic",
+                       Hy = "yelloweye",
+                       Hs = "slope",
+                       Hd = "dsr",
+                       H  = "all"
+      ),
+      User = recode(user_code,
+                    ay  = "total",
+                    ayg = "guided",
+                    ayu = "unguided"
+      )
+    ) %>% select(-c(sp_code,user_code)) %>%
+    left_join(lut, by = "area") %>%
+    relocate(c(User,Species), .before = n) %>%
+    relocate(region, .before = area) %>%
+    mutate(area = as.character(area),
+           area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+    select(-area_n, -region_n) %>%
+    arrange(region,area,User,Species) -> Hs_unconv
+  
+  colnames(Hs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
+                           "Mean of the medians", "Min. Rhat","Max Rhat", 
+                           "Mean of the SDs", "Mean skew", "Years")
+  
+#  Hs_unconv
+#  sum(Hs_unconv$n)
+#  nrow(Hs)
+#  nrow(Hs %>% filter(Rhat > 1.01))
+  
+  Rs %>% filter(Rhat > 1.1) %>% 
+    group_by(variable,area) %>%
+    mutate(year = year + 1976) %>%
+    summarise(n = n(),
+              meanmean = round(mean(mean),2),
+              meanmedian = round(mean(median),2),
+              minRhat = min(Rhat),
+              maxRhat = max(Rhat),
+              meansd = round(mean(sd),2),
+              meanskew = round(mean(skew),2),
+              years =  paste(sort(unique(year)), collapse = ", ")) %>%
+    tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+    mutate(
+      Species = recode(sp_code,
+                       Ro = "non-YE, non-pelagic",
+                       Rb = "black",
+                       Rp = "pelagic",
+                       Ry = "yelloweye",
+                       Rs = "slope",
+                       Rd = "dsr",
+                       R  = "all"
+      ),
+      User = recode(user_code,
+                    ay  = "total",
+                    ayg = "guided",
+                    ayu = "unguided"
+      )
+    ) %>% select(-c(sp_code,user_code)) %>%
+    left_join(lut, by = "area") %>%
+    relocate(c(User,Species), .before = n) %>%
+    relocate(region, .before = area) %>%
+    mutate(area = as.character(area),
+           area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+    select(-area_n, -region_n) %>%
+    arrange(region,area,User,Species) -> Rs_unconv
+  
+  colnames(Rs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
+                           "Mean of the medians", "Min. Rhat","Max Rhat", 
+                           "Mean of the SDs", "Mean skew", "Years")
+  
+#  Rs_unconv
+#  sum(Rs_unconv$n)
+#  nrow(Rs)
+#  nrow(Rs %>% filter(Rhat > 1.01))
+  
+  Ps_h <- as.data.frame(postH_h$summary) %>%
+    mutate(parameter = rownames(postH_h$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% 
+    filter(grepl("p_", parameter) &
+             !grepl("Hp_",parameter) &
+             !grepl("Rp_",parameter) &
+             !grepl("Tp_",parameter) &
+             !grepl("Bp_",parameter)) %>%
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year < 44)
+  
+  Ps_c <- as.data.frame(postH_c$summary) %>%
+    mutate(parameter = rownames(postH_c$summary)) %>%
+    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+    mutate(mean = round(mean,3),
+           median = round(median,3),
+           lower = round(lower,3),
+           upper = round(upper,3),
+           Rhat = round(Rhat,3),
+           skew = round((mean - median)/sd,3),
+           sd = round(sd,3)) %>% 
+    filter(grepl("p_", parameter) &
+             !grepl("Hp_",parameter) &
+             !grepl("Rp_",parameter) &
+             !grepl("Tp_",parameter) &
+             !grepl("Bp_",parameter)) %>%
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
+    filter(!is.na(year) & year > 43)
+  
+  Ps <- rbind(Ps_h,Ps_c)
+#unique(Ps$variable)  
+#nrow(Ps)
+#nrow(Ps %>% filter(Rhat > 1.01))  
+#nrow(Ps %>% filter(Rhat > 1.1))  
 
-HIST_bad_df <- as.data.frame(postH_h$summary) %>%
+region_codes <- data.frame(region_n = c(1,2,3),
+                           region = c("Southcentral",
+                                      "Kodiak",
+                                      "Southeast"))
+
+betas_h <- as.data.frame(postH_h$summary) %>%
   mutate(parameter = rownames(postH_h$summary)) %>%
-  filter(Rhat > Rhat_cutoff) %>%
   select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
   mutate(mean = round(mean,3),
          median = round(median,3),
@@ -712,11 +875,35 @@ HIST_bad_df <- as.data.frame(postH_h$summary) %>%
          upper = round(upper,3),
          Rhat = round(Rhat,3),
          skew = round((mean - median)/sd,3),
-         sd = round(sd,3))
+         sd = round(sd,3)) %>% 
+  filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% 
+#  arrange(area_n,'year/species') %>%
+  mutate(#year = as.numeric('species'),
+         area_n = as.character(area_n),
+         region_n = case_when(
+           str_detect(variable, "mu_|tau_") ~ area_n,
+           TRUE ~ as.character(lut$region_n[match(
+             as.numeric(area_n), lut$area_n
+           )])
+         ),
+         area_n = if_else(
+           str_detect(variable, "mu_|tau_"),
+           NA_character_,
+           area_n
+         ),
+         area = lut$area[match(as.numeric(area_n), lut$area_n)],
+         region = ifelse(str_detect(variable, "_kod"),
+                         "Kodiak",
+                         lut$region[match(as.numeric(region_n), lut$region_n)]),
+         timeperiod = "historical") %>%
+  filter(!is.na(variable))
 
-CONT_bad_df <- as.data.frame(postH_c$summary) %>%
+betas_c <- as.data.frame(postH_c$summary) %>%
   mutate(parameter = rownames(postH_c$summary)) %>%
-  filter(Rhat > Rhat_cutoff) %>%
   select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
   mutate(mean = round(mean,3),
          median = round(median,3),
@@ -724,260 +911,49 @@ CONT_bad_df <- as.data.frame(postH_c$summary) %>%
          upper = round(upper,3),
          Rhat = round(Rhat,3),
          skew = round((mean - median)/sd,3),
-         sd = round(sd,3))
-
-HIST_bad_Rs <- HIST_bad_df %>% filter(grepl("R_", parameter) |
-                              grepl("Rp_",parameter) |
-                              grepl("Rb_",parameter) |
-                              grepl("Ry_",parameter) |
-                              grepl("Ro_",parameter) |
-                              grepl("Rd_",parameter) |
-                                grepl("Rs_",parameter)) %>%
-  filter(!grepl("_mort",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-  filter(!is.na(year))
-
-CONT_bad_Rs <- CONT_bad_df %>% filter(grepl("R_", parameter) |
-                              grepl("Rp_",parameter) |
-                              grepl("Rb_",parameter) |
-                              grepl("Ry_",parameter) |
-                              grepl("Ro_",parameter) |
-                              grepl("Rd_",parameter) |
-                                grepl("Rs_",parameter)) %>%
-  filter(!grepl("_mort",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-  filter(!is.na(year))
-
-HIST_bad_Hs <- HIST_bad_df %>% filter(grepl("H_", parameter) |
-                              grepl("Hp_",parameter) |
-                              grepl("Hb_",parameter) |
-                              grepl("Hy_",parameter) |
-                              grepl("Ho_",parameter) | 
-                              grepl("Hd_",parameter) |
-                                grepl("Hs_",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-  filter(!is.na(year))
-
-CONT_bad_Hs <- CONT_bad_df %>% filter(grepl("H_", parameter) |
-                              grepl("Hp_",parameter) |
-                              grepl("Hb_",parameter) |
-                              grepl("Hy_",parameter) |
-                              grepl("Ho_",parameter) | 
-                              grepl("Hd_",parameter) |
-                                grepl("Hs_",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-  filter(!is.na(year))
-
-HIST_bad_Rs <- HIST_bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
-                                             "R_ayu","R_ayg"))
-
-CONT_bad_Rs <- CONT_bad_Rs %>% filter(!variable %in% c("R_ay","Ro_ay","Ry_ay","Rp_ay","Rb_ay",
-                                             "R_ayu","R_ayg"))
-
-HIST_bad_Hs <- HIST_bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
-                                             "H_ayu","H_ayg"))
-
-CONT_bad_Hs <- CONT_bad_Hs %>% filter(!variable %in% c("H_ay","Ho_ay","Hy_ay","Hp_ay","Hb_ay",
-                                             "H_ayu","H_ayg"))
-
-HIST_bad_Hs %>% 
-  filter(median > 10) %>% 
-  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
-  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
-         mean = round(mean,0),
-         median = round(median,0),
-         lower = round(lower,0),
-         upper = round(upper, 0),
-         sd = round(sd,1)) %>%
-  arrange(area,year,variable) -> HIST_bad_harvests
-
-CONT_bad_Hs %>% 
-  filter(median > 10) %>% 
-  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
-  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
-         mean = round(mean,0),
-         median = round(median,0),
-         lower = round(lower,0),
-         upper = round(upper, 0),
-         sd = round(sd,1)) %>%
-  arrange(area,year,variable) -> CONT_bad_harvests
-
-bad_harvests <- rbind(HIST_bad_harvests %>% 
-                        filter(year < 2020),
-                      CONT_bad_harvests %>%
-                        filter(year > 2019)) %>%
-  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
-  mutate(
-    Species = recode(sp_code,
-      Ho = "non-YE, non-pelagic",
-      Hb = "black",
-      Hp = "pelagic",
-      Hy = "yelloweye",
-      Hs = "slope",
-      Hd = "dsr",
-      H  = "all"
-    ),
-    User = recode(user_code,
-      ay  = "total",
-      ayg = "guided",
-      ayu = "unguided"
-    )
-  ) %>%
-  select(-sp_code, -user_code,
-         area,year,User,Species,mean,median,lower,upper,sd,Rhat) %>%
-  relocate(c(User,Species), .before = mean)
-
-colnames(bad_harvests) <- c("Area", "Year", "User", "Species grouping", "Mean", 
-                            "Median", "Lower CI", "Upper CI", "SD", "Rhat")
-
-HIST_bad_Rs %>% 
-  filter(median > 100) %>% 
-  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
-  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
-         mean = round(mean,0),
-         median = round(median,0),
-         lower = round(lower,0),
-         upper = round(upper, 0),
-         sd = round(sd,1)) %>%
-  arrange(area,year,variable)-> HIST_bad_releases
-
-CONT_bad_Rs %>% 
-  filter(median > 100) %>% 
-  select(area, year, variable, mean, median, lower, upper, sd, Rhat) %>% unique() %>% 
-  mutate(year = format(year + 1976, big.mark = "", scientific = FALSE),
-         mean = round(mean,0),
-         median = round(median,0),
-         lower = round(lower,0),
-         upper = round(upper, 0),
-         sd = round(sd,1)) %>%
-  arrange(area,year,variable)-> CONT_bad_releases
-
-bad_releases <- rbind(HIST_bad_releases %>% 
-                        filter(year < 2020),
-                      CONT_bad_releases %>%
-                        filter(year > 2019)) %>%
-  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
-  mutate(
-    Species = recode(sp_code,
-      Ro = "non-YE, non-pelagic",
-      Rb = "black",
-      Rp = "pelagic",
-      Ry = "yelloweye",
-      Rs = "slope",
-      Rd = "dsr",
-      R  = "all"
-    ),
-    User = recode(user_code,
-      ay  = "total",
-      ayg = "guided",
-      ayu = "unguided"
-    )
-  ) %>%
-  select(-sp_code, -user_code,
-         area,year,User,Species,mean,median,lower,upper,sd,Rhat) %>%
-  relocate(c(User,Species), .before = mean)
-
-colnames(bad_releases) <- c("Area", "Year", "User", "Species grouping","Mean", "Median", "Lower CI", "Upper CI", "SD", "Rhat")
-
-HIST_bad_ps <- HIST_bad_df %>% filter(grepl("p_", parameter) &
-                              !grepl("Hp_",parameter) &
-                              !grepl("Rp_",parameter) &
-                              !grepl("Tp_",parameter) &
-                              !grepl("Bp_",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
-  filter(!is.na(year) & year < 44)
-
-CONT_bad_ps <- CONT_bad_df %>% filter(grepl("p_", parameter) &
-                              !grepl("Hp_",parameter) &
-                              !grepl("Rp_",parameter) &
-                              !grepl("Tp_",parameter) &
-                              !grepl("Bp_",parameter)) %>% 
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-  mutate(year = as.numeric(year),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
-  filter(!is.na(year) & year > 43)
-
-bad_ps <- rbind(HIST_bad_ps, CONT_bad_ps) %>%
-  mutate(Rhat_gt1.1 = ifelse(Rhat > 1.1, "unconverged", "converged"),
-         Rhat_gt1.01 = ifelse(Rhat > 1.01, "unconverged", "converged"))
-
-bad_ps %>% group_by(Rhat_gt1.1) %>%
-  summarise(n = n()) -> p_Rhat_conv1.1
-
-bad_ps %>% group_by(Rhat_gt1.01) %>%
-  summarise(n = n()) %>% data.frame()-> p_Rhat_conv1.01
-
-HIST_bad_ps_true <- HIST_bad_ps %>% filter(median < 0.95 & median > 0.05)
-
-CONT_bad_ps_true <- CONT_bad_ps %>% filter(median < 0.95 & median > 0.05)
-
-bad_betasH <- HIST_bad_df %>% filter(grepl("beta", parameter)) %>%
+         sd = round(sd,3)) %>% 
+  filter(grepl("beta", parameter)) %>%
   separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
   mutate(index = str_replace(index, "\\]", "")) %>%
   separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
-  mutate(year = as.numeric('species'),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-         timeperiod = "historical") %>% 
+  mutate(across(starts_with("index"), as.numeric)) %>% 
+  #  arrange(area_n,'year/species') %>%
+  mutate(#year = as.numeric('species'),
+    area_n = as.character(area_n),
+    region_n = case_when(
+      str_detect(variable, "mu_|tau_") ~ area_n,
+      TRUE ~ as.character(lut$region_n[match(
+        as.numeric(area_n), lut$area_n
+      )])
+    ),
+    area_n = if_else(
+      str_detect(variable, "mu_|tau_"),
+      NA_character_,
+      area_n
+    ),
+    area = lut$area[match(as.numeric(area_n), lut$area_n)],
+    region = ifelse(str_detect(variable, "_kod"),
+                    "Kodiak",
+                    lut$region[match(as.numeric(region_n), lut$region_n)]),
+    timeperiod = "contemporary") %>%
   filter(!is.na(variable))
 
-bad_betasC <- CONT_bad_df %>% filter(grepl("beta", parameter)) %>%
-  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-  mutate(index = str_replace(index, "\\]", "")) %>%
-  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
-  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,'year/species') %>%
-  mutate(year = as.numeric('species'),
-         area_n = as.character(area_n)) %>%
-  full_join(area_codes,by = "area_n") %>%
-  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-         timeperiod = "contemporary") %>% 
-  filter(!is.na(variable))
+betas <- rbind(betas_h,betas_c) %>%
+  mutate(species_n = species,
+         species = sp_lut$species[match(as.numeric(species_n), sp_lut$species_n)])
 
-bad_betas <- rbind(bad_betasH,bad_betasC) %>%
-  arrange(variable,area_n,species)
+#nrow(betas)
+#nrow(betas %>% filter(Rhat > 1.01))
+#nrow(betas %>% filter(Rhat > 1.1)) 
 
+betas %>% filter(Rhat > 1.1) %>%
+  select(Region = region,
+         Area = area,
+         Species = species,
+         Mean = mean, Median = median, 'Lower CI' = lower, 'Upper CI' = upper,
+         Rhat, SD = sd, Skew = skew, Model = timeperiod
+  ) -> betas_unconv
+  
 true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
                  "lambda_H",
                  #betas,
@@ -986,44 +962,57 @@ true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
                  "mu_bc_H","sd_bc_H","logbc_H",
                  "mu_bc_R","sd_bc_R","logbc_R",
                  "b1_pG","b2_pG","pG")
+  
+oparms_h <- as.data.frame(postH_h$summary) %>%
+  mutate(parameter = rownames(postH_h$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>%  
+  
+filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+  mutate(year = NA,
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "historical") %>% 
+  filter(!is.na(variable))
 
-bad_o_paramsH <- HIST_bad_df %>%
-                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
-                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-                           mutate(index = str_replace(index, "\\]", "")) %>%
-                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
-                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
-                           mutate(year = NA,
-                                  area_n = as.character(area_n)) %>%
-                           full_join(area_codes,by = "area_n") %>%
-                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                                  timeperiod = "historical") %>% 
-                           filter(!is.na(variable))
+oparms_c <- as.data.frame(postH_c$summary) %>%
+  mutate(parameter = rownames(postH_c$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>%  
+  
+  filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+  mutate(year = NA,
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "contemporary") %>% 
+  filter(!is.na(variable))
 
-bad_o_paramsC <- CONT_bad_df %>%
-                           filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
-                           separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-                           mutate(index = str_replace(index, "\\]", "")) %>%
-                           separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
-                           mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
-                           mutate(year = NA,
-                                  area_n = as.character(area_n)) %>%
-                           full_join(area_codes,by = "area_n") %>%
-                           mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
-                                  timeperiod = "contemporary") %>% 
-                           filter(!is.na(variable))
-
-bad_o_params <- rbind(bad_o_paramsH,bad_o_paramsC) %>%
-  arrange(variable,area_n,'year/species')
-
-bad_true_params <- rbind(bad_betas %>% mutate(year = NA),
-                         bad_o_params %>%  
-                           mutate(year = 'year/species',
-                                  species = NA) %>%
-                           select(-'year/species'))
-
-bad_true_params %>% filter(Rhat > 1.1) -> unconverged_true_params
-
+oparms <- rbind(oparms_h, oparms_c) 
+#nrow(oparms)
+#nrow(oparms %>% filter(Rhat > 1.01))
+#oparms %>% filter(Rhat > 1.01)
 
 ```
 
@@ -1031,95 +1020,42 @@ The estimation model was able to estimate harvests, releases and total removals 
 
 <!--The model was #r prop_conv * 100#% converged based on $\hat{R}$ values below 1.1 and #r prop_conv2 * 100#% converged based on $\hat{R}$ values below 1.01 (Gelman and Rubin 1992). All contemporary estimates from 2020 onward were well converged and demonstrate this model will be reliable for annual estimation of rockfish harvests going forward. The maximum $\hat{R}$ was #r round(max_rhat,2)#. --> 
 
-Of the true parameters in the model, `r  nrow(bad_true_params)` failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(bad_true_params %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table XXX). The $\beta$ parameters used in the logistic curve were generally slow to converge given the combination of values that could describe plausible curves fit to the data. However, parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values and skewed distributions that would likely converge with longer runs. The lone true parameter that failed to converge was $\sigma_{(pH)(other)Kodiak}^{\beta2}$ that estimated the uncertainty in the hyperprior $\beta2_{(pH)(other)Kodiak}$ describing the slope of the proportion of “other” rockfish harvested in Kodiak. Traceplots showed a shewed distribution with occasional spikes but a well-defined posterior space that would likely converge with longer runs. 
+Of the true parameters in the model, `r  nrow(betas %>% filter(Rhat > 1.01)) + nrow(oparms %>% filter(Rhat > 1.01))` 
+(`r round(100*(nrow(betas %>% filter(Rhat > 1.01))+nrow(oparms %>% filter(Rhat > 1.01)))/(nrow(betas)+nrow(oparms)),2)`%) 
+failed to converge to an $\hat{R}$ of 1.01 but only `r nrow(betas %>% filter(Rhat > 1.1)) + nrow(oparms %>% filter(Rhat > 1.1))` of those had $\hat{R}$ values above 1.1 (Table 3). The $\beta$ parameters used in the logistic curve were generally slow to converge given the combination of values that could describe plausible curves fit to the data. However, parameters with $\hat{R}$ values between 1.01 and 1.1 demonstrated trace plots with occasional extreme values and skewed distributions that would likely converge with longer runs. The lone true parameter that failed to converge was $\sigma_{(pH)(other)Kodiak}^{\beta2}$ that estimated the uncertainty in the hyperprior $\beta2_{(pH)(other)Kodiak}$ describing the slope of the proportion of “other” rockfish harvested in Kodiak. Traceplots showed a shewed distribution with occasional spikes but a well-defined posterior space that would likely converge with longer runs. 
 
-**Describe unconverged beta parameters:** <!--Two of the unconverged parameters were $\beta_{pH}$ parameters. One was the $\sigma_{(pH)(other)Kodiak}^{\beta0}$ parameter that had a spike in an otherwise uniform trace plot while the other unconverged $\beta_{pH}$ parameter was $\beta1_{(pH)(pelagic)PWSO}$ which had an $\hat{R}$ of `r #bad_true_params %>% filter(Rhat > 1.1, variable == "beta1_pH") %>% select(Rhat)`.-->
+<!--**Describe unconverged beta parameters:** --> 
 
-**Table Xa.** Unconverged true parameters. **Remove from document once described!**
+Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although `r nrow(Ps %>% filter(Rhat > 1.01))`
+(`r round(100 * nrow(Ps %>% filter(Rhat > 1.01)) / nrow(Ps),2)`%)
+of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1. 
 
-```{r}
-unconverged_true_params  %>% unique() %>% 
-  mutate(mean = round(mean,3),
-         median = round(median,3),
-         lower = round(lower,3),
-         upper = round(upper, 3),
-         sd = round(sd,3),
-         spec_cplx = case_when(
-    grepl("tau_beta", variable) & `species` == 1 ~ "Pelagics",
-    grepl("tau_beta", variable) & `species` == 2 ~ "Yelloweye",
-    grepl("tau_beta", variable) & `species` == 3 ~ "Other",
-    grepl("tau_beta", variable) & `species` == 4 ~ "DSR",
-    grepl("tau_beta", variable) & `species` == 5 ~ "Slope",
-    TRUE ~ NA_character_
-  )) %>%
-  select(area, species ,variable, mean, median, lower, upper, sd, Rhat) -> bad_parms
-
-colnames(bad_parms) <- c("Area", "Species Ass.","Parameter", "Mean", "Median", "Lower CI", "Upper CI", "SD", "Rhat")
-
-flextable(bad_parms) %>%
-  autofit() %>%
-  flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 12, part = "all") %>%
-  #align(j = 2:4, align = "center", part = "all") %>%
-  set_table_properties(width = 1, layout = "autofit")
-
-```
-<br>
-<!--
-The other unconverged true parameters was a $\lambda_a$ from the spline fit to the harvest trend (Appendix A) that demonstrated a very narrow posterior distribution with occasional spikes in the value, but otherwise demonstrated satisfactory exploration of the posterior parameter space with an $\hat{R}$ of `r #bad_true_params %>% filter(Rhat > 1.1, variable == "lambda_H") %>% select(Rhat)`.
--->
-<!--
-The `r nrow(bad_true_params %>% filter(Rhat > 1.1))` parameters with $\hat{R}$ values in excess of 1.1 produced $\hat{R}$ values of `r min(bad_true_params %>% filter(Rhat > 1.1 & variable != "lambda_H") %>% select(Rhat))` and `r max(bad_true_params %>% filter(Rhat > 1.1 & variable != "lambda_H") %>% select(Rhat))` and trace plots did not reveal any pathological patterns other than skewed distributions and the need to run longer chains.  
--->
-
-
-Derived quantities in the model can be divided into primary and secondarily derived quantities. Primary derived quantities are those derived directly from parameter estimates and included harvest $H_{(comp)ayu}$ and release $R_{(comp)ayu}$ estimates by user group, year and area as well as the species composition proportion values $P_{(comp)ayu}$. Secondarily derived quantities are those values derived from the primary derived quantities and their lack of convergence is directly tied to the lack of convergence in the primary quantities. Although `r nrow(bad_ps)` of the $P_{(comp)ayu}$ estimates failed to converge to an $\hat{R}$ of 1.01, all were below 1.1. 
-
-$H_{(comp)ayu}$ estimates were generally well converged with `r nrow(bad_harvests)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_harvests)/nrow(Hs),2)`%) above 1.01 and `r nrow(bad_harvests %>% filter(Rhat > 1.1))` (`r round(100*nrow(bad_harvests %>% filter(Rhat > 1.1))/nrow(Hs),2)`%) demonstrating values above 1.1. Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. Of the `r nrow(bad_harvests  %>% filter(Rhat > 1.1))` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_harvests %>% filter(Median <= 1 & Rhat > 1.1))` estimates (`r round(100*nrow(bad_harvests %>% filter(Median <= 1 & Rhat > 1.1))/nrow(bad_harvests),0)`%) had medians less than 1 and `r nrow(bad_harvests %>% filter(Median <= 10 & Rhat > 1.1))` (`r round(100*nrow(bad_harvests %>% filter(Median <= 1 & Rhat > 1.1))/nrow(bad_harvests),0)`%) had medians less than 10. The remaining unconverged harvest estimates were in the BSAI or SOKO2SAP in pre-1990 years with median estimates below `r ceiling(max(bad_harvests %>% filter(Median <= 10 & Rhat > 1.1) %>% select(Median)))` and upper confidence intervals less than `r ceiling(max(bad_harvests %>% filter(Median <= 10 & Rhat > 1.1) %>% select('Upper CI')))` fish. <!--Of the #r nrow(bad_Hs_1p1 %>% filter(Median > 10))# unconverged $H_{(comp)ayu}$ estimates with medians greater than 10, both #r nrow(bad_Hs_1p1 %>% filter(Median > 10, year < 23))#were from pre-1999 years when logbook data became available and all #r nrow(bad_Hs_1p1 %>% filter(Median > 10, year < 35))# were from before 2011 when the SWHS began tracking private and charter harvests separately.--> <!--The highest unconverged harvest estimate had a median and mean value of #r max(bad_Hs_1p1 %>% filter(Median > 10) %>% select(Median))# and #r max(bad_Hs_1p1 %>% filter(Median > 10) %>% select(mean))#, respectively, indicating that these questionable estimates represent negligible harvests from a management perspective.-->
+$H_{(comp)ayu}$ estimates were generally well converged with `r nrow(Hs %>% filter(Rhat > 1.01))` demonstrating $\hat{R}$ values (`r round(100*nrow(Hs %>% filter(Rhat > 1.01))/nrow(Hs),2)`%) above 1.01 and `r nrow(Hs %>% filter(Rhat > 1.1))` (`r round(100*nrow(Hs %>% filter(Rhat > 1.1))/nrow(Hs),2)`%) demonstrating values above 1.1 (Table 4). Unconverged estimates all demonstrated highly skewed posteriors where the bulk of the posterior distributions were near zero. 
+Of the `r nrow(Hs %>% filter(Rhat > 1.1))` estimates with $\hat{R}$ in excess of 1.1, 
+`r nrow(Hs %>% filter(median <= 1 & Rhat > 1.1))` estimates 
+(`r round(100*nrow(Hs %>% filter(median <= 1 & Rhat > 1.1))/nrow(Hs %>% filter(Rhat > 1.1)),0)`%) had medians less than 1 and 
+`r nrow(Hs %>% filter(median <= 10 & Rhat > 1.1))` 
+(`r round(100*nrow(Hs %>% filter(median <= 10 & Rhat > 1.1))/nrow(Hs %>% filter(Rhat > 1.1)),0)`%) had medians less than 10. 
+<!--The remaining unconverged harvest estimates were in the BSAI or SOKO2SAP in pre-1990 years with median estimates below 
+`r ceiling(max(Hs %>% filter(median >= 10 & Rhat > 1.1) %>% select(median)))` and upper confidence intervals less than 
+`r ceiling(max(Hs %>% filter(median >= 10 & Rhat > 1.1) %>% select(upper)))` fish. Of the #r nrow(bad_Hs_1p1 %>% filter(Median > 10))# unconverged $H_{(comp)ayu}$ estimates with medians greater than 10, both #r nrow(bad_Hs_1p1 %>% filter(Median > 10, year < 23))#were from pre-1999 years when logbook data became available and all #r nrow(bad_Hs_1p1 %>% filter(Median > 10, year < 35))# were from before 2011 when the SWHS began tracking private and charter harvests separately.--> <!--The highest unconverged harvest estimate had a median and mean value of #r max(bad_Hs_1p1 %>% filter(Median > 10) %>% select(Median))# and #r max(bad_Hs_1p1 %>% filter(Median > 10) %>% select(mean))#, respectively, indicating that these questionable estimates represent negligible harvests from a management perspective.-->
 
 <!--
 The other #r nrow(bad_Hs_1p1 %>% filter(Median >= 10))# estimates (#r round(100*nrow(bad_Hs_1p1 %>% filter(Median >=10))/nrow(bad_Hs_1p1),0)#%) were associated with highly skewed distributions.
 -->
 
-**Table Xa.** Unconverged harvest estimates with median posteriors that were greater than 10. **Remove from document once described!**
-
-```{r}
-flextable(bad_harvests  %>% filter(Rhat > 1.1)) %>%
-  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
- #             align_with_table = TRUE, style = "Table Caption") %>%
-  autofit() %>%
-  flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 11, part = "all") %>%
-  #align(j = 2:4, align = "center", part = "all") %>%
-  set_table_properties(width = 1, layout = "autofit")
-```
-<br>
-
-
-$R_{(comp)ayu}$ estimates were less well converged relative to $H_{(comp)ayu}$ estimates with `r format(nrow(bad_releases), big.mark = ",", scientific = FALSE)` demonstrating $\hat{R}$ values (`r round(100*nrow(bad_releases)/nrow(Rs),2)`%) above 1.01 and `r nrow(bad_releases %>% filter(Rhat > 1.1))` (`r round(100*nrow(bad_releases %>% filter(Rhat > 1.1))/nrow(Rs),3)`%) demonstrating values above 1.1. Unconverged estimates demonstrated highly skewed posteriors where the bulk of the posterior distributions were near the lower bound. 
-Of the `r nrow(bad_releases %>% filter(Rhat > 1.1))` estimates with $\hat{R}$ in excess of 1.1, `r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 1))` estimates (`r round(100*nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 1))/nrow(bad_releases %>% filter(Rhat > 1.1)),0)`%) had medians less than 1, `r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 10))` (`r round(100*nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 10))/nrow(bad_releases %>% filter(Rhat > 1.1)),0)`%) had medians less than 10, 
-`r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 50))` (`r round(100*nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 50))/nrow(bad_releases %>% filter(Rhat > 1.1)),0)`%) had medians less than 50, and 
-`r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 100))` (`r round(100*nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median <= 100))/nrow(bad_releases %>% filter(Rhat > 1.1)),0)`%) had medians less than 100. 
-Of the `r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median > 100))` unconverged $R_{(comp)ayu}$ estimates with medians greater than 100, all `r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median > 100, Year < 1999))` were from pre-1999 years when logbook data became available<!--and all #r nrow(bad_Rs_1p1 %>% filter(Median > 100, year < 35))# were from before 2011 when the SWHS began tracking private and charter harvests separately-->. 
-The $\hat{R}$ values of these `r nrow(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median > 100, Year < 1999))` release estimates ranged from 
-`r min(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median > 100, Rhat > 1.1) %>% select(Rhat))`
+$R_{(comp)ayu}$ estimates were less well converged relative to $H_{(comp)ayu}$ estimates with `r format(nrow(Rs %>% filter(Rhat > 1.01)), big.mark = ",", scientific = FALSE)` demonstrating $\hat{R}$ values (`r round(100*nrow(Rs %>% filter(Rhat > 1.01))/nrow(Rs),2)`%) above 1.01 and `r nrow(Rs %>% filter(Rhat > 1.1))` (`r round(100*nrow(Rs %>% filter(Rhat > 1.1))/nrow(Rs),3)`%) demonstrating values above 1.1 (Table 5). Unconverged estimates demonstrated highly skewed posteriors where the bulk of the posterior distributions were near zero. 
+Of the `r nrow(Rs %>% filter(Rhat > 1.1))` estimates with $\hat{R}$ in excess of 1.1, `r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 1))` estimates (`r round(100*nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 1))/nrow(Rs %>% filter(Rhat > 1.1)),0)`%) had medians less than 1, `r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 10))` (`r round(100*nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 10))/nrow(Rs %>% filter(Rhat > 1.1)),0)`%) had medians less than 10, 
+`r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 50))` (`r round(100*nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 50))/nrow(Rs %>% filter(Rhat > 1.1)),0)`%) had medians less than 50, and 
+`r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 100))` (`r round(100*nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median <= 100))/nrow(Rs %>% filter(Rhat > 1.1)),0)`%) had medians less than 100. 
+Of the `r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median > 100))` unconverged $R_{(comp)ayu}$ estimates with a median value greater than 100, all `r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median > 100, year < (1999-1976)))` were from pre-1999 years when logbook data became available <!--and all #r nrow(bad_Rs_1p1 %>% filter(Median > 100, year < 35))# were from before 2011 when the SWHS began tracking private and charter harvests separately-->. 
+The $\hat{R}$ values of these `r nrow(Rs %>% filter(Rhat > 1.1) %>% filter(median > 100, year < (1999-1976)))` release estimates ranged from 
+`r min(Rs %>% filter(Rhat > 1.1) %>% filter(median > 100, Rhat > 1.1) %>% select(Rhat))`
 to 
-`r max(bad_releases %>% filter(Rhat > 1.1) %>% filter(Median > 100, Rhat > 1.1) %>% select(Rhat))` 
-indicating that these estimates would be likely to converge with longer runs (Table UNCONV RELEASE > 100). 
+`r max(Rs %>% filter(Rhat > 1.1) %>% filter(median > 100, Rhat > 1.1) %>% select(Rhat))` 
+indicating that these estimates would be likely to converge with longer runs (Table 5). 
 <!--The highest unconverged release estimate had a median and mean value of #r max(bad_Rs_1p1 %>% filter(Median > 100) %>% select(Median))# and #r max(bad_Rs_1p1 %>% filter(Median > 100) %>% select(mean))#, respectively, indicating that these questionable estimates concern relatively low numbers of released fish.-->
 
-**Table Xc.** Unconverged release estimates with median posteriors that were greater than 100. **Remove from document once described!**
-
-```{r}
-flextable(bad_releases %>% filter(Rhat > 1.1)) %>%
-  #set_caption("Table 1. Biological reference points from the base assessment model, including estimates of maximum sustained yield (MSY), stock status, exploitation rates corresponding to MSY values.",
- #             align_with_table = TRUE, style = "Table Caption") %>%
-  autofit() %>%
-  flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 11, part = "all") %>%
-  #align(j = 2:4, align = "center", part = "all") %>%
-  set_table_properties(width = 1, layout = "autofit")
-```
 <br>
 
 ## Residual Patterns

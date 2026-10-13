@@ -391,7 +391,133 @@ raw_pH %>% filter(area == "SOKO2SAP")
     labs(y = "Harvest Bias", x = "Year")
   
   ################################################################################
-  Hs_h <- as.data.frame(postH_h$summary) %>%
+  Hs
+  with(Hs, table(variable,year))
+  with(Rs, table(variable,year))
+  
+  Hs %>% filter(Rhat > 1.1)
+  Rs %>% filter(Rhat > 1.1)
+  
+  lut <- 
+    data.frame(region = c(rep("Kodiak", 6), rep("Central", 4), rep("Southeast", 6)),
+               area = c("afognak", "WKMA", "SOKO2SAP", "northeast", "eastside", "BSAI", 
+                        "CI", "NG", "PWSI", "PWSO", 
+                        "EWYKT", "NSEO", "NSEI", "CSEO", "SSEO", "SSEI"),
+               stringsAsFactors = FALSE) %>%
+    arrange(region, area) %>%
+    mutate(area_n = seq(1,16,1),
+           region_n = c(1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3))
+  
+  sp_lut <- data.frame(species_n = c(1,2,3,4,5),
+                       species = c("Black",
+                                   "Yelloweye",
+                                   "non-YE, non-pelagic",
+                                   "DSR","Slope"))
+  
+  Hs %>% filter(Rhat > 1.1) %>% 
+    group_by(variable,area) %>%
+    mutate(year = year + 1976) %>%
+    summarise(n = n(),
+              meanmean = round(mean(mean),2),
+              meanmedian = round(mean(median),2),
+              minRhat = min(Rhat),
+              maxRhat = max(Rhat),
+              meansd = round(mean(sd),2),
+              meanskew = round(mean(skew),2),
+              years =  paste(sort(unique(year)), collapse = ", ")) %>%
+    tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+    mutate(
+      Species = recode(sp_code,
+                       Ho = "non-YE, non-pelagic",
+                       Hb = "black",
+                       Hp = "pelagic",
+                       Hy = "yelloweye",
+                       Hs = "slope",
+                       Hd = "dsr",
+                       H  = "all"
+      ),
+      User = recode(user_code,
+                    ay  = "total",
+                    ayg = "guided",
+                    ayu = "unguided"
+      )
+    ) %>% select(-c(sp_code,user_code)) %>%
+    left_join(lut, by = "area") %>%
+    relocate(c(User,Species), .before = n) %>%
+    relocate(region, .before = area) %>%
+    mutate(area = as.character(area),
+           area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+    arrange(region,area,User,Species) -> Hs_unconv
+  
+  colnames(Hs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
+                           "Mean of the medians", "Min. Rhat","Max Rhat", 
+                           "Mean of the SDs", "Mean skew", "Years")
+  
+  Hs_unconv
+  sum(Hs_unconv$n)
+  nrow(Hs)
+  nrow(Hs %>% filter(Rhat > 1.01))
+  
+  Rs %>% filter(Rhat > 1.1) %>% 
+    group_by(variable,area) %>%
+    mutate(year = year + 1976) %>%
+    summarise(n = n(),
+              meanmean = round(mean(mean),2),
+              meanmedian = round(mean(median),2),
+              minRhat = min(Rhat),
+              maxRhat = max(Rhat),
+              meansd = round(mean(sd),2),
+              meanskew = round(mean(skew),2),
+              years =  paste(sort(unique(year)), collapse = ", ")) %>%
+    tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+    mutate(
+      Species = recode(sp_code,
+                       Ro = "non-YE, non-pelagic",
+                       Rb = "black",
+                       Rp = "pelagic",
+                       Ry = "yelloweye",
+                       Rs = "slope",
+                       Rd = "dsr",
+                       R  = "all"
+      ),
+      User = recode(user_code,
+                    ay  = "total",
+                    ayg = "guided",
+                    ayu = "unguided"
+      )
+    ) %>% select(-c(sp_code,user_code)) %>%
+    left_join(lut, by = "area") %>%
+    relocate(c(User,Species), .before = n) %>%
+    relocate(region, .before = area) %>%
+    mutate(area = as.character(area),
+           area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+    arrange(region,area,User,Species) -> Rs_unconv
+  
+  colnames(Rs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
+                           "Mean of the medians", "Min. Rhat","Max Rhat", 
+                           "Mean of the SDs", "Mean skew", "Years")
+  
+  y
+  sum(Rs_unconv$n)
+  nrow(Rs)
+  nrow(Rs %>% filter(Rhat > 1.01))
+  
+  filter(grepl("p_", parameter) &
+           !grepl("Hp_",parameter) &
+           !grepl("Rp_",parameter) &
+           !grepl("Tp_",parameter) &
+           !grepl("Bp_",parameter)) %>% 
+    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+    mutate(index = str_replace(index, "\\]", "")) %>%
+    separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
+    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
+    mutate(year = as.numeric(year),
+           area_n = as.character(area_n)) %>%
+    full_join(area_codes,by = "area_n") %>%
+    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE))  %>% 
+    filter(!is.na(year) & year < 44)
+  
+  Ps_h <- as.data.frame(postH_h$summary) %>%
     mutate(parameter = rownames(postH_h$summary)) %>%
     select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
     mutate(mean = round(mean,3),
@@ -400,16 +526,15 @@ raw_pH %>% filter(area == "SOKO2SAP")
            upper = round(upper,3),
            Rhat = round(Rhat,3),
            skew = round((mean - median)/sd,3),
-           sd = round(sd,3)) %>% filter(grepl("H_", parameter) |
-                                          grepl("Hp_",parameter) |
-                                          grepl("Hb_",parameter) |
-                                          grepl("Hy_",parameter) |
-                                          grepl("Ho_",parameter) |
-                                          grepl("Hd_",parameter) |
-                                          grepl("Hs_",parameter) ) %>% 
+           sd = round(sd,3)) %>% 
+    filter(grepl("p_", parameter) &
+             !grepl("Hp_",parameter) &
+             !grepl("Rp_",parameter) &
+             !grepl("Tp_",parameter) &
+             !grepl("Bp_",parameter)) %>%
     separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
     mutate(index = str_replace(index, "\\]", "")) %>%
-    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
     mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
     mutate(year = as.numeric(year),
            area_n = as.character(area_n)) %>%
@@ -417,7 +542,7 @@ raw_pH %>% filter(area == "SOKO2SAP")
     mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
     filter(!is.na(year) & year < 44)
   
-  Hs_c <- as.data.frame(postH_c$summary) %>%
+  Ps_c <- as.data.frame(postH_c$summary) %>%
     mutate(parameter = rownames(postH_c$summary)) %>%
     select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
     mutate(mean = round(mean,3),
@@ -426,16 +551,15 @@ raw_pH %>% filter(area == "SOKO2SAP")
            upper = round(upper,3),
            Rhat = round(Rhat,3),
            skew = round((mean - median)/sd,3),
-           sd = round(sd,3)) %>% filter(grepl("H_", parameter) |
-                                          grepl("Hp_",parameter) |
-                                          grepl("Hb_",parameter) |
-                                          grepl("Hy_",parameter) |
-                                          grepl("Ho_",parameter) |
-                                          grepl("Hd_",parameter) |
-                                          grepl("Hs_",parameter) ) %>% 
+           sd = round(sd,3)) %>% 
+    filter(grepl("p_", parameter) &
+             !grepl("Hp_",parameter) &
+             !grepl("Rp_",parameter) &
+             !grepl("Tp_",parameter) &
+             !grepl("Bp_",parameter)) %>%
     separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
     mutate(index = str_replace(index, "\\]", "")) %>%
-    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
+    separate(index, into = c("area_n", "year","user"), sep = ",", fill = "right") %>%
     mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
     mutate(year = as.numeric(year),
            area_n = as.character(area_n)) %>%
@@ -443,58 +567,172 @@ raw_pH %>% filter(area == "SOKO2SAP")
     mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
     filter(!is.na(year) & year > 43)
   
-  rbind(Hs_h,Hs_c) -> Hs
+  Ps <- rbind(Ps_h,Ps_c)
+unique(Ps$variable)  
+nrow(Ps)
+nrow(Ps %>% filter(Rhat > 1.01))  
+nrow(Ps %>% filter(Rhat > 1.1))  
+
+region_codes <- data.frame(region_n = c(1,2,3),
+                           region = c("Southcentral",
+                                      "Kodiak",
+                                      "Southeast"))
+
+betas_h <- as.data.frame(postH_h$summary) %>%
+  mutate(parameter = rownames(postH_h$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>% 
+  filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% 
+#  arrange(area_n,'year/species') %>%
+  mutate(#year = as.numeric('species'),
+         area_n = as.character(area_n),
+         region_n = case_when(
+           str_detect(variable, "mu_|tau_") ~ area_n,
+           TRUE ~ as.character(lut$region_n[match(
+             as.numeric(area_n), lut$area_n
+           )])
+         ),
+         area_n = if_else(
+           str_detect(variable, "mu_|tau_"),
+           NA_character_,
+           area_n
+         ),
+         area = lut$area[match(as.numeric(area_n), lut$area_n)],
+         region = ifelse(str_detect(variable, "_kod"),
+                         "Kodiak",
+                         lut$region[match(as.numeric(region_n), lut$region_n)]),
+         timeperiod = "historical") %>%
+  filter(!is.na(variable))
+
+betas_c <- as.data.frame(postH_c$summary) %>%
+  mutate(parameter = rownames(postH_c$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>% 
+  filter(grepl("beta", parameter)) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% 
+  #  arrange(area_n,'year/species') %>%
+  mutate(#year = as.numeric('species'),
+    area_n = as.character(area_n),
+    region_n = case_when(
+      str_detect(variable, "mu_|tau_") ~ area_n,
+      TRUE ~ as.character(lut$region_n[match(
+        as.numeric(area_n), lut$area_n
+      )])
+    ),
+    area_n = if_else(
+      str_detect(variable, "mu_|tau_"),
+      NA_character_,
+      area_n
+    ),
+    area = lut$area[match(as.numeric(area_n), lut$area_n)],
+    region = ifelse(str_detect(variable, "_kod"),
+                    "Kodiak",
+                    lut$region[match(as.numeric(region_n), lut$region_n)]),
+    timeperiod = "contemporary") %>%
+  filter(!is.na(variable))
+
+betas <- rbind(betas_h,betas_c) %>%
+  mutate(species_n = species,
+         species = sp_lut$species[match(as.numeric(species_n), sp_lut$species_n)])
+
+nrow(betas)
+nrow(betas %>% filter(Rhat > 1.01))
+nrow(betas %>% filter(Rhat > 1.1)) 
+
+betas %>% filter(Rhat > 1.1) %>%
+  select(Region = region,
+         Area = area,
+         Species = species,
+         Mean = mean, Median = median, 'Lower CI' = lower, 'Upper CI' = upper,
+         Rhat, SD = sd, Skew = skew, Model = timeperiod
+  ) -> betas_unconv
   
-  Rs_h <- as.data.frame(postH_h$summary) %>%
-    mutate(parameter = rownames(postH_h$summary)) %>%
-    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
-    mutate(mean = round(mean,3),
-           median = round(median,3),
-           lower = round(lower,3),
-           upper = round(upper,3),
-           Rhat = round(Rhat,3),
-           skew = round((mean - median)/sd,3),
-           sd = round(sd,3)) %>% filter(grepl("R_", parameter) |
-                                          grepl("Rp_",parameter) |
-                                          grepl("Rb_",parameter) |
-                                          grepl("Ry_",parameter) |
-                                          grepl("Ro_",parameter) |
-                                          grepl("Rd_",parameter) |
-                                          grepl("Rs_",parameter) ) %>% 
-    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-    mutate(index = str_replace(index, "\\]", "")) %>%
-    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-    mutate(year = as.numeric(year),
-           area_n = as.character(area_n)) %>%
-    full_join(area_codes,by = "area_n") %>%
-    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-    filter(!is.na(year) & year < 44)
+true_params <- c("mu_lambda_H","sigma_lambda_H","sigma_H",#"beta_H","beta0_H",
+                 "lambda_H",
+                 #betas,
+                 #"re"
+                 "sd_prigui_pre",
+                 "mu_bc_H","sd_bc_H","logbc_H",
+                 "mu_bc_R","sd_bc_R","logbc_R",
+                 "b1_pG","b2_pG","pG")
   
-  Rs_c <- as.data.frame(postH_c$summary) %>%
-    mutate(parameter = rownames(postH_c$summary)) %>%
-    select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
-    mutate(mean = round(mean,3),
-           median = round(median,3),
-           lower = round(lower,3),
-           upper = round(upper,3),
-           Rhat = round(Rhat,3),
-           skew = round((mean - median)/sd,3),
-           sd = round(sd,3)) %>% filter(grepl("R_", parameter) |
-                                          grepl("Rp_",parameter) |
-                                          grepl("Rb_",parameter) |
-                                          grepl("Ry_",parameter) |
-                                          grepl("Ro_",parameter) |
-                                          grepl("Rd_",parameter) |
-                                          grepl("Rs_",parameter) ) %>% 
-    separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
-    mutate(index = str_replace(index, "\\]", "")) %>%
-    separate(index, into = c("area_n", "year"), sep = ",", fill = "right") %>%
-    mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n,year) %>%
-    mutate(year = as.numeric(year),
-           area_n = as.character(area_n)) %>%
-    full_join(area_codes,by = "area_n") %>%
-    mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)) %>% 
-    filter(!is.na(year) & year > 43)
+oparms_h <- as.data.frame(postH_h$summary) %>%
+  mutate(parameter = rownames(postH_h$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>%  
   
-  rbind(Rs_h,Rs_c) -> Rs
+filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+  mutate(year = NA,
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "historical") %>% 
+  filter(!is.na(variable))
+
+oparms_c <- as.data.frame(postH_c$summary) %>%
+  mutate(parameter = rownames(postH_c$summary)) %>%
+  select(parameter, mean, median = `50%`, lower = `2.5%`,upper = `97.5%`,Rhat,sd) %>%
+  mutate(mean = round(mean,3),
+         median = round(median,3),
+         lower = round(lower,3),
+         upper = round(upper,3),
+         Rhat = round(Rhat,3),
+         skew = round((mean - median)/sd,3),
+         sd = round(sd,3)) %>%  
+  
+  filter(str_detect(parameter, paste(true_params, collapse = "|"))) %>%
+  separate(parameter, into = c("variable", "index"), sep = "\\[", extra = "merge") %>%
+  mutate(index = str_replace(index, "\\]", "")) %>%
+  separate(index, into = c("area_n", "year/species"), sep = ",", fill = "right") %>%
+  mutate(across(starts_with("index"), as.numeric)) %>% arrange(area_n) %>%
+  mutate(year = NA,
+         area_n = as.character(area_n)) %>%
+  full_join(area_codes,by = "area_n") %>%
+  mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE),
+         timeperiod = "contemporary") %>% 
+  filter(!is.na(variable))
+
+oparms <- rbind(oparms_h, oparms_c)
+
+nrow(oparms)
+nrow(oparms %>% filter(Rhat > 1.01))
+oparms %>% filter(Rhat > 1.01)
+  
+  
+rbind(oparms_h, oparms_c) %>%
+  mutate(species_n = species,
+         species = sp_lut$species[match(as.numeric(species_n), sp_lut$species_n)])
+  
+round(100*(nrow(betas %>% filter(Rhat > 1.1))+nrow(oparms %>% filter(Rhat > 1.1)))/(nrow(betas)+nrow(oparms)),2)
+  
+ceiling(max(Hs %>% filter(Rhat > 1.1) %>% select(median)))
+round(100*nrow(Hs %>% filter(median <= 10 & Rhat > 1.1))/nrow(Hs %>% filter(Rhat > 1.1)),0)

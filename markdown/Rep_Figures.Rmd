@@ -61,8 +61,7 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
-res_c <- "annual_est_model_se25tb.1_thru2025_1e+05_4kn_2026-10-12" #pretty near final
-#res_c <- "annual_est_model_thru2024_1e+06_fix_2026-07-17"
+res_c <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 
@@ -2766,7 +2765,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".**- SWHS harvest (left) and release (right) estimates from guided trips (x-axis) versus repoted harvests from charter logbooks (y-axis).")}
+```{r, fig.width = 11.5, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".**- Statewide harvest survey (SWHS) harvest (left) and release (right) estimates (y-axis) from guided trips versus repoted harvests from charter logbooks (x-axis). The diagnol black line represents a one-to-one relationship and perfect agreement between the two data sources. Values above the line indicate that estimates from the SWHS are higher than that recorded in logbooks while values below the diagnol line indicate that estimates from the SWHS are lower than that recorded in logbooks.")}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous", n = 16)
 
 left_join(H_ayg, Hhat_ay, by = c("area", "year", "region")) %>%
@@ -2846,21 +2845,21 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Schematic illustrating the difference processes used by Howard et al. (2020) and the Bayesian model to estimate releases of rockfish by unguided anglers in Alaska waters. The Howard methods assume that the ratio of unguided:guided releases for all rockfish in the SWHS apply equally to all rockfish species and complexes. The Bayesian approach estimates retention probabilities separately by species assemblage based on the retention probabilities of anglers evident in the logbook data, portside interview data, and bias corrected SWHS data with an informative prior derived from the SWHS data informing the model on the relative retention probability of a generic rockfish landed by guided and unguided anglers."), echo = FALSE}
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Schematic illustrating the difference processes used by Howard et al. (2020) and the Bayesian model to estimate releases of rockfish by unguided anglers in Alaska waters. The Howard methods assume that the ratio of unguided:guided releases for all rockfish in the SWHS apply equally to all rockfish species and complexes. The Bayesian approach estimates retention probabilities separately by species assemblage based on the retention probabilities of anglers evident in the logbook data, portside interview data, and bias corrected SWHS data with an informative prior derived from the SWHS data descrbing whether an unguided angler is more or less likely to harvest a generic landed rockfish. The *pH* term describes the probability that a landed rockfish was harvested."), echo = FALSE}
 knitr::include_graphics("../figures/release_methods_fig.png")
 Fig_N <- Fig_N+1
 ```
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Plots showing the ratio of the proportion of rockfish released by private anglers ($pH_{unguided}^{SWHS}$) to the proportion of rockfish released by guided anglers ($pH_{guided}^{SWHS}$) as derived from the statewide harvest survey (SWHS) between 2011 and 2025. This ratio, $pH_{ay}^{ung:gui}$, describes whether unguided anglers are more (values above 1) or less (values less than 1) likely to harvest a generic rockfish and is used as a prior to inform the $\\beta4_{(pH)(comp)ayu}$ parameter describing the offset of the *pH* logistic curve (or long-term average) for unguided anglers in the model. The fine dotted black line represents the mean across all years and the dahsed blue line highlights the value. The dark grey and light grey polygons represent the 50 and 95% confidence intervals for the prior values as calculated from SWHS data. "), echo = FALSE}
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Plots showing the ratio of the proportion of rockfish harvested (*pH*) by private anglers ($pH_{unguided}^{SWHS}$) to the proportion of rockfish harvested by guided anglers ($pH_{guided}^{SWHS}$) as derived from the statewide harvest survey (SWHS) between 2011 and 2025. This ratio, $pH_{ay}^{ung:gui}$, describes whether unguided anglers are more (values above 1) or less (values less than 1) likely to harvest a generic rockfish and is used as a prior to inform the $\\beta4_{(pH)(comp)ayu}$ parameter describing the offset of the *pH* logistic curve (or long-term average) for unguided anglers in the model. The horizontal dotted black line represents the mean across all years and the dashed blue line highlights a value of 1. The dark grey and light grey polygons represent the 50 and 95% confidence intervals for the prior values as calculated from SWHS data. "), echo = FALSE}
 knitr::include_graphics("../figures/bayes_model/pH_prigui_ratio.png")
 Fig_N <- Fig_N+1
 ```
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Residuals from SWHS harvests for 16 commercial fisheries management units 1977-2025 showing the difference between model estimates with the bias correction removed and observed values in the SWHS. The CV of the SWHS data is indicated by the grey scale.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Residuals from statewide harvest survey (SWHS) harvests for 16 commercial fisheries management units 1977-2025 showing the difference between model estimates with the bias correction removed and observed values in the SWHS. The CV of the SWHS data is indicated by the grey scale.")}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
 
 postH <- postH_h
@@ -2910,7 +2909,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Residual of SWHS releases for 16 commercial fisheries management units 1977-2025 showing the difference between model estimates with the bias correction removed and observed values in the SWHS. The CV of the SWHS data is indicated by the grey scale.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Residuals from statewide harvest survey (SWHS) releases for 16 commercial fisheries management units 1977-2025 showing the difference between model estimates with the bias correction removed and observed values in the SWHS. The CV of the SWHS data is indicated by the grey scale.")}
 pal <- wes_palette(name = "Zissou1Continuous", type = "continuous")
 
 postH <- postH_h
@@ -3055,7 +3054,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 7, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of SWHS bias in harvests and releases for 16 commercial fishing management units, 1977-2025. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value. The solid black line represents no bias (bias = 1) and the dashed black line represents the median bias for each area throughout the time series.")}
+```{r, fig.width = 10, fig.height = 7, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of statewide harvest survey (SWHS) bias in harvests and releases for 16 commercial fishing management units, 1977-2025. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value. The solid black line represents no bias (bias = 1) and the dashed black line represents the median bias for each area throughout the time series.")}
 
 mu_bc_H_h <- data.frame(area = unique(H_ayg$area), 
                         mu_bc = apply(exp(postH_h$sims.list$mu_bc_H), 2, mean),
@@ -3294,7 +3293,7 @@ rbind(bc_mod2, bc_obs) %>%
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N ,".**- Annual estimates of SWHS bias in harvests for 16 commercial fishing managment units, 1977-2025. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value. The solid black line represents no bias (bias = 1) and the dashed black line represents the median bias for each area throughout the time series.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N ,".**- Annual estimates of statewide harvest survey (SWHS) bias in harvests for 16 commercial fishing managment units, 1977-2025. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value. The solid black line represents no bias (bias = 1) and the dashed black line represents the median bias for each area throughout the time series.")}
 Hbias
 
 Fig_N <- Fig_N+1
@@ -3311,7 +3310,7 @@ Fig_N <- Fig_N+1
 \newpage
 
 
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N ,".**- Mean SWHS bias for harvests and catches for 16 commercial fisheries management units. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value.")}
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N ,".**- Mean statewide harvest survey (SWHS) bias for harvests (H) and releases (R) for 16 commercial fisheries management units. Note that a bias < 1 indicates that the SWHS *underestimates* the true value and bias > 1 indicates the survey *overestimates* the true value.")}
 if (mod %in% c("LB_fit","LB_hyb_2b","LB_hyb_2b_hb2","LB_fit_hb2","LB_hyb_hb2","LB_fit_hb2","LB_cens_hb2","LB_fit_5pH","LB_fit_5pH_infPr","LB_hyb_5pH_infPr","LB_fit_3pH","LB_hyb_3pH")) { #2 bias
   
 postH <- postH_h  
@@ -4221,7 +4220,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport harvest that was pelagic rockfish for guided and unguided anglers in 16 commercial fishery management units, 1977-2025 as estimated by the model (line) and evident in the logbook (solid circles) and portside sampling (triangles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport harvest that was pelagic rockfish for guided and unguided anglers in 16 commercial fishery management units, 1977-2025 as estimated by the model (line) and evident in the logbook (solid circles) and portside sampling (triangles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
 pal <- wes_palette(name = "Moonrise2", n=3)
 
 postH <- postH_h
@@ -4346,7 +4345,7 @@ Fig_N <- Fig_N+1
 \newpage
 
  
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport harvest of pelagic rockfish that were black rockfish for guided and unguided anglers in 16 commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (triangles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates. Kodiak panels include data from a hydroacoustic survey and the proportion of pelagic rockfish that are black in those areas (navy blue) and the adjusted proportions based on obseved harvests for charter (blue) and private (cyan) users.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport harvest of pelagic rockfish that were black rockfish for guided and unguided anglers in 16 commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (triangles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates. Kodiak panels include data from a hydroacoustic survey and the proportion of pelagic rockfish that are black in those areas (navy blue) and the adjusted proportions based on obseved harvests for charter (blue) and private (cyan) users.")}
 postH <- postH_h
 p_black_mod_h <- 
   rbind(postH$mean$p_black[,,1] %>% t(),
@@ -4541,7 +4540,7 @@ Fig_N <- Fig_N+1
 \newpage
 
  
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were yelloweye rockfish for guided and unguided anglers in 16 commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (circles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport harvest of non-pelagic rockfish that were yelloweye rockfish for guided and unguided anglers in 16 commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (circles). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
 #pal <- wes_palette(name = "FantasticFox1", n=3)[c(1,5)]
 postH <- postH_h
 p_yellow_mod_h <- 
@@ -4725,7 +4724,7 @@ Fig_N <- Fig_N+1
 \newpage
 
  
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were non-yelloweye DSR rockfish for guided and unguided anglers in 6 Southeast commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (dots). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport harvest of non-pelagic rockfish that were non-yelloweye DSR rockfish for guided and unguided anglers in 6 Southeast commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (dots). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
 #pal <- wes_palette(name = "AsteroidCity1", n=3) 
 postH <- postH_h
 p_dsr_mod_h <- 
@@ -4898,7 +4897,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
  
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport harvest of non-pelagic rockfish that were slope rockfish guided and unguided anglers in 6 Southeast commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (dots). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport harvest of non-pelagic rockfish that were slope rockfish guided and unguided anglers in 6 Southeast commercial fishing management units, 1977-2025 as estimated by the model (line) and evident in portside sampling (dots). The shaded areas represent the 95% credibility intervals of the Bayesian model estimates.")}
 #pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 postH <- postH_h
 p_slope_mod_h <- 
@@ -5071,7 +5070,7 @@ Fig_N <- Fig_N+1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
  
-```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the percent of the sport non-pelagic, non-yelloweye releases that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1977-2025. ")}
+```{r, fig.width = 8, fig.height = 4, fig.cap = paste0("**Figure ",Fig_N,".**- Annual estimates of the proportion of the sport non-pelagic, non-yelloweye releases that were slope rockfish for 6 southeast commerical fishing manamgent areas, 1977-2025. ")}
 #pal <- wes_palette(name = "Rushmore1")[c(3,4)] 
 if (intdat == "yes"){} else {
   postH <- postH_h
