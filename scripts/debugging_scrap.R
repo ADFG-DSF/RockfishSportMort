@@ -736,3 +736,190 @@ round(100*(nrow(betas %>% filter(Rhat > 1.1))+nrow(oparms %>% filter(Rhat > 1.1)
   
 ceiling(max(Hs %>% filter(Rhat > 1.1) %>% select(median)))
 round(100*nrow(Hs %>% filter(median <= 10 & Rhat > 1.1))/nrow(Hs %>% filter(Rhat > 1.1)),0)
+
+#------------------------------------------------------------------------------
+Hs %>% filter(Rhat > 1.1) %>% 
+  group_by(variable,area) %>%
+  mutate(year = year + 1976) %>%
+  summarise(n = n(),
+            meanmean = round(mean(mean),2),
+            meanmedian = round(mean(median),2),
+            minRhat = min(Rhat),
+            maxRhat = max(Rhat),
+            meansd = round(mean(sd),2),
+            meanskew = round(mean(skew),2),
+            years =  paste(sort(unique(year)), collapse = ", ")) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+                     Ho = "non-YE, non-pelagic",
+                     Hb = "black",
+                     Hp = "pelagic",
+                     Hy = "yelloweye",
+                     Hs = "slope",
+                     Hd = "dsr",
+                     H  = "all"
+    ),
+    User = recode(user_code,
+                  ay  = "total",
+                  ayg = "guided",
+                  ayu = "unguided"
+    )
+  ) %>% select(-c(sp_code,user_code)) %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(User,Species), .before = n) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+  select(-area_n, -region_n) %>%
+  arrange(region,area,User,Species) -> Hs_unconv
+
+Rs %>% filter(Rhat > 1.1) %>% 
+  group_by(variable,area) %>%
+  mutate(year = year + 1976) %>%
+  summarise(n = n(),
+            meanmean = round(mean(mean),2),
+            meanmedian = round(mean(median),2),
+            minRhat = min(Rhat),
+            maxRhat = max(Rhat),
+            meansd = round(mean(sd),2),
+            meanskew = round(mean(skew),2),
+            years =  paste(sort(unique(year)), collapse = ", ")) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+                     Ro = "non-YE, non-pelagic",
+                     Rb = "black",
+                     Rp = "pelagic",
+                     Ry = "yelloweye",
+                     Rs = "slope",
+                     Rd = "dsr",
+                     R  = "all"
+    ),
+    User = recode(user_code,
+                  ay  = "total",
+                  ayg = "guided",
+                  ayu = "unguided"
+    )
+  ) %>% select(-c(sp_code,user_code)) %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(User,Species), .before = n) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
+  select(-area_n, -region_n) %>%
+  arrange(region,area,User,Species) -> Rs_unconv
+
+
+Rs %>% filter(Rhat > 1.1) %>% 
+  #mutate(year = year + 1976) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(year = year + 1976,
+    Species = recode(sp_code,
+                     Ro = "non-YE, non-pelagic",
+                     Rb = "black",
+                     Rp = "pelagic",
+                     Ry = "yelloweye",
+                     Rs = "slope",
+                     Rd = "dsr",
+                     R  = "all"
+    ),
+    User = recode(user_code,
+                  ay  = "total",
+                  ayg = "guided",
+                  ayu = "unguided"
+    )
+  ) %>% 
+  select(-c(sp_code,user_code)) %>%
+  group_by(year,area,Species) %>%
+  summarise(no_of_unconv = n(),
+            mean1 = as.character(round(mean(mean),2)),
+            mean2 = paste(sort(range(round(mean,2))), collapse = "-"),
+            #  mean2 = paste0(range(round(mean,2))),
+            median1 = as.character(round(mean(median),2)),
+            median2 = paste(sort(range(round(median,2))), collapse = "-"),
+            Rhat1 = as.character(round(mean(Rhat),2)),
+            Rhat2 = paste(sort(range(round(Rhat,2))), collapse = "-"),
+            sd1 = as.character(round(mean(sd),2)),
+            sd2 = paste(sort(range(round(sd,2))), collapse = "-"),
+            skew1 = as.character(round(mean(skew),2)),
+            skew2 = paste(sort(range(round(skew,2))), collapse = "-"),
+            users = paste(sort(unique(User)), collapse = " & "))  %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(year), .before = Species) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area)),
+         mean = ifelse(no_of_unconv == 1, mean1, mean2),
+         median = ifelse(no_of_unconv == 1, median1, median2),
+         sd = ifelse(no_of_unconv == 1, sd1, sd2),
+         skew = ifelse(no_of_unconv == 1, skew1, skew2),
+         Rhat = ifelse(no_of_unconv == 1, Rhat1, Rhat2)) %>%
+  select(-c(area_n, region_n, mean1, mean2, median1, median2, sd1, sd2, 
+            skew1,skew2, Rhat1, Rhat2)) %>%
+  arrange(region,area,year,Species) -> Rs_unconv
+
+Hs %>% filter(Rhat > 1.1) %>% 
+  mutate(year = year + 1976) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+                     Ho = "non-YE, non-pelagic",
+                     Hb = "black",
+                     Hp = "pelagic",
+                     Hy = "yelloweye",
+                     Hs = "slope",
+                     Hd = "dsr",
+                     H  = "all"
+    ),
+         User = recode(user_code,
+                       ay  = "total",
+                       ayg = "guided",
+                       ayu = "unguided"
+         )
+  ) %>% 
+  select(-c(sp_code,user_code)) %>%
+  group_by(year,area,Species) %>%
+#  group_by(year,area) %>%
+  summarise(no_of_unconv = n(),
+            mean1 = as.character(round(mean(mean),2)),
+            mean2 = paste(sort(range(round(mean,2))), collapse = "-"),
+          #  mean2 = paste0(range(round(mean,2))),
+          median1 = as.character(round(mean(median),2)),
+          median2 = paste(sort(range(round(median,2))), collapse = "-"),
+          Rhat1 = as.character(round(mean(Rhat),2)),
+          Rhat2 = paste(sort(range(round(Rhat,2))), collapse = "-"),
+        sd1 = as.character(round(mean(sd),2)),
+        sd2 = paste(sort(range(round(sd,2))), collapse = "-"),
+        skew1 = as.character(round(mean(skew),2)),
+        skew2 = paste(sort(range(round(skew,2))), collapse = "-"),
+            users = paste(sort(unique(User)), collapse = " & "))  %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(year), .before = Species) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area)),
+         mean = ifelse(no_of_unconv == 1, mean1, mean2),
+         median = ifelse(no_of_unconv == 1, median1, median2),
+         sd = ifelse(no_of_unconv == 1, sd1, sd2),
+         skew = ifelse(no_of_unconv == 1, skew1, skew2),
+         Rhat = ifelse(no_of_unconv == 1, Rhat1, Rhat2)) %>%
+  select(-c(area_n, region_n, mean1, mean2, median1, median2, sd1, sd2, 
+            skew1,skew2, Rhat1, Rhat2)) %>%
+  arrange(region,area,year,Species) -> Hs_unconv
+  
+summarise(no_of_unconv = n(),
+          meanmean = round(mean(mean),2),
+          mean = paste(sort(range(mean)), collapse = ", "),
+          mean2 = paste0(range(round(mean,2))),
+          meanmedian = round(mean(median),2),
+          minRhat = min(Rhat),
+          maxRhat = max(Rhat),
+          meansd = round(mean(sd),2),
+          meanskew = round(mean(skew),2),
+          #species =  paste(sort(unique(Species)), collapse = ", "),
+          users = paste(sort(unique(User)), collapse = ", ")) 
+
+
+
+

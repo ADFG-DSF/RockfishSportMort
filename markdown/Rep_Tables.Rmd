@@ -455,7 +455,7 @@ lut <-
                                    "non-YE, non-pelagic",
                                    "DSR","Slope"))
   
-  Hs %>% filter(Rhat > 1.1) %>% 
+  Hs %>% filter(Rhat > 1.1 & median > 10) %>% 
     group_by(variable,area) %>%
     mutate(year = year + 1976) %>%
     summarise(n = n(),
@@ -489,18 +489,72 @@ lut <-
     mutate(area = as.character(area),
            area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
     select(-area_n, -region_n) %>%
-    arrange(region,area,User,Species) -> Hs_unconv
+    arrange(region,area,User,Species) -> Hs_unconv_X
   
-  colnames(Hs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
-                           "Mean of the medians", "Min. Rhat","Max Rhat", 
-                           "Mean of the SDs", "Mean skew", "Years")
+  Hs %>% filter(Rhat > 1.1 & median > 1) %>% 
+  mutate(year = year + 1976) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(
+    Species = recode(sp_code,
+                     Ho = "non-YE, non-pelagic",
+                     Hb = "black",
+                     Hp = "pelagic",
+                     Hy = "yelloweye",
+                     Hs = "slope",
+                     Hd = "dsr",
+                     H  = "all"
+    ),
+         User = recode(user_code,
+                       ay  = "total",
+                       ayg = "guided",
+                       ayu = "unguided"
+         )
+  ) %>% 
+  select(-c(sp_code,user_code)) %>%
+  group_by(year,area,Species) %>%
+#  group_by(year,area) %>%
+  summarise(no_of_unconv = n(),
+            mean1 = as.character(round(mean(mean),2)),
+            mean2 = paste(sort(range(round(mean,2))), collapse = "-"),
+          #  mean2 = paste0(range(round(mean,2))),
+          median1 = as.character(round(mean(median),2)),
+          median2 = paste(sort(range(round(median,2))), collapse = "-"),
+          Rhat1 = as.character(round(mean(Rhat),2)),
+          Rhat2 = paste(sort(range(round(Rhat,2))), collapse = "-"),
+        sd1 = as.character(round(mean(sd),2)),
+        sd2 = paste(sort(range(round(sd,2))), collapse = "-"),
+        skew1 = as.character(round(mean(skew),2)),
+        skew2 = paste(sort(range(round(skew,2))), collapse = "-"),
+            users = paste(sort(unique(User)), collapse = " & "))  %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(year), .before = Species) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area)),
+         mean = ifelse(no_of_unconv == 1, mean1, mean2),
+         median = ifelse(no_of_unconv == 1, median1, median2),
+         sd = ifelse(no_of_unconv == 1, sd1, sd2),
+         skew = ifelse(no_of_unconv == 1, skew1, skew2),
+         Rhat = ifelse(no_of_unconv == 1, Rhat1, Rhat2)) %>%
+  select(-c(area_n, region_n, mean1, mean2, median1, median2, sd1, sd2, 
+            skew1,skew2, Rhat1, Rhat2,
+            no_of_unconv
+            )) %>%
+  arrange(region,area,year,Species) -> Hs_unconv
+  
+  colnames(Hs_unconv) <- c("Region","Area","Year","Species",
+                           #"No. Rhat>1.1",
+                           "Users",
+                           "Mean(s)",
+                           "Median(s)", "SD(s)", 
+                           "Skew(s)", "Rhat(s)")
   
 #  Hs_unconv
 #  sum(Hs_unconv$n)
 #  nrow(Hs)
 #  nrow(Hs %>% filter(Rhat > 1.01))
   
-  Rs %>% filter(Rhat > 1.1) %>% 
+  Rs %>% filter(Rhat > 1.1 & median > 10) %>% 
     group_by(variable,area) %>%
     mutate(year = year + 1976) %>%
     summarise(n = n(),
@@ -534,11 +588,64 @@ lut <-
     mutate(area = as.character(area),
            area = if_else(area == toupper(area),area,stringr::str_to_sentence(area))) %>%
     select(-area_n, -region_n) %>%
-    arrange(region,area,User,Species) -> Rs_unconv
+    arrange(region,area,User,Species) -> Rs_unconv_X
   
-  colnames(Rs_unconv) <- c("Region","Area","User","Species","n","Mean of the means",
-                           "Mean of the medians", "Min. Rhat","Max Rhat", 
-                           "Mean of the SDs", "Mean skew", "Years")
+  Rs %>% filter(Rhat > 1.1 & median > 1) %>% 
+  #mutate(year = year + 1976) %>%
+  tidyr::separate(variable, into = c("sp_code", "user_code"), sep = "_") %>%
+  mutate(year = year + 1976,
+    Species = recode(sp_code,
+                     Ro = "non-YE, non-pelagic",
+                     Rb = "black",
+                     Rp = "pelagic",
+                     Ry = "yelloweye",
+                     Rs = "slope",
+                     Rd = "dsr",
+                     R  = "all"
+    ),
+    User = recode(user_code,
+                  ay  = "total",
+                  ayg = "guided",
+                  ayu = "unguided"
+    )
+  ) %>% 
+  select(-c(sp_code,user_code)) %>%
+  group_by(year,area,Species) %>%
+  summarise(no_of_unconv = n(),
+            mean1 = as.character(round(mean(mean),2)),
+            mean2 = paste(sort(range(round(mean,2))), collapse = "-"),
+            #  mean2 = paste0(range(round(mean,2))),
+            median1 = as.character(round(mean(median),2)),
+            median2 = paste(sort(range(round(median,2))), collapse = "-"),
+            Rhat1 = as.character(round(mean(Rhat),2)),
+            Rhat2 = paste(sort(range(round(Rhat,2))), collapse = "-"),
+            sd1 = as.character(round(mean(sd),2)),
+            sd2 = paste(sort(range(round(sd,2))), collapse = "-"),
+            skew1 = as.character(round(mean(skew),2)),
+            skew2 = paste(sort(range(round(skew,2))), collapse = "-"),
+            users = paste(sort(unique(User)), collapse = " & "))  %>%
+  left_join(lut, by = "area") %>%
+  relocate(c(year), .before = Species) %>%
+  relocate(region, .before = area) %>%
+  mutate(area = as.character(area),
+         area = if_else(area == toupper(area),area,stringr::str_to_sentence(area)),
+         mean = ifelse(no_of_unconv == 1, mean1, mean2),
+         median = ifelse(no_of_unconv == 1, median1, median2),
+         sd = ifelse(no_of_unconv == 1, sd1, sd2),
+         skew = ifelse(no_of_unconv == 1, skew1, skew2),
+         Rhat = ifelse(no_of_unconv == 1, Rhat1, Rhat2)) %>%
+  select(-c(area_n, region_n, mean1, mean2, median1, median2, sd1, sd2, 
+            skew1,skew2, Rhat1, Rhat2,
+            no_of_unconv
+            )) %>%
+  arrange(region,area,year,Species) -> Rs_unconv
+  
+    colnames(Rs_unconv) <- c("Region","Area","Year","Species",
+                        #     "Rhat>1.1",
+                           "Users",
+                           "Mean(s)",
+                           "Median(s)", "SD(s)", 
+                           "Skew(s)", "Rhat(s)")
   
 #  Rs_unconv
 #  sum(Rs_unconv$n)
@@ -785,10 +892,11 @@ Tab_N <- Tab_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Table `r Tab_N`.** Table summarizing harvest estimates that failed to converge to an $\hat{R}$ value less than 1.1
+**Table `r Tab_N`.** Table summarizing the mean, median, standard deviation (SD), skew and $\hat{R}$ of the posterior harvest estimates that failed to converge to an $\hat{R}$ value less than 1.1 and had medians greater than 1. 
 
 ```{r, echo=FALSE}
 flextable(Hs_unconv) %>%
+  colformat_num(j = "Year", big.mark = "") %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "all") %>%
@@ -800,10 +908,11 @@ Tab_N <- Tab_N + 1
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
-**Table `r Tab_N`.** Table summarizing release estimates that failed to converge to an $\hat{R}$ value less than 1.1
+**Table `r Tab_N`.** Table summarizing the mean, median, standard deviation (SD), skew and $\hat{R}$ of the posterior release estimates that failed to converge to an $\hat{R}$ value less than 1.1 and had medians greater than 1. Where more than one user group faild to converge for a psecies in a given year, the mean, median, SD, skew and $\hat{R}$ columns present the range of values for that group.
 
 ```{r, echo=FALSE}
 flextable(Rs_unconv) %>%
+  colformat_num(j = "Year", big.mark = "") %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
   fontsize(size = 10, part = "all") %>%
