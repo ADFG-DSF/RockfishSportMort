@@ -9,7 +9,7 @@ output:
 
 knit: (function(input_file, encoding) {
         rmarkdown::render(input_file, 
-                          output_file = paste0("Annual_estimates_SE25tb.1_4kn_tst_",Sys.Date(),".html"))
+                          output_file = paste0("Annual_estimates_SE25tb.1_4kn_tst2m_",Sys.Date(),".html"))
       })
 ---
 
@@ -85,6 +85,7 @@ B4 <- "simp" #complex "simp", "none
 res <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL!!!!!
 # Renamed model: "annual_est_model_FINAL2026
 #res <- "annual_est_model_se25tb_thru2025_1e+06_5kn_2026-10-13" # 5 knots too much at this stage
+res <- "annual_est_model_FINAL2026_thru2025_2e+06_4kn_2026-10-17" # long run test
 
 # MODEL NOTES 10-9-26:
 # beta4_pH for NSEI dsr/slope needs to be monitored... slope/dsr balance issue.

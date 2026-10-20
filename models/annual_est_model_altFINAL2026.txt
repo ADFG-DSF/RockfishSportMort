@@ -45,11 +45,6 @@ for(a in 5:10){
       p_yellow[a,y,u] <- p_ye_Hest[a,y,u] #~ dunif(0.01,0.99)
     }    
   }
-#  for (y in 1:29){
-#    for(u in 1:2){      
-#      p_yellow[a,y,u] <- p_ye_Hest[a,y,u] #~ dunif(0.01,0.99)
-#    }
-#  }
 } 
 
 for(a in 11:16){
@@ -220,7 +215,8 @@ for (r in 1:3){
 		mu_beta5_pH[r,s] ~ dnorm(0, 0.001)
   	tau_beta5_pH[r,s] <- 1 / sd_beta5_pH[r,s] / sd_beta5_pH[r,s]
     sd_beta5_pH[r,s] ~ dunif(0.1, 5)
-    #SE time blocks
+
+    #SE time blocks starting in 2025
     mu_beta6_pH[r,s] ~ dnorm(0, 0.001)
     tau_beta6_pH[r,s] <- 1 / sd_beta5_pH[r,s] / sd_beta5_pH[r,s]
     sd_beta6_pH[r,s] ~ dunif(0.1, 5)

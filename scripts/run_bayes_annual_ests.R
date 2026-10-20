@@ -46,7 +46,7 @@ mod <- "annual_est_model_kodalt.2" #Close alternative; BSAI/SOKO/WKMA p_pel fixe
 mod <- "annual_est_model_kodalt.2.1" #above plus truncation on beta4_pH for dsr
 mod <- "annual_est_model_bsaitrunc3b.1" #above but more extensive truncations
 mod <- "annual_est_model_se25tb" # base mod w/ TB on SE in 2025
-mod <- "annual_est_model_se25tb.1" # base mod w/ TB on SE in 2025; trun B0_H
+mod <- "annual_est_model_FINAL2026" # base mod w/ TB on SE in 2025; trun B0_H
 
 # Get base data for estimates:
 # Tell the model where you want to start estimating and not used fixed data
@@ -84,7 +84,7 @@ set.seed(8645)
 # Run models!
 
 #iterations, burnin, chains and trimming rate:
-ni <- 1E6; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000; nt
+ni <- 2E6; nb <- ni*.1; nc <- 3; nt <- (ni - nb) / 1000; nt
 
 #ni = 5e4 = 30 minutes; mostly converged, good for diagnosing
 #ni = 1E5 = 1.4 hour... mostly converged
@@ -96,7 +96,7 @@ ni <- 1E6; nb <- ni*.25; nc <- 3; nt <- (ni - nb) / 1000; nt
 use_inits = "yes"
 
 #inits_to_use <- get_inits(histdatmod)
-inits_to_use <- get_inits("annual_est_model_se25tb_thru2025_2500000_2026-10-11")
+inits_to_use <- get_inits("annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13")
 
 #or, if using a model that was just run
 inits_to_use <- get_inits_justrun(postH)
@@ -146,7 +146,7 @@ other_label <- paste0(jags_dat$C,"kn")
 #other_label <- "" #"SE06ex"  "All_SE"
 
 saveRDS(postH, paste0(".\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
-#saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
+saveRDS(postH, paste0("E:\\FSI backup files\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",Sys.Date(),".rds"))
 saveRDS(postH, paste0("H:\\Documents\\Rockfish_SF_mortality\\RockfishSportMort\\output\\bayes_posts\\",mod,"_thru",end_yr,"_",ni,"_",other_label,"_",Sys.Date(),".rds"))
 #-------------------------------------------------------------------------------
 # Or are we just re-examinng a past run? See /output/bayes_posts/ folder
