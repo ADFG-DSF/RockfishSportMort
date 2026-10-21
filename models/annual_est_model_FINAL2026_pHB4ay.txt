@@ -235,14 +235,18 @@ for (a in 1:16){
   for (y in 35:Y){ #for (y in 35:Y){
     tau_obs[a,y] <- 1 / log(1 + cv_prigui_ay[a,y]^2)
     #log(prigui_ay[a,y]) ~ dnorm(log_prigui_true[a,y], tau_obs[a,y])
-    prigui_ay[a,y] ~ dlnorm(log_prigui_true[a,y], tau_obs[a,y]) #pH^ung:gui[a,y] in doc
-    log_prigui_true[a,y] ~ dnorm(mu_log[a], tau_between[a])
+    #prigui_ay[a,y] ~ dlnorm(log_prigui_true[a,y], tau_obs[a,y]) #pH^ung:gui[a,y] in doc
+    #log_prigui_true[a,y] ~ dnorm(mu_log[a], tau_between[a])
+    for(s in 1:5){
+      beta4_pH[a,s] ~ normal(prigui_ay[a,y], tau_obs[a,y])
+    }
   }
-  for (s in 1:5){
-    #beta4_pH[a,s] ~ dnorm(mu_prigui_ay[a],tau_prigui[a])T(0,)
-    log_beta4_pH[a,s] ~ dnorm(mu_log[a], tau_between[a])T(,3.218876) #T(,4.60517)
-    beta4_pH[a,s] <- exp(log_beta4_pH[a,s])  # if you want beta4_pH on original scale
-  }
+#  for (s in 1:5){
+#    #beta4_pH[a,s] ~ dnorm(mu_prigui_ay[a],tau_prigui[a])T(0,)
+#    log_beta4_pH[a,s] ~ dnorm(mu_log[a], tau_between[a])T(,3.218876) #T(,4.60517)
+#    beta4_pH[a,s] <- exp(log_beta4_pH[a,s])  # if you want beta4_pH on original scale
+#
+#  }
  }
 
 for (a in 1:A){
