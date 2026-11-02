@@ -59,6 +59,7 @@ postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
 #res_c <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL!!!
 res_c <- "annual_est_model_FINAL2026_thru2025_2800000_4kn_2026-10-20" #FINAL!!!
+res_c <- "annual_est_model_FINAL2026_thru2025_3e+06_4kn_2026-10-25" #BONUS FINAL!!!
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 
@@ -129,19 +130,128 @@ make_param_label <- function(code) {
 
 # Tables
 
-**Table `r Tab_N`.**  Summary of key improvements in reconstructing sport fish removals of rockfish using the Bayesian model as compared to the Howard et al. (2020) methods.
+**Table `r Tab_N`.**  Summary of ADF&G programs used to quantify rockfish removals in Alaska sport fisheries.
 
 ```{r, echo=FALSE}
 library(knitr)
 
 # Create a data frame for the table
 my_table <- data.frame(
-  Issue = c("Time series","Bias in SWHS", "Species composition of releases", "Sample size limitations", "Error propagation"),
+  Program = c("Statewide harvest survey (SWHS)",
+              "",
+              "",
+              "Charter logbooks", 
+              "",
+              "", #LB
+              "Port sampling programs",
+              "",
+              "",
+              ""
+              ),
+    'User groups' = c("All anglers combined", #SWHS
+                    "", #SWHS
+                    "Guided (charter) and unguided", #SWHS
+                    "Guided (charter)", #LB
+                    "", #
+                    "",
+                    "Guided (charter) and unguided",
+                    "",
+                    "",
+                    ""),
+  'Species resolution' = c("All rockfish combined",
+                           "",
+                           "",
+                           "Pelagic and non-pelagic rockfish",
+                           "",
+                           "Pelagic/non-pelagic, yelloweye, and other (non-pelagic, non-yelloweye)",
+                           
+                           "Species level",
+                           "",
+                           "",
+                           ""),
+  
+  'Data generated' = c("Estimates of total harvest.", #SWHS
+                       "Estimates of total catch and harvest with releases equal to the catch minus the harvest.", #SWHS
+                       "", #SWHS
+                       
+                       "Census of reported harvest.", #LB
+                       "Census of reported releases.", #LB
+                       "Census of reported harvests and releases.", #LB
+                       
+                       "Species composition of the rockfish harvest.",
+                       "",
+                       "Release data from interviews.",
+                       ""),
+  
+  Years = c("1977 - present",  #SWHS
+            "1990 - present", #SWHS
+            "2011 - present", #SWHS
+            "1998 - present", #LB
+            "1999 - present", #LB
+            "2006 - present", #LB
+            "1996 - present (Southcentral and Kodiak)",
+              "2006 - present (Southeast)",
+              "1999 - present (Southcentral and Kodiak)",
+              "2002 - present (Southcentral and Kodiak)"),
+
+  
+  check.names = FALSE
+)
+
+my_table_merge <- my_table %>%
+  mutate(across(everything(), ~ na_if(.x, ""))) %>%
+  fill(Program, `User groups`, `Species resolution`,`Data generated`,
+       .direction = "down") %>%
+  # Keep Data generated unfilled, since its blanks may be intentional
+  mutate(
+    `Data generated` = `Data generated`
+  )
+
+flextable(my_table) %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
+  #align(j = 2:4, align = "center", part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit") -> ft1
+
+ft2 <- flextable(my_table_merge) %>%
+  merge_v(j = c("Program", "User groups", "Species resolution","Data generated")) %>%
+  autofit() %>%
+  flextable::font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
+  set_table_properties(width = 1, layout = "autofit")
+
+ft2 <- ft2 %>%
+  hline(
+    i = c(3, 6),
+    border = officer::fp_border(
+      color = "grey",
+      width = 0.5
+    ),
+    part = "body"
+  )
+
+ft2
+
+Tab_N <- Tab_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+**Table `r Tab_N`.**  Summary of key improvements in reconstructing sport fish removals of rockfish using the Bayesian model as compared to the Howard et al. (2020) methods.
+
+```{r, echo=FALSE}
+
+# Create a data frame for the table
+my_table <- data.frame(
+  Issue = c("Time series","Bias in SWHS", "Unguided harvest estimation","Species composition of releases", "Sample size limitations", "Error propagation"),
   Howard = c("1999 - present","Not explicitly accounted for. Relies on logbook data and ratios of guided/unguided from SWHS data to estimate unguided releases and harvests.", 
-              "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook and podata.",
+              "Derived by multiplying guided harvests (as censused in logbooks) by the ratio of guided:unguided generic rockfish harvest estimates, irrespective of species being evaluated.",
+             "Assumes that species composition of releases is equal to that of the harvest, which is not evident in the logbook and port sampling data.",
              "Uses sample size thresholds such that when areas fall below those thresholds values are borrowed from nearby areas or user groups.",
              "Error is propagated when variance estimates are available, but there is uncertainty associated with borrowing values from nearby areas, or the assumption of species compositions being identical in harvest and releases."),
   Bayes = c( "1977 - present","Explicitly estimates bias in SWHS harvest and release estimates based on logbook data.",
+             "Estimated bias in the SWHS is applied to the SWHS unguided total rockfish estimates and species/assemblage estimates derived by applying species composition data from port side sampling.",
               "Recognizes different release probabilities by species / species assemblage and estimates it from logbook, portside interview, and bias corrected SWHS data",
             "Uses a hierarchical modelling approach that shares information between areas in the same region, reduces assumptions, and maximizes the use of all available data, even with small sample sizes. ",
             "Uncertainty in release estimates is more reflective of the fishery because these methods do not assume species composition is the same between harvests and releases. The hierarchical approach more accurately captures uncertainty within and between areas within a region.")
@@ -152,7 +262,7 @@ flextable(my_table) %>%
  #             align_with_table = TRUE, style = "Table Caption") %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 12, part = "all") %>%
+  fontsize(size = 11, part = "all") %>%
   #align(j = 2:4, align = "center", part = "all") %>%
   set_table_properties(width = 1, layout = "autofit")
 

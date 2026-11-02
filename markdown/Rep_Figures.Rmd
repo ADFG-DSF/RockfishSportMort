@@ -62,6 +62,7 @@ res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4
 postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
 
 res_c <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL
+res_c <- "annual_est_model_FINAL2026_thru2025_3e+06_4kn_2026-10-25" # long run test
 
 postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
 
@@ -2645,6 +2646,27 @@ make_param_label <- function(code) {
 
 # Figures
 
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Flow chart depicting data sources and conceptual use of the data to generate guided and unguided sport harvest estimates in the Bayesian model."), echo = FALSE}
+knitr::include_graphics("../figures/harvest_methods_flowcharts.png")
+Fig_N <- Fig_N+1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Flow chart depicting data sources and conceptual use of the data to generate guided and unguided sport release estimates in the Bayesian model."), echo = FALSE}
+knitr::include_graphics("../figures/release_methods_flowcharts.png")
+Fig_N <- Fig_N+1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Cook Inlet rockfish commercial fishery management units: North Gulf District (NG) and Cook Inlet District (CI)."), echo = FALSE}
+knitr::include_graphics("../figures/CING_CFMUs.png")
+Fig_N <- Fig_N+1
+```
 <div style="text-align:left; width: 70%; margin: auto;"> </div>
 \newpage
 
