@@ -3,7 +3,7 @@
 #author: "Philip Joy"
 output:
   word_document:
-    #reference_docx: "rep_temp.docx"
+    #reference_docx: "ADFG_fig_temp.docx"
     reference_docx: "figs_template.docx"
     
 fontsize: 12pt
@@ -2658,13 +2658,6 @@ Fig_N <- Fig_N+1
 
 ```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Flow chart depicting data sources and conceptual use of the data to generate guided and unguided sport release estimates in the Bayesian model."), echo = FALSE}
 knitr::include_graphics("../figures/release_methods_flowcharts.png")
-Fig_N <- Fig_N+1
-```
-<div style="text-align:left; width: 70%; margin: auto;"> </div>
-\newpage
-
-```{r, fig.width = 10, fig.height = 8, fig.cap = paste0("**Figure ",Fig_N,".** Cook Inlet rockfish commercial fishery management units: North Gulf District (NG) and Cook Inlet District (CI)."), echo = FALSE}
-knitr::include_graphics("../figures/CING_CFMUs.png")
 Fig_N <- Fig_N+1
 ```
 <div style="text-align:left; width: 70%; margin: auto;"> </div>

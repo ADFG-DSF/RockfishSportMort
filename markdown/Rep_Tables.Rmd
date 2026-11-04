@@ -210,7 +210,7 @@ my_table_merge <- my_table %>%
 flextable(my_table) %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 11, part = "all") %>%
+  fontsize(size = 10, part = "all") %>%
   #align(j = 2:4, align = "center", part = "all") %>%
   set_table_properties(width = 1, layout = "autofit") -> ft1
 
@@ -218,7 +218,7 @@ ft2 <- flextable(my_table_merge) %>%
   merge_v(j = c("Program", "User groups", "Species resolution","Data generated")) %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 11, part = "all") %>%
+  fontsize(size = 10, part = "all") %>%
   set_table_properties(width = 1, layout = "autofit")
 
 ft2 <- ft2 %>%
@@ -262,7 +262,7 @@ flextable(my_table) %>%
  #             align_with_table = TRUE, style = "Table Caption") %>%
   autofit() %>%
   flextable::font(fontname = "Times New Roman", part = "all") %>%
-  fontsize(size = 11, part = "all") %>%
+  fontsize(size = 10, part = "all") %>%
   #align(j = 2:4, align = "center", part = "all") %>%
   set_table_properties(width = 1, layout = "autofit")
 
@@ -386,7 +386,7 @@ group_border      <- fp_border(width = 1.0)
 ft <- flextable(priors_tbl) |>
   theme_vanilla() |>
   font(fontname = "Times New Roman", part = "all") |>
-  fontsize(size = 11, part = "all") |>
+  fontsize(size = 10, part = "all") |>
   align(align = "center", part = "all") |>
   align(j = 1:4, align = "left") |>
   valign(valign = "top", part = "body") |>
