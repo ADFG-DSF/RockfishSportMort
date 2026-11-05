@@ -1,0 +1,1451 @@
+---
+#title: "Appendices"
+#author: "Philip Joy"
+#output:
+#  word_document:
+    #reference_docx: "rep_temp.docx"
+#    reference_docx: "figs_template.docx"
+output:
+  officedown::rdocx_document:
+    reference_docx: "append_template.docx"
+    page_size:
+      orient: landscape
+    page_margins:
+      top: 1
+      bottom: 1
+      left: 1
+      right: 1
+fontsize: 12pt
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+getwd()
+file.exists("../scripts/bayes_data_param_load.R")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(wesanderson)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(here)
+library(htmltools) 
+library(coda)
+library(jagsUI)
+library(stringr)
+library(readxl)
+library(openxlsx2)
+library(scales)
+library(xlsx)
+library(writexl)
+library(readxl)
+library(officer)
+library(officedown)
+library(flextable)
+
+source("../scripts/mkdwn_functions.R", echo = FALSE)
+#source("./scripts/bayes_data_param_load", echo = FALSE)
+start_yr <- 1977
+end_yr <- 2025
+REP_YR <- 2025 #for Howard estimates
+
+end_yr_hist <- 2024
+
+Yhist <- 48
+
+list2env(readinData_alt(spl_knts = 7,
+                    start_yr = start_yr,
+                    end_yr = end_yr,
+                    SE06 = "exclude"), #SE06 = "exclude"
+         .GlobalEnv)
+
+
+mod<-"LB_fit_3pH"
+#res <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_slepssquz_thru2024_6e+05__2025-11-09"
+
+#postH <- readRDS(paste0("..\\output\\bayes_posts\\",res,".rds"))
+
+res_h <- "Gen4int_indcomp_swhsR_FULL_pHB4pars_re0full_altwt_2xcvSEo_finaltuning4.1_thru2024_2500000_SE06ex_2026-07-10" #oooh!
+
+#postH_h <- readRDS(paste0("..\\output\\bayes_posts\\",res_h,".rds"))
+
+#res_c <- "annual_est_model_se25tb.1_thru2025_1e+06_4kn_2026-10-13" #FINAL
+res_c <- "annual_est_model_FINAL2026_thru2025_3e+06_4kn_2026-10-25"
+
+#postH_c <- readRDS(paste0("..\\output\\bayes_posts\\",res_c,".rds"))
+
+SE4stageyear1 <- 2020
+
+
+Fig_N <- 0
+Tab_N <- 0
+App_N <- 0
+AT_N <- 1
+AT_N2 <- 1
+
+southeast <- c("CSEO","EWYKT","NSEI","NSEO","SSEI","SSEO")
+central <- c("CI","NG","PWSI","PWSO")
+kodiak <- c("BSAI","SOKO2SAP","WKMA","afognak","eastside","northeast")
+
+# Separate out everything for plotting:
+
+
+# MAking greek characters:
+
+make_param_label <- function(code) {
+  greek_map <- list("m" = "μ", "s" = "σ", "b" = "β", "l" = "λ")
+
+  greek <- greek_map[[substr(code, 1, 1)]]
+  subscript <- substr(code, 2, nchar(code))
+
+  if (is.null(greek)) {
+    # fallback: just return code as-is
+    return(as_paragraph(as_chunk(code)))
+  }
+
+  as_paragraph(
+    as_chunk(greek),
+    as_chunk(subscript, props = fp_text(vertical.align = "subscript"))
+  )
+}
+
+format_numbers <- function(df) {
+  df %>%
+    mutate(across(where(is.numeric), ~ case_when(
+      . > 10 ~ formatC(., format = "f", big.mark = ",", digits = 0),
+      . <= 10 & . == floor(.) ~ formatC(., format = "f", digits = 0),
+      . <= 10 ~ formatC(., format = "f", digits = 3),
+      TRUE ~ as.character(.)
+    )))
+}
+
+
+make_ft <- function(data, table_title = NULL) {
+
+  ft <- flextable(data)
+
+  # Set the lower-level column labels
+  ft <- set_header_labels(
+    ft,
+    Harvest_Estimates = "Estimate",
+    Harvest_SD = "SD",
+    Harvest_CI = "95% CI",
+    Release_Estimates = "Estimate",
+    Release_SD = "SD",
+    Release_CI = "95% CI",
+    Rel_Mort_Rate = "Rel. mort. rate",
+    Mean_wt_lbs = "Mean wt. lbs.",
+    TM_Estimates = "Estimate",
+    TM_SD = "SD",
+    TM_CI = "95% CI"
+  )
+
+  # Add grouped header row
+  ft <- add_header_row(
+    ft,
+    values = c(
+      "Year",
+      "User",
+      "Harvest",
+      "Releases",
+      "Rel. mort. rate",
+      "Mean wt. lbs.",
+      "Total mortality (lbs. biomass)"
+    ),
+    colwidths = c(1, 1, 3, 3, 1, 1, 3)
+  )
+
+  # Vertically merge the single-column headings
+  ft <- merge_v(
+    ft,
+    j = c("Year", "User", "Rel_Mort_Rate", "Mean_wt_lbs"),
+    part = "header"
+  )
+
+  # Add table title on first page only
+  if (!is.null(table_title)) {
+    ft <- add_header_row(
+      ft,
+      values = table_title,
+      colwidths = ncol(data)
+    )
+  }
+
+  # Existing formatting
+  ft <- ft %>%
+    font(fontname = "Times New Roman", part = "all") %>%
+    fontsize(size = 10, part = "header") %>%
+    fontsize(size = 9, part = "body") %>%
+    align(align = "center", part = "all") %>%
+    set_table_properties(layout = "fixed") %>%
+    line_spacing(space = 0.5, part = "body") %>%
+    height_all(height = 0.10) %>%
+    width(j = c(1:2, 4, 7, 9:10, 12), width = 0.53) %>%
+    width(j = c(3, 6, 11), width = 0.70) %>%
+    width(j = c(5, 8, 13), width = 1.06) %>%
+    border_remove() %>%
+    border_remove() %>%
+    hline_top(
+      border = officer::fp_border(color = "black", width = 0.5),
+      part = "header"
+    ) %>%
+    hline(
+      i = 1,
+      border = officer::fp_border(color = "black", width = 0.5),
+      part = "header"
+    ) %>%
+    hline(
+      i = 2,
+      j = c(3:5, 6:8, 11:13),
+      border = officer::fp_border(color = "black", width = 0.5),
+      part = "header"
+    ) %>%
+    hline_bottom(
+      border = officer::fp_border(color = "black", width = 0.5),
+      part = "body"
+    ) %>%
+    hline_bottom( border = officer::fp_border(color = "black", width = 0.5),
+                  part = "header") %>%
+    
+    paginate(init = FALSE, hdr_ftr = TRUE)
+
+  ft
+}
+
+
+
+make_appendix_table <- function(data,
+                                appendix,
+                                first_page_rows = 18,
+                                other_page_rows = 25,
+                                table_title = NULL) {
+
+  n <- nrow(data)
+
+  # Determine number of pages
+  remaining <- max(0, n - first_page_rows)
+
+  n_pages <- 1 + ceiling(remaining / other_page_rows)
+
+  for (i in seq_len(n_pages)) {
+
+    if (i == 1) {
+      first_row <- 1
+      last_row <- min(first_page_rows, n)
+
+    } else {
+      first_row <- first_page_rows +
+        (i - 2) * other_page_rows + 1
+
+      last_row <- min(
+        first_row + other_page_rows - 1,
+        n
+      )
+
+      # Continuation caption: 11 pt, normal, indented
+      cat(
+        paste0(
+          '<w:p>',
+            '<w:pPr>',
+              '<w:ind w:left="360"/>',
+              '<w:jc w:val="left"/>',
+            '</w:pPr>',
+            '<w:r>',
+              '<w:rPr>',
+                '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>',
+                '<w:sz w:val="22"/>',
+              '</w:rPr>',
+              '<w:t>',
+                appendix, '.–Page ', i, ' of ', n_pages, '.',
+              '</w:t>',
+            '</w:r>',
+          '</w:p>'
+        )
+      )
+    }
+
+    page_data <- data[first_row:last_row, ]
+
+    # Format this page's table
+    page_ft <- make_ft(
+      page_data,
+ #     table_title = if (i == 1) table_title else NULL
+      table_title = table_title
+    )
+
+    # Render the flextable
+    child <- knitr::knit_child(
+      text = c(
+        "```{r}",
+        "page_ft",
+        "```"
+      ),
+      envir = environment(),
+      quiet = TRUE
+    )
+
+    cat(child)
+
+    # Continuation notice and page break
+    if (i < n_pages) {
+
+      # Centered, 9 pt continuation notice
+      cat(
+        paste0(
+          '<w:p>',
+            '<w:pPr>',
+              '<w:jc w:val="center"/>',
+            '</w:pPr>',
+            '<w:r>',
+              '<w:rPr>',
+                '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>',
+                '<w:sz w:val="18"/>',
+              '</w:rPr>',
+              '<w:t>-continued-</w:t>',
+            '</w:r>',
+          '</w:p>'
+        )
+      )
+
+      cat("\\newpage\n\n")
+    }
+  }
+
+  invisible(NULL)
+}
+
+area_names <- c("Cook Inlet",
+                "North Gulf",
+                "Prince William Sound Inside",
+                "Prince William Sound Outside",
+                "Bering Sea & Aleutian Islands (BSAI)",
+                "Southeast, Southwest, Chignik and South Alaska Peninsula districts (SOKO2SAP)",
+                "Westside Kodiak and Mainland Peninsula districts (WKMA)",
+                "Afognak",
+                "Eastside Kodiak",
+                "Northeast Kodiak",
+                "Central Southeast Outside (CSEO)",
+                "East–West Yakutat (Icy Bay subdistrict and East Yakutat section; EWYKT)",
+                "North Southeast Inside (NSEI)",
+                "North Southeast Outside (NSEO)",
+                "South Southeast Inside (SSEI)",
+                "South Southeast Outside (SSEO)")
+
+# Number of rows on first and second page:
+first_page_rows <- 21
+other_page_rows <- 24
+
+```
+
+# Appendix D: Model output harvest, release, release mortality and total removal estimates 
+
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, echo=FALSE}
+black <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Black") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+black <- format_numbers(black)
+
+black <- black %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+select(Year = year, User = user, area, region,
+       Harvest_Estimates = harvests,
+       Harvest_SD = sd_h,
+       Harvest_CI = `H. 95% CI`,
+       Release_Estimates = releases,
+       Release_SD = sd_r,
+       Release_CI = `R. 95% CI`,
+       Rel_Mort_Rate = mort_rate,
+       Mean_wt_lbs = wt,
+       TM_Estimates = mort_lbs,
+       TM_SD = sd_m,
+       TM_CI = `TM. 95% CI`)
+
+area_codes <- unique(black$area)
+
+black %>% filter(area == "CI" & User != "All") %>%
+  select(-region, -area)-> black_ci
+black %>% filter(area == "NG" & User != "All") %>%
+  select(-region, -area)-> black_ng
+black %>% filter(area == "PWSI" & User != "All") %>%
+  select(-region, -area)-> black_pwsi
+black %>% filter(area == "PWSO" & User != "All") %>%
+  select(-region, -area)-> black_pwso
+
+black %>% filter(area == "BSAI" & User != "All") %>%
+  select(-region, -area)-> black_bsai
+black %>% filter(area == "SOKO2SAP" & User != "All") %>%
+  select(-region, -area)-> black_soko
+black %>% filter(area == "WKMA" & User != "All") %>%
+  select(-region, -area)-> black_wkma
+black %>% filter(area == "AFOGNAK" & User != "All") %>%
+  select(-region, -area)-> black_afog
+black %>% filter(area == "EASTSIDE" & User != "All") %>%
+  select(-region, -area)-> black_eastside
+black %>% filter(area == "NORTHEAST" & User != "All") %>%
+  select(-region, -area)-> black_northeast
+
+black %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> black_cseo
+black %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)-> black_ewykt
+black %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)-> black_nsei
+black %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)-> black_nseo
+black %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)-> black_ssei
+black %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)-> black_sseo
+
+
+
+```
+
+::: {custom-style="Caption"}
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_ci,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_ng,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_pwsi,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_pwso,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_bsai,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_soko,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_wkma,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_afog,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_eastside,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_northeast,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_cseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_ewykt,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_nsei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_nseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_ssei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of black rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = black_sseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," black rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, echo = FALSE}
+# YELLOWEYE
+ye <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Yelloweye") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+ye <- format_numbers(ye)
+
+ye <- ye %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+select(Year = year, User = user, area, region,
+       Harvest_Estimates = harvests,
+       Harvest_SD = sd_h,
+       Harvest_CI = `H. 95% CI`,
+       Release_Estimates = releases,
+       Release_SD = sd_r,
+       Release_CI = `R. 95% CI`,
+       Rel_Mort_Rate = mort_rate,
+       Mean_wt_lbs = wt,
+       TM_Estimates = mort_lbs,
+       TM_SD = sd_m,
+       TM_CI = `TM. 95% CI`)
+
+area_codes <- unique(ye$area)
+
+ye %>% filter(area == "CI" & User != "All") %>%
+  select(-region, -area)-> ye_ci
+ye %>% filter(area == "NG" & User != "All") %>%
+  select(-region, -area)-> ye_ng
+ye %>% filter(area == "PWSI" & User != "All") %>%
+  select(-region, -area)-> ye_pwsi
+ye %>% filter(area == "PWSO" & User != "All") %>%
+  select(-region, -area)-> ye_pwso
+
+ye %>% filter(area == "BSAI" & User != "All") %>%
+  select(-region, -area)-> ye_bsai
+ye %>% filter(area == "SOKO2SAP" & User != "All") %>%
+  select(-region, -area)-> ye_soko
+ye %>% filter(area == "WKMA" & User != "All") %>%
+  select(-region, -area)-> ye_wkma
+ye %>% filter(area == "AFOGNAK" & User != "All") %>%
+  select(-region, -area)-> ye_afog
+ye %>% filter(area == "EASTSIDE" & User != "All") %>%
+  select(-region, -area)-> ye_eastside
+ye %>% filter(area == "NORTHEAST" & User != "All") %>%
+  select(-region, -area)-> ye_northeast
+
+ye %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> ye_cseo
+ye %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)-> ye_ewykt
+ye %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)-> ye_nsei
+ye %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)-> ye_nseo
+ye %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)-> ye_ssei
+ye %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)-> ye_sseo
+
+AT_N <- 1
+AT_N2 <- AT_N2 + 1
+```
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_ci,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_ng,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_pwsi,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_pwso,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_bsai,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_soko,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_wkma,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_afog,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_eastside,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_northeast,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_cseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_ewykt,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_nsei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_nseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_ssei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of yelloweye rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = ye_sseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N]," yelloweye rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, echo = FALSE}
+# DSR
+dsr <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Non-ye DSR") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+dsr <- format_numbers(dsr)
+
+dsr <- dsr %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+select(Year = year, User = user, area, region,
+       Harvest_Estimates = harvests,
+       Harvest_SD = sd_h,
+       Harvest_CI = `H. 95% CI`,
+       Release_Estimates = releases,
+       Release_SD = sd_r,
+       Release_CI = `R. 95% CI`,
+       Rel_Mort_Rate = mort_rate,
+       Mean_wt_lbs = wt,
+       TM_Estimates = mort_lbs,
+       TM_SD = sd_m,
+       TM_CI = `TM. 95% CI`)
+
+area_codes <- unique(dsr$area)
+
+dsr %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> dsr_cseo
+dsr %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)-> dsr_ewykt
+dsr %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)-> dsr_nsei
+dsr %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)-> dsr_nseo
+dsr %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)-> dsr_ssei
+dsr %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)-> dsr_sseo
+
+AT_N <- 1
+AT_N2 <- AT_N2 + 1
+```
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_cseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_ewykt,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_nsei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_nseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_ssei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-yelloweye demersal shelf rockfish (DSR) harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = dsr_sseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-yelloweye demersal shelf rockfish (DSR)")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, echo = FALSE}
+# SLOPE
+slope <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Slope") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+slope <- format_numbers(slope)
+
+slope <- slope %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+select(Year = year, User = user, area, region,
+       Harvest_Estimates = harvests,
+       Harvest_SD = sd_h,
+       Harvest_CI = `H. 95% CI`,
+       Release_Estimates = releases,
+       Release_SD = sd_r,
+       Release_CI = `R. 95% CI`,
+       Rel_Mort_Rate = mort_rate,
+       Mean_wt_lbs = wt,
+       TM_Estimates = mort_lbs,
+       TM_SD = sd_m,
+       TM_CI = `TM. 95% CI`)
+
+area_codes <- unique(slope$area)
+
+slope %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> slope_cseo
+slope %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)-> slope_ewykt
+slope %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)-> slope_nsei
+slope %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)-> slope_nseo
+slope %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)-> slope_ssei
+slope %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)-> slope_sseo
+
+AT_N <- 1
+AT_N2 <- AT_N2 + 1
+```
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_cseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_ewykt,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_nsei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_nseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_ssei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of slope rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = slope_sseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," slope rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+```{r, echo = FALSE}
+# NON-BLACK PELAGIC
+pel <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+                       sheet = "Non-black Pelagics") %>% 
+  clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(p_mort_r = round(p_mort_r,3),
+         mort_rate = round(mort_rate,3),
+         year = as.factor(year),
+         user = ifelse(user == "guided","gui",
+                       ifelse(user == "unguided","pri","All"))) 
+
+pel <- format_numbers(pel)
+
+pel <- pel %>%
+  mutate(r_lo95 = ifelse(as.numeric(gsub(",", "", r_lo95)) <= 10,
+                         round(as.numeric(r_lo95),0),
+                         r_lo95),
+         #r_hi95 = round(as.numeric(r_hi95),0),
+         rm_lo95 = ifelse(as.numeric(gsub(",", "", rm_lo95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_lo95),
+         rm_hi95 = ifelse(as.numeric(gsub(",", "", rm_hi95)) <= 10,
+                         round(as.numeric(rm_lo95),0),
+                         rm_hi95),
+         release_morts = round(as.numeric(release_morts),0),
+         'H. 95% CI' = paste0(h_lo95, " - ", h_hi95),
+         'R. 95% CI' = paste0(r_lo95, " - ", r_hi95),
+         'RM. 95% CI' = paste0(rm_lo95, " - ", rm_hi95),
+         'TM. 95% CI' = paste0(m_lo95, " - ", m_hi95)
+         ) %>%
+select(Year = year, User = user, area, region,
+       Harvest_Estimates = harvests,
+       Harvest_SD = sd_h,
+       Harvest_CI = `H. 95% CI`,
+       Release_Estimates = releases,
+       Release_SD = sd_r,
+       Release_CI = `R. 95% CI`,
+       Rel_Mort_Rate = mort_rate,
+       Mean_wt_lbs = wt,
+       TM_Estimates = mort_lbs,
+       TM_SD = sd_m,
+       TM_CI = `TM. 95% CI`)
+
+area_codes <- unique(pel$area)
+
+pel %>% filter(area == "CSEO" & User != "All") %>%
+  select(-region, -area)-> pel_cseo
+pel %>% filter(area == "EWYKT" & User != "All") %>%
+  select(-region, -area)-> pel_ewykt
+pel %>% filter(area == "NSEI" & User != "All") %>%
+  select(-region, -area)-> pel_nsei
+pel %>% filter(area == "NSEO" & User != "All") %>%
+  select(-region, -area)-> pel_nseo
+pel %>% filter(area == "SSEI" & User != "All") %>%
+  select(-region, -area)-> pel_ssei
+pel %>% filter(area == "SSEO" & User != "All") %>%
+  select(-region, -area)-> pel_sseo
+
+AT_N <- 1
+AT_N2 <- AT_N2 + 1
+```
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_cseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_ewykt,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_nsei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_nseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_ssei,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
+
+Appendix D`r AT_N2`.`r AT_N`.—Estimates of non-black pelagic rockfish harvests and releases in numbers of fish, release mortality rate (Rel. mort. rate), mean weight, and total mortality in pounds of biomass by year and user group for the `r area_names[AT_N+10]` commercial fisheries management unit (CFMU) 1977 - `r end_yr`. User "gui" indicates guided trips while "pri" indicates unguided trips. SD indicates standard deviation and 95% CI indicates 95% credibility intervals from the Bayesian model output. The release mortality rate is the proportion of released fish expected to die after release.  
+```{r, results='asis'}
+make_appendix_table(
+  data = pel_sseo,
+  appendix = paste0("Appendix D",AT_N2,".",AT_N),
+  first_page_rows = first_page_rows,
+  other_page_rows = other_page_rows,
+  table_title = paste0(area_names[AT_N+10]," non-black pelagic rockfish")
+)
+
+AT_N <- AT_N + 1
+```
+<div style="text-align:left; width: 70%; margin: auto;"> </div>
+\newpage
