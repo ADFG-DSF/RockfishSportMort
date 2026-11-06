@@ -6274,8 +6274,9 @@ slope_wt_mod_c <-
               mutate(area = factor(area, unique(H_ayg$area), ordered = TRUE)),
             by = c("year","area","user","source"))
 
-slope_wt_mod <- rbind(slope_wt_mod_h %>% filter(year > 2020),
-                      slope_wt_mod_c %>% filter(year <= 2020))
+
+slope_wt_mod <- rbind(slope_wt_mod_h %>% filter(year < 2020),
+                      slope_wt_mod_c %>% filter(year >= 2020))
 
 t(jags_dat$r1_gmort_s) %>% data.frame() %>%
   rename_with(~southeast) %>%
@@ -6312,7 +6313,7 @@ rep_wb$add_worksheet("Slope")
 rep_wb$add_data("Slope",SLOPE_wb %>% filter(area %in% southeast))
 
 # save Workbook
-wb_save(rep_wb, file = "RF_Sport_Removals_RepV.xlsx", overwrite = TRUE, path = NULL)
+wb_save(rep_wb, file = paste("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), overwrite = TRUE, path = NULL)
 
 ```
 

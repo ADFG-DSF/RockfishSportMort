@@ -17,6 +17,11 @@ output:
       right: 1
 fontsize: 12pt
 
+#knit: (function(input_file, encoding) {
+#        rmarkdown::render(input_file, 
+#                          output_file = paste0("Rep_AppendixD_take2.html"))
+#      })
+
 ---
 
 ```{r setup, include=FALSE}
@@ -347,7 +352,8 @@ other_page_rows <- 24
 \newpage
 
 ```{r, echo=FALSE}
-black <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+black <- readxl::read_xlsx(paste0("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), 
+#black <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
                        sheet = "Black") %>% 
   clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
   mutate(p_mort_r = round(p_mort_r,3),
@@ -672,7 +678,8 @@ AT_N <- AT_N + 1
 
 ```{r, echo = FALSE}
 # YELLOWEYE
-ye <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+ye <- readxl::read_xlsx(paste0("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), 
+#ye <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
                        sheet = "Yelloweye") %>% 
   clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
   mutate(p_mort_r = round(p_mort_r,3),
@@ -996,7 +1003,8 @@ AT_N <- AT_N + 1
 
 ```{r, echo = FALSE}
 # DSR
-dsr <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+dsr <- readxl::read_xlsx(paste0("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), 
+#dsr <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
                        sheet = "Non-ye DSR") %>% 
   clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
   mutate(p_mort_r = round(p_mort_r,3),
@@ -1148,7 +1156,8 @@ AT_N <- AT_N + 1
 
 ```{r, echo = FALSE}
 # SLOPE
-slope <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+slope <- readxl::read_xlsx(paste0("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), 
+#slope <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
                        sheet = "Slope") %>% 
   clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
   mutate(p_mort_r = round(p_mort_r,3),
@@ -1300,7 +1309,8 @@ AT_N <- AT_N + 1
 
 ```{r, echo = FALSE}
 # NON-BLACK PELAGIC
-pel <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
+pel <- readxl::read_xlsx(paste0("RF_Sport_Removals_FINAL_thru",end_yr,".xlsx"), 
+#pel <- readxl::read_xlsx(paste0("RF_Sport_Removals_RepV.xlsx"), 
                        sheet = "Non-black Pelagics") %>% 
   clean_names() %>% filter(rowSums(is.na(.)) < ncol(.)) %>%
   mutate(p_mort_r = round(p_mort_r,3),
